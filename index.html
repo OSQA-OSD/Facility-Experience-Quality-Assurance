@@ -449,7 +449,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <div id="history-section">
       <div class="hist-hdr">
         <h3><svg data-lucide="clock" width="18" height="18"></svg> Inspection History</h3>
-        <div id="hist-summary" style="font-size:.78rem;color:var(--muted);font-weight:600"></div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div id="hist-summary" style="font-size:.78rem;color:var(--muted);font-weight:600"></div>
+          <button class="btn br" style="padding:6px 14px;font-size:.76rem" onclick="exportAllCSV()" title="Download all inspections as a CSV file (opens in Excel)">
+            <svg data-lucide="download" width="14" height="14"></svg> Export CSV
+          </button>
+        </div>
       </div>
       <div class="hist-filters">
         <select id="hf-insp" onchange="renderHistory()"><option value="">All Inspectors</option></select>
@@ -635,26 +640,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// SUPABASE CONFIG
+// API CONFIG  (Cloudflare D1 via same-origin Worker)
 // ═══════════════════════════════════════════════════════════
-const SB_URL = 'https://ejfkijqbuqvjqlscapun.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqZmtpanFidXF2anFsc2NhcHVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyODUyMDIsImV4cCI6MjA5Njg2MTIwMn0.CWcfxE0C9UN6zVKWaEO3wUHBEj975A5zNdeFQalpS9k';
-const SB_TABLE = 'inspections';
+const API_BASE = '/api';
 
-async function sbFetch(method, path, body){
-  const opts = {
-    method, headers: {
-      'apikey': SB_KEY,
-      'Authorization': 'Bearer ' + SB_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': method==='POST'?'return=representation':'',
-    }
-  };
+async function apiFetch(method, path, body){
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if(body) opts.body = JSON.stringify(body);
-  const res = await fetch(SB_URL + '/rest/v1/' + path, opts);
+  const res = await fetch(API_BASE + path, opts);
   if(!res.ok){
-    const err = await res.text();
-    throw new Error(err);
+    let msg = await res.text();
+    try{ msg = JSON.parse(msg).error || msg; }catch(_){}
+    throw new Error(msg || ('HTTP ' + res.status));
   }
   const txt = await res.text();
   return txt ? JSON.parse(txt) : null;
@@ -696,7 +693,7 @@ if(!inspectors){ inspectors=[...DEFAULT_INSPECTORS]; localStorage.setItem('qa_in
 DEFAULT_INSPECTORS.forEach(d=>{ if(!inspectors.includes(d)) inspectors.unshift(d); });
 
 let activeInspector = inspectors[0];
-let history = []; // loaded from Supabase
+let history = []; // loaded from the database
 let allState = {};
 let currentReportSaved = false;
 let editingRecordId = null;
@@ -734,57 +731,26 @@ function setSyncChip(state, msg){
 }
 
 // ═══════════════════════════════════════════════════════════
-// SUPABASE CRUD
+// DATABASE CRUD
 // ═══════════════════════════════════════════════════════════
 async function dbLoadHistory(){
-  const rows = await sbFetch('GET', SB_TABLE+'?order=id.desc&limit=500', null);
-  return (rows||[]).map(row=>({
-    id: row.id,
-    inspector: row.inspector,
-    facility:  row.facility,
-    division:  row.division,
-    date:      row.date,
-    type:      row.type,
-    typeLabel: row.type_label,
-    overall:   row.overall,
-    filename:  row.filename,
-    ...row.data, // sections array lives inside data jsonb
-  }));
+  return await apiFetch('GET', '/inspections', null) || [];
 }
 
 async function dbInsert(record){
-  const row = {
-    id:         record.id,
-    inspector:  record.inspector,
-    facility:   record.facility,
-    division:   record.division,
-    date:       record.date,
-    type:       record.type,
-    type_label: record.typeLabel,
-    overall:    record.overall,
-    filename:   record.filename,
-    data:       { sections: record.sections },
-  };
-  await sbFetch('POST', SB_TABLE, row);
+  await apiFetch('POST', '/inspections', record);
 }
 
 async function dbUpdate(record){
-  const row = {
-    inspector:  record.inspector,
-    facility:   record.facility,
-    division:   record.division,
-    date:       record.date,
-    type:       record.type,
-    type_label: record.typeLabel,
-    overall:    record.overall,
-    filename:   record.filename,
-    data:       { sections: record.sections },
-  };
-  await sbFetch('PATCH', SB_TABLE+'?id=eq.'+record.id, row);
+  await apiFetch('PATCH', '/inspections/' + record.id, record);
 }
 
 async function dbDelete(id){
-  await sbFetch('DELETE', SB_TABLE+'?id=eq.'+id, null);
+  await apiFetch('DELETE', '/inspections/' + id, null);
+}
+
+function exportAllCSV(){
+  window.location.href = API_BASE + '/export.csv';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1960,7 +1926,7 @@ updateProgress();
 updatePDFButton();
 updateScoreCardActionBar();
 
-// ── Boot: connect to Supabase and load history ──
+// ── Boot: connect to the database and load history ──
 (async()=>{
   showOverlay('Connecting to database…');
   try{

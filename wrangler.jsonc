@@ -1,9 +1,19 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "facility-experience-qulity-assurance",
+  "main": "worker.js",
   "compatibility_date": "2026-09-10",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "facility-qa",
+      "database_id": "a8696c63-e928-4f6f-a75a-8c806e94a1b2",
+      "migrations_dir": "migrations"
+    }
+  ]
 }
