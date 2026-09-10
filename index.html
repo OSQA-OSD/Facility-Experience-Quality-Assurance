@@ -29,7 +29,19 @@ header nav a:hover{color:var(--royal)}
 .btn-ghost{background:transparent;color:var(--royal);border:1.5px solid var(--border)}
 .btn-ghost:hover{border-color:var(--royal)}
 
-.hero{padding:76px 6% 60px;background:radial-gradient(circle at 15% -10%,rgba(38,168,171,.14),transparent 55%),radial-gradient(circle at 100% 10%,rgba(0,51,160,.08),transparent 45%);display:flex;align-items:center;gap:56px;flex-wrap:wrap}
+@keyframes bgFloat{
+  0%,100%{background-position:15% -10%, 100% 8%;background-size:820px 820px, 1150px 1150px}
+  50%{background-position:5% 2%, 88% 22%;background-size:900px 900px, 1300px 1300px}
+}
+.hero{
+  padding:76px 6% 60px;display:flex;align-items:center;gap:56px;flex-wrap:wrap;
+  background-repeat:no-repeat;
+  background-image:radial-gradient(circle, rgba(38,168,171,.16), transparent 55%),
+                    radial-gradient(circle, rgba(0,51,160,.26), transparent 60%);
+  background-position:15% -10%, 100% 8%;
+  background-size:820px 820px, 1150px 1150px;
+  animation:bgFloat 16s ease-in-out infinite;
+}
 .hero-copy{flex:1 1 460px;max-width:620px}
 .eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(38,168,171,.14);color:#0c7b7d;font-weight:800;font-size:.72rem;letter-spacing:.06em;padding:6px 14px;border-radius:999px;margin-bottom:18px}
 .hero h1{font-size:clamp(1.9rem,3.6vw,2.7rem);font-weight:900;color:var(--royal-dk);line-height:1.28;margin-bottom:16px}
