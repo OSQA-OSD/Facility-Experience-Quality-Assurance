@@ -155,7 +155,7 @@ document.getElementById('bootstrap-form').addEventListener('submit', async (e) =
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not create the administrator account.');
-    window.location.href = '/index.html';
+    window.location.href = '/app.html';
   } catch (err) {
     showMsg(msg, err.message, false);
     setBusy(submit, false, '<svg data-lucide="user-plus" width="16" height="16"></svg> Create Administrator');
@@ -180,7 +180,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Invalid username or password.');
-    window.location.href = '/index.html';
+    window.location.href = '/app.html';
   } catch (err) {
     showMsg(msg, err.message, false);
     setBusy(submit, false, '<svg data-lucide="log-in" width="16" height="16"></svg> Sign In');
