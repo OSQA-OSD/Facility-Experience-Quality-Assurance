@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facility Experience QA — Facility Quality Assurance</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --teal:#26A8AB;--teal-lt:#8CFEE3;--royal:#0033A0;--royal-dk:#002070;
+  --bg:#EEF3F7;--border:#C8D8E4;--text:#102040;--muted:#456080;
+  --good:#00843D;--r:12px;--font:'Cairo',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6}
+
+header{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--border);padding:14px 6%;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:1.02rem;color:var(--royal)}
+.brand .dot{width:34px;height:34px;border-radius:9px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;color:#fff}
+.brand .dot svg{width:18px;height:18px}
+header nav{display:flex;gap:24px}
+header nav a{color:var(--muted);text-decoration:none;font-weight:700;font-size:.88rem}
+header nav a:hover{color:var(--royal)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:999px;font-weight:800;font-size:.88rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.btn-primary{background:var(--royal);color:#fff;box-shadow:0 8px 20px -6px rgba(0,51,160,.5)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 24px -6px rgba(0,51,160,.55)}
+.btn-ghost{background:transparent;color:var(--royal);border:1.5px solid var(--border)}
+.btn-ghost:hover{border-color:var(--royal)}
+
+.hero{padding:76px 6% 60px;background:radial-gradient(circle at 15% -10%,rgba(38,168,171,.14),transparent 55%),radial-gradient(circle at 100% 10%,rgba(0,51,160,.08),transparent 45%);display:flex;align-items:center;gap:56px;flex-wrap:wrap}
+.hero-copy{flex:1 1 460px;max-width:620px}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(38,168,171,.14);color:#0c7b7d;font-weight:800;font-size:.72rem;letter-spacing:.06em;padding:6px 14px;border-radius:999px;margin-bottom:18px}
+.hero h1{font-size:clamp(1.9rem,3.6vw,2.7rem);font-weight:900;color:var(--royal-dk);line-height:1.28;margin-bottom:16px}
+.hero h1 span{color:var(--teal)}
+.hero p{color:var(--muted);font-size:1.02rem;margin-bottom:30px;max-width:540px}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:34px}
+.hero-stats{display:flex;gap:30px;flex-wrap:wrap}
+.hero-stats div b{display:block;font-size:1.5rem;font-weight:900;color:var(--royal)}
+.hero-stats div span{font-size:.76rem;color:var(--muted);font-weight:700}
+
+.hero-visual{flex:1 1 380px;max-width:480px}
+.mock{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 60px -20px rgba(0,32,112,.28);overflow:hidden}
+.mock-bar{background:var(--royal);padding:12px 16px;display:flex;align-items:center;gap:8px}
+.mock-bar span{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35)}
+.mock-body{padding:20px}
+.mock-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bg)}
+.mock-row:last-child{border-bottom:none}
+.mock-ic{width:34px;height:34px;border-radius:9px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--teal);flex-shrink:0}
+.mock-ic svg{width:17px;height:17px}
+.mock-line{flex:1}
+.mock-line b{display:block;font-size:.82rem;font-weight:800;color:var(--text)}
+.mock-line span{font-size:.72rem;color:var(--muted)}
+.mock-score{font-weight:900;font-size:.85rem;color:var(--good)}
+
+section{padding:64px 6%}
+.section-head{text-align:center;max-width:620px;margin:0 auto 44px}
+.section-head .eyebrow{margin-bottom:12px}
+.section-head h2{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:900;color:var(--royal-dk);margin-bottom:10px}
+.section-head p{color:var(--muted)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;max-width:1100px;margin:0 auto}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:26px 22px;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-4px);box-shadow:0 16px 32px -14px rgba(0,32,112,.18)}
+.card .ic{width:42px;height:42px;border-radius:10px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:16px}
+.card .ic svg{width:21px;height:21px}
+.card h3{font-size:1rem;font-weight:800;margin-bottom:8px}
+.card p{font-size:.86rem;color:var(--muted)}
+
+.steps{max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;counter-reset:step}
+.step{position:relative;padding-top:14px}
+.step::before{counter-increment:step;content:counter(step);position:absolute;top:-8px;left:0;width:30px;height:30px;border-radius:50%;background:var(--teal);color:#fff;font-weight:900;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+.step h4{font-weight:800;font-size:.92rem;margin-bottom:6px;padding-top:10px;border-top:2px solid var(--border)}
+.step p{font-size:.82rem;color:var(--muted)}
+
+.cta{background:linear-gradient(160deg,var(--royal-dk) 0%,var(--royal) 60%,var(--teal) 140%);border-radius:20px;max-width:1100px;margin:0 auto;padding:50px 6%;text-align:center;color:#fff}
+.cta h2{font-size:clamp(1.4rem,2.4vw,1.9rem);font-weight:900;margin-bottom:12px}
+.cta p{color:rgba(255,255,255,.82);margin-bottom:26px;max-width:480px;margin-inline:auto}
+.cta .btn-primary{background:#fff;color:var(--royal-dk)}
+.cta .btn-primary:hover{box-shadow:0 12px 24px -6px rgba(0,0,0,.3)}
+
+footer{padding:28px 6%;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border)}
+
+@media (max-width:720px){
+  header nav{display:none}
+  .hero{padding:52px 6% 40px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"><svg data-lucide="shield-check" width="18" height="18"></svg></span>
+    Facility Experience QA
+  </div>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+  </nav>
+  <a class="btn btn-primary" href="index.html">
+    Open App
+    <svg data-lucide="arrow-right" width="15" height="15"></svg>
+  </a>
+</header>
+
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow"><svg data-lucide="sparkles" width="13" height="13"></svg> Facility Experience Quality Assurance</span>
+    <h1>Sharper facility inspections, <span>real-time data</span> you can act on</h1>
+    <p>A unified digital platform for logging facility quality inspections, tracking performance across departments, and exporting reports — all from one fast interface that works on any device.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="index.html">
+        Start Inspecting
+        <svg data-lucide="arrow-right" width="15" height="15"></svg>
+      </a>
+      <a class="btn btn-ghost" href="#features">Explore Features</a>
+    </div>
+    <div class="hero-stats">
+      <div><b>100%</b><span>Cloud & instant</span></div>
+      <div><b>CSV</b><span>Report exports</span></div>
+      <div><b>24/7</b><span>Always available</span></div>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="mock">
+      <div class="mock-bar"><span></span><span></span><span></span></div>
+      <div class="mock-body">
+        <div class="mock-row">
+          <div class="mock-ic"><svg data-lucide="check-circle-2" width="16" height="16"></svg></div>
+          <div class="mock-line"><b>General Cleanliness</b><span>Facilities Division</span></div>
+          <div class="mock-score">96%</div>
+        </div>
+        <div class="mock-row">
+          <div class="mock-ic"><svg data-lucide="shield" width="16" height="16"></svg></div>
+          <div class="mock-line"><b>Safety & Security</b><span>Operations Division</span></div>
+          <div class="mock-score">91%</div>
+        </div>
+        <div class="mock-row">
+          <div class="mock-ic"><svg data-lucide="users" width="16" height="16"></svg></div>
+          <div class="mock-line"><b>Visitor Experience</b><span>Customer Service</span></div>
+          <div class="mock-score">88%</div>
+        </div>
+        <div class="mock-row">
+          <div class="mock-ic"><svg data-lucide="trending-up" width="16" height="16"></svg></div>
+          <div class="mock-line"><b>Overall Performance</b><span>All Divisions</span></div>
+          <div class="mock-score">92%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="section-head">
+    <span class="eyebrow">Features</span>
+    <h2>Everything quality teams need, in one place</h2>
+    <p>Purpose-built to make facility inspections faster and more precise.</p>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <div class="ic"><svg data-lucide="clipboard-list" width="20" height="20"></svg></div>
+      <h3>Structured Checklists</h3>
+      <p>Inspection forms organized by section and item, with instant scoring for every entry.</p>
+    </div>
+    <div class="card">
+      <div class="ic"><svg data-lucide="bar-chart-2" width="20" height="20"></svg></div>
+      <h3>Analytics Dashboard</h3>
+      <p>Visual summaries of inspection results that surface areas for improvement right away.</p>
+    </div>
+    <div class="card">
+      <div class="ic"><svg data-lucide="download" width="20" height="20"></svg></div>
+      <h3>Report Exports</h3>
+      <p>Export the full record set as CSV in one click for sharing or archiving.</p>
+    </div>
+    <div class="card">
+      <div class="ic"><svg data-lucide="cloud" width="20" height="20"></svg></div>
+      <h3>Reliable Cloud Storage</h3>
+      <p>All data is stored in the cloud and reaches your team the moment it's entered, from anywhere.</p>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="section-head">
+    <span class="eyebrow">How it works</span>
+    <h2>Three simple steps</h2>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <h4>Pick the facility & division</h4>
+      <p>Select the inspection type and target facility from the sidebar.</p>
+    </div>
+    <div class="step">
+      <h4>Score each item</h4>
+      <p>Rate every checklist item and add notes wherever needed.</p>
+    </div>
+    <div class="step">
+      <h4>Review & export</h4>
+      <p>Track the overall score instantly, then export the report when you're done.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="cta">
+    <h2>Ready to run your first inspection?</h2>
+    <p>Open the app now and start documenting your facility's quality in minutes.</p>
+    <a class="btn btn-primary" href="index.html">Open the App</a>
+  </div>
+</section>
+
+<footer>
+  Facility Experience Quality Assurance — © <span id="yr"></span>
+</footer>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+lucide.createIcons();
+</script>
+</body>
+</html>

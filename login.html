@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Facility Experience QA</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --teal:#26A8AB;--teal-lt:#8CFEE3;--royal:#0033A0;--royal-dk:#002070;
+  --bg:#EEF3F7;--border:#C8D8E4;--text:#102040;--muted:#456080;
+  --good:#00843D;--danger:#C0392B;--r:12px;--font:'Cairo',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  background:radial-gradient(circle at 85% -10%,rgba(38,168,171,.14),transparent 55%),
+             radial-gradient(circle at 0% 110%,rgba(0,51,160,.1),transparent 45%),var(--bg);
+}
+.card{width:100%;max-width:380px;background:#fff;border:1px solid var(--border);border-radius:16px;
+  box-shadow:0 24px 60px -20px rgba(0,32,112,.28);padding:36px 32px;}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+.brand .dot{width:38px;height:38px;border-radius:10px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);
+  display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.brand .dot svg{width:20px;height:20px}
+.brand b{font-weight:900;font-size:1rem;color:var(--royal-dk);display:block;line-height:1.25}
+.brand span{font-size:.72rem;color:var(--muted);font-weight:700}
+
+h2{font-size:1.25rem;font-weight:900;color:var(--royal-dk);margin-bottom:6px}
+.sub{font-size:.83rem;color:var(--muted);margin-bottom:24px;line-height:1.5}
+
+label{display:block;font-size:.76rem;font-weight:800;color:var(--muted);margin-bottom:6px;margin-top:16px}
+label:first-of-type{margin-top:0}
+input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;font-family:var(--font);
+  font-size:.9rem;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s}
+input:focus{border-color:var(--teal)}
+.hint{font-size:.72rem;color:var(--muted);margin-top:6px}
+
+.btn{width:100%;margin-top:22px;padding:12px;border:none;border-radius:9px;background:var(--royal);color:#fff;
+  font-family:var(--font);font-weight:800;font-size:.9rem;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;gap:8px;transition:transform .15s,box-shadow .15s;
+  box-shadow:0 8px 20px -6px rgba(0,51,160,.5)}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.6;cursor:default;transform:none}
+
+.msg{margin-top:16px;padding:10px 12px;border-radius:8px;font-size:.8rem;font-weight:700;display:none}
+.msg.err{display:block;background:rgba(192,57,43,.1);color:var(--danger)}
+.msg.ok{display:block;background:rgba(0,132,61,.1);color:var(--good)}
+
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(38,168,171,.14);color:#0c7b7d;
+  font-weight:800;font-size:.68rem;letter-spacing:.04em;padding:5px 11px;border-radius:999px;margin-bottom:16px}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+  animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading .card{opacity:.5;pointer-events:none}
+</style>
+</head>
+<body class="loading">
+
+<div class="card">
+  <div class="brand">
+    <span class="dot"><svg data-lucide="shield-check" width="20" height="20"></svg></span>
+    <div>
+      <b>Facility Experience QA</b>
+      <span>Quality Assurance Check List</span>
+    </div>
+  </div>
+
+  <div id="bootstrap-view" hidden>
+    <span class="badge"><svg data-lucide="sparkles" width="12" height="12"></svg> First-time setup</span>
+    <h2>Create the administrator account</h2>
+    <p class="sub">No accounts exist yet. Create the first administrator to secure and start using the workspace.</p>
+    <form id="bootstrap-form">
+      <label for="bs-name">Full name</label>
+      <input id="bs-name" type="text" autocomplete="name" required>
+      <label for="bs-username">Username</label>
+      <input id="bs-username" type="text" autocomplete="username" required>
+      <label for="bs-password">Password</label>
+      <input id="bs-password" type="password" autocomplete="new-password" minlength="12" required>
+      <div class="hint">At least 12 characters.</div>
+      <button class="btn" type="submit" id="bs-submit">
+        <svg data-lucide="user-plus" width="16" height="16"></svg> Create Administrator
+      </button>
+      <div class="msg" id="bs-msg"></div>
+    </form>
+  </div>
+
+  <div id="login-view" hidden>
+    <h2>Sign in</h2>
+    <p class="sub">Enter your credentials to access the workspace.</p>
+    <form id="login-form">
+      <label for="lg-username">Username</label>
+      <input id="lg-username" type="text" autocomplete="username" required>
+      <label for="lg-password">Password</label>
+      <input id="lg-password" type="password" autocomplete="current-password" required>
+      <button class="btn" type="submit" id="lg-submit">
+        <svg data-lucide="log-in" width="16" height="16"></svg> Sign In
+      </button>
+      <div class="msg" id="lg-msg"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+lucide.createIcons();
+
+const bootstrapView = document.getElementById('bootstrap-view');
+const loginView = document.getElementById('login-view');
+
+function setBusy(btn, busy, label) {
+  btn.disabled = busy;
+  btn.innerHTML = busy
+    ? '<span class="spin"></span> Please wait…'
+    : label;
+}
+
+function showMsg(el, text, ok) {
+  el.textContent = text;
+  el.className = 'msg ' + (ok ? 'ok' : 'err');
+}
+
+(async () => {
+  try {
+    const res = await fetch('/api/auth/status');
+    const data = await res.json();
+    if (data.hasUsers) {
+      loginView.hidden = false;
+    } else {
+      bootstrapView.hidden = false;
+    }
+  } catch {
+    loginView.hidden = false;
+  } finally {
+    document.body.classList.remove('loading');
+  }
+})();
+
+document.getElementById('bootstrap-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const submit = document.getElementById('bs-submit');
+  const msg = document.getElementById('bs-msg');
+  msg.className = 'msg';
+  setBusy(submit, true);
+  try {
+    const res = await fetch('/api/auth/bootstrap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: document.getElementById('bs-name').value.trim(),
+        username: document.getElementById('bs-username').value.trim(),
+        password: document.getElementById('bs-password').value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not create the administrator account.');
+    window.location.href = '/index.html';
+  } catch (err) {
+    showMsg(msg, err.message, false);
+    setBusy(submit, false, '<svg data-lucide="user-plus" width="16" height="16"></svg> Create Administrator');
+    lucide.createIcons();
+  }
+});
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const submit = document.getElementById('lg-submit');
+  const msg = document.getElementById('lg-msg');
+  msg.className = 'msg';
+  setBusy(submit, true);
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: document.getElementById('lg-username').value.trim(),
+        password: document.getElementById('lg-password').value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Invalid username or password.');
+    window.location.href = '/index.html';
+  } catch (err) {
+    showMsg(msg, err.message, false);
+    setBusy(submit, false, '<svg data-lucide="log-in" width="16" height="16"></svg> Sign In');
+    lucide.createIcons();
+  }
+});
+</script>
+</body>
+</html>
