@@ -13,11 +13,20 @@
   --good:#00843D;--danger:#C0392B;--r:12px;--font:'Cairo',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+@keyframes bgFloat{
+  0%,100%{background-position:85% -10%, 0% 110%;background-size:900px 900px, 1200px 1200px}
+  50%{background-position:95% 4%, -8% 96%;background-size:1000px 1000px, 1350px 1350px}
+}
 body{
-  font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;
+  font-family:var(--font);color:var(--text);min-height:100vh;
   display:flex;align-items:center;justify-content:center;padding:24px;
-  background:radial-gradient(circle at 85% -10%,rgba(38,168,171,.14),transparent 55%),
-             radial-gradient(circle at 0% 110%,rgba(0,51,160,.1),transparent 45%),var(--bg);
+  background-color:var(--bg);
+  background-repeat:no-repeat;
+  background-image:radial-gradient(circle, rgba(38,168,171,.16), transparent 55%),
+                    radial-gradient(circle, rgba(0,51,160,.28), transparent 60%);
+  background-position:85% -10%, 0% 110%;
+  background-size:900px 900px, 1200px 1200px;
+  animation:bgFloat 16s ease-in-out infinite;
 }
 .card{width:100%;max-width:380px;background:#fff;border:1px solid var(--border);border-radius:16px;
   box-shadow:0 24px 60px -20px rgba(0,32,112,.28);padding:36px 32px;}
