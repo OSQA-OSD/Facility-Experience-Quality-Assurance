@@ -270,7 +270,7 @@ async function handleApi(request, env, url) {
 }
 
 async function handleAssets(request, env, url) {
-  const isAppShell = url.pathname === '/app.html';
+  const isAppShell = url.pathname === '/app.html' || url.pathname === '/app';
   if (isAppShell) {
     const user = await getUserFromRequest(request, env);
     if (!user) return Response.redirect(new URL('/login.html', url).toString(), 302);
