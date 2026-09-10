@@ -3,10 +3,16 @@
  * Serves the static app and a small JSON API backed by Cloudflare D1.
  */
 
+import {
+  hashPassword, verifyPassword, createSession, destroySession, getUserFromRequest,
+  readCookie, sessionCookieHeader, clearCookieHeader, isLocked,
+  registerFailedAttempt, clearFailedAttempts, SESSION_COOKIE,
+} from './auth.js';
+
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
-const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: JSON_HEADERS });
+const json = (data, status = 200, extraHeaders = {}) =>
+  new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...extraHeaders } });
 
 const fail = (message, status = 500) => json({ error: message }, status);
 
@@ -123,6 +129,86 @@ async function exportCsv(env) {
   });
 }
 
+/* ── Auth ───────────────────────────────────────────────── */
+
+async function hasAnyUser(env) {
+  const row = await env.DB.prepare('SELECT id FROM qa_users LIMIT 1').first();
+  return !!row;
+}
+
+async function authStatus(env) {
+  return json({ hasUsers: await hasAnyUser(env) });
+}
+
+async function authBootstrap(env, body) {
+  const name = (body?.name || '').trim();
+  const username = (body?.username || '').trim().toLowerCase();
+  const password = body?.password || '';
+  if (!name || !username || password.length < 12) {
+    return fail('name, username, and a password of at least 12 characters are required', 400);
+  }
+  if (await hasAnyUser(env)) return fail('an administrator already exists', 409);
+
+  const { hash, salt, iterations, rounds } = await hashPassword(password);
+  const id = crypto.randomUUID();
+  await env.DB.prepare(
+    `INSERT INTO qa_users (id, name, username, password_hash, password_salt, password_iterations, password_rounds, role)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'admin')`,
+  ).bind(id, name, username, hash, salt, iterations, rounds).run();
+
+  const { token, expiresAt } = await createSession(env, id);
+  return json(
+    { ok: true, user: { id, name, username, role: 'admin' } },
+    201,
+    { 'Set-Cookie': sessionCookieHeader(token, expiresAt) },
+  );
+}
+
+async function authLogin(env, body) {
+  const username = (body?.username || '').trim().toLowerCase();
+  const password = body?.password || '';
+  if (!username || !password) return fail('username and password are required', 400);
+
+  const user = await env.DB.prepare('SELECT * FROM qa_users WHERE username = ?1').bind(username).first();
+  if (!user) return fail('invalid username or password', 401);
+  if (isLocked(user)) return fail('account locked — try again in 15 minutes', 423);
+
+  const valid = await verifyPassword(password, user);
+  if (!valid) {
+    await registerFailedAttempt(env, user);
+    return fail('invalid username or password', 401);
+  }
+
+  await clearFailedAttempts(env, user.id);
+  const { token, expiresAt } = await createSession(env, user.id);
+  return json(
+    { ok: true, user: { id: user.id, name: user.name, username: user.username, role: user.role } },
+    200,
+    { 'Set-Cookie': sessionCookieHeader(token, expiresAt) },
+  );
+}
+
+async function authLogout(request, env) {
+  await destroySession(env, readCookie(request, SESSION_COOKIE));
+  return json({ ok: true }, 200, { 'Set-Cookie': clearCookieHeader() });
+}
+
+async function authMe(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return fail('not authenticated', 401);
+  return json({ user });
+}
+
+async function handleAuth(request, env, path) {
+  const method = request.method.toUpperCase();
+  if (path === 'auth/status' && method === 'GET') return authStatus(env);
+  if (path === 'auth/bootstrap' && method === 'POST') return authBootstrap(env, await request.json());
+  if (path === 'auth/login' && method === 'POST') return authLogin(env, await request.json());
+  if (path === 'auth/logout' && method === 'POST') return authLogout(request, env);
+  if (path === 'auth/me' && method === 'GET') return authMe(request, env);
+  return null;
+}
+
 /* ── Router ─────────────────────────────────────────────── */
 
 async function handleApi(request, env, url) {
@@ -130,6 +216,14 @@ async function handleApi(request, env, url) {
   const method = request.method.toUpperCase();
 
   if (path === 'health') return json({ ok: true });
+
+  const authResponse = await handleAuth(request, env, path);
+  if (authResponse) return authResponse;
+  if (path.startsWith('auth/')) return fail('not found', 404);
+
+  const user = await getUserFromRequest(request, env);
+  if (!user) return fail('authentication required', 401);
+
   if (path === 'export.csv' && method === 'GET') return exportCsv(env);
 
   if (path === 'inspections') {
@@ -149,14 +243,24 @@ async function handleApi(request, env, url) {
   return fail('not found', 404);
 }
 
+async function handleAssets(request, env, url) {
+  const isAppShell = url.pathname === '/' || url.pathname === '/index.html';
+  if (isAppShell) {
+    const user = await getUserFromRequest(request, env);
+    if (!user) return Response.redirect(new URL('/login.html', url).toString(), 302);
+  }
+  return env.ASSETS.fetch(request);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
+    const isApi = url.pathname.startsWith('/api/');
     try {
-      return await handleApi(request, env, url);
+      return isApi ? await handleApi(request, env, url) : await handleAssets(request, env, url);
     } catch (err) {
-      return fail(err?.message || 'unexpected error', 500);
+      if (isApi) return fail(err?.message || 'unexpected error', 500);
+      return new Response('Service temporarily unavailable.', { status: 503 });
     }
   },
 };
