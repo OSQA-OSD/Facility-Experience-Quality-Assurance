@@ -131,6 +131,8 @@ async function exportCsv(env) {
 
 /* ── Auth ───────────────────────────────────────────────── */
 
+const MIN_PASSWORD_LENGTH = 8;
+
 async function hasAnyUser(env) {
   const row = await env.DB.prepare('SELECT id FROM qa_users LIMIT 1').first();
   return !!row;
@@ -144,8 +146,8 @@ async function authBootstrap(env, body) {
   const name = (body?.name || '').trim();
   const username = (body?.username || '').trim().toLowerCase();
   const password = body?.password || '';
-  if (!name || !username || password.length < 12) {
-    return fail('name, username, and a password of at least 12 characters are required', 400);
+  if (!name || !username || password.length < MIN_PASSWORD_LENGTH) {
+    return fail(`name, username, and a password of at least ${MIN_PASSWORD_LENGTH} characters are required`, 400);
   }
   if (await hasAnyUser(env)) return fail('an administrator already exists', 409);
 
@@ -199,6 +201,29 @@ async function authMe(request, env) {
   return json({ user });
 }
 
+async function authChangePassword(request, env, body) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return fail('not authenticated', 401);
+
+  const currentPassword = body?.currentPassword || '';
+  const newPassword = body?.newPassword || '';
+  if (newPassword.length < MIN_PASSWORD_LENGTH) {
+    return fail(`new password must be at least ${MIN_PASSWORD_LENGTH} characters`, 400);
+  }
+
+  const row = await env.DB.prepare('SELECT * FROM qa_users WHERE id = ?1').bind(user.id).first();
+  if (!row) return fail('account not found', 404);
+  if (!(await verifyPassword(currentPassword, row))) return fail('current password is incorrect', 401);
+
+  const { hash, salt, iterations, rounds } = await hashPassword(newPassword);
+  await env.DB.prepare(
+    `UPDATE qa_users SET password_hash = ?2, password_salt = ?3, password_iterations = ?4, password_rounds = ?5,
+       updated_at = datetime('now') WHERE id = ?1`,
+  ).bind(user.id, hash, salt, iterations, rounds).run();
+
+  return json({ ok: true });
+}
+
 async function handleAuth(request, env, path) {
   const method = request.method.toUpperCase();
   if (path === 'auth/status' && method === 'GET') return authStatus(env);
@@ -206,6 +231,7 @@ async function handleAuth(request, env, path) {
   if (path === 'auth/login' && method === 'POST') return authLogin(env, await request.json());
   if (path === 'auth/logout' && method === 'POST') return authLogout(request, env);
   if (path === 'auth/me' && method === 'GET') return authMe(request, env);
+  if (path === 'auth/change-password' && method === 'POST') return authChangePassword(request, env, await request.json());
   return null;
 }
 
@@ -244,7 +270,7 @@ async function handleApi(request, env, url) {
 }
 
 async function handleAssets(request, env, url) {
-  const isAppShell = url.pathname === '/' || url.pathname === '/index.html';
+  const isAppShell = url.pathname === '/app.html';
   if (isAppShell) {
     const user = await getUserFromRequest(request, env);
     if (!user) return Response.redirect(new URL('/login.html', url).toString(), 302);

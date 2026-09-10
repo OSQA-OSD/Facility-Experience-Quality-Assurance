@@ -3,1972 +3,222 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Facility Experience QA Check List</title>
+<title>Facility Experience QA — Facility Quality Assurance</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<!-- Lucide icons via CDN -->
 <script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
 <style>
 :root{
   --teal:#26A8AB;--teal-lt:#8CFEE3;--royal:#0033A0;--royal-dk:#002070;
   --bg:#EEF3F7;--border:#C8D8E4;--text:#102040;--muted:#456080;
-  --good:#00843D;--warn:#D48000;--danger:#C0392B;
-  --sw:272px;--r:9px;--font:'Cairo',system-ui,sans-serif;
+  --good:#00843D;--r:12px;--font:'Cairo',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{font-size:15px}
-body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6}
 
-/* SIDEBAR */
-#sidebar{width:var(--sw);min-width:var(--sw);background:var(--royal);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:20}
-#sb-head{background:linear-gradient(160deg,#001555 0%,var(--royal) 100%);padding:18px 16px 14px;border-bottom:2px solid var(--teal)}
-#sb-head .eyebrow{font-size:.62rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:4px}
-#sb-head h1{font-size:.92rem;font-weight:900;line-height:1.35;color:#fff}
-#sb-nav{flex:1;padding:6px 0;overflow-y:auto}
-.ni{display:flex;align-items:center;gap:9px;padding:8px 15px;cursor:pointer;border-left:3px solid transparent;transition:background .13s,border-color .13s;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.72)}
-.ni:hover{background:rgba(255,255,255,.08);color:#fff}
-.ni.active{background:rgba(38,168,171,.2);border-left-color:var(--teal);color:var(--teal-lt);font-weight:800}
-.ni .ni-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
-.ni.active .ni-icon{opacity:1}
-.ni .ns{margin-left:auto;font-size:.7rem;font-weight:800;background:rgba(255,255,255,.1);border-radius:20px;padding:2px 7px;min-width:34px;text-align:center}
-.ni.active .ns{background:var(--teal);color:#fff}
-#sb-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.12)}
-#acct-row{display:flex;align-items:center;gap:8px;padding:6px 2px 12px;color:rgba(255,255,255,.82)}
-#acct-name{flex:1;font-size:.76rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#acct-logout{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:7px;color:inherit;
-  cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;transition:background .13s}
-#acct-logout:hover{background:rgba(192,57,43,.35)}
-.oc{background:rgba(0,0,0,.22);border:1px solid rgba(38,168,171,.3);border-radius:var(--r);padding:10px;text-align:center}
-.oc .ol{font-size:.62rem;color:var(--teal-lt);text-transform:uppercase;letter-spacing:.12em;font-weight:700}
-.oc .ob{font-size:2rem;font-weight:900;color:#fff;line-height:1.1}
-.oc .og{font-size:.75rem;color:var(--teal-lt);font-weight:600;margin-top:2px}
+header{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--border);padding:14px 6%;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:1.02rem;color:var(--royal)}
+.brand .dot{width:34px;height:34px;border-radius:9px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;color:#fff}
+.brand .dot svg{width:18px;height:18px}
+header nav{display:flex;gap:24px}
+header nav a{color:var(--muted);text-decoration:none;font-weight:700;font-size:.88rem}
+header nav a:hover{color:var(--royal)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:999px;font-weight:800;font-size:.88rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.btn-primary{background:var(--royal);color:#fff;box-shadow:0 8px 20px -6px rgba(0,51,160,.5)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 24px -6px rgba(0,51,160,.55)}
+.btn-ghost{background:transparent;color:var(--royal);border:1.5px solid var(--border)}
+.btn-ghost:hover{border-color:var(--royal)}
 
-/* MAIN */
-#main{flex:1;overflow-y:auto;min-height:100vh}
-#pbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:2px solid var(--teal);padding:8px 32px;display:flex;align-items:center;gap:11px}
-#pbar .pl{font-size:.73rem;font-weight:700;color:var(--muted);min-width:95px}
-.pt{flex:1;height:7px;background:var(--border);border-radius:8px;overflow:hidden}
-.pf{height:100%;background:linear-gradient(90deg,var(--royal),var(--teal));border-radius:8px;transition:width .5s}
-#pbar .pp{font-size:.78rem;font-weight:800;color:var(--royal);min-width:34px;text-align:right}
+.hero{padding:76px 6% 60px;background:radial-gradient(circle at 15% -10%,rgba(38,168,171,.14),transparent 55%),radial-gradient(circle at 100% 10%,rgba(0,51,160,.08),transparent 45%);display:flex;align-items:center;gap:56px;flex-wrap:wrap}
+.hero-copy{flex:1 1 460px;max-width:620px}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(38,168,171,.14);color:#0c7b7d;font-weight:800;font-size:.72rem;letter-spacing:.06em;padding:6px 14px;border-radius:999px;margin-bottom:18px}
+.hero h1{font-size:clamp(1.9rem,3.6vw,2.7rem);font-weight:900;color:var(--royal-dk);line-height:1.28;margin-bottom:16px}
+.hero h1 span{color:var(--teal)}
+.hero p{color:var(--muted);font-size:1.02rem;margin-bottom:30px;max-width:540px}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:34px}
+.hero-stats{display:flex;gap:30px;flex-wrap:wrap}
+.hero-stats div b{display:block;font-size:1.5rem;font-weight:900;color:var(--royal)}
+.hero-stats div span{font-size:.76rem;color:var(--muted);font-weight:700}
 
-/* PAGES */
-.page{display:none}.page.active{display:block}
+.hero-visual{flex:1 1 380px;max-width:480px}
+.mock{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 60px -20px rgba(0,32,112,.28);overflow:hidden}
+.mock-bar{background:var(--royal);padding:12px 16px;display:flex;align-items:center;gap:8px}
+.mock-bar span{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35)}
+.mock-body{padding:20px}
+.mock-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bg)}
+.mock-row:last-child{border-bottom:none}
+.mock-ic{width:34px;height:34px;border-radius:9px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--teal);flex-shrink:0}
+.mock-ic svg{width:17px;height:17px}
+.mock-line{flex:1}
+.mock-line b{display:block;font-size:.82rem;font-weight:800;color:var(--text)}
+.mock-line span{font-size:.72rem;color:var(--muted)}
+.mock-score{font-weight:900;font-size:.85rem;color:var(--good)}
 
-/* HOME */
-#pg-home{padding:0}
-.home-hero{background:linear-gradient(145deg,#001540 0%,#002280 50%,#0a5f60 100%);color:#fff;padding:40px 44px 32px;position:relative;overflow:hidden;border-bottom:4px solid var(--teal)}
-.home-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(38,168,171,.2) 0%,transparent 70%);pointer-events:none}
-.home-hero .ey{font-size:.65rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:5px}
-.home-hero h2{font-size:1.9rem;font-weight:900;line-height:1.15;margin-bottom:5px}
-.home-hero h2 span{color:var(--teal)}
-.home-hero .sub{font-size:.82rem;color:rgba(255,255,255,.52);margin-bottom:24px;max-width:460px}
-.meta-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:13px;margin-bottom:20px}
-.mf{display:flex;flex-direction:column;gap:3px}
-.mf label{font-size:.65rem;text-transform:uppercase;letter-spacing:.14em;color:rgba(255,255,255,.5);font-weight:700}
-.mf input,.mf select{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;padding:8px 11px;color:#fff;font-size:.88rem;outline:none;font-family:var(--font);transition:border-color .15s,background .15s}
-.mf input::placeholder{color:rgba(255,255,255,.32)}
-.mf input:focus,.mf select:focus{border-color:var(--teal);background:rgba(255,255,255,.18)}
-.mf select option{background:#002280;color:#fff}
-.rscale{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px}
-.rc{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:6px;padding:5px 11px;font-size:.73rem}
-.rc strong{color:var(--teal-lt)}
+section{padding:64px 6%}
+.section-head{text-align:center;max-width:620px;margin:0 auto 44px}
+.section-head .eyebrow{margin-bottom:12px}
+.section-head h2{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:900;color:var(--royal-dk);margin-bottom:10px}
+.section-head p{color:var(--muted)}
 
-/* Inspector panel */
-#insp-panel{background:#fff;border-bottom:1px solid var(--border);padding:14px 44px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-#insp-panel .ip-label{font-size:.8rem;font-weight:700;color:var(--royal);white-space:nowrap}
-.insp-chip{display:flex;align-items:center;gap:6px;background:var(--bg);border:2px solid var(--border);border-radius:20px;padding:5px 13px;cursor:pointer;font-size:.78rem;font-weight:700;color:var(--muted);transition:all .13s;white-space:nowrap}
-.insp-chip:hover{border-color:var(--teal);color:var(--royal)}
-.insp-chip.sel{background:var(--royal);border-color:var(--royal);color:#fff}
-.insp-chip .av{width:22px;height:22px;border-radius:50%;background:var(--teal);color:#fff;font-size:.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.insp-chip.sel .av{background:rgba(255,255,255,.22)}
-.insp-chip .chip-del{width:16px;height:16px;border-radius:50%;background:rgba(192,57,43,.15);border:none;color:#C0392B;font-size:.6rem;font-weight:900;cursor:pointer;display:none;align-items:center;justify-content:center;margin-left:2px;transition:background .13s;flex-shrink:0}
-.insp-chip:hover .chip-del{display:flex}
-.insp-chip.sel .chip-del{background:rgba(255,255,255,.15);color:#fff}
-.insp-chip.sel:hover .chip-del{display:flex}
-#add-insp-btn{display:flex;align-items:center;gap:5px;padding:5px 14px;border:2px dashed var(--teal);border-radius:20px;background:rgba(38,168,171,.06);cursor:pointer;font-size:.76rem;font-weight:700;color:var(--teal);transition:background .13s;white-space:nowrap;font-family:var(--font)}
-#add-insp-btn:hover{background:rgba(38,168,171,.14)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;max-width:1100px;margin:0 auto}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:26px 22px;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-4px);box-shadow:0 16px 32px -14px rgba(0,32,112,.18)}
+.card .ic{width:42px;height:42px;border-radius:10px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:16px}
+.card .ic svg{width:21px;height:21px}
+.card h3{font-size:1rem;font-weight:800;margin-bottom:8px}
+.card p{font-size:.86rem;color:var(--muted)}
 
-/* Spell banner */
-#spell-banner{display:none;background:#fff8e1;border-bottom:2px solid #D48000;padding:10px 44px;align-items:center;gap:12px;flex-wrap:wrap}
-#spell-banner.show{display:flex}
-#spell-banner .sb-title{font-size:.78rem;font-weight:800;color:#6b4200}
-.spell-issue{display:inline-flex;align-items:center;gap:5px;background:#fff3cd;border:1px solid #D48000;border-radius:6px;padding:4px 10px;font-size:.75rem;color:#6b4200;cursor:pointer}
-.spell-issue:hover{background:#ffe082}
-#spell-banner .sb-clear{margin-left:auto;font-size:.75rem;font-weight:700;color:var(--muted);cursor:pointer;text-decoration:underline}
+.steps{max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;counter-reset:step}
+.step{position:relative;padding-top:14px}
+.step::before{counter-increment:step;content:counter(step);position:absolute;top:-8px;left:0;width:30px;height:30px;border-radius:50%;background:var(--teal);color:#fff;font-weight:900;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+.step h4{font-weight:800;font-size:.92rem;margin-bottom:6px;padding-top:10px;border-top:2px solid var(--border)}
+.step p{font-size:.82rem;color:var(--muted)}
 
-/* History */
-#history-section{padding:24px 44px 40px;background:var(--bg)}
-#history-section h3{font-size:1rem;font-weight:800;color:var(--royal);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.hist-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
-.hist-filters select,.hist-filters input{border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;font-size:.8rem;color:var(--text);background:#fff;outline:none;font-family:var(--font);min-width:130px}
-.hist-filters select:focus,.hist-filters input:focus{border-color:var(--teal)}
-#hist-list{display:flex;flex-direction:column;gap:10px}
-.hist-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:13px 17px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:box-shadow .13s,border-color .13s}
-.hist-card:hover{box-shadow:0 3px 12px rgba(0,51,160,.09);border-color:var(--teal)}
-.hc-score{min-width:56px;height:56px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.15rem;font-weight:900;color:#fff;flex-shrink:0}
-.hc-info{flex:1;min-width:0}
-.hc-title{font-size:.9rem;font-weight:800;color:var(--royal)}
-.hc-meta{font-size:.74rem;color:var(--muted);margin-top:2px}
-.hc-grade{font-size:.7rem;font-weight:800;padding:3px 10px;border-radius:20px}
-.hc-del{width:30px;height:30px;border-radius:50%;border:none;background:rgba(192,57,43,.1);color:var(--danger);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
-.hc-del:hover{background:rgba(192,57,43,.22)}
-.hc-pdf{width:30px;height:30px;border-radius:50%;border:none;background:rgba(38,168,171,.12);color:var(--teal);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
-.hc-pdf:hover{background:rgba(38,168,171,.28)}
-.no-hist{text-align:center;padding:32px;color:var(--muted);font-size:.85rem;background:#fff;border-radius:var(--r);border:1px dashed var(--border)}
+.cta{background:linear-gradient(160deg,var(--royal-dk) 0%,var(--royal) 60%,var(--teal) 140%);border-radius:20px;max-width:1100px;margin:0 auto;padding:50px 6%;text-align:center;color:#fff}
+.cta h2{font-size:clamp(1.4rem,2.4vw,1.9rem);font-weight:900;margin-bottom:12px}
+.cta p{color:rgba(255,255,255,.82);margin-bottom:26px;max-width:480px;margin-inline:auto}
+.cta .btn-primary{background:#fff;color:var(--royal-dk)}
+.cta .btn-primary:hover{box-shadow:0 12px 24px -6px rgba(0,0,0,.3)}
 
-/* SECTION PAGE */
-.sp{padding:26px 32px 50px}
-.sh{display:flex;align-items:center;gap:13px;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--teal)}
-.si-icon{width:44px;height:44px;border-radius:10px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sh h2{font-size:1.15rem;font-weight:800;color:var(--royal)}
-.sh .sdesc{font-size:.76rem;color:var(--muted);margin-top:2px}
-.sbadge{margin-left:auto;flex-shrink:0;background:var(--teal);border-radius:7px;overflow:hidden;min-width:84px;box-shadow:0 3px 10px rgba(38,168,171,.3)}
-.sbt{background:var(--teal-lt);color:var(--royal);font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em;padding:3px 10px;text-align:center}
-.sbn{color:#fff;font-size:1.15rem;font-weight:900;padding:5px 10px;text-align:center}
+footer{padding:28px 6%;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border)}
 
-/* Validation warning */
-.val-alert{display:none;background:#fff0f0;border:1.5px solid var(--danger);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:.83rem;color:#7a0000}
-.val-alert.show{display:block}
-.val-alert strong{display:block;margin-bottom:6px;font-size:.88rem;color:var(--danger)}
-.val-alert ul{padding-left:18px;display:flex;flex-direction:column;gap:3px}
-.val-alert ul li{cursor:pointer;text-decoration:underline dotted}
-.val-alert ul li:hover{color:var(--royal)}
-
-/* Checklist */
-.cl{display:flex;flex-direction:column;gap:11px}
-.ci{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;transition:box-shadow .13s,border-color .13s}
-.ci:hover{box-shadow:0 2px 10px rgba(0,51,160,.07);border-color:#aac4d8}
-.ci.needs-comment{border-color:var(--warn);background:#fffdf0}
-.ci-head{display:flex;align-items:center;gap:11px;padding:13px 14px}
-.in{width:27px;height:27px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.73rem;font-weight:800;flex-shrink:0}
-.il{flex:1;font-size:.9rem;font-weight:700;color:var(--text);line-height:1.4}
-
-/* Score buttons */
-.ss{display:flex;gap:5px;flex-shrink:0}
-.sb{width:42px;height:42px;border-radius:8px;border:2px solid var(--border);background:#fff;font-size:1rem;font-weight:900;cursor:pointer;transition:all .13s;color:var(--muted);font-family:var(--font);display:flex;align-items:center;justify-content:center}
-.sb:hover{border-color:var(--teal);color:var(--teal);background:rgba(38,168,171,.07)}
-.sb.s0{background:var(--danger);border-color:var(--danger);color:#fff}
-.sb.s1{background:var(--teal);border-color:var(--teal);color:#fff}
-/* for 0/2 sections */
-.sb.s2{background:var(--good);border-color:var(--good);color:#fff}
-.sb.hidden{display:none}
-
-.ci-body{padding:0 14px 13px;display:flex;flex-direction:column;gap:9px}
-.cmt-wrap{position:relative}
-.cmt-wrap input[type=text]{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;font-size:.85rem;color:var(--text);outline:none;background:var(--bg);font-family:var(--font);transition:border-color .14s}
-.cmt-wrap input:focus{border-color:var(--teal);background:#fff}
-.cmt-wrap input::placeholder{color:#8aaabb}
-.cmt-wrap input.has-error{border-color:var(--warn);background:#fffef0}
-.cmt-required-hint{display:none;font-size:.72rem;color:var(--danger);font-weight:700;margin-top:3px}
-.cmt-required-hint.show{display:block}
-
-/* Photo */
-.photo-area{display:flex;flex-direction:column;gap:8px}
-.photo-btns{display:flex;gap:8px;flex-wrap:wrap}
-.ph-btn{display:flex;align-items:center;gap:6px;padding:7px 15px;border-radius:7px;font-size:.78rem;font-weight:800;cursor:pointer;transition:all .13s;font-family:var(--font);border:2px solid var(--teal);background:rgba(38,168,171,.06);color:var(--teal)}
-.ph-btn:hover{background:rgba(38,168,171,.15)}
-.ph-btn svg{flex-shrink:0}
-.ph-btn input{display:none}
-.ph-thumbs{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
-.ptw{position:relative;display:inline-block}
-.pt-img{width:66px;height:66px;border-radius:7px;object-fit:cover;border:2px solid var(--teal);cursor:pointer;display:block;transition:transform .13s}
-.pt-img:hover{transform:scale(1.07)}
-.pt-rm{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--danger);color:#fff;font-size:.6rem;font-weight:900;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
-
-/* Section notes */
-.sn{margin-top:18px;background:#fff;border:1px solid var(--border);border-top:3px solid var(--teal);border-radius:var(--r);padding:13px}
-.sn label{font-size:.7rem;font-weight:800;color:var(--teal);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em}
-.sn textarea{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;font-size:.85rem;color:var(--text);resize:vertical;min-height:64px;outline:none;background:var(--bg);font-family:var(--font);transition:border-color .14s}
-.sn textarea:focus{border-color:var(--teal);background:#fff}
-
-/* Buttons */
-.abar{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
-.btn{padding:10px 22px;border-radius:7px;font-size:.85rem;font-weight:700;border:none;cursor:pointer;transition:transform .12s,box-shadow .12s;display:flex;align-items:center;gap:7px;font-family:var(--font)}
-.btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.13)}
-.btn:active{transform:translateY(0)}
-.bt{background:var(--teal);color:#fff}
-.br{background:var(--royal);color:#fff}
-.bo{background:transparent;color:var(--royal);border:2px solid var(--border)}
-.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
-
-/* SCORECARD */
-#pg-scorecard{padding:28px 32px 52px}
-.sc-hero{background:linear-gradient(145deg,#001540 0%,#002280 50%,#0a5f60 100%);border-radius:12px;padding:28px 32px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:22px;border-top:4px solid var(--teal);flex-wrap:wrap}
-.sc-hero h2{font-size:1.25rem;font-weight:900;margin-bottom:4px}
-.sc-hero p{font-size:.8rem;color:rgba(255,255,255,.55)}
-/* Report header summary */
-.sc-header-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:14px}
-.sc-hf{display:flex;flex-direction:column}
-.sc-hf .sc-hl{font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.45);font-weight:700}
-.sc-hf .sc-hv{font-size:.9rem;font-weight:800;color:#fff}
-.s-ring{background:rgba(140,254,227,.12);border:4px solid var(--teal-lt);border-radius:50%;width:105px;height:105px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
-.s-ring .sn2{font-size:2.2rem;font-weight:900;line-height:1;color:var(--teal-lt)}
-.s-ring .sd{font-size:.68rem;color:rgba(255,255,255,.45)}
-.s-ring .sg{font-size:.68rem;font-weight:800;color:#FFC846;margin-top:2px}
-.stbl{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:22px}
-.sth{display:grid;grid-template-columns:2.2fr .75fr 1.4fr 1.3fr;padding:9px 15px;background:var(--royal);color:#fff;font-size:.71rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
-.str{display:grid;grid-template-columns:2.2fr .75fr 1.4fr 1.3fr;padding:10px 15px;border-bottom:1px solid var(--border);align-items:center;font-size:.85rem}
-.str:last-child{border-bottom:none}
-.str:nth-child(even){background:#f4f8fb}
-.snm{font-weight:700;color:var(--royal);display:flex;align-items:center;gap:6px}
-.bw{height:7px;background:var(--border);border-radius:8px;overflow:hidden}
-.bf{height:100%;border-radius:8px;transition:width .6s}
-.gp{display:inline-block;padding:3px 11px;border-radius:20px;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
-.ge{background:#d1fae5;color:#065f46}.gg{background:#dbeafe;color:#1e40af}
-.ga{background:#fef3c7;color:#92400e}.gpo{background:#fee2e2;color:#991b1b}.gcr{background:#fce7f3;color:#9d174d}
-.sleg{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:9px;margin-bottom:22px}
-.slc{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:11px;display:flex;align-items:center;gap:9px}
-.slb{width:5px;height:40px;border-radius:5px;flex-shrink:0}
-.slr{font-size:.7rem;font-weight:900;color:var(--royal)}
-.slg{font-size:.78rem;font-weight:700;color:var(--text);margin-top:1px}
-.sld{font-size:.68rem;color:var(--muted);margin-top:2px;line-height:1.3}
-/* Save mandatory notice */
-.save-notice{background:#e8f4fd;border:1.5px solid var(--teal);border-radius:var(--r);padding:12px 16px;font-size:.82rem;color:#003366;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px}
-.save-notice svg{flex-shrink:0;margin-top:1px}
-
-/* MODALS */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center}
-.modal-bg.open{display:flex}
-.modal-box{background:#fff;border-radius:12px;padding:28px;width:420px;max-width:93vw;box-shadow:0 16px 48px rgba(0,0,0,.22)}
-.modal-box h3{font-size:1.05rem;font-weight:800;color:var(--royal);margin-bottom:6px}
-.modal-box .msub{font-size:.78rem;color:var(--muted);margin-bottom:18px}
-.modal-box input{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:9px 12px;font-size:.9rem;font-family:var(--font);color:var(--text);outline:none;margin-bottom:14px}
-.modal-box input:focus{border-color:var(--teal)}
-.modal-box .mbtns{display:flex;gap:9px}
-
-/* Lightbox */
-#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;align-items:center;justify-content:center}
-#lb.open{display:flex}
-#lb img{max-width:90vw;max-height:90vh;border-radius:8px}
-#lb-x{position:absolute;top:18px;right:22px;width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
-
-/* History detail */
-#hd-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;overflow-y:auto;padding:24px}
-#hd-modal.open{display:block}
-#hd-inner{background:#fff;border-radius:12px;max-width:740px;margin:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-#hd-inner h2{font-size:1.1rem;font-weight:900;color:var(--royal);margin-bottom:4px}
-.hd-meta-line{font-size:.78rem;color:var(--muted);margin-bottom:18px}
-.hd-sec{margin-bottom:13px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.hd-sec-head{background:var(--royal);color:#fff;padding:8px 14px;display:flex;justify-content:flex-start;align-items:center;font-size:.82rem;font-weight:800}
-.hd-items{padding:8px 14px;display:flex;flex-direction:column;gap:6px}
-.hd-item{display:flex;gap:10px;align-items:flex-start;font-size:.8rem;padding:4px 0;border-bottom:1px solid #f0f4f7}
-.hd-item:last-child{border-bottom:none}
-.hd-dot{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:900;color:#fff;margin-top:1px}
-.hd-photos{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
-.hd-photos img{width:50px;height:50px;object-fit:cover;border-radius:5px;border:1.5px solid var(--teal);cursor:pointer}
-
-@media(max-width:780px){
-  body{flex-direction:column}
-  #sidebar{width:100%;min-width:0;height:auto;position:static}
-  #sb-nav{display:flex;flex-wrap:wrap;padding:4px}
-  .ni{font-size:.67rem;padding:5px 8px;border-left:none;border-bottom:2px solid transparent}
-  .ni.active{border-left:none;border-bottom-color:var(--teal)}
-  #sb-foot{display:none}
-  .sp,#pg-scorecard{padding:16px 13px 40px}
-  .home-hero{padding:26px 18px}
-  #history-section,#insp-panel{padding:14px 16px}
-  #spell-banner{padding:8px 16px}
-  .sth,.str{grid-template-columns:2fr .6fr 1.2fr}
-  .sth>*:nth-child(3),.str>*:nth-child(3){display:none}
+@media (max-width:720px){
+  header nav{display:none}
+  .hero{padding:52px 6% 40px}
 }
-
-
-/* Charts panel */
-#charts-section{padding:24px 44px 40px;background:#fff;border-top:2px solid var(--border)}
-#charts-section h3{font-size:1rem;font-weight:800;color:var(--royal);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.chart-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
-.chart-filters select{border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;font-size:.8rem;color:var(--text);background:#fff;outline:none;font-family:var(--font);min-width:130px}
-.chart-filters select:focus{border-color:var(--teal)}
-.chart-type-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
-.ct-btn{padding:6px 16px;border-radius:20px;border:2px solid var(--border);background:#fff;font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;transition:all .13s;font-family:var(--font)}
-.ct-btn:hover{border-color:var(--teal);color:var(--teal)}
-.ct-btn.active{background:var(--royal);border-color:var(--royal);color:#fff}
-#charts-canvas-wrap{background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:20px;min-height:320px;position:relative}
-#charts-canvas-wrap canvas{max-width:100%;display:block;margin:auto}
-#chart-empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:.88rem;display:none}
-#chart-empty.show{display:block}
-.chart-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:16px}
-.chart-stat{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center}
-.chart-stat .cs-val{font-size:1.6rem;font-weight:900;color:var(--royal);line-height:1}
-.chart-stat .cs-lbl{font-size:.72rem;color:var(--muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.07em}
-.chart-stat .cs-sub{font-size:.7rem;color:var(--teal);margin-top:2px;font-weight:700}
-
-/* Edit mode banner */
-#edit-banner{display:none;background:#fff3cd;border-bottom:2px solid #D48000;padding:10px 32px;align-items:center;gap:12px;flex-wrap:wrap}
-#edit-banner.show{display:flex}
-#edit-banner .eb-text{font-size:.82rem;font-weight:700;color:#6b4200;flex:1}
-#edit-banner .eb-id{font-size:.75rem;color:#8a5500;font-style:italic}
-/* Edit / View buttons on history cards */
-.hc-edit{width:30px;height:30px;border-radius:50%;border:none;background:rgba(0,51,160,.1);color:var(--royal);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
-.hc-edit:hover{background:rgba(0,51,160,.2)}
-/* History section header row */
-.hist-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
-.hist-hdr h3{margin:0;font-size:1rem;font-weight:800;color:var(--royal);display:flex;align-items:center;gap:8px}
-
-
-/* Save choice modal */
-#modal-save-choice .choice-cards{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
-.choice-card{border:2px solid var(--border);border-radius:var(--r);padding:16px 18px;cursor:pointer;transition:border-color .15s,background .15s}
-.choice-card:hover{border-color:var(--teal);background:#f0fbfb}
-.choice-card.selected{border-color:var(--royal);background:#eef3fb}
-.choice-card h4{font-size:.92rem;font-weight:800;color:var(--royal);margin-bottom:4px}
-.choice-card p{font-size:.78rem;color:var(--muted);line-height:1.4}
-.choice-card .choice-tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.68rem;font-weight:800;text-transform:uppercase;margin-bottom:6px}
-.tag-update{background:#dbeafe;color:#1e40af}
-.tag-eoqi{background:#d1fae5;color:#065f46}
-/* Edit-mode action bar additions */
-.edit-abar-hint{font-size:.78rem;color:#6b4200;background:#fff8e1;border:1px solid #D48000;border-radius:6px;padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-
-
-/* Cloud sync / loading */
-#cloud-overlay{display:none;position:fixed;inset:0;background:rgba(0,20,60,.72);z-index:2000;flex-direction:column;align-items:center;justify-content:center;gap:16px}
-#cloud-overlay.show{display:flex}
-.co-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--teal-lt);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.co-msg{color:#fff;font-size:.95rem;font-weight:700;letter-spacing:.02em}
-/* Sync status chip in progress bar */
-#sync-chip{font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;display:flex;align-items:center;gap:5px;white-space:nowrap}
-#sync-chip.ok{background:#d1fae5;color:#065f46}
-#sync-chip.syncing{background:#fef3c7;color:#92400e}
-#sync-chip.err{background:#fee2e2;color:#991b1b}
-/* Connection indicator on sidebar */
-#conn-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;margin-right:4px;transition:background .3s}
-#conn-dot.online{background:#00843D}
-#conn-dot.offline{background:#C0392B}
-
 </style>
 </head>
 <body>
 
-<!-- Cloud loading overlay -->
-<div id="cloud-overlay">
-  <div class="co-spinner"></div>
-  <div class="co-msg" id="co-msg">Connecting to database…</div>
-</div>
-<!-- SIDEBAR -->
-<aside id="sidebar">
-  <div id="sb-head">
-    <div class="eyebrow"><span id="conn-dot"></span>OSD · Facility Experience</div>
-    <h1>Quality Assurance<br>Check List</h1>
+<header>
+  <div class="brand">
+    <span class="dot"><svg data-lucide="shield-check" width="18" height="18"></svg></span>
+    Facility Experience QA
   </div>
-  <nav id="sb-nav">
-    <div class="ni active" data-page="pg-home"><svg class="ni-icon" data-lucide="home"></svg> Home</div>
-    <div class="ni" data-page="pg-s0"><svg class="ni-icon" data-lucide="car"></svg> Arrival &amp; Parking <span class="ns" id="ns-0">–/10</span></div>
-    <div class="ni" data-page="pg-s1"><svg class="ni-icon" data-lucide="tree-deciduous"></svg> Landscape <span class="ns" id="ns-1">–/10</span></div>
-    <div class="ni" data-page="pg-s2"><svg class="ni-icon" data-lucide="door-open"></svg> Entrance &amp; Lobby <span class="ns" id="ns-2">–/10</span></div>
-    <div class="ni" data-page="pg-s3"><svg class="ni-icon" data-lucide="utensils"></svg> Food &amp; Concession <span class="ns" id="ns-3">–/10</span></div>
-    <div class="ni" data-page="pg-s4"><svg class="ni-icon" data-lucide="arrow-up-down"></svg> Elevators &amp; Corridors <span class="ns" id="ns-4">–/10</span></div>
-    <div class="ni" data-page="pg-s5"><svg class="ni-icon" data-lucide="briefcase"></svg> Workspaces <span class="ns" id="ns-5">–/10</span></div>
-    <div class="ni" data-page="pg-s6"><svg class="ni-icon" data-lucide="shield-check"></svg> Health, Safety &amp; Emergency <span class="ns" id="ns-6">–/10</span></div>
-    <div class="ni" data-page="pg-s7"><svg class="ni-icon" data-lucide="droplets"></svg> Washrooms / Bathrooms <span class="ns" id="ns-7">–/10</span></div>
-    <div class="ni" data-page="pg-s8"><svg class="ni-icon" data-lucide="wrench"></svg> Maintenance <span class="ns" id="ns-8">–/10</span></div>
-    <div class="ni" data-page="pg-s9"><svg class="ni-icon" data-lucide="clipboard-list"></svg> Miscellaneous <span class="ns" id="ns-9">–/10</span></div>
-    <div class="ni" data-page="pg-scorecard"><svg class="ni-icon" data-lucide="bar-chart-2"></svg> Score Card</div>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
   </nav>
-  <div id="sb-foot">
-    <div id="acct-row">
-      <span id="acct-name">…</span>
-      <button id="acct-logout" title="Log out"><svg data-lucide="log-out" width="14" height="14"></svg></button>
-    </div>
-    <div class="oc">
-      <div class="ol">Overall Score</div>
-      <div class="ob" id="sb-overall">–</div>
-      <div class="og" id="sb-grade">–</div>
-    </div>
-  </div>
-</aside>
+  <a class="btn btn-primary" href="app.html">
+    Open App
+    <svg data-lucide="arrow-right" width="15" height="15"></svg>
+  </a>
+</header>
 
-<!-- MAIN -->
-<main id="main">
-  <div id="pbar">
-    <span class="pl">Completion</span>
-    <div class="pt"><div class="pf" id="pf" style="width:0%"></div></div>
-    <span class="pp" id="pp">0%</span>
-    <div id="sync-chip" class="syncing">Connecting…</div>
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow"><svg data-lucide="sparkles" width="13" height="13"></svg> Facility Experience Quality Assurance</span>
+    <h1>Sharper facility inspections, <span>real-time data</span> you can act on</h1>
+    <p>A unified digital platform for logging facility quality inspections, tracking performance across departments, and exporting reports — all from one fast interface that works on any device.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="app.html">
+        Start Inspecting
+        <svg data-lucide="arrow-right" width="15" height="15"></svg>
+      </a>
+      <a class="btn btn-ghost" href="#features">Explore Features</a>
+    </div>
+    <div class="hero-stats">
+      <div><b>100%</b><span>Cloud & instant</span></div>
+      <div><b>CSV</b><span>Report exports</span></div>
+      <div><b>24/7</b><span>Always available</span></div>
+    </div>
   </div>
 
-  <!-- Edit mode banner -->
-  <div id="edit-banner">
-    <svg data-lucide="pencil" width="16" height="16" style="color:#D48000;flex-shrink:0"></svg>
-    <div class="eb-text">You are editing a saved inspection. Make your changes, then go to Score Card and save to update the record.</div>
-    <button class="btn bo" style="padding:6px 14px;font-size:.78rem;flex-shrink:0" onclick="cancelEdit()">Cancel Edit</button>
-  </div>
-  <!-- HOME -->
-  <div class="page active" id="pg-home">
-    <div class="home-hero">
-      <h2>Facility Experience<br><span>Quality Assurance</span><br>Check List</h2>
-      <p class="sub">Quality assurance inspection of end-to-end facility user experience.</p>
-      <div class="meta-g">
-        <div class="mf">
-          <label>Inspector Name</label>
-          <select id="meta-inspector" onchange="onInspectorDropdownChange()"></select>
+  <div class="hero-visual">
+    <div class="mock">
+      <div class="mock-bar"><span></span><span></span><span></span></div>
+      <div class="mock-body">
+        <div class="mock-row">
+          <div class="mock-ic"><svg data-lucide="check-circle-2" width="16" height="16"></svg></div>
+          <div class="mock-line"><b>General Cleanliness</b><span>Facilities Division</span></div>
+          <div class="mock-score">96%</div>
         </div>
-        <div class="mf">
-          <label>Facility / Building</label>
-          <input type="text" id="meta-facility" placeholder="Building name…">
+        <div class="mock-row">
+          <div class="mock-ic"><svg data-lucide="shield" width="16" height="16"></svg></div>
+          <div class="mock-line"><b>Safety & Security</b><span>Operations Division</span></div>
+          <div class="mock-score">91%</div>
         </div>
-        <div class="mf">
-          <label>Date</label>
-          <input type="date" id="meta-date">
+        <div class="mock-row">
+          <div class="mock-ic"><svg data-lucide="users" width="16" height="16"></svg></div>
+          <div class="mock-line"><b>Visitor Experience</b><span>Customer Service</span></div>
+          <div class="mock-score">88%</div>
         </div>
-        <div class="mf">
-          <label>Inspection Type</label>
-          <select id="meta-type">
-            <option value="">Select type…</option>
-            <option value="BOQI">Beginning of Quarter Inspection (BOQI)</option>
-            <option value="Follow-up">Follow-up and Edit</option>
-            <option value="EOQI">End of Quarter Inspection (EOQI)</option>
-          </select>
-        </div>
-        <div class="mf">
-          <label>Division Name</label>
-          <select id="meta-division">
-            <option value="">Select division…</option>
-            <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
-            <option>SAOSD</option><option>NAOSD</option><option>RYOSD</option>
-          </select>
+        <div class="mock-row">
+          <div class="mock-ic"><svg data-lucide="trending-up" width="16" height="16"></svg></div>
+          <div class="mock-line"><b>Overall Performance</b><span>All Divisions</span></div>
+          <div class="mock-score">92%</div>
         </div>
       </div>
-      <div class="rscale">
-        <span style="font-size:.65rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.12em;font-weight:700;align-self:center">Rating Scale:</span>
-        <div class="rc"><strong>91–100</strong> Excellent</div>
-        <div class="rc"><strong>81–90</strong> Good</div>
-        <div class="rc"><strong>71–80</strong> Acceptable</div>
-        <div class="rc"><strong>51–70</strong> Poor</div>
-        <div class="rc"><strong>0–50</strong> Critical</div>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
-        <button class="btn bt" onclick="startNewInspection()">Start New Inspection</button>
-      </div>
-    </div>
-
-    <div id="insp-panel">
-      <span class="ip-label">Active Inspector:</span>
-      <div id="insp-chips"></div>
-      <button id="add-insp-btn" onclick="openAddInspector()">+ Add Inspector</button>
-    </div>
-
-    <div id="spell-banner">
-      <span class="sb-title">Possible spelling issues detected:</span>
-      <div id="spell-issues"></div>
-      <span class="sb-clear" onclick="dismissSpell()">Dismiss</span>
-    </div>
-
-    <div id="history-section">
-      <div class="hist-hdr">
-        <h3><svg data-lucide="clock" width="18" height="18"></svg> Inspection History</h3>
-        <div style="display:flex;align-items:center;gap:12px">
-          <div id="hist-summary" style="font-size:.78rem;color:var(--muted);font-weight:600"></div>
-          <button class="btn br" style="padding:6px 14px;font-size:.76rem" onclick="exportAllCSV()" title="Download all inspections as a CSV file (opens in Excel)">
-            <svg data-lucide="download" width="14" height="14"></svg> Export CSV
-          </button>
-        </div>
-      </div>
-      <div class="hist-filters">
-        <select id="hf-insp" onchange="renderHistory()"><option value="">All Inspectors</option></select>
-        <select id="hf-month" onchange="renderHistory()"><option value="">All Months</option></select>
-        <select id="hf-div" onchange="renderHistory()"><option value="">All Divisions</option>
-          <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
-          <option>SAOSD</option><option>NAOSD</option><option>RYOSD</option>
-        </select>
-        <select id="hf-building" onchange="renderHistory()"><option value="">All Buildings</option></select>
-        <select id="hf-type" onchange="renderHistory()"><option value="">All Types</option>
-          <option value="BOQI">BOQI</option>
-          <option value="Follow-up">Follow-up</option>
-          <option value="EOQI">EOQI</option>
-        </select>
-        <input type="text" id="hf-search" placeholder="Search…" oninput="renderHistory()" style="min-width:120px">
-      </div>
-      <div id="hist-list"><div class="no-hist">No inspections saved yet. Complete an inspection and save it from the Score Card page.</div></div>
-    </div>
-
-    <!-- CHARTS SECTION -->
-    <div id="charts-section">
-      <div class="hist-hdr">
-        <h3><svg data-lucide="bar-chart-2" width="18" height="18"></svg> Analytics & Charts</h3>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn bt" style="padding:6px 16px;font-size:.78rem" onclick="generateChart()">
-            <svg data-lucide="refresh-cw" width="13" height="13"></svg> Generate Chart
-          </button>
-          <button class="btn br" style="padding:6px 16px;font-size:.78rem" id="btn-export-chart" onclick="exportChart()" disabled title="Generate a chart first">
-            <svg data-lucide="download" width="13" height="13"></svg> Export Chart
-          </button>
-        </div>
-      </div>
-
-      <!-- Filters -->
-      <div class="chart-filters">
-        <select id="cf-insp"><option value="">All Inspectors</option></select>
-        <select id="cf-year"><option value="">All Years</option></select>
-        <select id="cf-month"><option value="">All Months</option></select>
-        <select id="cf-div"><option value="">All Divisions</option>
-          <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
-          <option>SAOSD</option><option>NAOSD</option><option>RYOSD</option>
-        </select>
-        <select id="cf-building"><option value="">All Buildings</option></select>
-        <select id="cf-type"><option value="">All Types</option>
-          <option value="BOQI">BOQI</option>
-          <option value="Follow-up">Follow-up</option>
-          <option value="EOQI">EOQI</option>
-        </select>
-      </div>
-
-      <!-- Chart type selector -->
-      <div class="chart-type-row">
-        <button class="ct-btn active" data-chart="scores" onclick="selectChartType(this)">Scores Over Time</button>
-        <button class="ct-btn" data-chart="sections" onclick="selectChartType(this)">Section Breakdown</button>
-        <button class="ct-btn" data-chart="bybuilding" onclick="selectChartType(this)">Score by Building</button>
-        <button class="ct-btn" data-chart="bydivision" onclick="selectChartType(this)">Score by Division</button>
-        <button class="ct-btn" data-chart="bytype" onclick="selectChartType(this)">BOQI vs EOQI</button>
-        <button class="ct-btn" data-chart="stddev" onclick="selectChartType(this)">Division Std Deviation</button>
-      </div>
-
-      <!-- Canvas -->
-      <div id="charts-canvas-wrap">
-        <canvas id="main-chart"></canvas>
-        <div id="chart-empty" class="show">Select filters and click <strong>Generate Chart</strong> to visualise your inspection data.</div>
-      </div>
-
-      <!-- Stats row -->
-      <div class="chart-stats-row" id="chart-stats"></div>
     </div>
   </div>
+</section>
 
-  <!-- SECTION PAGES built by JS -->
-  <div id="secs-container"></div>
-
-  <!-- SCORECARD -->
-  <div class="page" id="pg-scorecard">
-    <div class="sc-hero">
-      <div style="flex:1">
-        <h2>Facility Experience Journey Map Score Card</h2>
-        <p id="sc-meta-sub">Complete all sections to view results</p>
-        <div class="sc-header-grid" id="sc-header-grid"></div>
-      </div>
-      <div class="s-ring">
-        <div class="sn2" id="sc-total">–</div>
-        <div class="sd">/100</div>
-        <div class="sg" id="sc-grade">–</div>
-      </div>
+<section id="features">
+  <div class="section-head">
+    <span class="eyebrow">Features</span>
+    <h2>Everything quality teams need, in one place</h2>
+    <p>Purpose-built to make facility inspections faster and more precise.</p>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <div class="ic"><svg data-lucide="clipboard-list" width="20" height="20"></svg></div>
+      <h3>Structured Checklists</h3>
+      <p>Inspection forms organized by section and item, with instant scoring for every entry.</p>
     </div>
-    <div class="sleg">
-      <div class="slc"><div class="slb" style="background:#00843D"></div><div><div class="slr">91–100</div><div class="slg">Excellent</div><div class="sld">Exceeds international best practices</div></div></div>
-      <div class="slc"><div class="slb" style="background:#26A8AB"></div><div><div class="slr">81–90</div><div class="slg">Good</div><div class="sld">Fully compliant, minor optimization possible</div></div></div>
-      <div class="slc"><div class="slb" style="background:#D48000"></div><div><div class="slr">71–80</div><div class="slg">Acceptable</div><div class="sld">Minimum compliance met</div></div></div>
-      <div class="slc"><div class="slb" style="background:#C0392B"></div><div><div class="slr">51–70</div><div class="slg">Poor</div><div class="sld">Partial compliance, corrective action needed</div></div></div>
-      <div class="slc"><div class="slb" style="background:#6B0000"></div><div><div class="slr">0–50</div><div class="slg">Critical</div><div class="sld">Non-compliant, immediate action required</div></div></div>
+    <div class="card">
+      <div class="ic"><svg data-lucide="bar-chart-2" width="20" height="20"></svg></div>
+      <h3>Analytics Dashboard</h3>
+      <p>Visual summaries of inspection results that surface areas for improvement right away.</p>
     </div>
-    <div class="stbl">
-      <div class="sth"><div>Section</div><div>Score</div><div>Progress</div><div>Grade</div></div>
-      <div id="sc-rows"></div>
+    <div class="card">
+      <div class="ic"><svg data-lucide="download" width="20" height="20"></svg></div>
+      <h3>Report Exports</h3>
+      <p>Export the full record set as CSV in one click for sharing or archiving.</p>
     </div>
-    <div style="background:#fffbeb;border:1px solid #f0c040;border-left:4px solid #D48000;border-radius:var(--r);padding:12px 15px;font-size:.82rem;color:#6b4200;margin-bottom:16px">
-      Areas requiring attention and improvement must be rectified and documented before the next inspection.
-    </div>
-    <div class="save-notice" id="save-notice">
-      <svg data-lucide="info" width="18" height="18" style="color:var(--teal)"></svg>
-      <div><strong style="display:block;margin-bottom:2px;color:var(--royal)">Save required to complete this report</strong>
-      You must save this inspection to history before exporting the PDF. This ensures all records are stored and traceable.</div>
-    </div>
-    <!-- Normal mode actions -->
-    <div class="abar" id="abar-normal">
-      <button class="btn bt" onclick="saveInspection()" id="btn-save">Save to History</button>
-      <button class="btn br" onclick="exportPDF()" id="btn-pdf" disabled title="Save to history first">Export PDF</button>
-      <button class="btn bo" onclick="resetForm()">New Inspection</button>
-    </div>
-    <!-- Edit mode actions — shown instead when editing a saved record -->
-    <div class="abar" id="abar-edit" style="display:none;flex-direction:column;gap:10px">
-      <div class="edit-abar-hint">
-        <svg data-lucide="info" width="15" height="15" style="color:#D48000;flex-shrink:0"></svg>
-        You are editing a saved report. Choose how to save your changes:
-      </div>
-      <div style="display:flex;gap:9px;flex-wrap:wrap">
-        <button class="btn bt" onclick="openSaveChoice()" id="btn-save-edit">Save Changes</button>
-        <button class="btn br" onclick="exportPDF()" id="btn-pdf-edit" disabled title="Save first">Export PDF</button>
-        <button class="btn bo" onclick="cancelEdit()">Cancel Edit</button>
-      </div>
+    <div class="card">
+      <div class="ic"><svg data-lucide="cloud" width="20" height="20"></svg></div>
+      <h3>Reliable Cloud Storage</h3>
+      <p>All data is stored in the cloud and reaches your team the moment it's entered, from anywhere.</p>
     </div>
   </div>
-</main>
+</section>
 
-<!-- Add Inspector Modal -->
-<div class="modal-bg" id="modal-add-insp">
-  <div class="modal-box">
-    <h3>Add New Inspector</h3>
-    <p class="msub">Enter the full name of the new inspector. They will be added to the list permanently.</p>
-    <input type="text" id="new-insp-name" placeholder="Full name…" onkeydown="if(event.key==='Enter')confirmAddInspector()">
-    <div class="mbtns">
-      <button class="btn bt" onclick="confirmAddInspector()">Add Inspector</button>
-      <button class="btn bo" onclick="closeModal('modal-add-insp')">Cancel</button>
+<section id="how">
+  <div class="section-head">
+    <span class="eyebrow">How it works</span>
+    <h2>Three simple steps</h2>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <h4>Pick the facility & division</h4>
+      <p>Select the inspection type and target facility from the sidebar.</p>
+    </div>
+    <div class="step">
+      <h4>Score each item</h4>
+      <p>Rate every checklist item and add notes wherever needed.</p>
+    </div>
+    <div class="step">
+      <h4>Review & export</h4>
+      <p>Track the overall score instantly, then export the report when you're done.</p>
     </div>
   </div>
-</div>
+</section>
 
-
-<!-- Save choice modal (edit mode) -->
-<div class="modal-bg" id="modal-save-choice">
-  <div class="modal-box" style="width:480px">
-    <h3>How would you like to save?</h3>
-    <p class="msub">You have edited a previously saved report. Choose one of the options below.</p>
-    <div class="choice-cards">
-      <div class="choice-card selected" id="choice-update" onclick="selectSaveChoice('update')">
-        <span class="choice-tag tag-update">Update</span>
-        <h4>Update Existing Report</h4>
-        <p>Overwrite the original saved record with your changes. The report name and date stay the same.</p>
-      </div>
-      <div class="choice-card" id="choice-eoqi" onclick="selectSaveChoice('eoqi')">
-        <span class="choice-tag tag-eoqi">New — EOQI</span>
-        <h4>Save as New Report (EOQI)</h4>
-        <p>Save a brand new End of Quarter Inspection (EOQI) record. Today's date is applied and a new report name is generated. The original record is kept unchanged.</p>
-      </div>
-    </div>
-    <div class="mbtns">
-      <button class="btn bt" onclick="confirmSaveChoice()" id="btn-confirm-save">Save</button>
-      <button class="btn bo" onclick="closeModal('modal-save-choice')">Cancel</button>
-    </div>
+<section>
+  <div class="cta">
+    <h2>Ready to run your first inspection?</h2>
+    <p>Open the app now and start documenting your facility's quality in minutes.</p>
+    <a class="btn btn-primary" href="app.html">Open the App</a>
   </div>
-</div>
+</section>
 
-<!-- Lightbox -->
-<div id="lb">
-  <span id="lb-x" onclick="closeLB()"><svg data-lucide="x" width="20" height="20" style="color:#fff"></svg></span>
-  <img id="lb-img" src="" alt="">
-</div>
-
-<!-- History detail modal -->
-<div id="hd-modal">
-  <div id="hd-inner">
-    <div style="display:flex;justify-content:flex-start;align-items:flex-start;margin-bottom:8px;gap:12px">
-      <div><h2 id="hd-title">–</h2><div class="hd-meta-line" id="hd-meta">–</div></div>
-      <button class="btn bo" style="flex-shrink:0" onclick="closeHistDetail()">Close</button>
-    </div>
-    <div id="hd-body"></div>
-  </div>
-</div>
+<footer>
+  Facility Experience Quality Assurance — © <span id="yr"></span>
+</footer>
 
 <script>
-// ═══════════════════════════════════════════════════════════
-// API CONFIG  (Cloudflare D1 via same-origin Worker)
-// ═══════════════════════════════════════════════════════════
-const API_BASE = '/api';
-
-async function apiFetch(method, path, body){
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if(body) opts.body = JSON.stringify(body);
-  const res = await fetch(API_BASE + path, opts);
-  if(!res.ok){
-    let msg = await res.text();
-    try{ msg = JSON.parse(msg).error || msg; }catch(_){}
-    throw new Error(msg || ('HTTP ' + res.status));
-  }
-  const txt = await res.text();
-  return txt ? JSON.parse(txt) : null;
-}
-
-// ═══════════════════════════════════════════════════════════
-// SECTION DEFINITIONS
-// scoringMode: '01' = 0/1  |  '02' = 0/2
-// ═══════════════════════════════════════════════════════════
-const SECTIONS=[
-  {id:'s0',lucide:'car',title:'Arrival & Parking',max:10,scoringMode:'01',
-   items:['Directional signage (availability & condition)','Parking surface condition (no cracks, potholes, or oil spills)','Availability of handicap parking','Availability of accessibility ramps','Parking bumpers condition','Parking shade condition','Street/parking paint condition','Curbs, pathways & pavements condition','Clear crossways','Garbage cans (availability & condition)']},
-  {id:'s1',lucide:'tree-deciduous',title:'Landscape',max:10,scoringMode:'01',
-   items:['Availability','Landscape design & visual quality','Plant health and condition','Accessibility & user experience','Safety & risk management','Maintenance','General cleanliness','Curbs, pathways & pavements condition','Odor-free environment','No water pooling or runoff']},
-  {id:'s2',lucide:'door-open',title:'Entrance & Lobby',max:10,scoringMode:'01',
-   items:['Cleanliness of floors, walls, and glass','Accessible entry points','Comfortable temperature and ventilation','Clear internal wayfinding signage','Lighting condition','General interior condition','Available seating area','Seating area condition','Skylight or ceiling condition','Building Services contact number displayed']},
-  {id:'s3',lucide:'utensils',title:'Food & Concession',max:10,scoringMode:'02',
-   items:['Availability of food and beverages at all times','Food quality, safety, and hygiene','Equipment safety and compliance','Payment systems are operational','Accessibility of the location']},
-  {id:'s4',lucide:'arrow-up-down',title:'Elevators & Corridors',max:10,scoringMode:'01',
-   items:['Elevators are operational and reliable','Elevator interiors are clean','Corridors are unobstructed','Adequate corridor lighting','Clear directional and floor signage','Functional emergency lighting','Emergency evacuation plan displayed','Ceiling, window, and glass panel condition','Indoor plants availability & condition','Staircase condition']},
-  {id:'s5',lucide:'briefcase',title:'Workspaces',max:10,scoringMode:'01',
-   items:['General office condition','Work areas are clean and organized','Waste bins and recycling stations are available','Lighting suitable for work tasks','Indoor air quality & temperature are acceptable','Electrical equipment safety & cable management','Floor & carpet condition','Emergency exit accessibility','Fire extinguishers & safety signs present','Meeting room AV equipment is functional with adequate seating']},
-  {id:'s6',lucide:'shield-check',title:'Health, Safety & Emergency Readiness',max:10,scoringMode:'01',
-   items:['Fire extinguishers available & inspected','First aid kits stocked','Electrical equipment safety','Power outlets are covered and secure','List of floor wardens displayed','AED machine available, visible, and functional','Emergency exits are visible & unobstructed','Emergency contact numbers are visible and displayed','Evacuation plans displayed','Caution signs present where needed']},
-  {id:'s7',lucide:'droplets',title:'Washrooms / Bathrooms',max:10,scoringMode:'01',
-   items:['General cleanliness maintained','Cleaning schedule/log available and up to date','No unpleasant odors','Soap, tissue, and sanitizer available','Hand dryers / paper towels available and working','Floors are dry and non-slip','Plumbing is in good condition (no leaks or corrosion)','Color-coding protocol followed','Cleaning procedure followed','Ventilation is functional']},
-  {id:'s8',lucide:'wrench',title:'Maintenance',max:10,scoringMode:'01',
-   items:['Building façade condition (no cracks, holes, or fading)','Wall condition (no cracks, fading, or stains)','Floor condition (tiles, carpet, or ceramic)','Ceiling condition (no cracks or damaged tiles)','Lighting condition (bulbs, spotlights, and emergency lights)','Electrical outlets & switches condition','Door condition (hinges, locks, and alignment)','Window condition','Glass panel condition','Fire control panel in normal operating state']},
-  {id:'s9',lucide:'clipboard-list',title:'Miscellaneous',max:10,scoringMode:'02',
-   items:['Janitorial staff appearance & hygiene','Building Services staff helpfulness','Musalla availability and condition','Break room / coffee area condition','Storage areas are organized and in good condition']},
-];
-
-// ═══════════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════════
-const DEFAULT_INSPECTORS=['Saad AlJubairah','Saad AlSaleh','Ali AlYami','Arsalan Saud'];
-let inspectors = JSON.parse(localStorage.getItem('qa_inspectors')||'null');
-if(!inspectors){ inspectors=[...DEFAULT_INSPECTORS]; localStorage.setItem('qa_inspectors',JSON.stringify(inspectors)); }
-DEFAULT_INSPECTORS.forEach(d=>{ if(!inspectors.includes(d)) inspectors.unshift(d); });
-
-let activeInspector = inspectors[0];
-let history = []; // loaded from the database
-let allState = {};
-let currentReportSaved = false;
-let editingRecordId = null;
-let saveChoiceMode = 'update';
-let dbOnline = false;
-
-function getState(insp){
-  if(!allState[insp]) allState[insp]={
-    scores:  SECTIONS.map(s=>s.items.map(()=>null)),
-    comments:SECTIONS.map(s=>s.items.map(()=>'')),
-    photos:  SECTIONS.map(s=>s.items.map(()=>[])),
-    notes:   SECTIONS.map(()=>''),
-  };
-  return allState[insp];
-}
-function curState(){ return getState(activeInspector); }
-function saveInspectorList(){ localStorage.setItem('qa_inspectors',JSON.stringify(inspectors)); }
-
-// ═══════════════════════════════════════════════════════════
-// LOADING OVERLAY
-// ═══════════════════════════════════════════════════════════
-function showOverlay(msg){ 
-  document.getElementById('co-msg').textContent=msg||'Loading…';
-  document.getElementById('cloud-overlay').classList.add('show');
-}
-function hideOverlay(){ document.getElementById('cloud-overlay').classList.remove('show'); }
-
-function setSyncChip(state, msg){
-  const chip=document.getElementById('sync-chip');
-  const dot=document.getElementById('conn-dot');
-  chip.className='';chip.id='sync-chip';
-  if(state==='ok'){    chip.classList.add('ok');   chip.innerHTML='&#10003; '+msg; dot.className='online'; dbOnline=true; }
-  if(state==='sync'){  chip.classList.add('syncing'); chip.innerHTML='&#8635; '+msg; dot.className=''; dbOnline=true; }
-  if(state==='err'){   chip.classList.add('err');  chip.innerHTML='&#9888; '+msg; dot.className='offline'; dbOnline=false; }
-}
-
-// ═══════════════════════════════════════════════════════════
-// DATABASE CRUD
-// ═══════════════════════════════════════════════════════════
-async function dbLoadHistory(){
-  return await apiFetch('GET', '/inspections', null) || [];
-}
-
-async function dbInsert(record){
-  await apiFetch('POST', '/inspections', record);
-}
-
-async function dbUpdate(record){
-  await apiFetch('PATCH', '/inspections/' + record.id, record);
-}
-
-async function dbDelete(id){
-  await apiFetch('DELETE', '/inspections/' + id, null);
-}
-
-function exportAllCSV(){
-  window.location.href = API_BASE + '/export.csv';
-}
-
-// ═══════════════════════════════════════════════════════════
-// SPELL CHECK
-// ═══════════════════════════════════════════════════════════
-const DOMAIN_WORDS=new Set(['aed','hvac','cctv','wifi','wi-fi','av','osd','boqi','eoqi','caosd','nposd','oosd','saosd','naosd','ryosd','musalla','janitorial','wayfinding','signage','anti-slip','non-slip','extinguisher','extinguishers','warden','wardens','accessibility','concession','facade','corrosion','evacuation','sanitizer','duct','conduit']);
-const spellIssues={};
-function checkSpell(val,si,ii,el){
-  const key=`${si}-${ii}`;
-  const words=val.trim().split(/\s+/);
-  let bad=false;
-  words.forEach(raw=>{
-    const w=raw.replace(/[^a-zA-Z'-]/g,'').toLowerCase();
-    if(w.length<3||DOMAIN_WORDS.has(w)) return;
-    if(/(.)\1{2,}/.test(w)){bad=true;spellIssues[key]={word:raw,si,ii,el};}
-  });
-  if(!bad) delete spellIssues[key];
-  el.classList.toggle('has-error',bad);
-  renderSpellBanner();
-}
-function renderSpellBanner(){
-  const issues=Object.values(spellIssues);
-  const banner=document.getElementById('spell-banner');
-  const cont=document.getElementById('spell-issues');
-  if(!issues.length){banner.classList.remove('show');return;}
-  banner.classList.add('show');cont.innerHTML='';
-  issues.slice(0,6).forEach(issue=>{
-    const chip=document.createElement('span');chip.className='spell-issue';
-    chip.textContent='"'+issue.word+'" (S'+(issue.si+1)+' #'+(issue.ii+1)+')';
-    chip.onclick=()=>{nav('pg-s'+issue.si);setTimeout(()=>{const e=document.getElementById('cmt-'+issue.si+'-'+issue.ii);if(e){e.focus();e.select();}},300);};
-    cont.appendChild(chip);
-  });
-}
-function dismissSpell(){
-  Object.keys(spellIssues).forEach(k=>delete spellIssues[k]);
-  document.querySelectorAll('.has-error').forEach(e=>e.classList.remove('has-error'));
-  document.getElementById('spell-banner').classList.remove('show');
-}
-
-// ═══════════════════════════════════════════════════════════
-// BUILD SECTIONS
-// ═══════════════════════════════════════════════════════════
-function buildSections(){
-  const cont=document.getElementById('secs-container');
-  SECTIONS.forEach((sec,si)=>{
-    const mode=sec.scoringMode;
-    const scoreDesc=mode==='02'?'0 or 2 per item':'0 or 1 per item';
-    const pg=document.createElement('div');
-    pg.className='page sp';pg.id='pg-s'+si;
-    pg.innerHTML=`
-      <div class="sh">
-        <div class="si-icon"><svg data-lucide="${sec.lucide}" width="22" height="22"></svg></div>
-        <div><h2>${sec.title}</h2><div class="sdesc">${sec.items.length} items · Max ${sec.max} pts · Scored ${scoreDesc}</div></div>
-        <div class="sbadge"><div class="sbt">Total Score</div><div class="sbn" id="badge-${si}">–/${sec.max}</div></div>
-      </div>
-      <div class="val-alert" id="val-${si}"></div>
-      <div class="cl" id="cl-${si}"></div>
-      <div class="sn"><label>Section Notes</label>
-        <textarea id="snote-${si}" placeholder="Add overall section notes…" oninput="curState().notes[${si}]=this.value"></textarea>
-      </div>
-      <div class="abar">
-        ${si>0?`<button class="btn bo" onclick="nav('pg-s${si-1}')">Previous</button>`:''}
-        ${si<SECTIONS.length-1
-          ?`<button class="btn bt" id="next-btn-${si}" onclick="tryNext(${si})">Next Section</button>`
-          :`<button class="btn bt" id="next-btn-${si}" onclick="tryNext(${si})">View Score Card</button>`}
-      </div>`;
-    const cl=pg.querySelector(`#cl-${si}`);
-    sec.items.forEach((item,ii)=>{
-      const card=document.createElement('div');
-      card.className='ci';card.id=`ci-${si}-${ii}`;
-      const btn0=`<button class="sb" id="sb-${si}-${ii}-0" onclick="setScore(${si},${ii},0)" title="Non-compliant (0)">0</button>`;
-      const btn1=mode==='01'?`<button class="sb" id="sb-${si}-${ii}-1" onclick="setScore(${si},${ii},1)" title="Compliant (1)">1</button>`:'';
-      const btn2=mode==='02'?`<button class="sb" id="sb-${si}-${ii}-2" onclick="setScore(${si},${ii},2)" title="Compliant (2)">2</button>`:'';
-      card.innerHTML=`
-        <div class="ci-head">
-          <div class="in">${ii+1}</div><div class="il">${item}</div>
-          <div class="ss">${btn0}${btn1}${btn2}</div>
-        </div>
-        <div class="ci-body">
-          <div class="cmt-wrap">
-            <input type="text" id="cmt-${si}-${ii}" placeholder="Comments…" spellcheck="true"
-              oninput="curState().comments[${si}][${ii}]=this.value;checkSpell(this.value,${si},${ii},this);updateCommentHint(${si},${ii})">
-            <div class="cmt-required-hint" id="hint-${si}-${ii}">Comment required when score is 0</div>
-          </div>
-          <div class="photo-area">
-            <div class="photo-btns">
-              <label class="ph-btn" title="Select from photo library">
-                <svg data-lucide="image" width="15" height="15"></svg> Upload Photo
-                <input type="file" accept="image/*" multiple onchange="addPhotos(event,${si},${ii})">
-              </label>
-              <label class="ph-btn" title="Take a live photo">
-                <svg data-lucide="camera" width="15" height="15"></svg> Take Photo
-                <input type="file" accept="image/*" capture="environment" onchange="addPhotos(event,${si},${ii})">
-              </label>
-            </div>
-            <div class="ph-thumbs" id="ph-${si}-${ii}"></div>
-          </div>
-        </div>`;
-      cl.appendChild(card);
-    });
-    cont.appendChild(pg);
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
-// VALIDATION
-// ═══════════════════════════════════════════════════════════
-function validateSection(si){
-  const sec=SECTIONS[si];const st=curState();const errors=[];
-  sec.items.forEach((item,ii)=>{
-    const score=st.scores[si][ii];
-    if(score===null) errors.push({ii,type:'missing',label:item});
-    else if(score===0&&!st.comments[si][ii].trim()) errors.push({ii,type:'comment',label:item});
-  });
-  return errors;
-}
-function tryNext(si){
-  const errors=validateSection(si);
-  const alert=document.getElementById(`val-${si}`);
-  if(errors.length===0){ alert.classList.remove('show'); nav(si<SECTIONS.length-1?'pg-s'+(si+1):'pg-scorecard'); return; }
-  let html='<strong>Please complete the following before proceeding:</strong><ul>';
-  errors.forEach(e=>{
-    html+=`<li onclick="focusItem(${si},${e.ii})">${e.type==='missing'?'Score not selected':'Comment required for score 0'} — Item ${e.ii+1}: "${e.label}"</li>`;
-  });
-  html+='</ul>';
-  alert.innerHTML=html;alert.classList.add('show');
-  alert.scrollIntoView({behavior:'smooth',block:'nearest'});
-  SECTIONS[si].items.forEach((_,ii)=>{
-    const ciEl=document.getElementById(`ci-${si}-${ii}`);if(!ciEl) return;
-    const score=curState().scores[si][ii];
-    ciEl.classList.toggle('needs-comment',(score===null)||(score===0&&!curState().comments[si][ii].trim()));
-  });
-}
-function focusItem(si,ii){
-  const el=document.getElementById(`cmt-${si}-${ii}`);
-  if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus();}
-}
-function updateCommentHint(si,ii){
-  const score=curState().scores[si][ii];
-  const comment=curState().comments[si][ii]||'';
-  const hint=document.getElementById(`hint-${si}-${ii}`);
-  const ciEl=document.getElementById(`ci-${si}-${ii}`);
-  const need=(score===0&&!comment.trim());
-  if(hint) hint.classList.toggle('show',need);
-  if(ciEl) ciEl.classList.toggle('needs-comment',need);
-}
-
-// ═══════════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════════
-function nav(pageId){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById(pageId).classList.add('active');
-  document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('active',n.dataset.page===pageId));
-  if(pageId==='pg-scorecard') updateScoreCard();
-  if(pageId==='pg-home'){renderHistory();renderSpellBanner();}
-  if(pageId.startsWith('pg-s')) syncFormToState();
-  document.getElementById('main').scrollTo(0,0);
-}
-
-// ═══════════════════════════════════════════════════════════
-// SYNC FORM ↔ STATE
-// ═══════════════════════════════════════════════════════════
-function syncFormToState(){
-  const st=curState();
-  SECTIONS.forEach((sec,si)=>{
-    const mode=sec.scoringMode;
-    const vals=mode==='02'?[0,2]:[0,1];
-    sec.items.forEach((_,ii)=>{
-      vals.forEach(v=>{
-        const b=document.getElementById(`sb-${si}-${ii}-${v}`);
-        if(b){b.classList.remove('s0','s1','s2');if(st.scores[si][ii]===v)b.classList.add('s'+v);}
-      });
-      const cmt=document.getElementById(`cmt-${si}-${ii}`);
-      if(cmt) cmt.value=st.comments[si][ii]||'';
-      renderPhotos(si,ii);updateCommentHint(si,ii);
-    });
-    const nt=document.getElementById(`snote-${si}`);
-    if(nt) nt.value=st.notes[si]||'';
-    updateSectionBadge(si);
-    const va=document.getElementById(`val-${si}`);
-    if(va) va.classList.remove('show');
-  });
-  updateProgress();updateSidebar();
-}
-
-// ═══════════════════════════════════════════════════════════
-// SCORING
-// ═══════════════════════════════════════════════════════════
-function setScore(si,ii,val){
-  curState().scores[si][ii]=val;
-  currentReportSaved=false;updatePDFButton();
-  const mode=SECTIONS[si].scoringMode;
-  const vals=mode==='02'?[0,2]:[0,1];
-  vals.forEach(v=>{
-    const b=document.getElementById(`sb-${si}-${ii}-${v}`);
-    if(b){b.classList.remove('s0','s1','s2');if(v===val)b.classList.add('s'+v);}
-  });
-  updateSectionBadge(si);updateProgress();updateSidebar();updateCommentHint(si,ii);
-  if(val!==0){const ci=document.getElementById(`ci-${si}-${ii}`);if(ci)ci.classList.remove('needs-comment');}
-}
-function getSecScore(si,insp){
-  const st=insp?getState(insp):curState();
-  const mode=SECTIONS[si].scoringMode;
-  const maxPerItem=mode==='02'?2:1;
-  let sum=0,answered=0;
-  st.scores[si].forEach(v=>{if(v!==null){sum+=v;answered++;}});
-  const rawMax=SECTIONS[si].items.length*maxPerItem;
-  const normalised=rawMax>0?Math.round((sum/rawMax)*SECTIONS[si].max*10)/10:0;
-  return{total:normalised,answered,max:SECTIONS[si].max};
-}
-function updateSectionBadge(si){
-  const{total,answered,max}=getSecScore(si);
-  const b=document.getElementById(`badge-${si}`);if(b)b.textContent=answered>0?`${total}/${max}`:`–/${max}`;
-  const n=document.getElementById(`ns-${si}`);if(n)n.textContent=answered>0?`${total}/${max}`:`–/${max}`;
-}
-function updateProgress(){
-  let total=0,answered=0;
-  SECTIONS.forEach((_,si)=>{total+=SECTIONS[si].items.length;curState().scores[si].forEach(v=>{if(v!==null)answered++;});});
-  const pct=Math.round(answered/total*100);
-  document.getElementById('pf').style.width=pct+'%';
-  document.getElementById('pp').textContent=pct+'%';
-}
-function updateSidebar(){
-  let t=0;SECTIONS.forEach((_,si)=>t+=getSecScore(si).total);
-  const o=Math.round(t);
-  document.getElementById('sb-overall').textContent=o;
-  document.getElementById('sb-grade').textContent=grade(o).label;
-}
-function grade(s){
-  if(s>=91)return{label:'Excellent',cls:'ge',color:'#00843D'};
-  if(s>=81)return{label:'Good',cls:'gg',color:'#26A8AB'};
-  if(s>=71)return{label:'Acceptable',cls:'ga',color:'#D48000'};
-  if(s>=51)return{label:'Poor',cls:'gpo',color:'#C0392B'};
-  return{label:'Critical',cls:'gcr',color:'#6B0000'};
-}
-
-// ═══════════════════════════════════════════════════════════
-// SCORECARD
-// ═══════════════════════════════════════════════════════════
-function updateScoreCard(){
-  let grand=0;
-  const rows=document.getElementById('sc-rows');rows.innerHTML='';
-  SECTIONS.forEach((sec,si)=>{
-    const{total,max}=getSecScore(si);grand+=total;
-    const pct=Math.round(total/max*100);const g=grade(pct);
-    const row=document.createElement('div');row.className='str';
-    row.innerHTML=`<div class="snm">${sec.title}</div>
-      <div><strong>${total}</strong>/${max}</div>
-      <div><div class="bw"><div class="bf" style="width:${pct}%;background:${g.color}"></div></div></div>
-      <div><span class="gp ${g.cls}">${g.label}</span></div>`;
-    rows.appendChild(row);
-  });
-  const overall=Math.round(grand);const og=grade(overall);
-  document.getElementById('sc-total').textContent=overall;
-  document.getElementById('sc-grade').textContent=og.label;
-  const insp=activeInspector;
-  const fac=document.getElementById('meta-facility').value||'—';
-  const div=document.getElementById('meta-division').value||'—';
-  const dt=document.getElementById('meta-date').value||'—';
-  const tv=document.getElementById('meta-type').value;
-  const tl=tv==='BOQI'?'BOQI':tv==='EOQI'?'EOQI':tv==='Follow-up'?'Follow-up':'—';
-  const grid=document.getElementById('sc-header-grid');
-  grid.innerHTML=[{l:'Inspector',v:insp},{l:'Building',v:fac},{l:'Division',v:div},{l:'Date',v:dt},{l:'Type',v:tl}]
-    .map(f=>`<div class="sc-hf"><span class="sc-hl">${f.l}</span><span class="sc-hv">${f.v}</span></div>`).join('');
-  document.getElementById('sc-meta-sub').textContent='';
-  updatePDFButton();updateScoreCardActionBar();
-}
-function updatePDFButton(){
-  const enabled=currentReportSaved;
-  ['btn-pdf','btn-pdf-edit'].forEach(id=>{
-    const btn=document.getElementById(id);
-    if(btn){btn.disabled=!enabled;btn.title=enabled?'':'Save first';}
-  });
-  const notice=document.getElementById('save-notice');
-  if(notice) notice.style.display=enabled?'none':'flex';
-}
-function updateScoreCardActionBar(){
-  const isEdit=editingRecordId!==null;
-  const normal=document.getElementById('abar-normal');
-  const edit=document.getElementById('abar-edit');
-  if(normal) normal.style.display=isEdit?'none':'flex';
-  if(edit)   edit.style.display=isEdit?'flex':'none';
-  lucide.createIcons({nodes:[document.getElementById('pg-scorecard')]});
-}
-
-// ═══════════════════════════════════════════════════════════
-// PHOTOS
-// ═══════════════════════════════════════════════════════════
-function addPhotos(e,si,ii){
-  Array.from(e.target.files).forEach(f=>{
-    const r=new FileReader();
-    r.onload=ev=>{curState().photos[si][ii].push(ev.target.result);renderPhotos(si,ii);};
-    r.readAsDataURL(f);
-  });
-  e.target.value='';
-}
-function renderPhotos(si,ii){
-  const row=document.getElementById(`ph-${si}-${ii}`);if(!row)return;row.innerHTML='';
-  (curState().photos[si][ii]||[]).forEach((src,pi)=>{
-    const w=document.createElement('div');w.className='ptw';
-    w.innerHTML=`<img class="pt-img" src="${src}" onclick="openLB('${src}')"><button class="pt-rm" onclick="rmPhoto(${si},${ii},${pi})" title="Remove">×</button>`;
-    row.appendChild(w);
-  });
-}
-function rmPhoto(si,ii,pi){curState().photos[si][ii].splice(pi,1);renderPhotos(si,ii);}
-function openLB(src){document.getElementById('lb-img').src=src;document.getElementById('lb').classList.add('open');}
-function closeLB(){document.getElementById('lb').classList.remove('open');}
-
-// ═══════════════════════════════════════════════════════════
-// INSPECTORS
-// ═══════════════════════════════════════════════════════════
-function rebuildInspectorDropdown(){
-  const sel=document.getElementById('meta-inspector');sel.innerHTML='';
-  inspectors.forEach(name=>{
-    const o=document.createElement('option');o.value=name;o.textContent=name;
-    if(name===activeInspector)o.selected=true;sel.appendChild(o);
-  });
-}
-function onInspectorDropdownChange(){
-  activeInspector=document.getElementById('meta-inspector').value;
-  currentReportSaved=false;updatePDFButton();renderInspectorChips();syncFormToState();
-}
-function renderInspectorChips(){
-  const cont=document.getElementById('insp-chips');cont.innerHTML='';
-  inspectors.forEach(name=>{
-    const chip=document.createElement('div');
-    chip.className='insp-chip'+(name===activeInspector?' sel':'');
-    const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    const delBtn=` <button class="chip-del" title="Remove inspector" onclick="confirmDeleteInspector(event,'${name.replace(/'/g,"\\'")}')">✕</button>`;
-    chip.innerHTML=`<div class="av">${initials}</div>${name}${delBtn}`;
-    chip.onclick=(e)=>{if(e.target.closest('.chip-del'))return;activeInspector=name;document.getElementById('meta-inspector').value=name;currentReportSaved=false;updatePDFButton();renderInspectorChips();syncFormToState();};
-    cont.appendChild(chip);
-  });
-  const hfI=document.getElementById('hf-insp');const curV=hfI.value;
-  hfI.innerHTML='<option value="">All Inspectors</option>';
-  inspectors.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;hfI.appendChild(o);});
-  hfI.value=curV;
-}
-function openAddInspector(){
-  document.getElementById('new-insp-name').value='';
-  document.getElementById('modal-add-insp').classList.add('open');
-  setTimeout(()=>document.getElementById('new-insp-name').focus(),100);
-}
-function confirmAddInspector(){
-  const name=document.getElementById('new-insp-name').value.trim();if(!name)return;
-  if(!inspectors.includes(name)){inspectors.push(name);saveInspectorList();}
-  activeInspector=name;closeModal('modal-add-insp');rebuildInspectorDropdown();renderInspectorChips();syncFormToState();
-}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-
-function confirmDeleteInspector(e, name){
-  e.stopPropagation();
-  if(!confirm('Remove "'+name+'" from the inspector list?\n\nNote: Their saved inspection records will remain in history.')){return;}
-  if(activeInspector===name){
-    activeInspector=inspectors.find(i=>i!==name)||'';
-  }
-  inspectors=inspectors.filter(i=>i!==name);
-  saveInspectorList();
-  rebuildInspectorDropdown();
-  renderInspectorChips();
-  syncFormToState();
-}
-
-// ═══════════════════════════════════════════════════════════
-// FILENAME
-// ═══════════════════════════════════════════════════════════
-function buildFilenameFrom(typeVal, date, facility, division, inspector){
-  const month=(date||new Date().toISOString()).slice(0,7);
-  const tl=typeVal==='BOQI'?'BOQI':typeVal==='EOQI'?'EOQI':typeVal==='Follow-up'?'Follow-up':'Inspection';
-  const b=(facility||'Building').replace(/\s+/g,'-');
-  const d=(division||'').replace(/\s+/g,'-');
-  const i=(inspector||'Inspector').replace(/\s+/g,'-');
-  return [month,tl,b,d,i].filter(Boolean).join('_')+'.pdf';
-}
-
-// ═══════════════════════════════════════════════════════════
-// SAVE CHOICE MODAL (edit mode)
-// ═══════════════════════════════════════════════════════════
-function openSaveChoice(){
-  saveChoiceMode='update';selectSaveChoice('update');
-  document.getElementById('modal-save-choice').classList.add('open');
-  lucide.createIcons({nodes:[document.getElementById('modal-save-choice')]});
-}
-function selectSaveChoice(mode){
-  saveChoiceMode=mode;
-  document.getElementById('choice-update').classList.toggle('selected',mode==='update');
-  document.getElementById('choice-eoqi').classList.toggle('selected',mode==='eoqi');
-  const btn=document.getElementById('btn-confirm-save');
-  if(btn)btn.textContent=mode==='eoqi'?'Save as New EOQI Report':'Update Existing Report';
-}
-function confirmSaveChoice(){
-  closeModal('modal-save-choice');
-  if(saveChoiceMode==='eoqi') saveAsEOQI();
-  else saveInspection(true);
-}
-
-// ═══════════════════════════════════════════════════════════
-// BUILD RECORD OBJECT
-// ═══════════════════════════════════════════════════════════
-function buildRecord(overrideType){
-  let grand=0;SECTIONS.forEach((_,si)=>grand+=getSecScore(si).total);
-  const overall=Math.round(grand);
-  const typeVal=overrideType||document.getElementById('meta-type').value;
-  const typeLabel=typeVal==='BOQI'?'Beginning of Quarter Inspection (BOQI)':typeVal==='EOQI'?'End of Quarter Inspection (EOQI)':typeVal==='Follow-up'?'Follow-up and Edit':typeVal;
-  const date=overrideType?new Date().toISOString().slice(0,10):document.getElementById('meta-date').value||new Date().toISOString().slice(0,10);
-  const facility=document.getElementById('meta-facility').value||'Unknown';
-  const division=document.getElementById('meta-division').value||'';
-  const filename=buildFilenameFrom(typeVal,date,facility,division,activeInspector);
-  return{
-    id:Date.now(),inspector:activeInspector,facility,division,date,
-    type:typeVal,typeLabel,overall,filename,
-    sections:SECTIONS.map((sec,si)=>({
-      title:sec.title,lucide:sec.lucide,score:getSecScore(si).total,max:sec.max,
-      items:sec.items.map((item,ii)=>({
-        label:item,score:curState().scores[si][ii],
-        comment:curState().comments[si][ii],
-        photos:curState().photos[si][ii].slice(),
-      })),
-      notes:curState().notes[si],
-    })),
-  };
-}
-
-// ═══════════════════════════════════════════════════════════
-// SAVE / UPDATE / EOQI  (cloud)
-// ═══════════════════════════════════════════════════════════
-async function saveInspection(updateExisting){
-  setSyncChip('sync','Saving…');showOverlay('Saving inspection…');
-  try{
-    const record=buildRecord(null);
-    if(editingRecordId!==null && updateExisting){
-      record.id=editingRecordId;
-      await dbUpdate(record);
-      const idx=history.findIndex(r=>r.id===editingRecordId);
-      if(idx>=0) history[idx]=record; else history.unshift(record);
-      editingRecordId=null;
-      document.getElementById('edit-banner').classList.remove('show');
-      updateScoreCardActionBar();
-    } else {
-      await dbInsert(record);
-      history.unshift(record);
-    }
-    currentReportSaved=true;updatePDFButton();
-    populateHistoryFilters();renderHistory();
-    setSyncChip('ok','Saved');
-    const btn=document.getElementById('btn-save');
-    if(btn){btn.textContent='Saved ✓';btn.style.background='var(--good)';setTimeout(()=>{btn.textContent='Save to History';btn.style.background='';},3000);}
-  }catch(e){
-    setSyncChip('err','Save failed');
-    alert('Could not save to cloud: '+e.message+'\n\nCheck your internet connection and try again.');
-  }finally{hideOverlay();}
-}
-
-async function saveAsEOQI(){
-  setSyncChip('sync','Saving as EOQI…');showOverlay('Saving as new EOQI report…');
-  try{
-    const record=buildRecord('EOQI');
-    document.getElementById('meta-type').value='EOQI';
-    await dbInsert(record);
-    history.unshift(record);
-    editingRecordId=null;
-    document.getElementById('edit-banner').classList.remove('show');
-    updateScoreCardActionBar();
-    currentReportSaved=true;updatePDFButton();
-    populateHistoryFilters();renderHistory();
-    setSyncChip('ok','Saved as EOQI');
-    const btn=document.getElementById('btn-save-edit');
-    if(btn){btn.textContent='Saved ✓';btn.style.background='var(--good)';setTimeout(()=>{btn.textContent='Save Changes';btn.style.background='';},3000);}
-  }catch(e){
-    setSyncChip('err','Save failed');
-    alert('Could not save to cloud: '+e.message);
-  }finally{hideOverlay();}
-}
-
-// ═══════════════════════════════════════════════════════════
-// HISTORY — filters & render
-// ═══════════════════════════════════════════════════════════
-function populateHistoryFilters(){
-  const months=new Set(),buildings=new Set();
-  history.forEach(r=>{if(r.date)months.add(r.date.slice(0,7));if(r.facility)buildings.add(r.facility);});
-  const hfM=document.getElementById('hf-month');const curM=hfM.value;
-  hfM.innerHTML='<option value="">All Months</option>';
-  [...months].sort().reverse().forEach(m=>{
-    const o=document.createElement('option');o.value=m;
-    o.textContent=new Date(m+'-01').toLocaleDateString('en-GB',{month:'long',year:'numeric'});hfM.appendChild(o);
-  });
-  hfM.value=curM;
-  const hfB=document.getElementById('hf-building');const curB=hfB.value;
-  hfB.innerHTML='<option value="">All Buildings</option>';
-  [...buildings].sort().forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;hfB.appendChild(o);});
-  hfB.value=curB;
-}
-function renderHistory(){
-  const fI=document.getElementById('hf-insp').value;
-  const fM=document.getElementById('hf-month').value;
-  const fD=document.getElementById('hf-div').value;
-  const fB=document.getElementById('hf-building').value;
-  const fT=document.getElementById('hf-type').value;
-  const fS=document.getElementById('hf-search').value.toLowerCase();
-  const filtered=history.filter(r=>{
-    if(fI&&r.inspector!==fI)return false;
-    if(fM&&!r.date.startsWith(fM))return false;
-    if(fD&&r.division!==fD)return false;
-    if(fB&&r.facility!==fB)return false;
-    if(fT&&r.type!==fT)return false;
-    if(fS&&![r.inspector,r.facility,r.division,r.type,r.typeLabel].join(' ').toLowerCase().includes(fS))return false;
-    return true;
-  });
-  const sumEl=document.getElementById('hist-summary');
-  if(sumEl){
-    if(!filtered.length){sumEl.textContent='';}
-    else{const avg=Math.round(filtered.reduce((a,r)=>a+r.overall,0)/filtered.length);sumEl.textContent=`${filtered.length} record${filtered.length!==1?'s':''} · Avg score: ${avg}/100`;}
-  }
-  const list=document.getElementById('hist-list');
-  if(!filtered.length){list.innerHTML='<div class="no-hist">No inspections match the selected filters.</div>';return;}
-  list.innerHTML='';
-  filtered.forEach(r=>{
-    const g=grade(r.overall);
-    const ds=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'–';
-    const card=document.createElement('div');card.className='hist-card';
-    card.innerHTML=`
-      <div class="hc-score" style="background:${g.color}">${r.overall}</div>
-      <div class="hc-info">
-        <div class="hc-title">${r.facility}${r.division?' — '+r.division:''}</div>
-        <div class="hc-meta">${r.inspector} · ${ds}${r.typeLabel?' · '+r.typeLabel:''}</div>
-        ${r.filename?`<div style="font-size:.68rem;color:var(--muted);margin-top:2px">${r.filename}</div>`:''}
-      </div>
-      <span class="hc-grade gp ${g.cls}">${g.label}</span>
-      <button class="hc-edit" title="Edit this inspection" onclick="editInspection(event,${r.id})">
-        <svg data-lucide="pencil" width="14" height="14"></svg>
-      </button>
-      <button class="hc-pdf" title="Export PDF for this inspection" onclick="exportHistoryPDF(event,${r.id})">
-        <svg data-lucide="file-down" width="14" height="14"></svg>
-      </button>
-      <button class="hc-del" title="Delete record" onclick="delHistory(event,${r.id})">
-        <svg data-lucide="trash-2" width="14" height="14"></svg>
-      </button>`;
-    card.onclick=(e)=>{if(e.target.closest('.hc-edit,.hc-pdf,.hc-del'))return;showHistDetail(r);};
-    list.appendChild(card);
-    lucide.createIcons({nodes:[card]});
-  });
-}
-
-function exportHistoryPDF(e,id){
-  e.stopPropagation();
-  const r=history.find(rec=>rec.id===id);
-  if(!r){alert('Record not found.');return;}
-
-  const inspector=r.inspector||'—';
-  const facility=r.facility||'—';
-  const division=r.division||'—';
-  const date=r.date||'—';
-  const typeLabel=r.typeLabel||r.type||'—';
-  const overall=r.overall;
-  const og=grade(overall);
-  const fname=r.filename||`${date}_${r.type||'Inspection'}_${facility.replace(/\s+/g,'-')}.pdf`;
-
-  let grand=0,sectHtml='';
-  (r.sections||[]).forEach(sec=>{
-    grand+=sec.score;
-    const pct=Math.round(sec.score/sec.max*100);
-    const g=grade(pct);
-    let rows='';
-    (sec.items||[]).forEach((item,ii)=>{
-      const v=item.score;
-      const color=v===null?'#999':v===0?'#C0392B':v===1?'#26A8AB':'#00843D';
-      const comment=item.comment||'';
-      const photos=item.photos||[];
-      let phHtml='';
-      if(photos.length)phHtml=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${photos.map(s=>`<img src="${s}" style="width:56px;height:56px;object-fit:cover;border-radius:5px;border:2px solid #26A8AB">`).join('')}</div>`;
-      rows+=`<tr><td style="padding:6px 10px;font-size:11.5px;border-bottom:1px solid #eee;color:#102040">${ii+1}. ${item.label}</td>
-        <td style="padding:6px 10px;text-align:center;font-size:15px;font-weight:900;color:${color};border-bottom:1px solid #eee">${v!==null?v:'—'}</td>
-        <td style="padding:6px 10px;font-size:11px;color:#456080;border-bottom:1px solid #eee">${comment}${phHtml}</td></tr>`;
-    });
-    const noteRow=sec.notes?`<tr><td colspan="3" style="background:#e6f7f7;padding:8px 10px;font-size:11px;color:#26A8AB;font-style:italic">${sec.notes}</td></tr>`:'';
-    sectHtml+=`<div style="page-break-inside:avoid;margin-bottom:20px">
-      <table style="width:100%;border-collapse:collapse;border:1px solid #C8D8E4">
-        <thead><tr style="background:#0033A0;color:#fff">
-          <th colspan="2" style="padding:9px 14px;text-align:left;font-size:12.5px">${sec.title}</th>
-          <th style="padding:9px 14px;text-align:right;font-size:12px">Score: <strong style="color:#8CFEE3">${sec.score}/${sec.max}</strong> | <span style="color:#FFC846">${g.label}</span></th>
-        </tr><tr style="background:#f0f6fb">
-          <th style="padding:5px 10px;text-align:left;font-size:10px;color:#456080;font-weight:700">Item</th>
-          <th style="padding:5px 10px;text-align:center;font-size:10px;color:#456080;font-weight:700">Score</th>
-          <th style="padding:5px 10px;text-align:left;font-size:10px;color:#456080;font-weight:700">Comments / Photos</th>
-        </tr></thead><tbody>${rows}${noteRow}</tbody>
-      </table></div>`;
-  });
-
-  let scRows='';
-  (r.sections||[]).forEach(sec=>{
-    const g=grade(Math.round(sec.score/sec.max*100));
-    scRows+=`<tr style="${(r.sections.indexOf(sec))%2===0?'':'background:#f4f8fb'}">
-      <td style="padding:8px 12px;font-size:12px;font-weight:700;color:#0033A0">${sec.title}</td>
-      <td style="padding:8px 12px;text-align:center;font-size:13px;font-weight:900;color:#0033A0">${sec.score}/${sec.max}</td>
-      <td style="padding:8px 12px;text-align:center"><span style="background:${g.color}22;color:${g.color};padding:3px 11px;border-radius:20px;font-weight:800;font-size:11px">${g.label}</span></td></tr>`;
-  });
-
-  const pw=window.open('','_blank');
-  if(!pw){alert('Please allow pop-ups to export the PDF.');return;}
-  pw.document.write(`<!DOCTYPE html><html><head>
-  <meta charset="UTF-8"><title>${fname}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
-    /* Zero out @page margins to completely eliminate browser header/footer zone */
-    @page{size:A4;margin:0mm}
-    html,body{margin:0;padding:0;font-family:Cairo,sans-serif;color:#102040;direction:ltr;unicode-bidi:bidi-override;-webkit-locale:"en";language:en}
-    /* We control our own page padding instead */
-    .pdf-body-wrap{padding:15mm 13mm 16mm 13mm}
-    a,a:visited{color:inherit!important;text-decoration:none!important;pointer-events:none}
-    @media print{
-      .pdf-body-wrap{padding-bottom:10mm}
-    }
-  </style>
-  </head><body>
-  <script>
-    function fmtDate(str){if(!str)return '—';var months=['January','February','March','April','May','June','July','August','September','October','November','December'];var d=new Date(str+'T12:00:00');return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();}
-    function fmtNow(){var months=['January','February','March','April','May','June','July','August','September','October','November','December'];var d=new Date();return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();}
-  <\/script>
-  <div class="pdf-body-wrap">
-  <div style="background:linear-gradient(145deg,#001540 0%,#0033A0 55%,#0a5f60 100%);color:#fff;padding:34px 42px;border-bottom:4px solid #26A8AB;margin-bottom:24px">
-    <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#8CFEE3;font-weight:700;margin-bottom:4px">OSD · Facility Experience</div>
-    <h1 style="font-size:19px;font-weight:900;margin:0 0 4px">Quality Assurance Check List</h1>
-    <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0 0 20px">Quality assurance inspection of end-to-end facility user experience.</p>
-    <table style="width:100%;border-collapse:collapse"><tr>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Inspector</div><div style="font-size:12px;font-weight:800">${inspector}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Facility</div><div style="font-size:12px;font-weight:800">${facility}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Division</div><div style="font-size:12px;font-weight:800">${division}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Date</div><div style="font-size:12px;font-weight:800">${date}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Type</div><div style="font-size:11px;font-weight:800">${typeLabel}</div></td>
-      <td style="text-align:right"><div style="background:rgba(140,254,227,.15);border:3px solid #8CFEE3;border-radius:50%;width:76px;height:76px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center">
-        <div style="font-size:24px;font-weight:900;color:#8CFEE3;line-height:1">${overall}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.45)">/100</div>
-        <div style="font-size:8px;font-weight:800;color:#FFC846">${og.label}</div>
-      </div></td></tr></table></div>
-  <h2 style="font-size:14px;font-weight:900;color:#0033A0;margin-bottom:10px">Journey Map Score Card</h2>
-  <table style="width:100%;border:1px solid #C8D8E4;margin-bottom:20px;border-collapse:collapse">
-    <thead><tr style="background:#0033A0;color:#fff">
-      <th style="padding:8px 12px;text-align:left;font-size:10.5px">Section</th>
-      <th style="padding:8px 12px;text-align:center;font-size:10.5px">Score /10</th>
-      <th style="padding:8px 12px;text-align:center;font-size:10.5px">Grade</th>
-    </tr></thead>
-    <tbody>${scRows}</tbody>
-    <tfoot><tr style="background:#0033A0;color:#fff">
-      <td style="padding:10px 12px;font-weight:900;font-size:12px">Overall Total</td>
-      <td style="padding:10px 12px;text-align:center;font-weight:900;font-size:15px;color:#8CFEE3">${overall}/100</td>
-      <td style="padding:10px 12px;text-align:center;font-weight:800;font-size:12px;color:#FFC846">${og.label}</td>
-    </tr></tfoot>
-  </table>
-  <div style="background:#fffbeb;border:1px solid #f0c040;border-left:4px solid #D48000;border-radius:6px;padding:10px 14px;font-size:10.5px;color:#6b4200;margin-bottom:20px">
-    Areas requiring attention and improvement must be rectified and documented before the next inspection.
-  </div>
-  <h2 style="font-size:14px;font-weight:900;color:#0033A0;margin-bottom:14px">Detailed Inspection Report</h2>
-  ${sectHtml}
-  <div style="margin-top:36px;border-top:2px solid #0033A0;padding-top:14px;display:flex;justify-content:flex-start">
-    <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.1em">Inspector Signature</div>
-      <div style="width:180px;border-bottom:1.5px solid #0033A0;margin-top:28px"></div>
-      <div style="font-size:10px;color:#456080;margin-top:4px">${inspector}</div></div>
-
-  </div>
-  <script>
-  document.title="${fname}";
-  document.documentElement.lang="en";
-  document.documentElement.setAttribute("lang","en");
-  window.onload=function(){ window.print(); };
-<\/script>
-</div><!-- end pdf-body-wrap -->
-</body></html>`);
-  pw.document.close();
-}
-
-async function delHistory(e,id){
-  e.stopPropagation();
-  if(!confirm('Delete this inspection record? This cannot be undone.'))return;
-  setSyncChip('sync','Deleting…');showOverlay('Deleting record…');
-  try{
-    await dbDelete(id);
-    history=history.filter(r=>r.id!==id);
-    populateHistoryFilters();populateChartFilters();renderHistory();
-    setSyncChip('ok','Deleted');
-  }catch(err){
-    setSyncChip('err','Delete failed');
-    alert('Could not delete from cloud: '+err.message);
-  }finally{hideOverlay();}
-}
-
-function showHistDetail(r){
-  const g=grade(r.overall);
-  const ds=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'–';
-  document.getElementById('hd-title').textContent=`${r.facility}${r.division?' — '+r.division:''} · ${r.overall}/100 (${g.label})`;
-  document.getElementById('hd-meta').textContent=`Inspector: ${r.inspector} · ${ds} · ${r.typeLabel||r.type||'–'}`;
-  const body=document.getElementById('hd-body');body.innerHTML='';
-  (r.sections||[]).forEach(sec=>{
-    const pct=Math.round(sec.score/sec.max*100);const sg=grade(pct);
-    const div2=document.createElement('div');div2.className='hd-sec';
-    let iHtml='';
-    (sec.items||[]).forEach(item=>{
-      const v=item.score;
-      const dc=v===null?'#ccc':v===0?'#C0392B':v===1?'#26A8AB':'#00843D';
-      const dt2=v===null?'–':String(v);
-      let pH='';
-      if(item.photos&&item.photos.length) pH=`<div class="hd-photos">${item.photos.map(src=>`<img src="${src}" onclick="openLB('${src}')">`).join('')}</div>`;
-      iHtml+=`<div class="hd-item"><div class="hd-dot" style="background:${dc}">${dt2}</div>
-        <div style="flex:1"><div>${item.label}</div>${item.comment?`<div style="color:var(--muted);font-size:.75rem;margin-top:2px">${item.comment}</div>`:''}${pH}</div></div>`;
-    });
-    div2.innerHTML=`<div class="hd-sec-head"><span>${sec.title}</span><span>${sec.score}/${sec.max} — ${sg.label}</span></div>
-      <div class="hd-items">${iHtml}${sec.notes?`<div style="background:#e6f7f7;padding:8px;border-radius:6px;font-size:.78rem;color:var(--teal);margin-top:4px">${sec.notes}</div>`:''}</div>`;
-    body.appendChild(div2);
-  });
-  document.getElementById('hd-modal').classList.add('open');
-}
-function closeHistDetail(){document.getElementById('hd-modal').classList.remove('open');}
-
-// ═══════════════════════════════════════════════════════════
-// EDIT FROM HISTORY
-// ═══════════════════════════════════════════════════════════
-function startNewInspection(){
-  if(editingRecordId!==null){
-    if(!confirm('You are editing a saved record. Start a new inspection instead? Unsaved edits will be lost.'))return;
-    cancelEdit();return;
-  }
-  nav('pg-s0');
-}
-
-function editInspection(e,id){
-  e.stopPropagation();
-  const record=history.find(r=>r.id===id);
-  if(!record){alert('Record not found.');return;}
-  if(!confirm(`Load "${record.facility}${record.division?' — '+record.division:''}" (${record.date}) for editing?\n\nUnsaved current data for ${record.inspector} will be replaced.`))return;
-  if(!inspectors.includes(record.inspector)){inspectors.push(record.inspector);saveInspectorList();rebuildInspectorDropdown();renderInspectorChips();}
-  activeInspector=record.inspector;
-  document.getElementById('meta-inspector').value=record.inspector;
-  renderInspectorChips();
-  document.getElementById('meta-facility').value=record.facility||'';
-  document.getElementById('meta-date').value=record.date||'';
-  document.getElementById('meta-type').value=record.type||'';
-  document.getElementById('meta-division').value=record.division||'';
-  const st=getState(record.inspector);
-  (record.sections||[]).forEach((sec,si)=>{
-    if(si>=SECTIONS.length)return;
-    (sec.items||[]).forEach((item,ii)=>{
-      if(ii>=st.scores[si].length)return;
-      st.scores[si][ii]=item.score;
-      st.comments[si][ii]=item.comment||'';
-      st.photos[si][ii]=item.photos?item.photos.slice():[];
-    });
-    st.notes[si]=sec.notes||'';
-  });
-  editingRecordId=id;currentReportSaved=false;updatePDFButton();syncFormToState();
-  document.getElementById('edit-banner').classList.add('show');
-  lucide.createIcons({nodes:[document.getElementById('edit-banner')]});
-  updateScoreCardActionBar();
-  nav('pg-s0');
-}
-
-function cancelEdit(){
-  editingRecordId=null;currentReportSaved=false;
-  allState[activeInspector]={
-    scores:SECTIONS.map(s=>s.items.map(()=>null)),
-    comments:SECTIONS.map(s=>s.items.map(()=>'')),
-    photos:SECTIONS.map(s=>s.items.map(()=>[])),
-    notes:SECTIONS.map(()=>''),
-  };
-  document.getElementById('edit-banner').classList.remove('show');
-  updateScoreCardActionBar();syncFormToState();nav('pg-home');
-}
-
-// ═══════════════════════════════════════════════════════════
-// PDF EXPORT
-// ═══════════════════════════════════════════════════════════
-function exportPDF(){
-  if(!currentReportSaved){alert('Please save the inspection before exporting the PDF.');return;}
-  const inspector=activeInspector;
-  const facility=document.getElementById('meta-facility').value||'—';
-  const division=document.getElementById('meta-division').value||'—';
-  const date=document.getElementById('meta-date').value||'—';
-  const tv=document.getElementById('meta-type').value;
-  const typeLabel=tv==='BOQI'?'Beginning of Quarter Inspection (BOQI)':tv==='EOQI'?'End of Quarter Inspection (EOQI)':tv==='Follow-up'?'Follow-up and Edit':'—';
-  const fname=buildFilenameFrom(tv,date,facility,division,inspector);
-  let grand=0,sectHtml='';
-  SECTIONS.forEach((sec,si)=>{
-    const{total,max}=getSecScore(si);grand+=total;
-    const pct=Math.round(total/max*100);const g=grade(pct);
-    let rows='';
-    sec.items.forEach((item,ii)=>{
-      const v=curState().scores[si][ii];
-      const color=v===null?'#999':v===0?'#C0392B':v===1?'#26A8AB':'#00843D';
-      const comment=curState().comments[si][ii];
-      const photos=curState().photos[si][ii];
-      let phHtml='';
-      if(photos.length)phHtml=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${photos.map(s=>`<img src="${s}" style="width:56px;height:56px;object-fit:cover;border-radius:5px;border:2px solid #26A8AB">`).join('')}</div>`;
-      rows+=`<tr><td style="padding:6px 10px;font-size:11.5px;border-bottom:1px solid #eee;color:#102040">${ii+1}. ${item}</td>
-        <td style="padding:6px 10px;text-align:center;font-size:15px;font-weight:900;color:${color};border-bottom:1px solid #eee">${v!==null?v:'—'}</td>
-        <td style="padding:6px 10px;font-size:11px;color:#456080;border-bottom:1px solid #eee">${comment||''}${phHtml}</td></tr>`;
-    });
-    const noteRow=curState().notes[si]?`<tr><td colspan="3" style="background:#e6f7f7;padding:8px 10px;font-size:11px;color:#26A8AB;font-style:italic">${curState().notes[si]}</td></tr>`:'';
-    sectHtml+=`<div style="page-break-inside:avoid;margin-bottom:20px">
-      <table style="width:100%;border-collapse:collapse;border:1px solid #C8D8E4">
-        <thead><tr style="background:#0033A0;color:#fff">
-          <th colspan="2" style="padding:9px 14px;text-align:left;font-size:12.5px">${sec.title}</th>
-          <th style="padding:9px 14px;text-align:right;font-size:12px">Score: <strong style="color:#8CFEE3">${total}/${max}</strong> | <span style="color:#FFC846">${g.label}</span></th>
-        </tr><tr style="background:#f0f6fb">
-          <th style="padding:5px 10px;text-align:left;font-size:10px;color:#456080;font-weight:700">Item</th>
-          <th style="padding:5px 10px;text-align:center;font-size:10px;color:#456080;font-weight:700">Score</th>
-          <th style="padding:5px 10px;text-align:left;font-size:10px;color:#456080;font-weight:700">Comments / Photos</th>
-        </tr></thead><tbody>${rows}${noteRow}</tbody>
-      </table></div>`;
-  });
-  const overall=Math.round(grand);const og=grade(overall);
-  let scRows='';
-  SECTIONS.forEach((sec,si)=>{
-    const{total,max}=getSecScore(si);const g=grade(Math.round(total/max*100));
-    scRows+=`<tr style="${si%2===0?'':'background:#f4f8fb'}">
-      <td style="padding:8px 12px;font-size:12px;font-weight:700;color:#0033A0">${sec.title}</td>
-      <td style="padding:8px 12px;text-align:center;font-size:13px;font-weight:900;color:#0033A0">${total}/${max}</td>
-      <td style="padding:8px 12px;text-align:center"><span style="background:${g.color}22;color:${g.color};padding:3px 11px;border-radius:20px;font-weight:800;font-size:11px">${g.label}</span></td></tr>`;
-  });
-  const pw=window.open('','_blank');
-  if(!pw){alert('Please allow pop-ups to export the PDF.');return;}
-  pw.document.write(`<!DOCTYPE html><html><head>
-  <meta charset="UTF-8"><title>${fname}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
-    /* Zero out @page margins to completely eliminate browser header/footer zone */
-    @page{size:A4;margin:0mm}
-    html,body{margin:0;padding:0;font-family:Cairo,sans-serif;color:#102040;direction:ltr;unicode-bidi:bidi-override;-webkit-locale:"en";language:en}
-    /* We control our own page padding instead */
-    .pdf-body-wrap{padding:15mm 13mm 16mm 13mm}
-    a,a:visited{color:inherit!important;text-decoration:none!important;pointer-events:none}
-    @media print{
-      .pdf-body-wrap{padding-bottom:10mm}
-    }
-  </style>
-  </head><body>
-  <script>
-    function fmtDate(str){if(!str)return '—';var months=['January','February','March','April','May','June','July','August','September','October','November','December'];var d=new Date(str+'T12:00:00');return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();}
-    function fmtNow(){var months=['January','February','March','April','May','June','July','August','September','October','November','December'];var d=new Date();return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();}
-  <\/script>
-  <div class="pdf-body-wrap">
-  <div style="background:linear-gradient(145deg,#001540 0%,#0033A0 55%,#0a5f60 100%);color:#fff;padding:34px 42px;border-bottom:4px solid #26A8AB;margin-bottom:24px">
-    <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#8CFEE3;font-weight:700;margin-bottom:4px">OSD · Facility Experience</div>
-    <h1 style="font-size:19px;font-weight:900;margin:0 0 4px">Quality Assurance Check List</h1>
-    <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0 0 20px">Quality assurance inspection of end-to-end facility user experience.</p>
-    <table style="width:100%;border-collapse:collapse"><tr>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Inspector</div><div style="font-size:12px;font-weight:800">${inspector}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Facility</div><div style="font-size:12px;font-weight:800">${facility}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Division</div><div style="font-size:12px;font-weight:800">${division}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Date</div><div style="font-size:12px;font-weight:800">${date}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Type</div><div style="font-size:11px;font-weight:800">${typeLabel}</div></td>
-      <td style="text-align:right"><div style="background:rgba(140,254,227,.15);border:3px solid #8CFEE3;border-radius:50%;width:76px;height:76px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center">
-        <div style="font-size:24px;font-weight:900;color:#8CFEE3;line-height:1">${overall}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.45)">/100</div>
-        <div style="font-size:8px;font-weight:800;color:#FFC846">${og.label}</div>
-      </div></td></tr></table></div>
-  <h2 style="font-size:14px;font-weight:900;color:#0033A0;margin-bottom:10px">Journey Map Score Card</h2>
-  <table style="width:100%;border:1px solid #C8D8E4;margin-bottom:20px;border-collapse:collapse">
-    <thead><tr style="background:#0033A0;color:#fff">
-      <th style="padding:8px 12px;text-align:left;font-size:10.5px">Section</th>
-      <th style="padding:8px 12px;text-align:center;font-size:10.5px">Score /10</th>
-      <th style="padding:8px 12px;text-align:center;font-size:10.5px">Grade</th>
-    </tr></thead>
-    <tbody>${scRows}</tbody>
-    <tfoot><tr style="background:#0033A0;color:#fff">
-      <td style="padding:10px 12px;font-weight:900;font-size:12px">Overall Total</td>
-      <td style="padding:10px 12px;text-align:center;font-weight:900;font-size:15px;color:#8CFEE3">${overall}/100</td>
-      <td style="padding:10px 12px;text-align:center;font-weight:800;font-size:12px;color:#FFC846">${og.label}</td>
-    </tr></tfoot>
-  </table>
-  <div style="background:#fffbeb;border:1px solid #f0c040;border-left:4px solid #D48000;border-radius:6px;padding:10px 14px;font-size:10.5px;color:#6b4200;margin-bottom:20px">
-    Areas requiring attention and improvement must be rectified and documented before the next inspection.
-  </div>
-  <h2 style="font-size:14px;font-weight:900;color:#0033A0;margin-bottom:14px">Detailed Inspection Report</h2>
-  ${sectHtml}
-  <div style="margin-top:36px;border-top:2px solid #0033A0;padding-top:14px;display:flex;justify-content:flex-start">
-    <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.1em">Inspector Signature</div>
-      <div style="width:180px;border-bottom:1.5px solid #0033A0;margin-top:28px"></div>
-      <div style="font-size:10px;color:#456080;margin-top:4px">${inspector}</div></div>
-
-  </div>
-  <script>
-  document.title="${fname}";
-  document.documentElement.lang="en";
-  document.documentElement.setAttribute("lang","en");
-  window.onload=function(){ window.print(); };
-<\/script>
-</div><!-- end pdf-body-wrap -->
-</body></html>`);
-  pw.document.close();
-}
-
-function resetForm(){
-  if(!confirm('Start a new inspection for '+activeInspector+'? All unsaved data will be cleared.'))return;
-  allState[activeInspector]={
-    scores:SECTIONS.map(s=>s.items.map(()=>null)),
-    comments:SECTIONS.map(s=>s.items.map(()=>'')),
-    photos:SECTIONS.map(s=>s.items.map(()=>[])),
-    notes:SECTIONS.map(()=>''),
-  };
-  currentReportSaved=false;updatePDFButton();syncFormToState();nav('pg-home');
-}
-
-
-// ═══════════════════════════════════════════════════════════
-// CHARTS
-// ═══════════════════════════════════════════════════════════
-let chartInstance=null;
-let activeChartType='scores';
-
-function selectChartType(btn){
-  document.querySelectorAll('.ct-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  activeChartType=btn.dataset.chart;
-}
-
-function populateChartFilters(){
-  const months=new Set(),buildings=new Set(),years=new Set();
-  history.forEach(r=>{
-    if(r.date){months.add(r.date.slice(0,7));years.add(r.date.slice(0,4));}
-    if(r.facility)buildings.add(r.facility);
-  });
-  // Year filter
-  const cfY=document.getElementById('cf-year');
-  if(cfY){
-    const curY=cfY.value;
-    cfY.innerHTML='<option value="">All Years</option>';
-    [...years].sort().reverse().forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;cfY.appendChild(o);});
-    cfY.value=curY;
-  }
-  const cfM=document.getElementById('cf-month');
-  if(!cfM) return;
-  const curM=cfM.value;
-  cfM.innerHTML='<option value="">All Months</option>';
-  [...months].sort().reverse().forEach(m=>{
-    const o=document.createElement('option');o.value=m;
-    const d=new Date(m+'-01T12:00:00');
-    const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
-    o.textContent=mn[d.getMonth()]+' '+d.getFullYear();cfM.appendChild(o);
-  });
-  cfM.value=curM;
-  const cfB=document.getElementById('cf-building');
-  const curB=cfB.value;
-  cfB.innerHTML='<option value="">All Buildings</option>';
-  [...buildings].sort().forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;cfB.appendChild(o);});
-  cfB.value=curB;
-  const cfI=document.getElementById('cf-insp');
-  cfI.innerHTML='<option value="">All Inspectors</option>';
-  inspectors.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;cfI.appendChild(o);});
-}
-
-function getFilteredForChart(){
-  const fI=document.getElementById('cf-insp').value;
-  const fY=document.getElementById('cf-year')?document.getElementById('cf-year').value:'';
-  const fM=document.getElementById('cf-month').value;
-  const fD=document.getElementById('cf-div').value;
-  const fB=document.getElementById('cf-building').value;
-  const fT=document.getElementById('cf-type').value;
-  return history.filter(r=>{
-    if(fI&&r.inspector!==fI)return false;
-    if(fY&&r.date&&!r.date.startsWith(fY))return false;
-    if(fM&&!r.date.startsWith(fM))return false;
-    if(fD&&r.division!==fD)return false;
-    if(fB&&r.facility!==fB)return false;
-    if(fT&&r.type!==fT)return false;
-    return true;
-  });
-}
-
-function generateChart(){
-  const data=getFilteredForChart();
-  const empty=document.getElementById('chart-empty');
-  const statsRow=document.getElementById('chart-stats');
-  if(chartInstance){chartInstance.destroy();chartInstance=null;}
-  statsRow.innerHTML='';
-  // Disable export until chart is ready
-  const expBtn=document.getElementById('btn-export-chart');
-  if(expBtn){expBtn.disabled=true;expBtn.title='Generate a chart first';}
-  if(!data.length){empty.classList.add('show');return;}
-  empty.classList.remove('show');
-  const PALETTE=['#0033A0','#26A8AB','#00843D','#D48000','#C0392B','#8B5CF6','#EC4899','#F59E0B'];
-  const ctx=document.getElementById('main-chart').getContext('2d');
-
-  if(activeChartType==='scores'){
-    const sorted=[...data].sort((a,b)=>a.date.localeCompare(b.date));
-    chartInstance=new Chart(ctx,{
-      type:'line',
-      data:{
-        labels:sorted.map(r=>{const d=new Date(r.date+'T12:00:00');return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();}),
-        datasets:[{label:'Overall Score',data:sorted.map(r=>r.overall),
-          borderColor:'#0033A0',backgroundColor:'rgba(0,51,160,.08)',
-          tension:.35,pointBackgroundColor:'#26A8AB',pointRadius:5,fill:true}]
-      },
-      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'Score: '+c.parsed.y+'/100'}}},
-        scales:{y:{min:0,max:100,grid:{color:'#e5eaf0'},ticks:{color:'#456080'}},x:{grid:{display:false},ticks:{color:'#456080',maxRotation:45}}}}
-    });
-    renderChartStats(data);
-    if(expBtn){expBtn.disabled=false;expBtn.title='Export this chart as PNG image';}
-
-  } else if(activeChartType==='sections'){
-    const secNames=(data[0]&&data[0].sections)?data[0].sections.map(s=>s.title):[];
-    const secAvgs=secNames.map((_,si)=>{
-      const vals=data.map(r=>(r.sections||[])[si]).filter(s=>s).map(s=>s.score);
-      return vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*10)/10:0;
-    });
-    chartInstance=new Chart(ctx,{
-      type:'bar',
-      data:{
-        labels:secNames.map(n=>n.length>18?n.slice(0,16)+'…':n),
-        datasets:[{label:'Avg Score /10',data:secAvgs,
-          backgroundColor:secAvgs.map(v=>v>=8?'rgba(0,132,61,.75)':v>=6?'rgba(38,168,171,.75)':v>=4?'rgba(212,128,0,.75)':'rgba(192,57,43,.75)'),
-          borderRadius:6}]
-      },
-      options:{responsive:true,plugins:{legend:{display:false}},
-        scales:{y:{min:0,max:10,grid:{color:'#e5eaf0'},ticks:{color:'#456080'}},x:{grid:{display:false},ticks:{color:'#456080',maxRotation:45}}}}
-    });
-    renderChartStats(data);
-    if(expBtn){expBtn.disabled=false;expBtn.title='Export this chart as PNG image';}
-
-  } else if(activeChartType==='bybuilding'){
-    const map={};
-    data.forEach(r=>{const k=r.facility||'Unknown';if(!map[k])map[k]=[];map[k].push(r.overall);});
-    const labels=Object.keys(map);
-    const avgs=labels.map(k=>Math.round(map[k].reduce((a,b)=>a+b,0)/map[k].length));
-    chartInstance=new Chart(ctx,{
-      type:'bar',
-      data:{labels,datasets:[{label:'Avg Score',data:avgs,
-        backgroundColor:avgs.map(v=>v>=91?'rgba(0,132,61,.75)':v>=81?'rgba(38,168,171,.75)':v>=71?'rgba(212,128,0,.75)':'rgba(192,57,43,.75)'),borderRadius:6}]},
-      options:{responsive:true,plugins:{legend:{display:false}},
-        scales:{y:{min:0,max:100,ticks:{color:'#456080'},grid:{color:'#e5eaf0'}},x:{ticks:{color:'#456080'},grid:{display:false}}}}
-    });
-    renderChartStats(data);
-    if(expBtn){expBtn.disabled=false;expBtn.title='Export this chart as PNG image';}
-
-  } else if(activeChartType==='bydivision'){
-    const map={};
-    data.forEach(r=>{const k=r.division||'Unknown';if(!map[k])map[k]=[];map[k].push(r.overall);});
-    const labels=Object.keys(map);
-    const avgs=labels.map(k=>Math.round(map[k].reduce((a,b)=>a+b,0)/map[k].length));
-    chartInstance=new Chart(ctx,{
-      type:'bar',
-      data:{labels,datasets:[{label:'Avg Score',data:avgs,backgroundColor:PALETTE.slice(0,labels.length),borderRadius:6}]},
-      options:{responsive:true,plugins:{legend:{display:false}},
-        scales:{y:{min:0,max:100,ticks:{color:'#456080'},grid:{color:'#e5eaf0'}},x:{ticks:{color:'#456080'},grid:{display:false}}}}
-    });
-    renderChartStats(data);
-    if(expBtn){expBtn.disabled=false;expBtn.title='Export this chart as PNG image';}
-
-  } else if(activeChartType==='bytype'){
-    const map={'BOQI':[],'EOQI':[],'Follow-up':[]};
-    data.forEach(r=>{if(map[r.type])map[r.type].push(r.overall);});
-    const labels=['BOQI','EOQI','Follow-up'];
-    const avgs=labels.map(k=>map[k].length?Math.round(map[k].reduce((a,b)=>a+b,0)/map[k].length):null);
-    const counts=labels.map(k=>map[k].length);
-    chartInstance=new Chart(ctx,{
-      type:'bar',
-      data:{labels:labels.map((l,i)=>counts[i]?l+' ('+counts[i]+')':l),
-        datasets:[{label:'Avg Score',data:avgs,
-          backgroundColor:['rgba(0,51,160,.75)','rgba(0,132,61,.75)','rgba(212,128,0,.75)'],borderRadius:8}]},
-      options:{responsive:true,plugins:{legend:{display:false}},
-        scales:{y:{min:0,max:100,ticks:{color:'#456080'},grid:{color:'#e5eaf0'}},x:{ticks:{color:'#456080'},grid:{display:false}}}}
-    });
-    renderChartStats(data);
-    if(expBtn){expBtn.disabled=false;expBtn.title='Export this chart as PNG image';}
-
-  } else if(activeChartType==='stddev'){
-    const map={};
-    data.forEach(r=>{const k=r.division||'Unknown';if(!map[k])map[k]=[];map[k].push(r.overall);});
-    const labels=Object.keys(map).filter(k=>map[k].length>=2);
-    if(!labels.length){empty.classList.add('show');document.getElementById('chart-stats').innerHTML='<div style="color:var(--muted);font-size:.82rem">Need at least 2 records per division to calculate standard deviation.</div>';return;}
-    const stddevs=labels.map(k=>{
-      const vals=map[k];const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
-      return Math.round(Math.sqrt(vals.reduce((a,b)=>a+(b-mean)**2,0)/vals.length)*10)/10;
-    });
-    const means=labels.map(k=>Math.round(map[k].reduce((a,b)=>a+b,0)/map[k].length));
-    chartInstance=new Chart(ctx,{
-      type:'bar',
-      data:{labels,datasets:[
-        {label:'Avg Score',data:means,backgroundColor:'rgba(38,168,171,.65)',borderRadius:4},
-        {label:'Std Deviation',data:stddevs,backgroundColor:'rgba(212,128,0,.75)',borderRadius:4},
-      ]},
-      options:{responsive:true,plugins:{legend:{display:true,labels:{color:'#456080'}}},
-        scales:{y:{min:0,max:100,ticks:{color:'#456080'},grid:{color:'#e5eaf0'}},x:{ticks:{color:'#456080'},grid:{display:false}}}}
-    });
-    const worstIdx=stddevs.indexOf(Math.max(...stddevs));
-    const bestIdx=stddevs.indexOf(Math.min(...stddevs));
-    document.getElementById('chart-stats').innerHTML=`
-      <div class="chart-stat"><div class="cs-val">${labels.length}</div><div class="cs-lbl">Divisions</div></div>
-      <div class="chart-stat"><div class="cs-val">${stddevs[worstIdx]}</div><div class="cs-lbl">Highest Std Dev</div><div class="cs-sub">${labels[worstIdx]} — most variable</div></div>
-      <div class="chart-stat"><div class="cs-val">${stddevs[bestIdx]}</div><div class="cs-lbl">Lowest Std Dev</div><div class="cs-sub">${labels[bestIdx]} — most consistent</div></div>
-      <div class="chart-stat"><div class="cs-val">${Math.round(stddevs.reduce((a,b)=>a+b,0)/stddevs.length*10)/10}</div><div class="cs-lbl">Overall Avg Std Dev</div></div>
-    `;
-    if(expBtn){expBtn.disabled=false;expBtn.title='Export this chart as PNG image';}
-    return;
-  }
-}
-
-
-function exportChart(){
-  if(!chartInstance){alert('Please generate a chart first.');return;}
-
-  // Build a descriptive filename
-  const fY=document.getElementById('cf-year')?document.getElementById('cf-year').value:'';
-  const fM=document.getElementById('cf-month').value;
-  const fD=document.getElementById('cf-div').value;
-  const fB=document.getElementById('cf-building').value;
-  const fT=document.getElementById('cf-type').value;
-  const fI=document.getElementById('cf-insp').value;
-  const chartLabels={scores:'Scores-Over-Time',sections:'Section-Breakdown',bybuilding:'Score-by-Building',bydivision:'Score-by-Division',bytype:'BOQI-vs-EOQI',stddev:'Division-StdDev'};
-  const parts=[
-    fY||'',
-    fM?new Date(fM+'-01T12:00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'}).replace(' ','-'):'',
-    chartLabels[activeChartType]||activeChartType,
-    fD||'',fB?fB.replace(/\s+/g,'-'):'',fT||'',fI?fI.replace(/\s+/g,'-'):'',
-  ].filter(Boolean);
-  const fname='QA_Chart_'+parts.join('_')+'.png';
-
-  // Get canvas and draw white background behind chart (so PNG isn't transparent)
-  const origCanvas=document.getElementById('main-chart');
-  const exportCanvas=document.createElement('canvas');
-  exportCanvas.width=origCanvas.width;
-  exportCanvas.height=origCanvas.height;
-  const ectx=exportCanvas.getContext('2d');
-  // White background
-  ectx.fillStyle='#FFFFFF';
-  ectx.fillRect(0,0,exportCanvas.width,exportCanvas.height);
-  // Draw chart on top
-  ectx.drawImage(origCanvas,0,0);
-
-  // Add title watermark at bottom
-  ectx.fillStyle='rgba(0,51,160,0.55)';
-  ectx.font='bold 13px Cairo, sans-serif';
-  ectx.textAlign='right';
-  ectx.fillText('OSD Facility Experience QA · '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}), exportCanvas.width-16, exportCanvas.height-10);
-
-  // Trigger download
-  const link=document.createElement('a');
-  link.download=fname;
-  link.href=exportCanvas.toDataURL('image/png',1.0);
-  link.click();
-}
-
-function renderChartStats(data){
-  const statsRow=document.getElementById('chart-stats');
-  if(!data.length){statsRow.innerHTML='';return;}
-  const scores=data.map(r=>r.overall);
-  const avg=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
-  const mx=Math.max(...scores);const mn2=Math.min(...scores);
-  const mxR=data.find(r=>r.overall===mx);const mnR=data.find(r=>r.overall===mn2);
-  statsRow.innerHTML=`
-    <div class="chart-stat"><div class="cs-val">${data.length}</div><div class="cs-lbl">Reports</div></div>
-    <div class="chart-stat"><div class="cs-val">${avg}</div><div class="cs-lbl">Average Score</div><div class="cs-sub">${grade(avg).label}</div></div>
-    <div class="chart-stat"><div class="cs-val" style="color:var(--good)">${mx}</div><div class="cs-lbl">Highest</div><div class="cs-sub">${mxR?mxR.facility:''}</div></div>
-    <div class="chart-stat"><div class="cs-val" style="color:var(--danger)">${mn2}</div><div class="cs-lbl">Lowest</div><div class="cs-sub">${mnR?mnR.facility:''}</div></div>
-  `;
-}
-
-
-// ═══════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════
-document.querySelectorAll('.ni').forEach(n=>n.addEventListener('click',()=>nav(n.dataset.page)));
-document.getElementById('lb').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLB();});
-document.getElementById('modal-add-insp').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-add-insp');});
-document.getElementById('hd-modal').addEventListener('click',e=>{if(e.target===document.getElementById('hd-modal'))closeHistDetail();});
-document.getElementById('meta-date').valueAsDate=new Date();
-
-buildSections();
+document.getElementById('yr').textContent = new Date().getFullYear();
 lucide.createIcons();
-rebuildInspectorDropdown();
-renderInspectorChips();
-updateProgress();
-updatePDFButton();
-updateScoreCardActionBar();
-
-// ── Boot: connect to the database and load history ──
-(async()=>{
-  showOverlay('Connecting to database…');
-  try{
-    history = await dbLoadHistory();
-    setSyncChip('ok','Online · '+history.length+' records');
-    populateHistoryFilters();
-    populateChartFilters();
-    renderHistory();
-  }catch(e){
-    setSyncChip('err','Offline — check connection');
-    // Fall back to empty
-    history=[];
-    renderHistory();
-    alert('Could not connect to the database.\n\nPlease check your internet connection and reload the page.\n\nError: '+e.message);
-  }finally{
-    hideOverlay();
-  }
-})();
-
-// ── Account: show signed-in user, wire logout ──
-(async()=>{
-  try{
-    const res=await fetch('/api/auth/me');
-    if(!res.ok){ window.location.href='/login.html'; return; }
-    const {user}=await res.json();
-    document.getElementById('acct-name').textContent=user.name||user.username;
-  }catch{
-    document.getElementById('acct-name').textContent='';
-  }
-})();
-document.getElementById('acct-logout').addEventListener('click',async()=>{
-  try{ await fetch('/api/auth/logout',{method:'POST'}); }finally{ window.location.href='/login.html'; }
-});
 </script>
 </body>
 </html>

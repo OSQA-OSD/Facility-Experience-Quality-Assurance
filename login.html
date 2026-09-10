@@ -78,8 +78,8 @@ input:focus{border-color:var(--teal)}
       <label for="bs-username">Username</label>
       <input id="bs-username" type="text" autocomplete="username" required>
       <label for="bs-password">Password</label>
-      <input id="bs-password" type="password" autocomplete="new-password" minlength="12" required>
-      <div class="hint">At least 12 characters.</div>
+      <input id="bs-password" type="password" autocomplete="new-password" minlength="8" required>
+      <div class="hint">At least 8 characters.</div>
       <button class="btn" type="submit" id="bs-submit">
         <svg data-lucide="user-plus" width="16" height="16"></svg> Create Administrator
       </button>
@@ -155,7 +155,7 @@ document.getElementById('bootstrap-form').addEventListener('submit', async (e) =
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not create the administrator account.');
-    window.location.href = '/index.html';
+    window.location.href = '/app.html';
   } catch (err) {
     showMsg(msg, err.message, false);
     setBusy(submit, false, '<svg data-lucide="user-plus" width="16" height="16"></svg> Create Administrator');
@@ -180,7 +180,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Invalid username or password.');
-    window.location.href = '/index.html';
+    window.location.href = '/app.html';
   } catch (err) {
     showMsg(msg, err.message, false);
     setBusy(submit, false, '<svg data-lucide="log-in" width="16" height="16"></svg> Sign In');
