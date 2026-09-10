@@ -36,8 +36,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 #sb-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.12)}
 #acct-row{display:flex;align-items:center;gap:8px;padding:6px 2px 12px;color:rgba(255,255,255,.82)}
 #acct-name{flex:1;font-size:.76rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#acct-logout{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:7px;color:inherit;
-  cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;transition:background .13s}
+.acct-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:7px;color:inherit;
+  cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;transition:background .13s;flex-shrink:0}
+#acct-settings:hover{background:rgba(38,168,171,.35)}
 #acct-logout:hover{background:rgba(192,57,43,.35)}
 .oc{background:rgba(0,0,0,.22);border:1px solid rgba(38,168,171,.3);border-radius:var(--r);padding:10px;text-align:center}
 .oc .ol{font-size:.62rem;color:var(--teal-lt);text-transform:uppercase;letter-spacing:.12em;font-weight:700}
@@ -369,7 +370,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   <div id="sb-foot">
     <div id="acct-row">
       <span id="acct-name">…</span>
-      <button id="acct-logout" title="Log out"><svg data-lucide="log-out" width="14" height="14"></svg></button>
+      <button class="acct-btn" id="acct-settings" title="Change password"><svg data-lucide="settings" width="14" height="14"></svg></button>
+      <button class="acct-btn" id="acct-logout" title="Log out"><svg data-lucide="log-out" width="14" height="14"></svg></button>
     </div>
     <div class="oc">
       <div class="ol">Overall Score</div>
@@ -593,6 +595,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 </main>
 
 <!-- Add Inspector Modal -->
+<div class="modal-bg" id="modal-change-pw">
+  <div class="modal-box">
+    <h3>Change Password</h3>
+    <p class="msub">Update the password for your account.</p>
+    <input type="password" id="pw-current" placeholder="Current password" autocomplete="current-password">
+    <input type="password" id="pw-new" placeholder="New password (min 8 characters)" autocomplete="new-password">
+    <input type="password" id="pw-confirm" placeholder="Confirm new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitChangePassword()">
+    <p class="msub" id="pw-msg" style="display:none;color:var(--danger)"></p>
+    <div class="mbtns">
+      <button class="btn bt" onclick="submitChangePassword()">Update Password</button>
+      <button class="btn bo" onclick="closeModal('modal-change-pw')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-add-insp">
   <div class="modal-box">
     <h3>Add New Inspector</h3>
@@ -1969,6 +1986,39 @@ updateScoreCardActionBar();
 document.getElementById('acct-logout').addEventListener('click',async()=>{
   try{ await fetch('/api/auth/logout',{method:'POST'}); }finally{ window.location.href='/login.html'; }
 });
+
+// ── Account: change password ──
+document.getElementById('acct-settings').addEventListener('click',()=>{
+  document.getElementById('pw-current').value='';
+  document.getElementById('pw-new').value='';
+  document.getElementById('pw-confirm').value='';
+  document.getElementById('pw-msg').style.display='none';
+  document.getElementById('modal-change-pw').classList.add('open');
+});
+document.getElementById('modal-change-pw').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-change-pw');});
+async function submitChangePassword(){
+  const current=document.getElementById('pw-current').value;
+  const next=document.getElementById('pw-new').value;
+  const confirm=document.getElementById('pw-confirm').value;
+  const msg=document.getElementById('pw-msg');
+  msg.style.display='none';
+  if(next.length<8){ msg.textContent='New password must be at least 8 characters.'; msg.style.display='block'; return; }
+  if(next!==confirm){ msg.textContent='New passwords do not match.'; msg.style.display='block'; return; }
+  try{
+    const res=await fetch('/api/auth/change-password',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({currentPassword:current,newPassword:next}),
+    });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Could not update password.');
+    closeModal('modal-change-pw');
+    alert('Password updated successfully.');
+  }catch(err){
+    msg.textContent=err.message;
+    msg.style.display='block';
+  }
+}
 </script>
 </body>
 </html>
