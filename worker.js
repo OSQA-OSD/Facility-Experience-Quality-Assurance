@@ -92,6 +92,15 @@ async function deleteInspection(env, id) {
   return json({ ok: true, id });
 }
 
+/* ── Buildings ──────────────────────────────────────────── */
+
+async function listBuildings(env) {
+  const { results } = await env.DB.prepare(
+    'SELECT id, location, division, area, name FROM buildings ORDER BY division, area, name',
+  ).all();
+  return json({ buildings: results || [] });
+}
+
 /* ── CSV export ─────────────────────────────────────────── */
 
 const csvCell = (v) => {
@@ -133,6 +142,10 @@ async function exportCsv(env) {
 
 const MIN_PASSWORD_LENGTH = 8;
 
+const ADMIN_ROLE = 'quality_admin';
+const ASSIGNABLE_ROLES = new Set(['quality_leader', 'quality_officer', 'quality_auditor', 'data_analyst']);
+const ALL_ROLES = new Set([ADMIN_ROLE, ...ASSIGNABLE_ROLES]);
+
 async function hasAnyUser(env) {
   const row = await env.DB.prepare('SELECT id FROM qa_users LIMIT 1').first();
   return !!row;
@@ -155,12 +168,12 @@ async function authBootstrap(env, body) {
   const id = crypto.randomUUID();
   await env.DB.prepare(
     `INSERT INTO qa_users (id, name, username, password_hash, password_salt, password_iterations, password_rounds, role)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'admin')`,
-  ).bind(id, name, username, hash, salt, iterations, rounds).run();
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+  ).bind(id, name, username, hash, salt, iterations, rounds, ADMIN_ROLE).run();
 
   const { token, expiresAt } = await createSession(env, id);
   return json(
-    { ok: true, user: { id, name, username, role: 'admin', canEdit: true, canDelete: true, canExport: true } },
+    { ok: true, user: { id, name, username, role: ADMIN_ROLE, canEdit: true, canDelete: true, canExport: true } },
     201,
     { 'Set-Cookie': sessionCookieHeader(token, expiresAt) },
   );
@@ -296,6 +309,7 @@ async function adminCreateUser(env, body) {
   const name = (body?.name || '').trim();
   const username = (body?.username || '').trim().toLowerCase();
   const password = body?.password || '';
+  const role = ALL_ROLES.has(body?.role) ? body.role : 'quality_auditor';
   if (!name || !username || password.length < MIN_PASSWORD_LENGTH) {
     return fail(`name, username, and a temporary password of at least ${MIN_PASSWORD_LENGTH} characters are required`, 400);
   }
@@ -312,8 +326,8 @@ async function adminCreateUser(env, body) {
     `INSERT INTO qa_users
        (id, name, username, password_hash, password_salt, password_iterations, password_rounds,
         role, can_edit, can_delete, can_export, must_change_password)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'inspector', ?8, ?9, ?10, 1)`,
-  ).bind(id, name, username, hash, salt, iterations, rounds, canEdit, canDelete, canExport).run();
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 1)`,
+  ).bind(id, name, username, hash, salt, iterations, rounds, role, canEdit, canDelete, canExport).run();
 
   return json({ ok: true, id }, 201);
 }
@@ -330,7 +344,7 @@ async function adminUpdateUser(env, actingUser, targetId, body) {
   if (typeof body?.canDelete === 'boolean') { sets.push(`can_delete = ?${n++}`); values.push(body.canDelete ? 1 : 0); }
   if (typeof body?.canExport === 'boolean') { sets.push(`can_export = ?${n++}`); values.push(body.canExport ? 1 : 0); }
   if (body?.status === 'active' || body?.status === 'suspended') { sets.push(`status = ?${n++}`); values.push(body.status); }
-  if (body?.role === 'admin' || body?.role === 'inspector') { sets.push(`role = ?${n++}`); values.push(body.role); }
+  if (ALL_ROLES.has(body?.role)) { sets.push(`role = ?${n++}`); values.push(body.role); }
   if (!sets.length) return fail('nothing to update', 400);
   sets.push(`updated_at = datetime('now')`);
 
@@ -359,8 +373,8 @@ async function adminDeleteUser(env, actingUser, targetId) {
   if (targetId === actingUser.id) return fail('you cannot delete your own account', 400);
   const target = await env.DB.prepare('SELECT role FROM qa_users WHERE id = ?1').bind(targetId).first();
   if (!target) return fail('user not found', 404);
-  if (target.role === 'admin') {
-    const { c } = await env.DB.prepare("SELECT COUNT(*) as c FROM qa_users WHERE role = 'admin'").first();
+  if (target.role === ADMIN_ROLE) {
+    const { c } = await env.DB.prepare('SELECT COUNT(*) as c FROM qa_users WHERE role = ?1').bind(ADMIN_ROLE).first();
     if (c <= 1) return fail('cannot delete the last administrator', 400);
   }
   await env.DB.prepare('DELETE FROM qa_users WHERE id = ?1').bind(targetId).run();
@@ -371,7 +385,7 @@ async function adminDeleteUser(env, actingUser, targetId) {
 async function handleAdmin(request, env, path, user) {
   const method = request.method.toUpperCase();
   if (!path.startsWith('admin/')) return null;
-  if (!user || user.role !== 'admin') return fail('administrator access required', 403);
+  if (!user || user.role !== ADMIN_ROLE) return fail('administrator access required', 403);
 
   if (path === 'admin/users' && method === 'GET') return adminListUsers(env);
   if (path === 'admin/users' && method === 'POST') return adminCreateUser(env, await request.json());
@@ -422,6 +436,8 @@ async function handleApi(request, env, url) {
     return exportCsv(env);
   }
 
+  if (path === 'buildings' && method === 'GET') return listBuildings(env);
+
   if (path === 'inspections') {
     if (method === 'GET') return json(await listInspections(env));
     if (method === 'POST') {
@@ -454,7 +470,7 @@ async function handleAssets(request, env, url) {
   if (isAppShell || isAdminShell) {
     const user = await getUserFromRequest(request, env);
     if (!user) return Response.redirect(new URL('/login.html', url).toString(), 302);
-    if (isAdminShell && user.role !== 'admin') {
+    if (isAdminShell && user.role !== ADMIN_ROLE) {
       return Response.redirect(new URL('/app.html', url).toString(), 302);
     }
   }

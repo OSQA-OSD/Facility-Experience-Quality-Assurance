@@ -62,8 +62,12 @@ tr:last-child td{border-bottom:none}
 .u-name{font-weight:800}
 .u-username{color:var(--muted);font-size:.78rem}
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:800}
-.badge-admin{background:rgba(0,51,160,.1);color:var(--royal)}
-.badge-inspector{background:rgba(69,96,128,.1);color:var(--muted)}
+.badge-quality_admin{background:rgba(0,51,160,.1);color:var(--royal)}
+.badge-quality_leader{background:rgba(0,32,112,.1);color:var(--royal-dk)}
+.badge-quality_officer{background:rgba(38,168,171,.14);color:#0c7b7d}
+.badge-quality_auditor{background:rgba(69,96,128,.1);color:var(--muted)}
+.badge-data_analyst{background:rgba(212,128,0,.12);color:var(--warn)}
+select.role-select{border:1.5px solid var(--border);border-radius:7px;padding:6px 8px;font-family:var(--font);font-size:.76rem;color:var(--text);background:#fff;outline:none}
 .badge-active{background:rgba(0,132,61,.1);color:var(--good)}
 .badge-suspended{background:rgba(192,57,43,.1);color:var(--danger)}
 .badge-pending{background:rgba(212,128,0,.12);color:var(--warn)}
@@ -101,7 +105,7 @@ tr:last-child td{border-bottom:none}
   <section class="panel">
     <div class="panel-head">
       <div>
-        <h2>Add an inspector</h2>
+        <h2>Add a team member</h2>
         <p>They sign in with this temporary password and must set their own before entering the workspace.</p>
       </div>
     </div>
@@ -120,6 +124,16 @@ tr:last-child td{border-bottom:none}
             <label for="cu-password">Temporary password</label>
             <input id="cu-password" type="text" autocomplete="off" minlength="8" required>
           </div>
+          <div>
+            <label for="cu-role">Role</label>
+            <select id="cu-role" class="role-select" style="width:100%;padding:10px 12px">
+              <option value="quality_auditor">Quality Auditor</option>
+              <option value="quality_officer">Quality Officer</option>
+              <option value="quality_leader">Quality Leader</option>
+              <option value="data_analyst">Data Analyst</option>
+              <option value="quality_admin">Quality Admin</option>
+            </select>
+          </div>
         </div>
         <div class="perms">
           <label class="perm-check"><input type="checkbox" id="cu-edit" checked> Can edit inspections</label>
@@ -127,7 +141,7 @@ tr:last-child td{border-bottom:none}
           <label class="perm-check"><input type="checkbox" id="cu-export" checked> Can export CSV</label>
         </div>
         <button class="btn btn-primary" type="submit" id="create-submit">
-          <svg data-lucide="user-plus" width="16" height="16"></svg> Create inspector
+          <svg data-lucide="user-plus" width="16" height="16"></svg> Create account
         </button>
         <div class="msg" id="create-msg"></div>
       </form>
@@ -167,6 +181,17 @@ let me = null;
 let users = [];
 
 function showOverlay(v){ document.getElementById('overlay').classList.toggle('show', v); }
+const ROLE_LABELS = {
+  quality_admin: 'Quality Admin',
+  quality_leader: 'Quality Leader',
+  quality_officer: 'Quality Officer',
+  quality_auditor: 'Quality Auditor',
+  data_analyst: 'Data Analyst',
+};
+function roleOptions(selected){
+  return Object.entries(ROLE_LABELS).map(([v,l]) =>
+    `<option value="${v}" ${v===selected?'selected':''}>${l}</option>`).join('');
+}
 function permIcon(on, name){
   return `<span class="perm-icon ${on?'on':''}" title="${name}"><svg data-lucide="${name==='edit'?'pencil':name==='delete'?'trash-2':'download'}" width="13" height="13"></svg></span>`;
 }
@@ -190,7 +215,11 @@ function renderUsers(){
           <div class="u-name">${escapeHtml(u.name)}</div>
           <div class="u-username">@${escapeHtml(u.username)}</div>
         </td>
-        <td><span class="badge ${u.role==='admin'?'badge-admin':'badge-inspector'}">${u.role}</span></td>
+        <td>
+          ${isSelf
+            ? `<span class="badge badge-${u.role}">${ROLE_LABELS[u.role]||u.role}</span>`
+            : `<select class="role-select" onchange="changeRole('${u.id}',this.value)">${roleOptions(u.role)}</select>`}
+        </td>
         <td>${statusBadge}</td>
         <td><div class="perm-icons">${permIcon(u.canEdit,'edit')}${permIcon(u.canDelete,'delete')}${permIcon(u.canExport,'export')}</div></td>
         <td>
@@ -230,6 +259,19 @@ async function togglePerm(id, field, value){
     if(!res.ok){ const d=await res.json(); throw new Error(d.error||'Could not update.'); }
     await loadUsers();
   }catch(err){ alert(err.message); }
+  finally{ showOverlay(false); }
+}
+
+async function changeRole(id, role){
+  showOverlay(true);
+  try{
+    const res = await fetch('/api/admin/users/'+id, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({role}),
+    });
+    if(!res.ok){ const d=await res.json(); throw new Error(d.error||'Could not update.'); }
+    await loadUsers();
+  }catch(err){ alert(err.message); await loadUsers(); }
   finally{ showOverlay(false); }
 }
 
@@ -274,6 +316,20 @@ async function deleteUser(id, name){
   finally{ showOverlay(false); }
 }
 
+const ROLE_DEFAULT_PERMS = {
+  quality_admin: {canEdit:true, canDelete:true, canExport:true},
+  quality_leader: {canEdit:false, canDelete:false, canExport:true},
+  quality_officer: {canEdit:false, canDelete:false, canExport:true},
+  quality_auditor: {canEdit:true, canDelete:false, canExport:true},
+  data_analyst: {canEdit:false, canDelete:false, canExport:true},
+};
+document.getElementById('cu-role').addEventListener('change', (e) => {
+  const d = ROLE_DEFAULT_PERMS[e.target.value] || ROLE_DEFAULT_PERMS.quality_auditor;
+  document.getElementById('cu-edit').checked = d.canEdit;
+  document.getElementById('cu-delete').checked = d.canDelete;
+  document.getElementById('cu-export').checked = d.canExport;
+});
+
 document.getElementById('create-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const submit = document.getElementById('create-submit');
@@ -287,6 +343,7 @@ document.getElementById('create-form').addEventListener('submit', async (e) => {
         name: document.getElementById('cu-name').value.trim(),
         username: document.getElementById('cu-username').value.trim(),
         password: document.getElementById('cu-password').value,
+        role: document.getElementById('cu-role').value,
         canEdit: document.getElementById('cu-edit').checked,
         canDelete: document.getElementById('cu-delete').checked,
         canExport: document.getElementById('cu-export').checked,
@@ -297,7 +354,7 @@ document.getElementById('create-form').addEventListener('submit', async (e) => {
     document.getElementById('create-form').reset();
     document.getElementById('cu-edit').checked = true;
     document.getElementById('cu-export').checked = true;
-    msg.textContent = 'Inspector account created.';
+    msg.textContent = 'Account created.';
     msg.className = 'msg ok';
     await loadUsers();
   }catch(err){
@@ -318,7 +375,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
     if(!res.ok){ window.location.href='/login.html'; return; }
     const data = await res.json();
     me = data.user;
-    if (me.role !== 'admin') { window.location.href = '/app.html'; return; }
+    if (me.role !== 'quality_admin') { window.location.href = '/app.html'; return; }
     await loadUsers();
   }catch(err){
     document.getElementById('user-empty').hidden = false;
