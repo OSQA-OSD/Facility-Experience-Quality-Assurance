@@ -110,6 +110,23 @@ input:focus{border-color:var(--teal)}
       <div class="msg" id="lg-msg"></div>
     </form>
   </div>
+
+  <div id="force-change-view" hidden>
+    <span class="badge"><svg data-lucide="key-round" width="12" height="12"></svg> Security required</span>
+    <h2>Set your password</h2>
+    <p class="sub">This temporary password can only be used to reach this screen. Choose a new password before entering the workspace.</p>
+    <form id="force-change-form">
+      <label for="fc-password">New password</label>
+      <input id="fc-password" type="password" autocomplete="new-password" minlength="8" required>
+      <label for="fc-confirm">Confirm new password</label>
+      <input id="fc-confirm" type="password" autocomplete="new-password" minlength="8" required>
+      <div class="hint">At least 8 characters.</div>
+      <button class="btn" type="submit" id="fc-submit">
+        <svg data-lucide="check" width="16" height="16"></svg> Set password and sign in
+      </button>
+      <div class="msg" id="fc-msg"></div>
+    </form>
+  </div>
 </div>
 
 <script>
@@ -117,6 +134,8 @@ lucide.createIcons();
 
 const bootstrapView = document.getElementById('bootstrap-view');
 const loginView = document.getElementById('login-view');
+const forceChangeView = document.getElementById('force-change-view');
+let pendingSetup = null; // { username, currentPassword } while forcing a password change
 
 function setBusy(btn, busy, label) {
   btn.disabled = busy;
@@ -189,10 +208,44 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Invalid username or password.');
+    if (data.mustChangePassword) {
+      pendingSetup = {
+        username: document.getElementById('lg-username').value.trim(),
+        currentPassword: document.getElementById('lg-password').value,
+      };
+      loginView.hidden = true;
+      forceChangeView.hidden = false;
+      return;
+    }
     window.location.href = '/app.html';
   } catch (err) {
     showMsg(msg, err.message, false);
     setBusy(submit, false, '<svg data-lucide="log-in" width="16" height="16"></svg> Sign In');
+    lucide.createIcons();
+  }
+});
+
+document.getElementById('force-change-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const submit = document.getElementById('fc-submit');
+  const msg = document.getElementById('fc-msg');
+  msg.className = 'msg';
+  const newPassword = document.getElementById('fc-password').value;
+  const confirm = document.getElementById('fc-confirm').value;
+  if (newPassword !== confirm) { showMsg(msg, 'Passwords do not match.', false); return; }
+  setBusy(submit, true);
+  try {
+    const res = await fetch('/api/auth/complete-setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...pendingSetup, newPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not set your new password.');
+    window.location.href = '/app.html';
+  } catch (err) {
+    showMsg(msg, err.message, false);
+    setBusy(submit, false, '<svg data-lucide="check" width="16" height="16"></svg> Set password and sign in');
     lucide.createIcons();
   }
 });

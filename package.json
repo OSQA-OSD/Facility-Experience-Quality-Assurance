@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build": "mkdir -p dist && cp index.html app.html login.html dist/",
+    "build": "mkdir -p dist && cp index.html app.html login.html admin.html dist/",
     "migrate": "wrangler d1 migrations apply facility-qa --remote",
     "deploy": "npm run build && npm run migrate && wrangler deploy",
     "dev": "npm run build && wrangler dev"

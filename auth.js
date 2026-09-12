@@ -98,9 +98,11 @@ export async function getUserFromRequest(request, env) {
   ).bind(tokenHash).first();
   if (!session || session.expires_at < Date.now()) return null;
   const user = await env.DB.prepare(
-    'SELECT id, name, username, role FROM qa_users WHERE id = ?1',
+    `SELECT id, name, username, role, status, can_edit, can_delete, can_export, must_change_password
+     FROM qa_users WHERE id = ?1`,
   ).bind(session.user_id).first();
-  return user || null;
+  if (!user || user.status !== 'active') return null;
+  return user;
 }
 
 export function readCookie(request, name) {
