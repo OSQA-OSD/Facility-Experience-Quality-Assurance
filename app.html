@@ -358,6 +358,7 @@ body.no-delete .hc-del{display:none}
   </div>
   <nav id="sb-nav">
     <div class="ni active" data-page="pg-home"><svg class="ni-icon" data-lucide="home"></svg> Home</div>
+    <div class="ni" id="my-assignments-link" data-page="pg-assignments" hidden><svg class="ni-icon" data-lucide="clipboard-check"></svg> My Assignments <span class="ns" id="ns-assign">–</span></div>
     <div class="ni" data-page="pg-s0"><svg class="ni-icon" data-lucide="car"></svg> Arrival &amp; Parking <span class="ns" id="ns-0">–/10</span></div>
     <div class="ni" data-page="pg-s1"><svg class="ni-icon" data-lucide="tree-deciduous"></svg> Landscape <span class="ns" id="ns-1">–/10</span></div>
     <div class="ni" data-page="pg-s2"><svg class="ni-icon" data-lucide="door-open"></svg> Entrance &amp; Lobby <span class="ns" id="ns-2">–/10</span></div>
@@ -369,6 +370,7 @@ body.no-delete .hc-del{display:none}
     <div class="ni" data-page="pg-s8"><svg class="ni-icon" data-lucide="wrench"></svg> Maintenance <span class="ns" id="ns-8">–/10</span></div>
     <div class="ni" data-page="pg-s9"><svg class="ni-icon" data-lucide="clipboard-list"></svg> Miscellaneous <span class="ns" id="ns-9">–/10</span></div>
     <div class="ni" data-page="pg-scorecard"><svg class="ni-icon" data-lucide="bar-chart-2"></svg> Score Card</div>
+    <a class="ni" id="assign-link" href="assign.html" hidden><svg class="ni-icon" data-lucide="clipboard-list"></svg> Assign Buildings</a>
     <a class="ni" id="admin-link" href="admin.html" hidden><svg class="ni-icon" data-lucide="users"></svg> Admin</a>
   </nav>
   <div id="sb-foot">
@@ -543,6 +545,22 @@ body.no-delete .hc-del{display:none}
 
   <!-- SECTION PAGES built by JS -->
   <div id="secs-container"></div>
+
+  <!-- MY ASSIGNMENTS (Quality Auditor) -->
+  <div class="page" id="pg-assignments">
+    <div class="home-hero">
+      <h2>My Assignments</h2>
+      <p class="sub">Buildings assigned to you for inspection.</p>
+    </div>
+    <div id="assign-filters" class="hist-filters" style="padding:16px 32px 0">
+      <select id="assign-quarter"></select>
+      <select id="assign-type">
+        <option value="BOQI">BOQI — Beginning of Quarter</option>
+        <option value="EOQI">EOQI — End of Quarter</option>
+      </select>
+    </div>
+    <div id="assign-list" style="padding:0 32px 32px"></div>
+  </div>
 
   <!-- SCORECARD -->
   <div class="page" id="pg-scorecard">
@@ -727,6 +745,7 @@ let history = []; // loaded from the database
 let allState = {};
 let currentReportSaved = false;
 let editingRecordId = null;
+let currentAssignmentId = null; // set when an inspection is started from "My Assignments"
 let saveChoiceMode = 'update';
 let dbOnline = false;
 
@@ -934,7 +953,7 @@ function updateCommentHint(si,ii){
 // so a page can be bookmarked, shared, or restored with the browser's
 // back/forward buttons.
 // ═══════════════════════════════════════════════════════════
-const VALID_PAGES=new Set(['pg-home','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard']);
+const VALID_PAGES=new Set(['pg-home','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments']);
 function hashToPage(hash){
   const id=(hash||'').replace(/^#/,'');
   return VALID_PAGES.has(id)?id:'pg-home';
@@ -945,6 +964,7 @@ function nav(pageId){
   document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('active',n.dataset.page===pageId));
   if(pageId==='pg-scorecard') updateScoreCard();
   if(pageId==='pg-home'){renderHistory();renderSpellBanner();}
+  if(pageId==='pg-assignments') loadMyAssignments();
   if(pageId.startsWith('pg-s')) syncFormToState();
   document.getElementById('main').scrollTo(0,0);
   if(location.hash!=='#'+pageId) location.hash=pageId;
@@ -1205,7 +1225,7 @@ function buildRecord(overrideType){
   const filename=buildFilenameFrom(typeVal,date,facility,division,activeInspector);
   return{
     id:Date.now(),inspector:activeInspector,facility,division,date,
-    type:typeVal,typeLabel,overall,filename,
+    type:typeVal,typeLabel,overall,filename,assignmentId:currentAssignmentId,
     sections:SECTIONS.map((sec,si)=>({
       title:sec.title,lucide:sec.lucide,score:getSecScore(si).total,max:sec.max,
       items:sec.items.map((item,ii)=>({
@@ -1516,6 +1536,7 @@ function startNewInspection(){
     if(!confirm('You are editing a saved record. Start a new inspection instead? Unsaved edits will be lost.'))return;
     cancelEdit();return;
   }
+  currentAssignmentId=null;
   nav('pg-s0');
 }
 
@@ -1524,6 +1545,7 @@ function editInspection(e,id){
   const record=history.find(r=>r.id===id);
   if(!record){alert('Record not found.');return;}
   if(!confirm(`Load "${record.facility}${record.division?' — '+record.division:''}" (${record.date}) for editing?\n\nUnsaved current data for ${record.inspector} will be replaced.`))return;
+  currentAssignmentId=record.assignmentId||null;
   if(!inspectors.includes(record.inspector)){inspectors.push(record.inspector);saveInspectorList();rebuildInspectorDropdown();renderInspectorChips();}
   activeInspector=record.inspector;
   document.getElementById('meta-inspector').value=record.inspector;
@@ -1551,7 +1573,7 @@ function editInspection(e,id){
 }
 
 function cancelEdit(){
-  editingRecordId=null;currentReportSaved=false;
+  editingRecordId=null;currentAssignmentId=null;currentReportSaved=false;
   allState[activeInspector]={
     scores:SECTIONS.map(s=>s.items.map(()=>null)),
     comments:SECTIONS.map(s=>s.items.map(()=>'')),
@@ -1995,6 +2017,73 @@ updateScoreCardActionBar();
   }
 })();
 
+// ═══════════════════════════════════════════════════════════
+// MY ASSIGNMENTS (Quality Auditor)
+// ═══════════════════════════════════════════════════════════
+function quarterOptions(){
+  const now=new Date();
+  const y=now.getFullYear();
+  const q=Math.floor(now.getMonth()/3)+1;
+  const opts=[];
+  for(let i=-1;i<3;i++){
+    let qq=q+i,yy=y;
+    while(qq<1){qq+=4;yy--;}
+    while(qq>4){qq-=4;yy++;}
+    opts.push(`${yy}-Q${qq}`);
+  }
+  return [...new Set(opts)];
+}
+function initMyAssignments(){
+  const sel=document.getElementById('assign-quarter');
+  const cur=`${new Date().getFullYear()}-Q${Math.floor(new Date().getMonth()/3)+1}`;
+  sel.innerHTML=quarterOptions().map(q=>`<option value="${q}" ${q===cur?'selected':''}>${q}</option>`).join('');
+  sel.addEventListener('change',loadMyAssignments);
+  document.getElementById('assign-type').addEventListener('change',loadMyAssignments);
+}
+async function loadMyAssignments(){
+  const list=document.getElementById('assign-list');
+  const quarter=document.getElementById('assign-quarter').value;
+  const type=document.getElementById('assign-type').value;
+  list.innerHTML='<div class="no-hist">Loading…</div>';
+  try{
+    const res=await fetch(`/api/assignments/mine?quarter=${encodeURIComponent(quarter)}&type=${encodeURIComponent(type)}`);
+    if(!res.ok) throw new Error((await res.json()).error||'Could not load assignments.');
+    const {assignments}=await res.json();
+    document.getElementById('ns-assign').textContent=assignments.length;
+    if(!assignments.length){ list.innerHTML='<div class="no-hist">No buildings assigned to you for this quarter yet.</div>'; return; }
+    list.innerHTML='';
+    assignments.forEach(a=>{
+      const card=document.createElement('div');card.className='hist-card';
+      card.innerHTML=`
+        <div class="hc-score" style="background:${a.completed?'var(--good)':'var(--warn)'}">
+          <svg data-lucide="${a.completed?'check':'clock'}" width="16" height="16"></svg>
+        </div>
+        <div class="hc-info">
+          <div class="hc-title">${a.buildingName}</div>
+          <div class="hc-meta">${a.division}${a.area?' · '+a.area:''}${a.location?' · '+a.location:''}</div>
+        </div>
+        <span class="hc-grade gp" style="background:${a.completed?'#00843D':'#D48000'};color:#fff">${a.completed?'Completed':'Pending'}</span>
+        ${a.completed?'':`<button class="btn bt" style="padding:8px 14px;font-size:.76rem" onclick="startAssignedInspection(${a.id},'${escapeAttr(a.buildingName)}','${escapeAttr(a.division)}')">Start Inspection</button>`}`;
+      list.appendChild(card);
+    });
+    lucide.createIcons();
+  }catch(err){
+    list.innerHTML=`<div class="no-hist">Could not load assignments: ${err.message}</div>`;
+  }
+}
+function escapeAttr(s){ return String(s||'').replace(/'/g,"\\'"); }
+function startAssignedInspection(assignmentId,buildingName,division){
+  if(editingRecordId!==null){
+    if(!confirm('You are editing a saved record. Start this assignment instead? Unsaved edits will be lost.'))return;
+    cancelEdit();
+  }
+  currentAssignmentId=assignmentId;
+  document.getElementById('meta-facility').value=buildingName;
+  document.getElementById('meta-division').value=division;
+  document.getElementById('meta-type').value=document.getElementById('assign-type').value;
+  nav('pg-s0');
+}
+
 // ── Account: show signed-in user, apply permissions, wire logout ──
 let currentUser=null;
 (async()=>{
@@ -2005,6 +2094,8 @@ let currentUser=null;
     currentUser=user;
     document.getElementById('acct-name').textContent=user.name||user.username;
     if(user.role==='quality_admin') document.getElementById('admin-link').hidden=false;
+    if(user.role==='quality_officer'||user.role==='quality_admin') document.getElementById('assign-link').hidden=false;
+    if(user.role==='quality_auditor'){ document.getElementById('my-assignments-link').hidden=false; initMyAssignments(); }
     if(!user.canExport) document.getElementById('export-csv-btn')?.remove();
     if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
     document.body.classList.toggle('no-delete',!user.canDelete);

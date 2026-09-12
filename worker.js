@@ -101,6 +101,144 @@ async function listBuildings(env) {
   return json({ buildings: results || [] });
 }
 
+/* ── Assignments (Officer -> Auditor) ──────────────────────
+ * A completed assignment is one an auditor reached the "Start
+ * Inspection" flow for and saved -- the saved inspection carries the
+ * assignment id in its JSON payload (assignmentId), so completion is
+ * read straight from qa's own data rather than a status column that
+ * could drift out of sync. ─────────────────────────────────── */
+
+const ASSIGNMENT_TYPES = new Set(['BOQI', 'EOQI']);
+
+async function completedAssignmentIds(env) {
+  const { results } = await env.DB.prepare(
+    `SELECT DISTINCT CAST(json_extract(data, '$.assignmentId') AS INTEGER) as assignment_id
+     FROM inspections WHERE json_extract(data, '$.assignmentId') IS NOT NULL`,
+  ).all();
+  return new Set((results || []).map((r) => r.assignment_id));
+}
+
+async function listAuditors(env) {
+  const { results } = await env.DB.prepare(
+    `SELECT id, name, username FROM qa_users WHERE role = 'quality_auditor' AND status = 'active' ORDER BY name`,
+  ).all();
+  return json({ auditors: results || [] });
+}
+
+async function listAssignmentBoard(env, quarter, type) {
+  const { results: buildings } = await env.DB.prepare(
+    'SELECT id, location, division, area, name FROM buildings ORDER BY division, area, name',
+  ).all();
+  const { results: assignmentRows } = await env.DB.prepare(
+    `SELECT a.id, a.building_id, a.auditor_id, u.name as auditor_name
+     FROM assignments a JOIN qa_users u ON u.id = a.auditor_id
+     WHERE a.quarter = ?1 AND a.type = ?2`,
+  ).bind(quarter, type).all();
+  const byBuilding = new Map((assignmentRows || []).map((a) => [a.building_id, a]));
+  const completedIds = await completedAssignmentIds(env);
+
+  const board = (buildings || []).map((b) => {
+    const a = byBuilding.get(b.id);
+    return {
+      buildingId: b.id, location: b.location, division: b.division, area: b.area, name: b.name,
+      assignmentId: a ? a.id : null,
+      auditorId: a ? a.auditor_id : null,
+      auditorName: a ? a.auditor_name : null,
+      completed: a ? completedIds.has(a.id) : false,
+    };
+  });
+  const total = board.length;
+  const completed = board.filter((b) => b.completed).length;
+  const assigned = board.filter((b) => b.assignmentId).length;
+  return json({ quarter, type, board, summary: { total, assigned, completed } });
+}
+
+async function upsertAssignment(env, officer, body) {
+  const buildingId = Number(body?.buildingId);
+  const auditorId = body?.auditorId;
+  const quarter = (body?.quarter || '').trim();
+  const type = body?.type;
+  if (!buildingId || !auditorId || !quarter || !ASSIGNMENT_TYPES.has(type)) {
+    return fail('buildingId, auditorId, quarter, and a valid type (BOQI/EOQI) are required', 400);
+  }
+  const auditor = await env.DB.prepare(
+    "SELECT id FROM qa_users WHERE id = ?1 AND role = 'quality_auditor'",
+  ).bind(auditorId).first();
+  if (!auditor) return fail('auditor not found', 404);
+  const building = await env.DB.prepare('SELECT id FROM buildings WHERE id = ?1').bind(buildingId).first();
+  if (!building) return fail('building not found', 404);
+
+  await env.DB.prepare(
+    `INSERT INTO assignments (building_id, auditor_id, quarter, type, assigned_by)
+     VALUES (?1, ?2, ?3, ?4, ?5)
+     ON CONFLICT(building_id, quarter, type)
+     DO UPDATE SET auditor_id = excluded.auditor_id, assigned_by = excluded.assigned_by, updated_at = datetime('now')`,
+  ).bind(buildingId, auditorId, quarter, type, officer.id).run();
+
+  return json({ ok: true });
+}
+
+async function deleteAssignment(env, id) {
+  const res = await env.DB.prepare('DELETE FROM assignments WHERE id = ?1').bind(id).run();
+  if (!res.meta.changes) return fail('assignment not found', 404);
+  return json({ ok: true });
+}
+
+async function listMyAssignments(env, auditorId, quarter, type) {
+  const { results } = await env.DB.prepare(
+    `SELECT a.id, a.building_id, b.name as building_name, b.division, b.area, b.location
+     FROM assignments a JOIN buildings b ON b.id = a.building_id
+     WHERE a.auditor_id = ?1 AND a.quarter = ?2 AND a.type = ?3
+     ORDER BY b.division, b.area, b.name`,
+  ).bind(auditorId, quarter, type).all();
+  const completedIds = await completedAssignmentIds(env);
+
+  const assignments = (results || []).map((a) => ({
+    id: a.id, buildingId: a.building_id, buildingName: a.building_name,
+    division: a.division, area: a.area, location: a.location,
+    completed: completedIds.has(a.id),
+  }));
+  return json({ quarter, type, assignments });
+}
+
+async function handleAssignments(request, env, url, path, user) {
+  const method = request.method.toUpperCase();
+  if (!path.startsWith('assignments')) return null;
+
+  if (path === 'assignments/mine' && method === 'GET') {
+    const quarter = url.searchParams.get('quarter') || '';
+    const type = url.searchParams.get('type') || '';
+    if (!quarter || !ASSIGNMENT_TYPES.has(type)) return fail('quarter and a valid type (BOQI/EOQI) are required', 400);
+    return listMyAssignments(env, user.id, quarter, type);
+  }
+
+  const canManage = user.role === 'quality_officer' || user.role === ADMIN_ROLE;
+  const canView = canManage || user.role === 'quality_leader';
+
+  if (path === 'assignments/auditors' && method === 'GET') {
+    if (!canManage) return fail('you do not have permission to view this', 403);
+    return listAuditors(env);
+  }
+  if (path === 'assignments' && method === 'GET') {
+    if (!canView) return fail('you do not have permission to view assignments', 403);
+    const quarter = url.searchParams.get('quarter') || '';
+    const type = url.searchParams.get('type') || '';
+    if (!quarter || !ASSIGNMENT_TYPES.has(type)) return fail('quarter and a valid type (BOQI/EOQI) are required', 400);
+    return listAssignmentBoard(env, quarter, type);
+  }
+  if (path === 'assignments' && method === 'POST') {
+    if (!canManage) return fail('you do not have permission to assign buildings', 403);
+    return upsertAssignment(env, user, await request.json());
+  }
+  const idMatch = path.match(/^assignments\/(\d+)$/);
+  if (idMatch && method === 'DELETE') {
+    if (!canManage) return fail('you do not have permission to unassign buildings', 403);
+    return deleteAssignment(env, Number(idMatch[1]));
+  }
+
+  return fail('not found', 404);
+}
+
 /* ── CSV export ─────────────────────────────────────────── */
 
 const csvCell = (v) => {
@@ -438,6 +576,10 @@ async function handleApi(request, env, url) {
 
   if (path === 'buildings' && method === 'GET') return listBuildings(env);
 
+  const assignmentResponse = await handleAssignments(request, env, url, path, user);
+  if (assignmentResponse) return assignmentResponse;
+  if (path.startsWith('assignments')) return fail('not found', 404);
+
   if (path === 'inspections') {
     if (method === 'GET') return json(await listInspections(env));
     if (method === 'POST') {
@@ -467,10 +609,14 @@ async function handleApi(request, env, url) {
 async function handleAssets(request, env, url) {
   const isAppShell = url.pathname === '/app.html' || url.pathname === '/app';
   const isAdminShell = url.pathname === '/admin.html' || url.pathname === '/admin';
-  if (isAppShell || isAdminShell) {
+  const isAssignShell = url.pathname === '/assign.html' || url.pathname === '/assign';
+  if (isAppShell || isAdminShell || isAssignShell) {
     const user = await getUserFromRequest(request, env);
     if (!user) return Response.redirect(new URL('/login.html', url).toString(), 302);
     if (isAdminShell && user.role !== ADMIN_ROLE) {
+      return Response.redirect(new URL('/app.html', url).toString(), 302);
+    }
+    if (isAssignShell && user.role !== 'quality_officer' && user.role !== ADMIN_ROLE) {
       return Response.redirect(new URL('/app.html', url).toString(), 302);
     }
   }

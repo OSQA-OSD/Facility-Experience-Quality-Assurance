@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assign Buildings — Facility Experience QA</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --teal:#26A8AB;--teal-lt:#8CFEE3;--royal:#0033A0;--royal-dk:#002070;
+  --bg:#EEF3F7;--border:#C8D8E4;--text:#102040;--muted:#456080;
+  --good:#00843D;--warn:#D48000;--danger:#C0392B;--r:12px;--font:'Cairo',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+
+header{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--border);padding:14px 6%;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:1.02rem;color:var(--royal)}
+.brand .dot{width:34px;height:34px;border-radius:9px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;color:#fff}
+.brand .dot svg{width:18px;height:18px}
+.brand .tag{background:rgba(38,168,171,.14);color:#0c7b7d;font-weight:800;font-size:.66rem;letter-spacing:.05em;padding:3px 9px;border-radius:999px;text-transform:uppercase}
+.hd-actions{display:flex;align-items:center;gap:10px}
+
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:999px;font-weight:800;font-size:.84rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s;font-family:var(--font)}
+.btn-primary{background:var(--royal);color:#fff;box-shadow:0 8px 20px -6px rgba(0,51,160,.5)}
+.btn-primary:hover{transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--royal);border:1.5px solid var(--border)}
+.btn-ghost:hover{border-color:var(--royal)}
+
+main{max-width:1200px;margin:0 auto;padding:40px 6% 80px}
+.page-head{margin-bottom:24px}
+.page-head h1{font-size:1.5rem;font-weight:900;color:var(--royal-dk);margin-bottom:6px}
+.page-head p{color:var(--muted);font-size:.88rem}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+.stat b{display:block;font-size:1.7rem;font-weight:900;color:var(--royal)}
+.stat span{font-size:.74rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.progress-track{height:8px;background:var(--bg);border-radius:999px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--good));border-radius:999px;transition:width .3s}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+select,input{border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:.84rem;color:var(--text);background:#fff;outline:none}
+select:focus,input:focus{border-color:var(--teal)}
+
+.panel{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 40px -24px rgba(0,32,112,.25);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:10px 20px;border-bottom:1.5px solid var(--border);background:#fff}
+td{padding:11px 20px;border-bottom:1px solid var(--bg);font-size:.84rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.b-name{font-weight:800}
+.b-meta{color:var(--muted);font-size:.74rem}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:800}
+.badge-done{background:rgba(0,132,61,.1);color:var(--good)}
+.badge-pending{background:rgba(212,128,0,.12);color:var(--warn)}
+.assign-select{min-width:170px}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:.86rem}
+
+.overlay{position:fixed;inset:0;background:rgba(238,243,247,.85);display:none;align-items:center;justify-content:center;z-index:50;font-weight:800;color:var(--royal)}
+.overlay.show{display:flex}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"><svg data-lucide="clipboard-list" width="18" height="18"></svg></span>
+    Facility Experience QA
+    <span class="tag">Assign Buildings</span>
+  </div>
+  <div class="hd-actions">
+    <a class="btn btn-ghost" href="app.html"><svg data-lucide="arrow-left" width="14" height="14"></svg> Back to App</a>
+    <button class="btn btn-ghost" id="logout-btn"><svg data-lucide="log-out" width="14" height="14"></svg> Log out</button>
+  </div>
+</header>
+
+<main>
+  <div class="page-head">
+    <h1>Assign buildings to auditors</h1>
+    <p>Pick a quarter and inspection type, then assign each building to an auditor.</p>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><b id="stat-total">–</b><span>Total buildings</span></div>
+    <div class="stat"><b id="stat-assigned">–</b><span>Assigned</span></div>
+    <div class="stat">
+      <b id="stat-completed">–</b><span>Completed</span>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <select id="f-quarter"></select>
+    <select id="f-type">
+      <option value="BOQI">BOQI — Beginning of Quarter</option>
+      <option value="EOQI">EOQI — End of Quarter</option>
+    </select>
+    <select id="f-division"><option value="">All Divisions</option></select>
+    <input type="text" id="f-search" placeholder="Search building…">
+  </div>
+
+  <div class="panel">
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Building</th>
+            <th>Division / Area</th>
+            <th>Assigned To</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="board-rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="board-empty" hidden>No buildings match.</div>
+  </div>
+</main>
+
+<div class="overlay" id="overlay">Working…</div>
+
+<script>
+lucide.createIcons();
+let me=null, auditors=[], board=[];
+
+function showOverlay(v){ document.getElementById('overlay').classList.toggle('show', v); }
+
+function quarterOptions(){
+  const now=new Date();
+  const y=now.getFullYear();
+  const q=Math.floor(now.getMonth()/3)+1;
+  const opts=[];
+  for(let i=-1;i<3;i++){
+    let qq=q+i,yy=y;
+    while(qq<1){qq+=4;yy--;}
+    while(qq>4){qq-=4;yy++;}
+    opts.push(`${yy}-Q${qq}`);
+  }
+  return [...new Set(opts)];
+}
+
+function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function loadAuditors(){
+  const res = await fetch('/api/assignments/auditors');
+  if(!res.ok) throw new Error('Could not load the auditor list.');
+  const data = await res.json();
+  auditors = data.auditors;
+}
+
+async function loadBoard(){
+  const quarter=document.getElementById('f-quarter').value;
+  const type=document.getElementById('f-type').value;
+  const rows=document.getElementById('board-rows');
+  rows.innerHTML='<tr><td colspan="4" class="empty">Loading…</td></tr>';
+  try{
+    const res=await fetch(`/api/assignments?quarter=${encodeURIComponent(quarter)}&type=${encodeURIComponent(type)}`);
+    if(!res.ok) throw new Error((await res.json()).error||'Could not load the board.');
+    const data=await res.json();
+    board=data.board;
+    document.getElementById('stat-total').textContent=data.summary.total;
+    document.getElementById('stat-assigned').textContent=data.summary.assigned;
+    document.getElementById('stat-completed').textContent=data.summary.completed;
+    document.getElementById('progress-fill').style.width=(data.summary.total?Math.round(data.summary.completed/data.summary.total*100):0)+'%';
+
+    const divisions=[...new Set(board.map(b=>b.division))].sort();
+    const divSel=document.getElementById('f-division');
+    const curDiv=divSel.value;
+    divSel.innerHTML='<option value="">All Divisions</option>'+divisions.map(d=>`<option value="${escapeHtml(d)}" ${d===curDiv?'selected':''}>${escapeHtml(d)}</option>`).join('');
+
+    renderBoard();
+  }catch(err){
+    rows.innerHTML=`<tr><td colspan="4" class="empty">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function renderBoard(){
+  const rows=document.getElementById('board-rows');
+  const empty=document.getElementById('board-empty');
+  const divFilter=document.getElementById('f-division').value;
+  const search=document.getElementById('f-search').value.trim().toLowerCase();
+  const filtered=board.filter(b =>
+    (!divFilter || b.division===divFilter) &&
+    (!search || b.name.toLowerCase().includes(search)));
+
+  if(!filtered.length){ rows.innerHTML=''; empty.hidden=false; return; }
+  empty.hidden=true;
+
+  rows.innerHTML=filtered.map(b => `
+    <tr>
+      <td><div class="b-name">${escapeHtml(b.name)}</div><div class="b-meta">${escapeHtml(b.location||'')}</div></td>
+      <td><div>${escapeHtml(b.division)}</div><div class="b-meta">${escapeHtml(b.area)}</div></td>
+      <td>
+        <select class="assign-select" onchange="onAssign(${b.buildingId}, this.value)">
+          <option value="">— Unassigned —</option>
+          ${auditors.map(a=>`<option value="${a.id}" ${a.id===b.auditorId?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}
+        </select>
+      </td>
+      <td>${b.assignmentId
+        ? (b.completed ? '<span class="badge badge-done">Completed</span>' : '<span class="badge badge-pending">Pending</span>')
+        : '<span class="b-meta">—</span>'}
+      </td>
+    </tr>`).join('');
+}
+
+async function onAssign(buildingId, auditorId){
+  const quarter=document.getElementById('f-quarter').value;
+  const type=document.getElementById('f-type').value;
+  showOverlay(true);
+  try{
+    if(!auditorId){
+      const existing=board.find(b=>b.buildingId===buildingId);
+      if(existing && existing.assignmentId){
+        const res=await fetch('/api/assignments/'+existing.assignmentId, {method:'DELETE'});
+        if(!res.ok) throw new Error((await res.json()).error||'Could not unassign.');
+      }
+    }else{
+      const res=await fetch('/api/assignments', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({buildingId, auditorId, quarter, type}),
+      });
+      if(!res.ok) throw new Error((await res.json()).error||'Could not assign.');
+    }
+    await loadBoard();
+  }catch(err){
+    alert(err.message);
+    await loadBoard();
+  }finally{
+    showOverlay(false);
+  }
+}
+
+document.getElementById('f-division').addEventListener('change', renderBoard);
+document.getElementById('f-search').addEventListener('input', renderBoard);
+document.getElementById('f-quarter').addEventListener('change', loadBoard);
+document.getElementById('f-type').addEventListener('change', loadBoard);
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  try{ await fetch('/api/auth/logout',{method:'POST'}); }finally{ window.location.href='/login.html'; }
+});
+
+(async () => {
+  try{
+    const res = await fetch('/api/auth/me');
+    if(!res.ok){ window.location.href='/login.html'; return; }
+    const data = await res.json();
+    me = data.user;
+    if (me.role !== 'quality_officer' && me.role !== 'quality_admin') { window.location.href = '/app.html'; return; }
+
+    const sel=document.getElementById('f-quarter');
+    const cur=`${new Date().getFullYear()}-Q${Math.floor(new Date().getMonth()/3)+1}`;
+    sel.innerHTML=quarterOptions().map(q=>`<option value="${q}" ${q===cur?'selected':''}>${q}</option>`).join('');
+
+    await loadAuditors();
+    await loadBoard();
+  }catch(err){
+    document.getElementById('board-rows').innerHTML=`<tr><td colspan="4" class="empty">Could not connect: ${escapeHtml(err.message)}</td></tr>`;
+  }
+})();
+</script>
+</body>
+</html>
