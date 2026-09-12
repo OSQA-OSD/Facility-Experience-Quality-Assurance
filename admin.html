@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Facility Experience QA</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --teal:#26A8AB;--teal-lt:#8CFEE3;--royal:#0033A0;--royal-dk:#002070;
+  --bg:#EEF3F7;--border:#C8D8E4;--text:#102040;--muted:#456080;
+  --good:#00843D;--warn:#D48000;--danger:#C0392B;--r:12px;--font:'Cairo',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+
+header{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--border);padding:14px 6%;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:1.02rem;color:var(--royal)}
+.brand .dot{width:34px;height:34px;border-radius:9px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;color:#fff}
+.brand .dot svg{width:18px;height:18px}
+.brand .tag{background:rgba(38,168,171,.14);color:#0c7b7d;font-weight:800;font-size:.66rem;letter-spacing:.05em;padding:3px 9px;border-radius:999px;text-transform:uppercase}
+.hd-actions{display:flex;align-items:center;gap:10px}
+
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:999px;font-weight:800;font-size:.84rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s;font-family:var(--font)}
+.btn-primary{background:var(--royal);color:#fff;box-shadow:0 8px 20px -6px rgba(0,51,160,.5)}
+.btn-primary:hover{transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--royal);border:1.5px solid var(--border)}
+.btn-ghost:hover{border-color:var(--royal)}
+.btn-sm{padding:6px 12px;font-size:.74rem;border-radius:7px}
+.btn-danger{background:rgba(192,57,43,.1);color:var(--danger)}
+.btn-danger:hover{background:rgba(192,57,43,.18)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+main{max-width:1100px;margin:0 auto;padding:40px 6% 80px}
+.page-head{margin-bottom:28px}
+.page-head h1{font-size:1.5rem;font-weight:900;color:var(--royal-dk);margin-bottom:6px}
+.page-head p{color:var(--muted);font-size:.88rem}
+
+.panel{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 40px -24px rgba(0,32,112,.25);margin-bottom:28px;overflow:hidden}
+.panel-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.panel-head h2{font-size:1.02rem;font-weight:800;color:var(--royal)}
+.panel-head p{font-size:.78rem;color:var(--muted);margin-top:2px}
+.panel-body{padding:24px}
+
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:16px}
+label{display:block;font-size:.74rem;font-weight:800;color:var(--muted);margin-bottom:6px}
+input[type=text],input[type=password]{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:.88rem;color:var(--text);background:var(--bg);outline:none}
+input:focus{border-color:var(--teal)}
+.perms{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+.perm-check{display:flex;align-items:center;gap:7px;font-size:.82rem;font-weight:700;color:var(--text);cursor:pointer}
+.perm-check input{width:16px;height:16px;accent-color:var(--teal)}
+
+.msg{margin-top:14px;padding:10px 12px;border-radius:8px;font-size:.8rem;font-weight:700;display:none}
+.msg.err{display:block;background:rgba(192,57,43,.1);color:var(--danger)}
+.msg.ok{display:block;background:rgba(0,132,61,.1);color:var(--good)}
+
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:10px 24px;border-bottom:1.5px solid var(--border)}
+td{padding:14px 24px;border-bottom:1px solid var(--bg);font-size:.86rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.u-name{font-weight:800}
+.u-username{color:var(--muted);font-size:.78rem}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:800}
+.badge-admin{background:rgba(0,51,160,.1);color:var(--royal)}
+.badge-inspector{background:rgba(69,96,128,.1);color:var(--muted)}
+.badge-active{background:rgba(0,132,61,.1);color:var(--good)}
+.badge-suspended{background:rgba(192,57,43,.1);color:var(--danger)}
+.badge-pending{background:rgba(212,128,0,.12);color:var(--warn)}
+.perm-icons{display:flex;gap:6px}
+.perm-icon{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--border)}
+.perm-icon.on{background:rgba(38,168,171,.14);color:var(--teal)}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.you-tag{font-size:.68rem;color:var(--muted);font-weight:700}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:.86rem}
+
+.overlay{position:fixed;inset:0;background:rgba(238,243,247,.85);display:none;align-items:center;justify-content:center;z-index:50;font-weight:800;color:var(--royal)}
+.overlay.show{display:flex}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"><svg data-lucide="shield-check" width="18" height="18"></svg></span>
+    Facility Experience QA
+    <span class="tag">Admin</span>
+  </div>
+  <div class="hd-actions">
+    <a class="btn btn-ghost" href="app.html"><svg data-lucide="arrow-left" width="14" height="14"></svg> Back to App</a>
+    <button class="btn btn-ghost" id="logout-btn"><svg data-lucide="log-out" width="14" height="14"></svg> Log out</button>
+  </div>
+</header>
+
+<main>
+  <div class="page-head">
+    <h1>User management</h1>
+    <p>Create inspector accounts and control what each person can do.</p>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Add an inspector</h2>
+        <p>They sign in with this temporary password and must set their own before entering the workspace.</p>
+      </div>
+    </div>
+    <div class="panel-body">
+      <form id="create-form">
+        <div class="form-grid">
+          <div>
+            <label for="cu-name">Full name</label>
+            <input id="cu-name" type="text" autocomplete="off" required>
+          </div>
+          <div>
+            <label for="cu-username">Username</label>
+            <input id="cu-username" type="text" autocomplete="off" required>
+          </div>
+          <div>
+            <label for="cu-password">Temporary password</label>
+            <input id="cu-password" type="text" autocomplete="off" minlength="8" required>
+          </div>
+        </div>
+        <div class="perms">
+          <label class="perm-check"><input type="checkbox" id="cu-edit" checked> Can edit inspections</label>
+          <label class="perm-check"><input type="checkbox" id="cu-delete"> Can delete inspections</label>
+          <label class="perm-check"><input type="checkbox" id="cu-export" checked> Can export CSV</label>
+        </div>
+        <button class="btn btn-primary" type="submit" id="create-submit">
+          <svg data-lucide="user-plus" width="16" height="16"></svg> Create inspector
+        </button>
+        <div class="msg" id="create-msg"></div>
+      </form>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>All accounts</h2>
+        <p id="user-count"></p>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="user-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Permissions</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="user-rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="user-empty" hidden>No accounts yet.</div>
+  </section>
+</main>
+
+<div class="overlay" id="overlay">Working…</div>
+
+<script>
+lucide.createIcons();
+let me = null;
+let users = [];
+
+function showOverlay(v){ document.getElementById('overlay').classList.toggle('show', v); }
+function permIcon(on, name){
+  return `<span class="perm-icon ${on?'on':''}" title="${name}"><svg data-lucide="${name==='edit'?'pencil':name==='delete'?'trash-2':'download'}" width="13" height="13"></svg></span>`;
+}
+
+function renderUsers(){
+  const rows = document.getElementById('user-rows');
+  const empty = document.getElementById('user-empty');
+  document.getElementById('user-count').textContent = users.length + ' account' + (users.length===1?'':'s');
+  if (!users.length) { rows.innerHTML=''; empty.hidden=false; return; }
+  empty.hidden = true;
+  rows.innerHTML = users.map(u => {
+    const isSelf = me && u.id === me.id;
+    const statusBadge = u.mustChangePassword
+      ? '<span class="badge badge-pending">Pending setup</span>'
+      : u.status === 'active'
+        ? '<span class="badge badge-active">Active</span>'
+        : '<span class="badge badge-suspended">Suspended</span>';
+    return `
+      <tr data-id="${u.id}">
+        <td>
+          <div class="u-name">${escapeHtml(u.name)}</div>
+          <div class="u-username">@${escapeHtml(u.username)}</div>
+        </td>
+        <td><span class="badge ${u.role==='admin'?'badge-admin':'badge-inspector'}">${u.role}</span></td>
+        <td>${statusBadge}</td>
+        <td><div class="perm-icons">${permIcon(u.canEdit,'edit')}${permIcon(u.canDelete,'delete')}${permIcon(u.canExport,'export')}</div></td>
+        <td>
+          ${isSelf ? '<span class="you-tag">This is you</span>' : `
+          <div class="row-actions">
+            <button class="btn btn-sm btn-ghost" onclick="togglePerm('${u.id}','canEdit',${!u.canEdit})">Edit: ${u.canEdit?'On':'Off'}</button>
+            <button class="btn btn-sm btn-ghost" onclick="togglePerm('${u.id}','canDelete',${!u.canDelete})">Delete: ${u.canDelete?'On':'Off'}</button>
+            <button class="btn btn-sm btn-ghost" onclick="togglePerm('${u.id}','canExport',${!u.canExport})">Export: ${u.canExport?'On':'Off'}</button>
+            <button class="btn btn-sm btn-ghost" onclick="toggleStatus('${u.id}','${u.status}')">${u.status==='active'?'Suspend':'Reactivate'}</button>
+            <button class="btn btn-sm btn-ghost" onclick="resetPassword('${u.id}','${escapeJs(u.name)}')">Reset password</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${escapeJs(u.name)}')">Delete</button>
+          </div>`}
+        </td>
+      </tr>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeJs(s){ return String(s).replace(/'/g, "\\'"); }
+
+async function loadUsers(){
+  const res = await fetch('/api/admin/users');
+  if (!res.ok) throw new Error('Could not load users.');
+  const data = await res.json();
+  users = data.users;
+  renderUsers();
+}
+
+async function togglePerm(id, field, value){
+  showOverlay(true);
+  try{
+    const res = await fetch('/api/admin/users/'+id, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({[field]: value}),
+    });
+    if(!res.ok){ const d=await res.json(); throw new Error(d.error||'Could not update.'); }
+    await loadUsers();
+  }catch(err){ alert(err.message); }
+  finally{ showOverlay(false); }
+}
+
+async function toggleStatus(id, current){
+  showOverlay(true);
+  try{
+    const status = current==='active' ? 'suspended' : 'active';
+    const res = await fetch('/api/admin/users/'+id, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({status}),
+    });
+    if(!res.ok){ const d=await res.json(); throw new Error(d.error||'Could not update.'); }
+    await loadUsers();
+  }catch(err){ alert(err.message); }
+  finally{ showOverlay(false); }
+}
+
+async function resetPassword(id, name){
+  const pw = prompt('New temporary password for ' + name + ' (at least 8 characters):');
+  if (!pw) return;
+  showOverlay(true);
+  try{
+    const res = await fetch('/api/admin/users/'+id+'/reset-password', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({password: pw}),
+    });
+    if(!res.ok){ const d=await res.json(); throw new Error(d.error||'Could not reset password.'); }
+    alert('Password reset. Share it with ' + name + ' — they must set a new one at next sign-in.');
+    await loadUsers();
+  }catch(err){ alert(err.message); }
+  finally{ showOverlay(false); }
+}
+
+async function deleteUser(id, name){
+  if (!confirm('Delete ' + name + '? This cannot be undone.')) return;
+  showOverlay(true);
+  try{
+    const res = await fetch('/api/admin/users/'+id, { method:'DELETE' });
+    if(!res.ok){ const d=await res.json(); throw new Error(d.error||'Could not delete.'); }
+    await loadUsers();
+  }catch(err){ alert(err.message); }
+  finally{ showOverlay(false); }
+}
+
+document.getElementById('create-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const submit = document.getElementById('create-submit');
+  const msg = document.getElementById('create-msg');
+  msg.className = 'msg';
+  submit.disabled = true;
+  try{
+    const res = await fetch('/api/admin/users', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name: document.getElementById('cu-name').value.trim(),
+        username: document.getElementById('cu-username').value.trim(),
+        password: document.getElementById('cu-password').value,
+        canEdit: document.getElementById('cu-edit').checked,
+        canDelete: document.getElementById('cu-delete').checked,
+        canExport: document.getElementById('cu-export').checked,
+      }),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Could not create the account.');
+    document.getElementById('create-form').reset();
+    document.getElementById('cu-edit').checked = true;
+    document.getElementById('cu-export').checked = true;
+    msg.textContent = 'Inspector account created.';
+    msg.className = 'msg ok';
+    await loadUsers();
+  }catch(err){
+    msg.textContent = err.message;
+    msg.className = 'msg err';
+  }finally{
+    submit.disabled = false;
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  try{ await fetch('/api/auth/logout',{method:'POST'}); }finally{ window.location.href='/login.html'; }
+});
+
+(async () => {
+  try{
+    const res = await fetch('/api/auth/me');
+    if(!res.ok){ window.location.href='/login.html'; return; }
+    const data = await res.json();
+    me = data.user;
+    if (me.role !== 'admin') { window.location.href = '/app.html'; return; }
+    await loadUsers();
+  }catch(err){
+    document.getElementById('user-empty').hidden = false;
+    document.getElementById('user-empty').textContent = 'Could not connect: ' + err.message;
+  }
+})();
+</script>
+</body>
+</html>

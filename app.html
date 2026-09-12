@@ -26,7 +26,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 #sb-head .eyebrow{font-size:.62rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:4px}
 #sb-head h1{font-size:.92rem;font-weight:900;line-height:1.35;color:#fff}
 #sb-nav{flex:1;padding:6px 0;overflow-y:auto}
-.ni{display:flex;align-items:center;gap:9px;padding:8px 15px;cursor:pointer;border-left:3px solid transparent;transition:background .13s,border-color .13s;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.72)}
+.ni{display:flex;align-items:center;gap:9px;padding:8px 15px;cursor:pointer;border-left:3px solid transparent;transition:background .13s,border-color .13s;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.72);text-decoration:none}
 .ni:hover{background:rgba(255,255,255,.08);color:#fff}
 .ni.active{background:rgba(38,168,171,.2);border-left-color:var(--teal);color:var(--teal-lt);font-weight:800}
 .ni .ni-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
@@ -114,6 +114,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .hc-grade{font-size:.7rem;font-weight:800;padding:3px 10px;border-radius:20px}
 .hc-del{width:30px;height:30px;border-radius:50%;border:none;background:rgba(192,57,43,.1);color:var(--danger);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
 .hc-del:hover{background:rgba(192,57,43,.22)}
+body.no-delete .hc-del{display:none}
 .hc-pdf{width:30px;height:30px;border-radius:50%;border:none;background:rgba(38,168,171,.12);color:var(--teal);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
 .hc-pdf:hover{background:rgba(38,168,171,.28)}
 .no-hist{text-align:center;padding:32px;color:var(--muted);font-size:.85rem;background:#fff;border-radius:var(--r);border:1px dashed var(--border)}
@@ -368,6 +369,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <div class="ni" data-page="pg-s8"><svg class="ni-icon" data-lucide="wrench"></svg> Maintenance <span class="ns" id="ns-8">–/10</span></div>
     <div class="ni" data-page="pg-s9"><svg class="ni-icon" data-lucide="clipboard-list"></svg> Miscellaneous <span class="ns" id="ns-9">–/10</span></div>
     <div class="ni" data-page="pg-scorecard"><svg class="ni-icon" data-lucide="bar-chart-2"></svg> Score Card</div>
+    <a class="ni" id="admin-link" href="admin.html" hidden><svg class="ni-icon" data-lucide="users"></svg> Admin</a>
   </nav>
   <div id="sb-foot">
     <div id="acct-row">
@@ -443,7 +445,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
         <div class="rc"><strong>0–50</strong> Critical</div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
-        <button class="btn bt" onclick="startNewInspection()">Start New Inspection</button>
+        <button class="btn bt" id="start-insp-btn" onclick="startNewInspection()">Start New Inspection</button>
       </div>
     </div>
 
@@ -464,7 +466,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
         <h3><svg data-lucide="clock" width="18" height="18"></svg> Inspection History</h3>
         <div style="display:flex;align-items:center;gap:12px">
           <div id="hist-summary" style="font-size:.78rem;color:var(--muted);font-weight:600"></div>
-          <button class="btn br" style="padding:6px 14px;font-size:.76rem" onclick="exportAllCSV()" title="Download all inspections as a CSV file (opens in Excel)">
+          <button class="btn br" id="export-csv-btn" style="padding:6px 14px;font-size:.76rem" onclick="exportAllCSV()" title="Download all inspections as a CSV file (opens in Excel)">
             <svg data-lucide="download" width="14" height="14"></svg> Export CSV
           </button>
         </div>
@@ -1953,7 +1955,7 @@ function renderChartStats(data){
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
-document.querySelectorAll('.ni').forEach(n=>n.addEventListener('click',()=>nav(n.dataset.page)));
+document.querySelectorAll('.ni[data-page]').forEach(n=>n.addEventListener('click',()=>nav(n.dataset.page)));
 document.getElementById('lb').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLB();});
 document.getElementById('modal-add-insp').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-add-insp');});
 document.getElementById('hd-modal').addEventListener('click',e=>{if(e.target===document.getElementById('hd-modal'))closeHistDetail();});
@@ -1993,13 +1995,19 @@ updateScoreCardActionBar();
   }
 })();
 
-// ── Account: show signed-in user, wire logout ──
+// ── Account: show signed-in user, apply permissions, wire logout ──
+let currentUser=null;
 (async()=>{
   try{
     const res=await fetch('/api/auth/me');
     if(!res.ok){ window.location.href='/login.html'; return; }
     const {user}=await res.json();
+    currentUser=user;
     document.getElementById('acct-name').textContent=user.name||user.username;
+    if(user.role==='admin') document.getElementById('admin-link').hidden=false;
+    if(!user.canExport) document.getElementById('export-csv-btn')?.remove();
+    if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
+    document.body.classList.toggle('no-delete',!user.canDelete);
   }catch{
     document.getElementById('acct-name').textContent='';
   }
