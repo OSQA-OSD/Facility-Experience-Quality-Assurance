@@ -928,7 +928,15 @@ function updateCommentHint(si,ii){
 
 // ═══════════════════════════════════════════════════════════
 // NAVIGATION
+// Each section has its own URL (#pg-home, #pg-s0, #pg-scorecard...)
+// so a page can be bookmarked, shared, or restored with the browser's
+// back/forward buttons.
 // ═══════════════════════════════════════════════════════════
+const VALID_PAGES=new Set(['pg-home','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard']);
+function hashToPage(hash){
+  const id=(hash||'').replace(/^#/,'');
+  return VALID_PAGES.has(id)?id:'pg-home';
+}
 function nav(pageId){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
@@ -937,7 +945,12 @@ function nav(pageId){
   if(pageId==='pg-home'){renderHistory();renderSpellBanner();}
   if(pageId.startsWith('pg-s')) syncFormToState();
   document.getElementById('main').scrollTo(0,0);
+  if(location.hash!=='#'+pageId) location.hash=pageId;
 }
+window.addEventListener('hashchange',()=>{
+  const pid=hashToPage(location.hash);
+  if(!document.getElementById(pid).classList.contains('active')) nav(pid);
+});
 
 // ═══════════════════════════════════════════════════════════
 // SYNC FORM ↔ STATE
@@ -1953,6 +1966,12 @@ renderInspectorChips();
 updateProgress();
 updatePDFButton();
 updateScoreCardActionBar();
+
+// Deep-link support: land directly on the section named in the URL hash.
+{
+  const initialPageId=hashToPage(location.hash);
+  if(initialPageId!=='pg-home') nav(initialPageId);
+}
 
 // ── Boot: connect to the database and load history ──
 (async()=>{
