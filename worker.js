@@ -165,8 +165,12 @@ async function upsertAssignment(env, officer, body) {
     "SELECT id FROM qa_users WHERE id = ?1 AND role = 'quality_auditor'",
   ).bind(auditorId).first();
   if (!auditor) return fail('auditor not found', 404);
-  const building = await env.DB.prepare('SELECT id FROM buildings WHERE id = ?1').bind(buildingId).first();
+  const building = await env.DB.prepare('SELECT id, name FROM buildings WHERE id = ?1').bind(buildingId).first();
   if (!building) return fail('building not found', 404);
+
+  const existing = await env.DB.prepare(
+    'SELECT auditor_id FROM assignments WHERE building_id = ?1 AND quarter = ?2 AND type = ?3',
+  ).bind(buildingId, quarter, type).first();
 
   await env.DB.prepare(
     `INSERT INTO assignments (building_id, auditor_id, quarter, type, assigned_by)
@@ -174,6 +178,15 @@ async function upsertAssignment(env, officer, body) {
      ON CONFLICT(building_id, quarter, type)
      DO UPDATE SET auditor_id = excluded.auditor_id, assigned_by = excluded.assigned_by, updated_at = datetime('now')`,
   ).bind(buildingId, auditorId, quarter, type, officer.id).run();
+
+  if (!existing || existing.auditor_id !== auditorId) {
+    await notify(
+      env, auditorId, 'assignment',
+      `New assignment: ${building.name}`,
+      `${officer.name} assigned you ${building.name} for ${quarter} ${type}.`,
+      '#pg-assignments',
+    );
+  }
 
   return json({ ok: true });
 }
@@ -235,6 +248,53 @@ async function handleAssignments(request, env, url, path, user) {
     if (!canManage) return fail('you do not have permission to unassign buildings', 403);
     return deleteAssignment(env, Number(idMatch[1]));
   }
+
+  return fail('not found', 404);
+}
+
+/* ── Notifications ──────────────────────────────────────── */
+
+async function notify(env, userId, type, title, body, link) {
+  await env.DB.prepare(
+    `INSERT INTO notifications (user_id, type, title, body, link) VALUES (?1, ?2, ?3, ?4, ?5)`,
+  ).bind(userId, type, title, body || null, link || null).run();
+}
+
+async function listNotifications(env, userId) {
+  const { results } = await env.DB.prepare(
+    `SELECT id, type, title, body, link, read_at, created_at FROM notifications
+     WHERE user_id = ?1 ORDER BY created_at DESC LIMIT 50`,
+  ).bind(userId).all();
+  const notifications = (results || []).map((n) => ({
+    id: n.id, type: n.type, title: n.title, body: n.body, link: n.link,
+    read: !!n.read_at, createdAt: n.created_at,
+  }));
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  return json({ notifications, unreadCount });
+}
+
+async function markNotificationRead(env, userId, id) {
+  const res = await env.DB.prepare(
+    `UPDATE notifications SET read_at = datetime('now') WHERE id = ?1 AND user_id = ?2 AND read_at IS NULL`,
+  ).bind(id, userId).run();
+  return json({ ok: true, changed: res.meta.changes > 0 });
+}
+
+async function markAllNotificationsRead(env, userId) {
+  await env.DB.prepare(
+    `UPDATE notifications SET read_at = datetime('now') WHERE user_id = ?1 AND read_at IS NULL`,
+  ).bind(userId).run();
+  return json({ ok: true });
+}
+
+async function handleNotifications(request, env, path, user) {
+  const method = request.method.toUpperCase();
+  if (!path.startsWith('notifications')) return null;
+
+  if (path === 'notifications' && method === 'GET') return listNotifications(env, user.id);
+  if (path === 'notifications/read-all' && method === 'POST') return markAllNotificationsRead(env, user.id);
+  const idMatch = path.match(/^notifications\/(\d+)\/read$/);
+  if (idMatch && method === 'POST') return markNotificationRead(env, user.id, Number(idMatch[1]));
 
   return fail('not found', 404);
 }
@@ -579,6 +639,10 @@ async function handleApi(request, env, url) {
   const assignmentResponse = await handleAssignments(request, env, url, path, user);
   if (assignmentResponse) return assignmentResponse;
   if (path.startsWith('assignments')) return fail('not found', 404);
+
+  const notificationResponse = await handleNotifications(request, env, path, user);
+  if (notificationResponse) return notificationResponse;
+  if (path.startsWith('notifications')) return fail('not found', 404);
 
   if (path === 'inspections') {
     if (method === 'GET') return json(await listInspections(env));
