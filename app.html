@@ -2004,7 +2004,7 @@ let currentUser=null;
     const {user}=await res.json();
     currentUser=user;
     document.getElementById('acct-name').textContent=user.name||user.username;
-    if(user.role==='admin') document.getElementById('admin-link').hidden=false;
+    if(user.role==='quality_admin') document.getElementById('admin-link').hidden=false;
     if(!user.canExport) document.getElementById('export-csv-btn')?.remove();
     if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
     document.body.classList.toggle('no-delete',!user.canDelete);
