@@ -27,6 +27,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 #sb-head h1{font-size:.92rem;font-weight:900;line-height:1.35;color:#fff}
 #sb-nav{flex:1;padding:6px 0;overflow-y:auto}
 .ni{display:flex;align-items:center;gap:9px;padding:8px 15px;cursor:pointer;border-left:3px solid transparent;transition:background .13s,border-color .13s;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.72);text-decoration:none}
+.ni[hidden]{display:none}
+.ni-group{font-size:.6rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(140,254,227,.55);
+  padding:14px 15px 5px;display:block}
+.ni-group[hidden]{display:none}
 .ni:hover{background:rgba(255,255,255,.08);color:#fff}
 .ni.active{background:rgba(38,168,171,.2);border-left-color:var(--teal);color:var(--teal-lt);font-weight:800}
 .ni .ni-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
@@ -99,6 +103,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 #spell-banner .sb-clear{margin-left:auto;font-size:.75rem;font-weight:700;color:var(--muted);cursor:pointer;text-decoration:underline}
 
 /* History */
+/* Home overview cards — same language as the landing page */
+#home-stats{padding:24px 44px 4px;background:var(--bg);display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+.hs-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;
+  transition:transform .15s,box-shadow .15s}
+.hs-card:hover{transform:translateY(-3px);box-shadow:0 16px 32px -18px rgba(0,32,112,.3)}
+.hs-ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);
+  display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:12px}
+.hs-card b{display:block;font-size:1.65rem;font-weight:900;color:var(--royal);line-height:1.1}
+.hs-card span{font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.sec-eyebrow{display:inline-flex;align-items:center;gap:6px;background:rgba(38,168,171,.14);color:#0c7b7d;
+  font-weight:800;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:4px 11px;border-radius:999px;margin-bottom:10px}
+
 #history-section{padding:24px 44px 40px;background:var(--bg)}
 #history-section h3{font-size:1rem;font-weight:800;color:var(--royal);margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .hist-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
@@ -346,6 +363,7 @@ body.no-delete .hc-del{display:none}
 #notif-bell{position:relative;background:var(--bg);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;
   display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:border-color .13s,color .13s}
 #notif-bell:hover{border-color:var(--teal);color:var(--teal)}
+#notif-badge[hidden]{display:none}
 #notif-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;
   min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 3px}
 #notif-panel{position:absolute;top:40px;right:0;width:320px;max-width:88vw;max-height:420px;overflow-y:auto;background:#fff;
@@ -378,8 +396,12 @@ body.no-delete .hc-del{display:none}
     <h1>Quality Assurance<br>Check List</h1>
   </div>
   <nav id="sb-nav">
+    <div class="ni-group">Workspace</div>
     <div class="ni active" data-page="pg-home"><svg class="ni-icon" data-lucide="home"></svg> Home</div>
+    <div class="ni" id="new-insp-link" data-page="pg-new" hidden><svg class="ni-icon" data-lucide="plus-circle"></svg> New Inspection</div>
     <div class="ni" id="my-assignments-link" data-page="pg-assignments" hidden><svg class="ni-icon" data-lucide="clipboard-check"></svg> My Assignments <span class="ns" id="ns-assign">–</span></div>
+
+    <div class="ni-group">Inspection Sections</div>
     <div class="ni" data-page="pg-s0"><svg class="ni-icon" data-lucide="car"></svg> Arrival &amp; Parking <span class="ns" id="ns-0">–/10</span></div>
     <div class="ni" data-page="pg-s1"><svg class="ni-icon" data-lucide="tree-deciduous"></svg> Landscape <span class="ns" id="ns-1">–/10</span></div>
     <div class="ni" data-page="pg-s2"><svg class="ni-icon" data-lucide="door-open"></svg> Entrance &amp; Lobby <span class="ns" id="ns-2">–/10</span></div>
@@ -391,6 +413,8 @@ body.no-delete .hc-del{display:none}
     <div class="ni" data-page="pg-s8"><svg class="ni-icon" data-lucide="wrench"></svg> Maintenance <span class="ns" id="ns-8">–/10</span></div>
     <div class="ni" data-page="pg-s9"><svg class="ni-icon" data-lucide="clipboard-list"></svg> Miscellaneous <span class="ns" id="ns-9">–/10</span></div>
     <div class="ni" data-page="pg-scorecard"><svg class="ni-icon" data-lucide="bar-chart-2"></svg> Score Card</div>
+
+    <div class="ni-group" id="mgmt-group" hidden>Management</div>
     <a class="ni" id="assign-link" href="assign.html" hidden><svg class="ni-icon" data-lucide="clipboard-list"></svg> Assign Buildings</a>
     <a class="ni" id="admin-link" href="admin.html" hidden><svg class="ni-icon" data-lucide="users"></svg> Admin</a>
   </nav>
@@ -440,7 +464,119 @@ body.no-delete .hc-del{display:none}
   <div class="page active" id="pg-home">
     <div class="home-hero">
       <h2>Facility Experience<br><span>Quality Assurance</span><br>Check List</h2>
-      <p class="sub">Quality assurance inspection of end-to-end facility user experience.</p>
+      <p class="sub">Your inspection history and analytics at a glance.</p>
+    </div>
+
+    <div id="home-stats">
+      <div class="hs-card">
+        <div class="hs-ic"><svg data-lucide="clipboard-list" width="19" height="19"></svg></div>
+        <b id="hs-total">–</b><span>Reports on file</span>
+      </div>
+      <div class="hs-card">
+        <div class="hs-ic"><svg data-lucide="trending-up" width="19" height="19"></svg></div>
+        <b id="hs-avg">–</b><span>Average score</span>
+      </div>
+      <div class="hs-card">
+        <div class="hs-ic"><svg data-lucide="award" width="19" height="19"></svg></div>
+        <b id="hs-best">–</b><span>Highest score</span>
+      </div>
+      <div class="hs-card">
+        <div class="hs-ic"><svg data-lucide="calendar-days" width="19" height="19"></svg></div>
+        <b id="hs-quarter">–</b><span id="hs-quarter-label">This quarter</span>
+      </div>
+    </div>
+
+    <div id="history-section">
+      <div class="hist-hdr">
+        <div>
+          <span class="sec-eyebrow">Archive</span>
+          <h3><svg data-lucide="clock" width="18" height="18"></svg> Inspection History</h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div id="hist-summary" style="font-size:.78rem;color:var(--muted);font-weight:600"></div>
+          <button class="btn br" id="export-csv-btn" style="padding:6px 14px;font-size:.76rem" onclick="exportAllCSV()" title="Download all inspections as a CSV file (opens in Excel)">
+            <svg data-lucide="download" width="14" height="14"></svg> Export CSV
+          </button>
+        </div>
+      </div>
+      <div class="hist-filters">
+        <select id="hf-insp" onchange="renderHistory()"><option value="">All Inspectors</option></select>
+        <select id="hf-month" onchange="renderHistory()"><option value="">All Months</option></select>
+        <select id="hf-div" onchange="renderHistory()"><option value="">All Divisions</option>
+          <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
+          <option>SAOSD</option><option>NAOSD</option><option>RYOSD</option>
+        </select>
+        <select id="hf-building" onchange="renderHistory()"><option value="">All Buildings</option></select>
+        <select id="hf-type" onchange="renderHistory()"><option value="">All Types</option>
+          <option value="BOQI">BOQI</option>
+          <option value="Follow-up">Follow-up</option>
+          <option value="EOQI">EOQI</option>
+        </select>
+        <input type="text" id="hf-search" placeholder="Search…" oninput="renderHistory()" style="min-width:120px">
+      </div>
+      <div id="hist-list"><div class="no-hist">No inspections saved yet. Complete an inspection and save it from the Score Card page.</div></div>
+    </div>
+
+    <!-- CHARTS SECTION -->
+    <div id="charts-section">
+      <div class="hist-hdr">
+        <div>
+          <span class="sec-eyebrow">Insights</span>
+          <h3><svg data-lucide="bar-chart-2" width="18" height="18"></svg> Analytics &amp; Charts</h3>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn bt" style="padding:6px 16px;font-size:.78rem" onclick="generateChart()">
+            <svg data-lucide="refresh-cw" width="13" height="13"></svg> Generate Chart
+          </button>
+          <button class="btn br" style="padding:6px 16px;font-size:.78rem" id="btn-export-chart" onclick="exportChart()" disabled title="Generate a chart first">
+            <svg data-lucide="download" width="13" height="13"></svg> Export Chart
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="chart-filters">
+        <select id="cf-insp"><option value="">All Inspectors</option></select>
+        <select id="cf-year"><option value="">All Years</option></select>
+        <select id="cf-month"><option value="">All Months</option></select>
+        <select id="cf-div"><option value="">All Divisions</option>
+          <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
+          <option>SAOSD</option><option>NAOSD</option><option>RYOSD</option>
+        </select>
+        <select id="cf-building"><option value="">All Buildings</option></select>
+        <select id="cf-type"><option value="">All Types</option>
+          <option value="BOQI">BOQI</option>
+          <option value="Follow-up">Follow-up</option>
+          <option value="EOQI">EOQI</option>
+        </select>
+      </div>
+
+      <!-- Chart type selector -->
+      <div class="chart-type-row">
+        <button class="ct-btn active" data-chart="scores" onclick="selectChartType(this)">Scores Over Time</button>
+        <button class="ct-btn" data-chart="sections" onclick="selectChartType(this)">Section Breakdown</button>
+        <button class="ct-btn" data-chart="bybuilding" onclick="selectChartType(this)">Score by Building</button>
+        <button class="ct-btn" data-chart="bydivision" onclick="selectChartType(this)">Score by Division</button>
+        <button class="ct-btn" data-chart="bytype" onclick="selectChartType(this)">BOQI vs EOQI</button>
+        <button class="ct-btn" data-chart="stddev" onclick="selectChartType(this)">Division Std Deviation</button>
+      </div>
+
+      <!-- Canvas -->
+      <div id="charts-canvas-wrap">
+        <canvas id="main-chart"></canvas>
+        <div id="chart-empty" class="show">Select filters and click <strong>Generate Chart</strong> to visualise your inspection data.</div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="chart-stats-row" id="chart-stats"></div>
+    </div>
+  </div>
+
+  <!-- NEW INSPECTION -->
+  <div class="page" id="pg-new">
+    <div class="home-hero">
+      <h2>Start a<br><span>New Inspection</span></h2>
+      <p class="sub">Fill in the details below, then move through each section to score it.</p>
       <div class="meta-g">
         <div class="mf">
           <label>Inspector Name</label>
@@ -495,85 +631,6 @@ body.no-delete .hc-del{display:none}
       <span class="sb-title">Possible spelling issues detected:</span>
       <div id="spell-issues"></div>
       <span class="sb-clear" onclick="dismissSpell()">Dismiss</span>
-    </div>
-
-    <div id="history-section">
-      <div class="hist-hdr">
-        <h3><svg data-lucide="clock" width="18" height="18"></svg> Inspection History</h3>
-        <div style="display:flex;align-items:center;gap:12px">
-          <div id="hist-summary" style="font-size:.78rem;color:var(--muted);font-weight:600"></div>
-          <button class="btn br" id="export-csv-btn" style="padding:6px 14px;font-size:.76rem" onclick="exportAllCSV()" title="Download all inspections as a CSV file (opens in Excel)">
-            <svg data-lucide="download" width="14" height="14"></svg> Export CSV
-          </button>
-        </div>
-      </div>
-      <div class="hist-filters">
-        <select id="hf-insp" onchange="renderHistory()"><option value="">All Inspectors</option></select>
-        <select id="hf-month" onchange="renderHistory()"><option value="">All Months</option></select>
-        <select id="hf-div" onchange="renderHistory()"><option value="">All Divisions</option>
-          <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
-          <option>SAOSD</option><option>NAOSD</option><option>RYOSD</option>
-        </select>
-        <select id="hf-building" onchange="renderHistory()"><option value="">All Buildings</option></select>
-        <select id="hf-type" onchange="renderHistory()"><option value="">All Types</option>
-          <option value="BOQI">BOQI</option>
-          <option value="Follow-up">Follow-up</option>
-          <option value="EOQI">EOQI</option>
-        </select>
-        <input type="text" id="hf-search" placeholder="Search…" oninput="renderHistory()" style="min-width:120px">
-      </div>
-      <div id="hist-list"><div class="no-hist">No inspections saved yet. Complete an inspection and save it from the Score Card page.</div></div>
-    </div>
-
-    <!-- CHARTS SECTION -->
-    <div id="charts-section">
-      <div class="hist-hdr">
-        <h3><svg data-lucide="bar-chart-2" width="18" height="18"></svg> Analytics & Charts</h3>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn bt" style="padding:6px 16px;font-size:.78rem" onclick="generateChart()">
-            <svg data-lucide="refresh-cw" width="13" height="13"></svg> Generate Chart
-          </button>
-          <button class="btn br" style="padding:6px 16px;font-size:.78rem" id="btn-export-chart" onclick="exportChart()" disabled title="Generate a chart first">
-            <svg data-lucide="download" width="13" height="13"></svg> Export Chart
-          </button>
-        </div>
-      </div>
-
-      <!-- Filters -->
-      <div class="chart-filters">
-        <select id="cf-insp"><option value="">All Inspectors</option></select>
-        <select id="cf-year"><option value="">All Years</option></select>
-        <select id="cf-month"><option value="">All Months</option></select>
-        <select id="cf-div"><option value="">All Divisions</option>
-          <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
-          <option>SAOSD</option><option>NAOSD</option><option>RYOSD</option>
-        </select>
-        <select id="cf-building"><option value="">All Buildings</option></select>
-        <select id="cf-type"><option value="">All Types</option>
-          <option value="BOQI">BOQI</option>
-          <option value="Follow-up">Follow-up</option>
-          <option value="EOQI">EOQI</option>
-        </select>
-      </div>
-
-      <!-- Chart type selector -->
-      <div class="chart-type-row">
-        <button class="ct-btn active" data-chart="scores" onclick="selectChartType(this)">Scores Over Time</button>
-        <button class="ct-btn" data-chart="sections" onclick="selectChartType(this)">Section Breakdown</button>
-        <button class="ct-btn" data-chart="bybuilding" onclick="selectChartType(this)">Score by Building</button>
-        <button class="ct-btn" data-chart="bydivision" onclick="selectChartType(this)">Score by Division</button>
-        <button class="ct-btn" data-chart="bytype" onclick="selectChartType(this)">BOQI vs EOQI</button>
-        <button class="ct-btn" data-chart="stddev" onclick="selectChartType(this)">Division Std Deviation</button>
-      </div>
-
-      <!-- Canvas -->
-      <div id="charts-canvas-wrap">
-        <canvas id="main-chart"></canvas>
-        <div id="chart-empty" class="show">Select filters and click <strong>Generate Chart</strong> to visualise your inspection data.</div>
-      </div>
-
-      <!-- Stats row -->
-      <div class="chart-stats-row" id="chart-stats"></div>
     </div>
   </div>
 
@@ -987,7 +1044,7 @@ function updateCommentHint(si,ii){
 // so a page can be bookmarked, shared, or restored with the browser's
 // back/forward buttons.
 // ═══════════════════════════════════════════════════════════
-const VALID_PAGES=new Set(['pg-home','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments']);
+const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments']);
 function hashToPage(hash){
   const id=(hash||'').replace(/^#/,'');
   return VALID_PAGES.has(id)?id:'pg-home';
@@ -997,7 +1054,8 @@ function nav(pageId){
   document.getElementById(pageId).classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('active',n.dataset.page===pageId));
   if(pageId==='pg-scorecard') updateScoreCard();
-  if(pageId==='pg-home'){renderHistory();renderSpellBanner();}
+  if(pageId==='pg-home'){renderHistory();}
+  if(pageId==='pg-new'){renderSpellBanner();}
   if(pageId==='pg-assignments') loadMyAssignments();
   if(pageId.startsWith('pg-s')) syncFormToState();
   document.getElementById('main').scrollTo(0,0);
@@ -1341,7 +1399,28 @@ function populateHistoryFilters(){
   [...buildings].sort().forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;hfB.appendChild(o);});
   hfB.value=curB;
 }
+// Home overview cards — derived from the same history the archive renders,
+// so the numbers can never disagree with the list below them.
+function renderHomeStats(){
+  const now=new Date();
+  const q=Math.floor(now.getMonth()/3)+1;
+  const label=`${now.getFullYear()}-Q${q}`;
+  const qStart=new Date(now.getFullYear(),(q-1)*3,1);
+  const scores=history.map(r=>Number(r.overall)).filter(n=>!isNaN(n));
+  const thisQuarter=history.filter(r=>{
+    if(!r.date) return false;
+    const d=new Date(r.date+'T12:00:00');
+    return d>=qStart && d<=now;
+  }).length;
+  document.getElementById('hs-total').textContent=history.length;
+  document.getElementById('hs-avg').textContent=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):'–';
+  document.getElementById('hs-best').textContent=scores.length?Math.max(...scores):'–';
+  document.getElementById('hs-quarter').textContent=thisQuarter;
+  document.getElementById('hs-quarter-label').textContent=label;
+}
+
 function renderHistory(){
+  renderHomeStats();
   const fI=document.getElementById('hf-insp').value;
   const fM=document.getElementById('hf-month').value;
   const fD=document.getElementById('hf-div').value;
@@ -2186,9 +2265,13 @@ let currentUser=null;
     const {user}=await res.json();
     currentUser=user;
     document.getElementById('acct-name').textContent=user.name||user.username;
-    if(user.role==='quality_admin') document.getElementById('admin-link').hidden=false;
-    if(user.role==='quality_officer'||user.role==='quality_admin') document.getElementById('assign-link').hidden=false;
+    const isAdmin=user.role==='quality_admin';
+    const isOfficer=user.role==='quality_officer';
+    if(isAdmin) document.getElementById('admin-link').hidden=false;
+    if(isOfficer||isAdmin) document.getElementById('assign-link').hidden=false;
+    if(isOfficer||isAdmin) document.getElementById('mgmt-group').hidden=false;
     if(user.role==='quality_auditor'){ document.getElementById('my-assignments-link').hidden=false; initMyAssignments(); }
+    if(user.canEdit) document.getElementById('new-insp-link').hidden=false;
     if(!user.canExport) document.getElementById('export-csv-btn')?.remove();
     if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
     document.body.classList.toggle('no-delete',!user.canDelete);
