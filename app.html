@@ -31,6 +31,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .ni-group{font-size:.6rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(140,254,227,.55);
   padding:14px 15px 5px;display:block}
 .ni-group[hidden]{display:none}
+/* An account without edit rights has nothing to do on the scoring pages, so the whole
+   Inspection Sections block (pg-s0..pg-s9 and the score card) is hidden for them. */
+body.view-only .ni[data-page^="pg-s"]{display:none}
+/* ...and nothing that opens a record for editing */
+body.view-only .hc-edit{display:none}
 .ni:hover{background:rgba(255,255,255,.08);color:#fff}
 .ni.active{background:rgba(38,168,171,.2);border-left-color:var(--teal);color:var(--teal-lt);font-weight:800}
 .ni .ni-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
@@ -401,7 +406,7 @@ body.no-delete .hc-del{display:none}
     <div class="ni" id="new-insp-link" data-page="pg-new" hidden><svg class="ni-icon" data-lucide="plus-circle"></svg> New Inspection</div>
     <div class="ni" id="my-assignments-link" data-page="pg-assignments" hidden><svg class="ni-icon" data-lucide="clipboard-check"></svg> My Assignments <span class="ns" id="ns-assign">–</span></div>
 
-    <div class="ni-group">Inspection Sections</div>
+    <div class="ni-group" id="sections-group" hidden>Inspection Sections</div>
     <div class="ni" data-page="pg-s0"><svg class="ni-icon" data-lucide="car"></svg> Arrival &amp; Parking <span class="ns" id="ns-0">–/10</span></div>
     <div class="ni" data-page="pg-s1"><svg class="ni-icon" data-lucide="tree-deciduous"></svg> Landscape <span class="ns" id="ns-1">–/10</span></div>
     <div class="ni" data-page="pg-s2"><svg class="ni-icon" data-lucide="door-open"></svg> Entrance &amp; Lobby <span class="ns" id="ns-2">–/10</span></div>
@@ -1049,7 +1054,16 @@ function hashToPage(hash){
   const id=(hash||'').replace(/^#/,'');
   return VALID_PAGES.has(id)?id:'pg-home';
 }
+/** Pages this account may not open, so a hand-typed hash can't reach them either. */
+function pageAllowed(pageId){
+  if(!currentUser) return true;              // permissions not loaded yet
+  if(pageId==='pg-new'||pageId.startsWith('pg-s')) return !!currentUser.canEdit;
+  if(pageId==='pg-assignments') return currentUser.role==='quality_auditor';
+  return true;
+}
+
 function nav(pageId){
+  if(!pageAllowed(pageId)) pageId='pg-home';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('active',n.dataset.page===pageId));
@@ -2351,10 +2365,17 @@ let currentUser=null;
     if(isOfficer||isAdmin) document.getElementById('assign-link').hidden=false;
     if(isOfficer||isAdmin) document.getElementById('mgmt-group').hidden=false;
     if(user.role==='quality_auditor'){ document.getElementById('my-assignments-link').hidden=false; initMyAssignments(); }
-    if(user.canEdit) document.getElementById('new-insp-link').hidden=false;
+    if(user.canEdit){
+      document.getElementById('new-insp-link').hidden=false;
+      document.getElementById('sections-group').hidden=false;
+    }
     if(!user.canExport) document.getElementById('export-csv-btn')?.remove();
     if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
     document.body.classList.toggle('no-delete',!user.canDelete);
+    document.body.classList.toggle('view-only',!user.canEdit);
+    // Permissions arrive after the initial hash routing, so re-check where we landed.
+    const landed=hashToPage(location.hash);
+    if(!pageAllowed(landed)) nav('pg-home');
   }catch{
     document.getElementById('acct-name').textContent='';
   }
