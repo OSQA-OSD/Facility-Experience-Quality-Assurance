@@ -186,6 +186,36 @@ body.view-only .hc-edit{display:none}
 @media(max-width:1180px){.ov-grid2{grid-template-columns:1fr}}
 @media(max-width:780px){#pg-overview .ov-filters,.ov-stats,.ov-section{padding-left:14px;padding-right:14px}}
 
+/* Reports & Analytics (all roles) */
+#pg-reports{background:var(--bg);padding-bottom:40px}
+#rp-stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.rp-panel-wrap{padding:20px 44px 0}
+.rp-filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px;padding:16px 18px}
+.rp-filters label{display:grid;gap:5px;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.rp-filters select,.rp-filters input{border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;font-size:.8rem;font-family:var(--font);
+  color:var(--text);background:#fff;outline:none;text-transform:none;letter-spacing:0;font-weight:600;min-width:0}
+.rp-filters select:focus,.rp-filters input:focus{border-color:var(--teal)}
+.rp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--bg)}
+.rp-bar .rp-lbl{font-size:.64rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.rp-chips{display:inline-flex;background:var(--bg);border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap}
+.rp-chip{border:none;background:transparent;padding:6px 12px;border-radius:999px;font-family:var(--font);font-size:.74rem;font-weight:700;
+  color:var(--muted);cursor:pointer;transition:background .13s,color .13s}
+.rp-chip:hover{color:var(--royal)}
+.rp-chip.active{background:var(--royal);color:#fff}
+.rp-count{margin-left:auto;font-size:.74rem;color:var(--muted);font-weight:700}
+.rp-link{background:none;border:none;color:var(--teal);font-family:var(--font);font-size:.74rem;font-weight:800;cursor:pointer;padding:4px 6px}
+.rp-bands{padding:14px 44px 0;display:flex;gap:10px;flex-wrap:wrap}
+.rp-band{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 14px 6px 10px;
+  font-size:.76rem;font-weight:800;color:var(--text);cursor:pointer;font-family:var(--font)}
+.rp-band i{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.rp-band small{color:var(--muted);font-weight:600}
+.rp-band.active{border-color:var(--royal);box-shadow:inset 0 0 0 1px var(--royal)}
+.rp-mini{display:flex;height:6px;border-radius:999px;overflow:hidden;background:var(--bg);min-width:90px}
+.rp-mini i{display:block;height:100%}
+.rp-more{display:block;margin:0 auto;padding:10px 18px}
+@media(max-width:780px){.rp-panel-wrap,.rp-bands{padding-left:14px;padding-right:14px}.rp-count{margin-left:0}
+  .rp-filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:14px}}
+
 #history-section{padding:24px 44px 40px;background:var(--bg)}
 #history-section h3{font-size:1rem;font-weight:800;color:var(--royal);margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .hist-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
@@ -476,6 +506,7 @@ body.no-delete .hc-del{display:none}
     <div class="ni" id="new-insp-link" data-page="pg-new" hidden><i class="ni-num"></i>New Inspection</div>
     <div class="ni" id="inspection-link" data-page="pg-s0" hidden><i class="ni-num"></i>Inspection <span class="ns" id="ns-progress">0%</span></div>
     <div class="ni" data-page="pg-scorecard"><i class="ni-num"></i>Score Card</div>
+    <div class="ni" id="reports-link" data-page="pg-reports"><i class="ni-num"></i>Reports</div>
     <a class="ni" id="assign-link" href="assign.html" hidden><i class="ni-num"></i>Assign Buildings</a>
     <a class="ni" id="admin-link" href="admin.html" hidden><i class="ni-num"></i>Admin Control</a>
   </nav>
@@ -802,6 +833,104 @@ body.no-delete .hc-del{display:none}
     </div>
   </div>
 
+  <!-- REPORTS & ANALYTICS (all roles) -->
+  <div class="page" id="pg-reports">
+    <div class="home-hero">
+      <h2>Reports &amp;<br><span>Analytics</span></h2>
+      <p class="sub">Build the report you need — filter every inspection, then break the numbers down by division, area, building or time.</p>
+    </div>
+
+    <div class="rp-panel-wrap">
+      <div class="ov-panel" style="margin-bottom:0">
+        <div class="ov-panel-hd">
+          <span><svg data-lucide="sliders-horizontal" width="15" height="15" style="vertical-align:-3px"></svg> Filters</span>
+          <button class="rp-link" id="rp-reset">Reset filters</button>
+        </div>
+        <div class="rp-filters">
+          <label>Year<select id="rp-year"><option value="">All years</option></select></label>
+          <label>Quarter<select id="rp-quarter"><option value="">All quarters</option><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option></select></label>
+          <label>Inspection type<select id="rp-type"><option value="">All types</option><option value="BOQI">BOQI</option><option value="EOQI">EOQI</option><option value="Follow-up">Follow-up</option></select></label>
+          <label>Division<select id="rp-division"><option value="">All divisions</option></select></label>
+          <label>Area<select id="rp-area"><option value="">All areas</option></select></label>
+          <label>Building<select id="rp-building"><option value="">All buildings</option></select></label>
+          <label>Inspector<select id="rp-inspector"><option value="">All inspectors</option></select></label>
+          <label>Rating<select id="rp-rating"><option value="">All ratings</option><option>Excellent</option><option>Good</option><option>Acceptable</option><option>Poor</option><option>Critical</option></select></label>
+          <label>From<input type="date" id="rp-from"></label>
+          <label>To<input type="date" id="rp-to"></label>
+          <label>Search<input type="text" id="rp-search" placeholder="Building or inspector…"></label>
+        </div>
+        <div class="rp-bar">
+          <span class="rp-lbl">Group by</span>
+          <div class="rp-chips" id="rp-group">
+            <button class="rp-chip active" data-group="division">Division</button>
+            <button class="rp-chip" data-group="area">Area</button>
+            <button class="rp-chip" data-group="building">Building</button>
+            <button class="rp-chip" data-group="quarter">Quarter</button>
+            <button class="rp-chip" data-group="month">Month</button>
+            <button class="rp-chip" data-group="inspector">Inspector</button>
+            <button class="rp-chip" data-group="type">Type</button>
+          </div>
+          <span class="rp-count" id="rp-count"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov-stats" id="rp-stats"></div>
+    <div class="rp-bands" id="rp-bands"></div>
+
+    <div class="ov-section">
+      <div class="hist-hdr">
+        <div><span class="sec-eyebrow">Summary</span><h3><svg data-lucide="table-2" width="18" height="18"></svg> <span id="rp-group-title">By Division</span></h3></div>
+        <button class="btn br rp-export" style="padding:6px 14px;font-size:.76rem" id="rp-export-summary"><svg data-lucide="download" width="14" height="14"></svg> Export summary</button>
+      </div>
+      <div class="ov-panel">
+        <div class="ov-chart" style="height:260px"><canvas id="rp-group-chart"></canvas></div>
+      </div>
+      <div class="ov-panel">
+        <div class="ov-scroll"><table class="ov-table">
+          <thead><tr><th id="rp-group-col">Division</th><th>Inspections</th><th>Average</th><th>Min</th><th>Max</th><th>Std dev</th><th>Rating mix</th><th>BOQI → EOQI</th></tr></thead>
+          <tbody id="rp-group-rows"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="ov-section">
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Trends</span><h3><svg data-lucide="line-chart" width="18" height="18"></svg> Over Time &amp; By Section</h3></div></div>
+      <div class="ov-grid2">
+        <div class="ov-panel">
+          <div class="ov-panel-hd">Average score by quarter <small>Bars show number of inspections</small></div>
+          <div class="ov-chart" style="height:300px"><canvas id="rp-trend-chart"></canvas></div>
+        </div>
+        <div class="ov-panel">
+          <div class="ov-panel-hd">Average by section <small>out of 10</small></div>
+          <div class="ov-chart" style="height:300px"><canvas id="rp-section-chart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov-section">
+      <div class="hist-hdr">
+        <div><span class="sec-eyebrow">Detail</span><h3><svg data-lucide="list" width="18" height="18"></svg> Matching Inspections</h3></div>
+        <div class="ov-tools">
+          <select id="rp-sort">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="high">Highest score</option>
+            <option value="low">Lowest score</option>
+          </select>
+          <button class="btn br rp-export" style="padding:6px 14px;font-size:.76rem" id="rp-export-detail"><svg data-lucide="download" width="14" height="14"></svg> Export details</button>
+        </div>
+      </div>
+      <div class="ov-panel">
+        <div class="ov-scroll"><table class="ov-table">
+          <thead><tr><th>Date</th><th>Building</th><th>Division / Area</th><th>Type</th><th>Inspector</th><th>Score</th><th>Rating</th></tr></thead>
+          <tbody id="rp-detail-rows"></tbody>
+        </table></div>
+        <button class="btn bo rp-more" id="rp-more" hidden>Show more</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SCORECARD -->
   <div class="page" id="pg-scorecard">
     <div class="sc-hero">
@@ -989,6 +1118,24 @@ let editingRecordId = null;
 // the initial deep-link routing, which runs before the end of the script.
 let currentUser = null;
 let ovData = null, ovChart = null, ovReady = false; // Team Overview state
+let rpData = null, rpReady = false, rpCharts = {}, rpShown = 100, rpGroup = 'division'; // Reports state
+const RP_FILTER_IDS = ['rp-year','rp-quarter','rp-type','rp-division','rp-area','rp-building','rp-inspector','rp-rating','rp-from','rp-to','rp-search'];
+const RP_BANDS = ['Excellent','Good','Acceptable','Poor','Critical'];
+const RP_BAND_COLOR = {Excellent:'#00843D',Good:'#26A8AB',Acceptable:'#D48000',Poor:'#C0392B',Critical:'#6B0000'};
+const RP_GROUPS = {
+  division: {label:'Division', key:x=>x.division||'Unknown division',
+    drill:k=>{ document.getElementById('rp-division').value=k; rpGroup='area'; }},
+  area:     {label:'Area', key:x=>x.area||'Unknown area', sub:x=>x.division||'',
+    drill:k=>{ document.getElementById('rp-area').value=k; rpGroup='building'; }},
+  building: {label:'Building', key:x=>x.building||'Unknown building', sub:x=>[x.division,x.area].filter(Boolean).join(' · '),
+    drill:k=>{ document.getElementById('rp-building').value=k; }},
+  quarter:  {label:'Quarter', time:true, key:x=>x.quarter||'No date'},
+  month:    {label:'Month', time:true, key:x=>(x.date||'').slice(0,7)||'No date'},
+  inspector:{label:'Inspector', key:x=>x.inspector||'Unknown',
+    drill:k=>{ document.getElementById('rp-inspector').value=k; }},
+  type:     {label:'Type', key:x=>x.type||'Unknown',
+    drill:k=>{ document.getElementById('rp-type').value=k; }},
+};
 let currentAssignmentId = null; // set when an inspection is started from "My Assignments"
 let saveChoiceMode = 'update';
 let dbOnline = false;
@@ -1202,7 +1349,7 @@ function updateCommentHint(si,ii){
 // so a page can be bookmarked, shared, or restored with the browser's
 // back/forward buttons.
 // ═══════════════════════════════════════════════════════════
-const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments','pg-overview']);
+const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments','pg-overview','pg-reports']);
 function hashToPage(hash){
   const id=(hash||'').replace(/^#/,'');
   return VALID_PAGES.has(id)?id:'pg-home';
@@ -1232,6 +1379,7 @@ function nav(pageId){
   if(pageId==='pg-new'){renderSpellBanner();}
   if(pageId==='pg-assignments') loadMyAssignments();
   if(pageId==='pg-overview') loadOverview();
+  if(pageId==='pg-reports') loadReports();
   if(pageId.startsWith('pg-s')) syncFormToState();
   document.getElementById('main').scrollTo(0,0);
   if(location.hash!=='#'+pageId) location.hash=pageId;
@@ -2666,6 +2814,323 @@ function renderOvBuildings(){
     </tr>`).join(''):'<tr><td colspan="6" class="ov-empty">No buildings match.</td></tr>';
 }
 
+// ═══════════════════════════════════════════════════════════
+// REPORTS & ANALYTICS (every role; Data Analyst lands here)
+// ═══════════════════════════════════════════════════════════
+// All inspections arrive once from /api/reports/inspections; filtering,
+// grouping and statistics run in the browser so every change is instant.
+function rpVal(id){ return document.getElementById(id).value; }
+function rpRound(v){ return v==null?null:Math.round(v*10)/10; }
+function rpStats(list){
+  const vals=list.map(x=>x.overall).filter(v=>typeof v==='number');
+  const n=vals.length;
+  if(!n) return {count:list.length,n:0,avg:null,min:null,max:null,sd:null};
+  const avg=vals.reduce((a,b)=>a+b,0)/n;
+  const sd=n>1?Math.sqrt(vals.reduce((a,v)=>a+(v-avg)**2,0)/(n-1)):0;
+  return {count:list.length,n,avg:rpRound(avg),min:Math.min(...vals),max:Math.max(...vals),sd:rpRound(sd)};
+}
+function rpBandOf(x){ return typeof x.overall==='number'?grade(x.overall).label:null; }
+function rpSelect(id,values,allLabel){
+  const sel=document.getElementById(id), cur=sel.value;
+  sel.innerHTML=`<option value="">${allLabel}</option>`+values.map(v=>`<option value="${ovEsc(v)}">${ovEsc(v)}</option>`).join('');
+  sel.value=values.includes(cur)?cur:'';
+}
+function rpSave(){
+  try{
+    localStorage.setItem('rp-state',JSON.stringify({
+      filters:Object.fromEntries(RP_FILTER_IDS.map(id=>[id,rpVal(id)])),group:rpGroup,sort:rpVal('rp-sort'),
+    }));
+  }catch{}
+}
+function rpRestore(){
+  let saved=null;
+  try{ saved=JSON.parse(localStorage.getItem('rp-state')||'null'); }catch{}
+  if(!saved) return;
+  if(RP_GROUPS[saved.group]) rpGroup=saved.group;
+  if(['newest','oldest','high','low'].includes(saved.sort)) document.getElementById('rp-sort').value=saved.sort;
+  // Values are applied after the option lists exist; rpCascade() drops any that no longer match.
+  RP_FILTER_IDS.forEach(id=>{
+    const el=document.getElementById(id), v=saved.filters?.[id];
+    if(typeof v!=='string') return;
+    if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===v)) return;
+    el.value=v;
+  });
+}
+
+// Division → area → building: each list only offers what fits the level above it.
+function rpCascade(){
+  const d=rpData;
+  const uniq=xs=>[...new Set(xs.filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  rpSelect('rp-division',uniq([...d.buildings.map(b=>b.division),...d.inspections.map(x=>x.division)]),'All divisions');
+  const inDiv=d.buildings.filter(b=>!rpVal('rp-division')||b.division===rpVal('rp-division'));
+  rpSelect('rp-area',uniq(inDiv.map(b=>b.area)),'All areas');
+  const inArea=inDiv.filter(b=>!rpVal('rp-area')||b.area===rpVal('rp-area'));
+  const extra=(!rpVal('rp-area'))?d.inspections.filter(x=>!x.buildingId&&(!rpVal('rp-division')||x.division===rpVal('rp-division'))).map(x=>x.building):[];
+  rpSelect('rp-building',uniq([...inArea.map(b=>b.name),...extra]),'All buildings');
+}
+
+function rpFilter({ignoreRating=false}={}){
+  const year=rpVal('rp-year'), q=rpVal('rp-quarter'), type=rpVal('rp-type'), div=rpVal('rp-division'), area=rpVal('rp-area'),
+    bld=rpVal('rp-building'), insp=rpVal('rp-inspector'), rating=ignoreRating?'':rpVal('rp-rating'),
+    from=rpVal('rp-from'), to=rpVal('rp-to'), term=rpVal('rp-search').trim().toLowerCase();
+  return rpData.inspections.filter(x=>
+    (!year||(x.quarter||'').startsWith(year+'-')) &&
+    (!q||(x.quarter||'').endsWith('-'+q)) &&
+    (!type||x.type===type) &&
+    (!div||x.division===div) &&
+    (!area||x.area===area) &&
+    (!bld||x.building===bld) &&
+    (!insp||x.inspector===insp) &&
+    (!rating||rpBandOf(x)===rating) &&
+    (!from||x.date>=from) &&
+    (!to||x.date<=to) &&
+    (!term||x.building.toLowerCase().includes(term)||x.inspector.toLowerCase().includes(term)||(x.location||'').toLowerCase().includes(term)));
+}
+
+function rpGroupRows(list){
+  const cfg=RP_GROUPS[rpGroup], map=new Map();
+  list.forEach(x=>{
+    const key=cfg.key(x);
+    if(!map.has(key)) map.set(key,{key,sub:cfg.sub?cfg.sub(x):'',items:[]});
+    map.get(key).items.push(x);
+  });
+  const rows=[...map.values()].map(g=>{
+    const bands=Object.fromEntries(RP_BANDS.map(b=>[b,0]));
+    g.items.forEach(x=>{ const b=rpBandOf(x); if(b) bands[b]++; });
+    const boqi=rpStats(g.items.filter(x=>x.type==='BOQI')).avg, eoqi=rpStats(g.items.filter(x=>x.type==='EOQI')).avg;
+    return {...g,...rpStats(g.items),bands,boqi,eoqi,delta:boqi!=null&&eoqi!=null?rpRound(eoqi-boqi):null};
+  });
+  if(cfg.time) rows.sort((a,b)=>a.key.localeCompare(b.key));
+  else rows.sort((a,b)=>(b.avg??-1)-(a.avg??-1)||b.count-a.count||a.key.localeCompare(b.key));
+  return rows;
+}
+
+function initReports(){
+  if(rpReady) return;
+  rpReady=true;
+  const onChange=()=>{ rpShown=100; rpCascade(); rpSave(); renderReports(); };
+  RP_FILTER_IDS.forEach(id=>{
+    const el=document.getElementById(id);
+    el.addEventListener(el.tagName==='INPUT'&&el.type==='text'?'input':'change',onChange);
+  });
+  document.getElementById('rp-reset').addEventListener('click',()=>{
+    RP_FILTER_IDS.forEach(id=>document.getElementById(id).value='');
+    onChange();
+  });
+  document.getElementById('rp-group').addEventListener('click',e=>{
+    const chip=e.target.closest('.rp-chip');
+    if(!chip) return;
+    rpGroup=chip.dataset.group;
+    rpSave(); renderReports();
+  });
+  document.getElementById('rp-bands').addEventListener('click',e=>{
+    const band=e.target.closest('.rp-band');
+    if(!band) return;
+    const sel=document.getElementById('rp-rating');
+    sel.value=sel.value===band.dataset.band?'':band.dataset.band;
+    onChange();
+  });
+  // Clicking a summary row drills in: division → its areas → its buildings.
+  document.getElementById('rp-group-rows').addEventListener('click',e=>{
+    const tr=e.target.closest('tr[data-key]');
+    if(!tr) return;
+    const drill=RP_GROUPS[rpGroup].drill;
+    if(!drill) return;
+    drill(tr.dataset.key);
+    onChange();
+  });
+  document.getElementById('rp-sort').addEventListener('change',()=>{ rpShown=100; rpSave(); renderRpDetail(); });
+  document.getElementById('rp-more').addEventListener('click',()=>{ rpShown+=100; renderRpDetail(); });
+  document.getElementById('rp-export-summary').addEventListener('click',exportRpSummary);
+  document.getElementById('rp-export-detail').addEventListener('click',exportRpDetail);
+}
+
+async function loadReports(){
+  initReports();
+  const count=document.getElementById('rp-count');
+  if(!rpData) count.textContent='Loading…';
+  try{
+    const res=await fetch('/api/reports/inspections');
+    if(!res.ok) throw new Error((await res.json().catch(()=>({}))).error||'Could not load reports.');
+    const first=!rpData;
+    rpData=await res.json();
+    const years=[...new Set(rpData.inspections.map(x=>(x.quarter||'').slice(0,4)).filter(Boolean))].sort().reverse();
+    rpSelect('rp-year',years,'All years');
+    rpSelect('rp-inspector',[...new Set(rpData.inspections.map(x=>x.inspector).filter(Boolean))].sort((a,b)=>a.localeCompare(b)),'All inspectors');
+    rpCascade();
+    if(first){ rpRestore(); rpCascade(); }
+    renderReports();
+  }catch(err){
+    count.textContent=err.message;
+  }
+}
+
+function renderReports(){
+  if(!rpData) return;
+  const cfg=RP_GROUPS[rpGroup];
+  document.querySelectorAll('#rp-group .rp-chip').forEach(c=>c.classList.toggle('active',c.dataset.group===rpGroup));
+  document.getElementById('rp-group-title').textContent='By '+cfg.label;
+  document.getElementById('rp-group-col').textContent=cfg.label;
+
+  const list=rpFilter(), st=rpStats(list);
+  document.getElementById('rp-count').textContent=`${list.length} of ${rpData.inspections.length} inspections`;
+
+  // KPI tiles
+  const inScope=rpData.buildings.filter(b=>(!rpVal('rp-division')||b.division===rpVal('rp-division'))&&(!rpVal('rp-area')||b.area===rpVal('rp-area'))&&(!rpVal('rp-building')||b.name===rpVal('rp-building')));
+  const covered=new Set(list.filter(x=>x.buildingId).map(x=>x.buildingId)).size;
+  const best=list.filter(x=>x.overall===st.max)[0], worst=list.filter(x=>x.overall===st.min)[0];
+  const tile=(icon,value,label,extra='',color='')=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b${color?` style="color:${color}"`:''}>${value}</b><span>${label}</span>${extra}</div>`;
+  const note=t=>`<small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</small>`;
+  document.getElementById('rp-stats').innerHTML=
+    tile('file-text',list.length,'Inspections',note(`${st.n} scored`))+
+    tile('trending-up',st.avg??'–','Average score',st.avg!=null?note(grade(st.avg).label):'',st.avg!=null?grade(st.avg).color:'')+
+    tile('activity',st.sd??'–','Std deviation',note('σ — how spread out scores are'))+
+    tile('arrow-up-circle',st.max??'–','Highest',best?note(ovEsc(best.building)):'')+
+    tile('arrow-down-circle',st.min??'–','Lowest',worst?note(ovEsc(worst.building)):'')+
+    tile('building-2',`${covered}/${inScope.length}`,'Buildings covered',`<div class="ov-bar" style="margin-top:10px"><i style="width:${inScope.length?Math.round(covered/inScope.length*100):0}%"></i></div>`);
+
+  // Rating bands (counts ignore the rating filter so every band stays clickable)
+  const bandBase=rpFilter({ignoreRating:true}), rating=rpVal('rp-rating');
+  document.getElementById('rp-bands').innerHTML=RP_BANDS.map(b=>{
+    const n=bandBase.filter(x=>rpBandOf(x)===b).length;
+    return `<button class="rp-band${rating===b?' active':''}" data-band="${b}"><i style="background:${RP_BAND_COLOR[b]}"></i>${b} <small>${n}</small></button>`;
+  }).join('');
+
+  // Summary table + chart
+  const groups=rpGroupRows(list);
+  const mix=g=>{
+    const scored=RP_BANDS.reduce((a,b)=>a+g.bands[b],0);
+    if(!scored) return '<span style="color:var(--muted)">–</span>';
+    return `<div class="rp-mini" title="${RP_BANDS.map(b=>`${b}: ${g.bands[b]}`).join(' · ')}">${RP_BANDS.map(b=>g.bands[b]?`<i style="width:${g.bands[b]/scored*100}%;background:${RP_BAND_COLOR[b]}"></i>`:'').join('')}</div>`;
+  };
+  const delta=g=>g.delta==null?'<span style="color:var(--muted)">–</span>'
+    :`${g.boqi} → ${g.eoqi} <b style="color:${g.delta>=0?'var(--good)':'#C0392B'}">${g.delta>0?'+':''}${g.delta}</b>`;
+  document.getElementById('rp-group-rows').innerHTML=groups.length?groups.map(g=>`
+    <tr${cfg.drill?` class="clickable" data-key="${ovEsc(g.key)}" title="Filter to ${ovEsc(g.key)}"`:''}>
+      <td><b>${ovEsc(g.key)}</b>${g.sub?`<small>${ovEsc(g.sub)}</small>`:''}</td>
+      <td>${g.count}</td>
+      <td>${ovScore(g.avg)}</td>
+      <td>${g.min??'–'}</td>
+      <td>${g.max??'–'}</td>
+      <td>${g.n>1?g.sd:'–'}</td>
+      <td>${mix(g)}</td>
+      <td style="white-space:nowrap">${delta(g)}</td>
+    </tr>`).join(''):'<tr><td colspan="8" class="ov-empty">No inspections match these filters.</td></tr>';
+
+  const chartGroups=cfg.time?groups.slice(-24):groups.slice(0,25);
+  if(rpCharts.group) rpCharts.group.destroy();
+  rpCharts.group=new Chart(document.getElementById('rp-group-chart'),{
+    type:'bar',
+    data:{labels:chartGroups.map(g=>g.key),datasets:[{label:'Average score',data:chartGroups.map(g=>g.avg??0),
+      backgroundColor:chartGroups.map(g=>g.avg!=null?grade(g.avg).color:'#cbd5e1'),borderRadius:6,maxBarThickness:48}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true,max:100,ticks:{font:{family:'Cairo'}}},x:{ticks:{font:{family:'Cairo',weight:'700'},autoSkip:false,maxRotation:50}}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{afterLabel:c=>{const g=chartGroups[c.dataIndex];return `${g.count} inspections · σ ${g.n>1?g.sd:'–'}`;}}},
+        title:{display:groups.length>chartGroups.length,text:`Showing ${chartGroups.length} of ${groups.length} — see the table for all`,font:{family:'Cairo',weight:'600'},color:'#64748b'}}},
+  });
+
+  // Trend by quarter
+  const byQ=new Map();
+  list.forEach(x=>{ if(!x.quarter) return; if(!byQ.has(x.quarter)) byQ.set(x.quarter,[]); byQ.get(x.quarter).push(x); });
+  const qs=[...byQ.keys()].sort();
+  if(rpCharts.trend) rpCharts.trend.destroy();
+  rpCharts.trend=new Chart(document.getElementById('rp-trend-chart'),{
+    type:'bar',
+    data:{labels:qs,datasets:[
+      {type:'line',label:'Average score',data:qs.map(q=>rpStats(byQ.get(q)).avg),borderColor:'#0033A0',backgroundColor:'#0033A0',tension:.3,yAxisID:'y',spanGaps:true},
+      {type:'bar',label:'Inspections',data:qs.map(q=>byQ.get(q).length),backgroundColor:'rgba(38,168,171,.35)',borderRadius:5,yAxisID:'y1'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true,max:100,position:'left',ticks:{font:{family:'Cairo'}}},
+        y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},ticks:{precision:0,font:{family:'Cairo'}}},
+        x:{ticks:{font:{family:'Cairo',weight:'700'}}}},
+      plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo',weight:'700'}}}}},
+  });
+
+  // Section breakdown (each section normalised to /10)
+  const secTotals=new Map(SECTIONS.map(s=>[s.title,{sum:0,n:0}]));
+  list.forEach(x=>x.sections.forEach(s=>{
+    if(s.score==null||!s.title) return;
+    if(!secTotals.has(s.title)) secTotals.set(s.title,{sum:0,n:0});
+    const t=secTotals.get(s.title); t.sum+=s.score/s.max*10; t.n++;
+  }));
+  const secs=[...secTotals.entries()].filter(([,t])=>t.n);
+  if(rpCharts.section) rpCharts.section.destroy();
+  rpCharts.section=new Chart(document.getElementById('rp-section-chart'),{
+    type:'bar',
+    data:{labels:secs.map(([t])=>t),datasets:[{label:'Average /10',data:secs.map(([,t])=>rpRound(t.sum/t.n)),
+      backgroundColor:secs.map(([,t])=>grade(t.sum/t.n*10).color),borderRadius:5}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      scales:{x:{beginAtZero:true,max:10,ticks:{font:{family:'Cairo'}}},y:{ticks:{font:{family:'Cairo',weight:'700',size:11}}}},
+      plugins:{legend:{display:false}}},
+  });
+
+  renderRpDetail(list);
+  lucide.createIcons();
+}
+
+function rpSorted(list){
+  const sort=rpVal('rp-sort'), byDate=(a,b)=>a.date.localeCompare(b.date)||a.id-b.id;
+  return [...list].sort(
+    sort==='oldest'?byDate:
+    sort==='high'?(a,b)=>(b.overall??-1)-(a.overall??-1)||byDate(b,a):
+    sort==='low'?(a,b)=>(a.overall??101)-(b.overall??101)||byDate(b,a):
+    (a,b)=>byDate(b,a));
+}
+function renderRpDetail(list=rpFilter()){
+  const rows=rpSorted(list), shown=rows.slice(0,rpShown);
+  document.getElementById('rp-detail-rows').innerHTML=shown.length?shown.map(x=>{
+    const g=typeof x.overall==='number'?grade(x.overall):null;
+    return `<tr>
+      <td style="white-space:nowrap">${ovEsc(x.date)}<small>${ovEsc(x.quarter||'')}</small></td>
+      <td><b>${ovEsc(x.building)}</b>${x.location?`<small>${ovEsc(x.location)}</small>`:''}</td>
+      <td>${ovEsc(x.division||'—')}<small>${ovEsc(x.area||'')}</small></td>
+      <td>${ovEsc(x.type||'—')}</td>
+      <td>${ovEsc(x.inspector||'—')}</td>
+      <td>${ovScore(x.overall)}</td>
+      <td>${g?`<span class="ov-pill" style="background:${g.color}1a;color:${g.color}">${g.label}</span>`:'–'}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="7" class="ov-empty">No inspections match these filters.</td></tr>';
+  const more=document.getElementById('rp-more');
+  more.hidden=rows.length<=rpShown;
+  more.textContent=`Show more (${rows.length-shown.length} remaining)`;
+}
+
+// CSV export (opens in Excel). Text cells that start like a formula are
+// prefixed with an apostrophe so a spreadsheet never evaluates them.
+function rpCsvCell(v){
+  if(v==null) return '';
+  if(typeof v==='number') return String(v);
+  let s=String(v);
+  if(/^[=+\-@\t\r]/.test(s)) s="'"+s;
+  return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;
+}
+function rpDownload(name,rows){
+  const csv='﻿'+rows.map(r=>r.map(rpCsvCell).join(',')).join('\r\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');
+  a.href=url; a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function exportRpSummary(){
+  if(!rpData) return;
+  const cfg=RP_GROUPS[rpGroup];
+  const rows=[[cfg.label,'Details','Inspections','Scored','Average','Min','Max','Std dev',...RP_BANDS,'BOQI avg','EOQI avg','EOQI - BOQI']];
+  rpGroupRows(rpFilter()).forEach(g=>rows.push([g.key,g.sub,g.count,g.n,g.avg,g.min,g.max,g.n>1?g.sd:null,...RP_BANDS.map(b=>g.bands[b]),g.boqi,g.eoqi,g.delta]));
+  rpDownload(`report-by-${rpGroup}-${new Date().toISOString().slice(0,10)}.csv`,rows);
+}
+function exportRpDetail(){
+  if(!rpData) return;
+  const titles=SECTIONS.map(s=>s.title);
+  const rows=[['Date','Quarter','Type','Building','Location','Division','Area','Inspector','Score','Rating',...titles.map(t=>`${t} (/10)`)]];
+  rpSorted(rpFilter()).forEach(x=>{
+    const sec=new Map(x.sections.map(s=>[s.title,s.score==null?null:rpRound(s.score/s.max*10)]));
+    rows.push([x.date,x.quarter,x.type,x.building,x.location,x.division,x.area,x.inspector,x.overall,rpBandOf(x),...titles.map(t=>sec.get(t)??null)]);
+  });
+  rpDownload(`inspections-detail-${new Date().toISOString().slice(0,10)}.csv`,rows);
+}
+
 // ── Account: show signed-in user, apply permissions, wire logout ──
 (async()=>{
   try{
@@ -2690,7 +3155,7 @@ function renderOvBuildings(){
       document.getElementById('new-insp-link').hidden=false;
       document.getElementById('inspection-link').hidden=false;
     }
-    if(!user.canExport) document.getElementById('export-csv-btn')?.remove();
+    if(!user.canExport){ document.getElementById('export-csv-btn')?.remove(); document.querySelectorAll('.rp-export').forEach(b=>b.remove()); }
     if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
     document.body.classList.toggle('no-delete',!user.canDelete);
     document.body.classList.toggle('view-only',!user.canEdit);
@@ -2699,6 +3164,7 @@ function renderOvBuildings(){
     const landed=hashToPage(location.hash);
     if(!pageAllowed(landed)) nav('pg-home');
     else if(user.role==='quality_leader'&&!location.hash) nav('pg-overview');
+    else if(user.role==='data_analyst'&&!location.hash) nav('pg-reports');
   }catch{
     document.getElementById('acct-name').textContent='';
   }
