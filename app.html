@@ -979,11 +979,11 @@ function buildSections(){
             <div class="photo-btns">
               <label class="ph-btn" title="Select from photo library">
                 <svg data-lucide="image" width="15" height="15"></svg> Upload Photo
-                <input type="file" accept="image/*" multiple onchange="addPhotos(event,${si},${ii})">
+                <input type="file" accept="image/*,.heic,.heif" multiple onchange="addPhotos(event,${si},${ii})">
               </label>
               <label class="ph-btn" title="Take a live photo">
                 <svg data-lucide="camera" width="15" height="15"></svg> Take Photo
-                <input type="file" accept="image/*" capture="environment" onchange="addPhotos(event,${si},${ii})">
+                <input type="file" accept="image/*,.heic,.heif" capture="environment" onchange="addPhotos(event,${si},${ii})">
               </label>
             </div>
             <div class="ph-thumbs" id="ph-${si}-${ii}"></div>
@@ -1195,13 +1195,77 @@ function updateScoreCardActionBar(){
 // ═══════════════════════════════════════════════════════════
 // PHOTOS
 // ═══════════════════════════════════════════════════════════
-function addPhotos(e,si,ii){
-  Array.from(e.target.files).forEach(f=>{
-    const r=new FileReader();
-    r.onload=ev=>{curState().photos[si][ii].push(ev.target.result);renderPhotos(si,ii);};
-    r.readAsDataURL(f);
-  });
+// iPhone photos arrive as HEIC, which browsers other than Safari cannot decode, so they
+// are converted to JPEG first. Everything is then downscaled: a straight-from-camera photo
+// is several MB, and these are stored inside the inspection record itself.
+const PHOTO_MAX_EDGE=1600;
+const PHOTO_QUALITY=0.82;
+let heicLoader=null;
+
+function isHeicFile(f){ return /\.hei[cf]$/i.test(f.name||'') || /image\/hei[cf]/i.test(f.type||''); }
+
+function loadHeicConverter(){
+  if(window.heic2any) return Promise.resolve(window.heic2any);
+  if(!heicLoader){
+    heicLoader=new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+      s.onload=()=>window.heic2any?resolve(window.heic2any):reject(new Error('converter unavailable'));
+      s.onerror=()=>reject(new Error('converter could not be downloaded'));
+      document.head.appendChild(s);
+    }).catch(err=>{ heicLoader=null; throw err; });
+  }
+  return heicLoader;
+}
+
+async function heicToJpegBlob(file){
+  const heic2any=await loadHeicConverter();
+  const out=await heic2any({blob:file,toType:'image/jpeg',quality:0.9});
+  return Array.isArray(out)?out[0]:out;
+}
+
+/** Returns a downscaled JPEG data URL, converting HEIC on the way in. */
+async function preparePhoto(file){
+  const source=isHeicFile(file)?await heicToJpegBlob(file):file;
+  const url=URL.createObjectURL(source);
+  try{
+    const img=await new Promise((resolve,reject)=>{
+      const im=new Image();
+      const t=setTimeout(()=>reject(new Error('Image took too long to load.')),20000);
+      im.onload=()=>{clearTimeout(t);resolve(im);};
+      im.onerror=()=>{clearTimeout(t);reject(new Error('This image could not be read.'));};
+      im.src=url;
+    });
+    const scale=Math.min(1,PHOTO_MAX_EDGE/Math.max(img.naturalWidth,img.naturalHeight));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+    canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+    canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+    return canvas.toDataURL('image/jpeg',PHOTO_QUALITY);
+  }finally{
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function addPhotos(e,si,ii){
+  const files=Array.from(e.target.files);
   e.target.value='';
+  if(!files.length)return;
+  const many=files.length>1;
+  showOverlay(many?`Processing ${files.length} photos…`:'Processing photo…');
+  const failed=[];
+  for(const f of files){
+    try{
+      const dataUrl=await preparePhoto(f);
+      curState().photos[si][ii].push(dataUrl);
+      renderPhotos(si,ii);
+    }catch(err){
+      failed.push(`${f.name||'photo'}: ${err.message}`);
+    }
+  }
+  currentReportSaved=false;updatePDFButton();
+  hideOverlay();
+  if(failed.length) alert('Some photos could not be added:\n\n'+failed.join('\n'));
 }
 function renderPhotos(si,ii){
   const row=document.getElementById(`ph-${si}-${ii}`);if(!row)return;row.innerHTML='';
@@ -1333,10 +1397,25 @@ function buildRecord(overrideType){
 // ═══════════════════════════════════════════════════════════
 // SAVE / UPDATE / EOQI  (cloud)
 // ═══════════════════════════════════════════════════════════
+// The whole report, photos included, is stored as one row. D1 rejects a row past a few
+// megabytes with SQLITE_TOOBIG, so the size is checked here -- a clear message beats a
+// failed save after a long inspection.
+const RECORD_SIZE_LIMIT=3.5*1024*1024;
+function recordSize(record){ return JSON.stringify(record).length; }
+function countPhotos(record){
+  return (record.sections||[]).reduce((n,sec)=>n+(sec.items||[]).reduce((m,it)=>m+((it.photos||[]).length),0),0);
+}
+function tooLargeMessage(record){
+  const mb=(recordSize(record)/1024/1024).toFixed(1);
+  return `This report is ${mb} MB — too large to save (limit is 3.5 MB).\n\n`+
+    `It currently holds ${countPhotos(record)} photos. Remove a few of the largest ones and save again.`;
+}
+
 async function saveInspection(updateExisting){
   setSyncChip('sync','Saving…');showOverlay('Saving inspection…');
   try{
     const record=buildRecord(null);
+    if(recordSize(record)>RECORD_SIZE_LIMIT){ hideOverlay();setSyncChip('err','Report too large');alert(tooLargeMessage(record));return; }
     if(editingRecordId!==null && updateExisting){
       record.id=editingRecordId;
       await dbUpdate(record);
@@ -1364,6 +1443,7 @@ async function saveAsEOQI(){
   setSyncChip('sync','Saving as EOQI…');showOverlay('Saving as new EOQI report…');
   try{
     const record=buildRecord('EOQI');
+    if(recordSize(record)>RECORD_SIZE_LIMIT){ hideOverlay();setSyncChip('err','Report too large');alert(tooLargeMessage(record));return; }
     document.getElementById('meta-type').value='EOQI';
     await dbInsert(record);
     history.unshift(record);
