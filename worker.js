@@ -439,6 +439,56 @@ async function leaderOverview(env, url) {
   });
 }
 
+/* ── Reports: filterable inspection data for every role ───
+ * Returns each inspection resolved to its building (through its
+ * assignment, else by building name) with per-section scores only --
+ * item details and photos are left out so the payload stays small.
+ * Filtering and grouping happen in the browser. */
+
+async function reportInspections(env) {
+  const [b, a, i] = await Promise.all([
+    env.DB.prepare('SELECT id, location, division, area, name FROM buildings ORDER BY division, area, name').all(),
+    env.DB.prepare('SELECT id, building_id FROM assignments').all(),
+    env.DB.prepare('SELECT id, inspector, facility, division, date, type, overall, data FROM inspections ORDER BY date DESC, id DESC').all(),
+  ]);
+  const buildings = b.results || [];
+  const buildingById = new Map(buildings.map((x) => [x.id, x]));
+  const buildingByName = new Map(buildings.map((x) => [normName(x.name), x]));
+  const assignmentBuilding = new Map((a.results || []).map((x) => [x.id, x.building_id]));
+
+  const inspections = (i.results || []).map((row) => {
+    let extra = {};
+    try { extra = JSON.parse(row.data || '{}'); } catch { extra = {}; }
+    const assignmentId = extra.assignmentId != null ? Number(extra.assignmentId) : null;
+    const viaAssignment = assignmentId != null ? buildingById.get(assignmentBuilding.get(assignmentId)) : null;
+    const bld = viaAssignment || buildingByName.get(normName(row.facility)) || null;
+    const sections = Array.isArray(extra.sections)
+      ? extra.sections.map((sec) => ({
+        title: String(sec?.title || ''),
+        score: typeof sec?.score === 'number' ? sec.score : null,
+        max: typeof sec?.max === 'number' && sec.max > 0 ? sec.max : 10,
+      }))
+      : [];
+    return {
+      id: row.id,
+      date: row.date || '',
+      quarter: quarterOf(row.date),
+      type: row.type || '',
+      inspector: row.inspector || '',
+      building: bld ? bld.name : (row.facility || ''),
+      buildingId: bld ? bld.id : null,
+      division: bld ? bld.division : String(row.division || '').trim(),
+      area: bld ? bld.area : null,
+      location: bld ? bld.location : null,
+      overall: typeof row.overall === 'number' ? row.overall : null,
+      assigned: !!viaAssignment,
+      sections,
+    };
+  });
+
+  return json({ inspections, buildings });
+}
+
 async function handleAssignments(request, env, url, path, user) {
   const method = request.method.toUpperCase();
   if (!path.startsWith('assignments')) return null;
@@ -860,6 +910,8 @@ async function handleApi(request, env, url) {
   }
 
   if (path === 'buildings' && method === 'GET') return listBuildings(env);
+
+  if (path === 'reports/inspections' && method === 'GET') return reportInspections(env);
 
   if (path === 'leader/overview' && method === 'GET') {
     if (user.role !== 'quality_leader' && user.role !== ADMIN_ROLE) {
