@@ -150,7 +150,17 @@ async function listAssignmentBoard(env, quarter, type) {
   const total = board.length;
   const completed = board.filter((b) => b.completed).length;
   const assigned = board.filter((b) => b.assignmentId).length;
-  return json({ quarter, type, board, summary: { total, assigned, completed } });
+
+  const byAuditor = new Map();
+  for (const a of assignmentRows || []) {
+    const entry = byAuditor.get(a.auditor_id) || { auditorId: a.auditor_id, auditorName: a.auditor_name, count: 0, completed: 0 };
+    entry.count += 1;
+    if (completedIds.has(a.id)) entry.completed += 1;
+    byAuditor.set(a.auditor_id, entry);
+  }
+  const auditorCounts = [...byAuditor.values()].sort((x, y) => y.count - x.count);
+
+  return json({ quarter, type, board, summary: { total, assigned, completed }, auditorCounts });
 }
 
 async function upsertAssignment(env, officer, body) {
