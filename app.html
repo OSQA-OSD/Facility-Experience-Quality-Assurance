@@ -25,31 +25,52 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 #sb-head{background:linear-gradient(160deg,#001555 0%,var(--royal) 100%);padding:18px 16px 14px;border-bottom:2px solid var(--teal)}
 #sb-head .eyebrow{font-size:.62rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:4px}
 #sb-head h1{font-size:.92rem;font-weight:900;line-height:1.35;color:#fff}
-#sb-nav{flex:1;padding:6px 0;overflow-y:auto}
-.ni{display:flex;align-items:center;gap:9px;padding:8px 15px;cursor:pointer;border-left:3px solid transparent;transition:background .13s,border-color .13s;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.72);text-decoration:none}
+/* Flat, numbered list of top-level destinations only; the ten inspection sections live
+   inside the inspection page itself (#sec-switch). Numbers are filled in by renumberNav()
+   so hidden items never leave a gap. */
+#sb-nav{flex:1;padding:18px 10px;overflow-y:auto;display:grid;gap:5px;align-content:start}
+.ni{display:flex;align-items:center;gap:11px;padding:10px 12px;cursor:pointer;border-radius:9px;transition:background .13s,color .13s;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.72);text-decoration:none}
 .ni[hidden]{display:none}
-.ni-group{font-size:.6rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(140,254,227,.55);
-  padding:14px 15px 5px;display:block}
-.ni-group[hidden]{display:none}
-/* An account without edit rights has nothing to do on the scoring pages, so the whole
-   Inspection Sections block (pg-s0..pg-s9 and the score card) is hidden for them. */
+/* An account without edit rights has nothing to do on the scoring pages (Inspection and
+   Score Card both route to pg-s*), so those entries are hidden for them. */
 body.view-only .ni[data-page^="pg-s"]{display:none}
 /* ...and nothing that opens a record for editing */
 body.view-only .hc-edit{display:none}
 .ni:hover{background:rgba(255,255,255,.08);color:#fff}
-.ni.active{background:rgba(38,168,171,.2);border-left-color:var(--teal);color:var(--teal-lt);font-weight:800}
-.ni .ni-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
-.ni.active .ni-icon{opacity:1}
-.ni .ns{margin-left:auto;font-size:.7rem;font-weight:800;background:rgba(255,255,255,.1);border-radius:20px;padding:2px 7px;min-width:34px;text-align:center}
+.ni.active{background:rgba(38,168,171,.2);box-shadow:inset 3px 0 var(--teal);color:#fff;font-weight:800}
+.ni .ni-num{font-style:normal;font-size:.62rem;font-weight:800;letter-spacing:.04em;opacity:.5;min-width:15px}
+.ni.active .ni-num{opacity:1;color:var(--teal-lt)}
+.ni .ns{margin-left:auto;font-size:.68rem;font-weight:800;background:rgba(255,255,255,.1);border-radius:20px;padding:2px 7px;min-width:30px;text-align:center}
 .ni.active .ns{background:var(--teal);color:#fff}
-#sb-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.12)}
-#acct-row{display:flex;align-items:center;gap:8px;padding:6px 2px 12px;color:rgba(255,255,255,.82)}
-#acct-name{flex:1;font-size:.76rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sb-foot{padding:12px 12px 14px;border-top:1px solid rgba(255,255,255,.12);display:grid;gap:12px}
+#acct-row{display:flex;align-items:center;gap:9px;color:rgba(255,255,255,.82)}
+#acct-avatar{width:32px;height:32px;border-radius:50%;background:rgba(38,168,171,.3);border:1px solid rgba(140,254,227,.35);
+  display:flex;align-items:center;justify-content:center;font-style:normal;font-size:.7rem;font-weight:900;color:#fff;flex-shrink:0}
+.acct-meta{flex:1;min-width:0;display:grid;line-height:1.25}
+#acct-name{font-size:.76rem;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#acct-role{font-size:.64rem;color:var(--teal-lt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acct-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:7px;color:inherit;
-  cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;transition:background .13s;flex-shrink:0}
+  cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;transition:background .13s;flex-shrink:0;font-family:var(--font)}
 #acct-settings:hover{background:rgba(38,168,171,.35)}
+#acct-logout{padding:6px 9px;font-size:.66rem;font-weight:800}
 #acct-logout:hover{background:rgba(192,57,43,.35)}
 .oc{background:rgba(0,0,0,.22);border:1px solid rgba(38,168,171,.3);border-radius:var(--r);padding:10px;text-align:center}
+
+/* Inspection layout: section list on the left, the active section on the right. */
+#sec-switch{display:none}
+#insp-layout.on{display:grid;grid-template-columns:238px minmax(0,1fr);align-items:start}
+#insp-layout.on #sec-switch{display:block;position:sticky;top:50px;padding:26px 0 26px 24px}
+.ss-label{display:block;font-size:.62rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 10px 4px}
+#ss-list{display:grid;gap:5px}
+.ss-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1px solid var(--border);
+  border-radius:9px;padding:9px 11px;cursor:pointer;font-family:var(--font);color:var(--text);transition:border-color .13s,box-shadow .13s}
+.ss-item:hover{border-color:var(--teal)}
+.ss-item i{font-style:normal;font-size:.62rem;font-weight:800;color:var(--muted);min-width:15px}
+.ss-item div{display:grid;min-width:0;line-height:1.25}
+.ss-item b{font-size:.76rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-item small{font-size:.66rem;color:var(--muted);font-weight:600}
+.ss-item.active{border-color:var(--teal);background:rgba(38,168,171,.08);box-shadow:inset 3px 0 var(--teal)}
+.ss-item.active i,.ss-item.active b{color:var(--royal)}
 .oc .ol{font-size:.62rem;color:var(--teal-lt);text-transform:uppercase;letter-spacing:.12em;font-weight:700}
 .oc .ob{font-size:2rem;font-weight:900;color:#fff;line-height:1.1}
 .oc .og{font-size:.75rem;color:var(--teal-lt);font-weight:600;margin-top:2px}
@@ -285,10 +306,14 @@ body.no-delete .hc-del{display:none}
 @media(max-width:780px){
   body{flex-direction:column}
   #sidebar{width:100%;min-width:0;height:auto;position:static}
-  #sb-nav{display:flex;flex-wrap:wrap;padding:4px}
-  .ni{font-size:.67rem;padding:5px 8px;border-left:none;border-bottom:2px solid transparent}
-  .ni.active{border-left:none;border-bottom-color:var(--teal)}
+  #sb-nav{display:flex;flex-wrap:wrap;padding:6px;gap:4px}
+  .ni{font-size:.7rem;padding:6px 9px;gap:6px}
+  .ni.active{box-shadow:inset 0 -2px var(--teal)}
   #sb-foot{padding:8px 12px}
+  #insp-layout.on{display:block}
+  #insp-layout.on #sec-switch{position:static;padding:14px 13px 0}
+  #ss-list{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px}
+  .ss-item{flex:0 0 auto;width:auto;max-width:190px}
   .oc{display:none}
   #acct-row{padding:2px}
   .sp,#pg-scorecard{padding:16px 13px 40px}
@@ -401,38 +426,25 @@ body.no-delete .hc-del{display:none}
     <h1>Quality Assurance<br>Check List</h1>
   </div>
   <nav id="sb-nav">
-    <div class="ni-group">Workspace</div>
-    <div class="ni active" data-page="pg-home"><svg class="ni-icon" data-lucide="home"></svg> Home</div>
-    <div class="ni" id="new-insp-link" data-page="pg-new" hidden><svg class="ni-icon" data-lucide="plus-circle"></svg> New Inspection</div>
-    <div class="ni" id="my-assignments-link" data-page="pg-assignments" hidden><svg class="ni-icon" data-lucide="clipboard-check"></svg> My Assignments <span class="ns" id="ns-assign">–</span></div>
-
-    <div class="ni-group" id="sections-group" hidden>Inspection Sections</div>
-    <div class="ni" data-page="pg-s0"><svg class="ni-icon" data-lucide="car"></svg> Arrival &amp; Parking <span class="ns" id="ns-0">–/10</span></div>
-    <div class="ni" data-page="pg-s1"><svg class="ni-icon" data-lucide="tree-deciduous"></svg> Landscape <span class="ns" id="ns-1">–/10</span></div>
-    <div class="ni" data-page="pg-s2"><svg class="ni-icon" data-lucide="door-open"></svg> Entrance &amp; Lobby <span class="ns" id="ns-2">–/10</span></div>
-    <div class="ni" data-page="pg-s3"><svg class="ni-icon" data-lucide="utensils"></svg> Food &amp; Concession <span class="ns" id="ns-3">–/10</span></div>
-    <div class="ni" data-page="pg-s4"><svg class="ni-icon" data-lucide="arrow-up-down"></svg> Elevators &amp; Corridors <span class="ns" id="ns-4">–/10</span></div>
-    <div class="ni" data-page="pg-s5"><svg class="ni-icon" data-lucide="briefcase"></svg> Workspaces <span class="ns" id="ns-5">–/10</span></div>
-    <div class="ni" data-page="pg-s6"><svg class="ni-icon" data-lucide="shield-check"></svg> Health, Safety &amp; Emergency <span class="ns" id="ns-6">–/10</span></div>
-    <div class="ni" data-page="pg-s7"><svg class="ni-icon" data-lucide="droplets"></svg> Washrooms / Bathrooms <span class="ns" id="ns-7">–/10</span></div>
-    <div class="ni" data-page="pg-s8"><svg class="ni-icon" data-lucide="wrench"></svg> Maintenance <span class="ns" id="ns-8">–/10</span></div>
-    <div class="ni" data-page="pg-s9"><svg class="ni-icon" data-lucide="clipboard-list"></svg> Miscellaneous <span class="ns" id="ns-9">–/10</span></div>
-    <div class="ni" data-page="pg-scorecard"><svg class="ni-icon" data-lucide="bar-chart-2"></svg> Score Card</div>
-
-    <div class="ni-group" id="mgmt-group" hidden>Management</div>
-    <a class="ni" id="assign-link" href="assign.html" hidden><svg class="ni-icon" data-lucide="clipboard-list"></svg> Assign Buildings</a>
-    <a class="ni" id="admin-link" href="admin.html" hidden><svg class="ni-icon" data-lucide="users"></svg> Admin</a>
+    <div class="ni active" data-page="pg-home"><i class="ni-num"></i>Home</div>
+    <div class="ni" id="my-assignments-link" data-page="pg-assignments" hidden><i class="ni-num"></i>My Assignments <span class="ns" id="ns-assign">–</span></div>
+    <div class="ni" id="new-insp-link" data-page="pg-new" hidden><i class="ni-num"></i>New Inspection</div>
+    <div class="ni" id="inspection-link" data-page="pg-s0" hidden><i class="ni-num"></i>Inspection <span class="ns" id="ns-progress">0%</span></div>
+    <div class="ni" data-page="pg-scorecard"><i class="ni-num"></i>Score Card</div>
+    <a class="ni" id="assign-link" href="assign.html" hidden><i class="ni-num"></i>Assign Buildings</a>
+    <a class="ni" id="admin-link" href="admin.html" hidden><i class="ni-num"></i>Admin Control</a>
   </nav>
   <div id="sb-foot">
-    <div id="acct-row">
-      <span id="acct-name">…</span>
-      <button class="acct-btn" id="acct-settings" title="Change password"><svg data-lucide="settings" width="14" height="14"></svg></button>
-      <button class="acct-btn" id="acct-logout" title="Log out"><svg data-lucide="log-out" width="14" height="14"></svg></button>
-    </div>
-    <div class="oc">
+    <div class="oc" id="sb-score" hidden>
       <div class="ol">Overall Score</div>
       <div class="ob" id="sb-overall">–</div>
       <div class="og" id="sb-grade">–</div>
+    </div>
+    <div id="acct-row">
+      <i id="acct-avatar">–</i>
+      <div class="acct-meta"><span id="acct-name">…</span><span id="acct-role"></span></div>
+      <button class="acct-btn" id="acct-settings" title="Change password"><svg data-lucide="settings" width="14" height="14"></svg></button>
+      <button class="acct-btn" id="acct-logout" title="Sign out">Sign out</button>
     </div>
   </div>
 </aside>
@@ -639,8 +651,14 @@ body.no-delete .hc-del{display:none}
     </div>
   </div>
 
-  <!-- SECTION PAGES built by JS -->
-  <div id="secs-container"></div>
+  <!-- INSPECTION: section list + section pages (built by JS) -->
+  <div id="insp-layout">
+    <aside id="sec-switch">
+      <span class="ss-label">Inspection Sections</span>
+      <div id="ss-list"></div>
+    </aside>
+    <div id="secs-container"></div>
+  </div>
 
   <!-- MY ASSIGNMENTS (Quality Auditor) -->
   <div class="page" id="pg-assignments">
@@ -940,6 +958,11 @@ function dismissSpell(){
 // ═══════════════════════════════════════════════════════════
 function buildSections(){
   const cont=document.getElementById('secs-container');
+  document.getElementById('ss-list').innerHTML=SECTIONS.map((sec,si)=>`
+    <button class="ss-item" data-sec="${si}" onclick="nav('pg-s${si}')">
+      <i>${String(si+1).padStart(2,'0')}</i>
+      <div><b>${sec.title}</b><small id="ns-${si}">–/${sec.max}</small></div>
+    </button>`).join('');
   SECTIONS.forEach((sec,si)=>{
     const mode=sec.scoringMode;
     const scoreDesc=mode==='02'?'0 or 2 per item':'0 or 1 per item';
@@ -1066,7 +1089,13 @@ function nav(pageId){
   if(!pageAllowed(pageId)) pageId='pg-home';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
+  const isSection=/^pg-s\d$/.test(pageId);
+  // "Inspection" returns to whichever section was open last.
+  if(isSection) document.getElementById('inspection-link').dataset.page=pageId;
   document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('active',n.dataset.page===pageId));
+  document.querySelectorAll('.ss-item').forEach(b=>b.classList.toggle('active','pg-s'+b.dataset.sec===pageId));
+  document.getElementById('insp-layout').classList.toggle('on',isSection);
+  document.getElementById('sb-score').hidden=!pageId.startsWith('pg-s');
   if(pageId==='pg-scorecard') updateScoreCard();
   if(pageId==='pg-home'){renderHistory();}
   if(pageId==='pg-new'){renderSpellBanner();}
@@ -1142,6 +1171,15 @@ function updateProgress(){
   const pct=Math.round(answered/total*100);
   document.getElementById('pf').style.width=pct+'%';
   document.getElementById('pp').textContent=pct+'%';
+  document.getElementById('ns-progress').textContent=pct+'%';
+}
+function renumberNav(){
+  let i=0;
+  document.querySelectorAll('#sb-nav .ni').forEach(n=>{
+    const num=n.querySelector('.ni-num');
+    if(!num) return;
+    num.textContent=getComputedStyle(n).display==='none'?'':String(++i).padStart(2,'0');
+  });
 }
 function updateSidebar(){
   let t=0;SECTIONS.forEach((_,si)=>t+=getSecScore(si).total);
@@ -2191,6 +2229,7 @@ document.getElementById('hd-modal').addEventListener('click',e=>{if(e.target===d
 document.getElementById('meta-date').valueAsDate=new Date();
 
 buildSections();
+renumberNav();
 lucide.createIcons();
 rebuildInspectorDropdown();
 renderInspectorChips();
@@ -2358,21 +2397,27 @@ let currentUser=null;
     if(!res.ok){ window.location.href='/login.html'; return; }
     const {user}=await res.json();
     currentUser=user;
-    document.getElementById('acct-name').textContent=user.name||user.username;
+    const displayName=user.name||user.username;
+    document.getElementById('acct-name').textContent=displayName;
+    document.getElementById('acct-avatar').textContent=displayName.split(/\s+/).filter(Boolean).map(p=>p[0]).slice(0,2).join('').toUpperCase();
+    document.getElementById('acct-role').textContent=({
+      quality_admin:'Quality Admin',quality_leader:'Quality Leader',quality_officer:'Quality Officer',
+      quality_auditor:'Quality Auditor',data_analyst:'Data Analyst',
+    })[user.role]||user.role;
     const isAdmin=user.role==='quality_admin';
     const isOfficer=user.role==='quality_officer';
     if(isAdmin) document.getElementById('admin-link').hidden=false;
     if(isOfficer||isAdmin) document.getElementById('assign-link').hidden=false;
-    if(isOfficer||isAdmin) document.getElementById('mgmt-group').hidden=false;
     if(user.role==='quality_auditor'){ document.getElementById('my-assignments-link').hidden=false; initMyAssignments(); }
     if(user.canEdit){
       document.getElementById('new-insp-link').hidden=false;
-      document.getElementById('sections-group').hidden=false;
+      document.getElementById('inspection-link').hidden=false;
     }
     if(!user.canExport) document.getElementById('export-csv-btn')?.remove();
     if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
     document.body.classList.toggle('no-delete',!user.canDelete);
     document.body.classList.toggle('view-only',!user.canEdit);
+    renumberNav();
     // Permissions arrive after the initial hash routing, so re-check where we landed.
     const landed=hashToPage(location.hash);
     if(!pageAllowed(landed)) nav('pg-home');
