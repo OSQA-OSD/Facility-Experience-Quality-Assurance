@@ -142,6 +142,50 @@ body.view-only .hc-edit{display:none}
 .sec-eyebrow{display:inline-flex;align-items:center;gap:6px;background:rgba(38,168,171,.14);color:#0c7b7d;
   font-weight:800;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:4px 11px;border-radius:999px;margin-bottom:10px}
 
+/* Team Overview (Quality Leader) */
+#pg-overview{background:var(--bg);padding-bottom:40px}
+#pg-overview .ov-filters{padding:20px 44px 0;margin:0}
+.ov-updated{margin-left:auto;font-size:.72rem;color:var(--muted);font-weight:600}
+.ov-stats{padding:16px 44px 4px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+.ov-section{padding:22px 44px 0}
+.ov-grid2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start}
+.ov-panel{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+.ov-panel-hd{padding:13px 18px;border-bottom:1px solid var(--bg);font-size:.8rem;font-weight:800;color:var(--royal);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ov-panel-hd small{font-size:.7rem;color:var(--muted);font-weight:600}
+.ov-scroll{overflow-x:auto}
+.ov-table{width:100%;border-collapse:collapse}
+.ov-table th{text-align:left;font-size:.64rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
+  padding:9px 18px;border-bottom:1px solid var(--border);white-space:nowrap}
+.ov-table td{padding:10px 18px;border-bottom:1px solid var(--bg);font-size:.8rem;vertical-align:middle}
+.ov-table tr:last-child td{border-bottom:none}
+.ov-table td small{display:block;color:var(--muted);font-size:.7rem;white-space:nowrap}
+.ov-table td b{white-space:nowrap}
+.ov-table tr.clickable{cursor:pointer}
+.ov-table tr.clickable:hover td{background:rgba(38,168,171,.06)}
+.ov-bar{height:6px;background:var(--bg);border-radius:999px;overflow:hidden;min-width:70px;flex:1}
+.ov-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--good));border-radius:999px}
+.ov-pct{display:flex;align-items:center;gap:8px;min-width:130px}
+.ov-pct span{font-size:.72rem;font-weight:800;color:var(--muted);min-width:34px;text-align:right}
+.ov-score{font-weight:900}
+.ov-pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.66rem;font-weight:800;white-space:nowrap}
+.ov-pill.completed{background:rgba(0,132,61,.1);color:var(--good)}
+.ov-pill.pending{background:rgba(212,128,0,.12);color:var(--warn)}
+.ov-pill.unassigned{background:var(--bg);color:var(--muted)}
+.ov-chart{padding:14px 18px;height:250px;position:relative}
+.ov-feed{list-style:none;margin:0;padding:0;max-height:380px;overflow-y:auto}
+.ov-feed li{display:flex;gap:11px;padding:10px 18px;border-bottom:1px solid var(--bg);font-size:.78rem;line-height:1.4}
+.ov-feed li:last-child{border-bottom:none}
+.ov-feed .dot{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff}
+.ov-feed small{display:block;color:var(--muted);font-size:.68rem;margin-top:2px}
+.ov-empty{padding:26px;text-align:center;color:var(--muted);font-size:.8rem}
+.ov-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ov-tools input,.ov-tools select{border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-size:.76rem;
+  font-family:var(--font);color:var(--text);background:#fff;outline:none}
+.ov-tools input:focus,.ov-tools select:focus{border-color:var(--teal)}
+@media(max-width:1180px){.ov-grid2{grid-template-columns:1fr}}
+@media(max-width:780px){#pg-overview .ov-filters,.ov-stats,.ov-section{padding-left:14px;padding-right:14px}}
+
 #history-section{padding:24px 44px 40px;background:var(--bg)}
 #history-section h3{font-size:1rem;font-weight:800;color:var(--royal);margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .hist-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
@@ -427,6 +471,7 @@ body.no-delete .hc-del{display:none}
   </div>
   <nav id="sb-nav">
     <div class="ni active" data-page="pg-home"><i class="ni-num"></i>Home</div>
+    <div class="ni" id="overview-link" data-page="pg-overview" hidden><i class="ni-num"></i>Team Overview</div>
     <div class="ni" id="my-assignments-link" data-page="pg-assignments" hidden><i class="ni-num"></i>My Assignments <span class="ns" id="ns-assign">–</span></div>
     <div class="ni" id="new-insp-link" data-page="pg-new" hidden><i class="ni-num"></i>New Inspection</div>
     <div class="ni" id="inspection-link" data-page="pg-s0" hidden><i class="ni-num"></i>Inspection <span class="ns" id="ns-progress">0%</span></div>
@@ -676,6 +721,87 @@ body.no-delete .hc-del{display:none}
     <div id="assign-list" style="padding:0 32px 32px"></div>
   </div>
 
+  <!-- TEAM OVERVIEW (Quality Leader) -->
+  <div class="page" id="pg-overview">
+    <div class="home-hero">
+      <h2>Team<br><span>Overview</span></h2>
+      <p class="sub">Everything your officers and auditors are working on — assignments, results and progress by division, area and building.</p>
+    </div>
+
+    <div class="hist-filters ov-filters">
+      <select id="ov-quarter"><option value="all">All quarters</option></select>
+      <select id="ov-type">
+        <option value="all">All types</option>
+        <option value="BOQI">BOQI — Beginning of Quarter</option>
+        <option value="EOQI">EOQI — End of Quarter</option>
+      </select>
+      <select id="ov-division"><option value="all">All divisions</option></select>
+      <span class="ov-updated" id="ov-updated"></span>
+    </div>
+
+    <div class="ov-stats" id="ov-stats"></div>
+
+    <div class="ov-section">
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Performance</span><h3><svg data-lucide="bar-chart-3" width="18" height="18"></svg> By Division</h3></div></div>
+      <div class="ov-grid2">
+        <div class="ov-panel">
+          <div class="ov-panel-hd">Average score &amp; completion <small>Click a division to focus on it</small></div>
+          <div class="ov-chart"><canvas id="ov-div-chart"></canvas></div>
+        </div>
+        <div class="ov-panel">
+          <div class="ov-panel-hd">Divisions</div>
+          <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Division</th><th>Completion</th><th>Avg</th></tr></thead><tbody id="ov-div-rows"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov-section">
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Team</span><h3><svg data-lucide="users" width="18" height="18"></svg> Officers &amp; Auditors</h3></div></div>
+      <div class="ov-grid2">
+        <div>
+          <div class="ov-panel">
+            <div class="ov-panel-hd">Auditors</div>
+            <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Auditor</th><th>Assigned</th><th>Progress</th><th>Avg</th></tr></thead><tbody id="ov-aud-rows"></tbody></table></div>
+          </div>
+          <div class="ov-panel">
+            <div class="ov-panel-hd">Quality Officers</div>
+            <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Officer</th><th>Assignments made</th><th>Completed</th></tr></thead><tbody id="ov-off-rows"></tbody></table></div>
+          </div>
+        </div>
+        <div class="ov-panel">
+          <div class="ov-panel-hd">Recent activity</div>
+          <ul class="ov-feed" id="ov-feed"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov-section">
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3><svg data-lucide="map-pin" width="18" height="18"></svg> By Area</h3></div></div>
+      <div class="ov-panel">
+        <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Area</th><th>Buildings</th><th>Assignments</th><th>Completion</th><th>Inspections</th><th>Avg</th></tr></thead><tbody id="ov-area-rows"></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="ov-section">
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Detail</span><h3><svg data-lucide="building-2" width="18" height="18"></svg> By Building</h3></div></div>
+      <div class="ov-panel">
+        <div class="ov-panel-hd">
+          <span id="ov-b-count">Buildings</span>
+          <div class="ov-tools">
+            <input type="text" id="ov-b-search" placeholder="Search building or auditor…">
+            <select id="ov-b-status">
+              <option value="all">All statuses</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="unassigned">Unassigned</option>
+            </select>
+          </div>
+        </div>
+        <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Building</th><th>Division / Area</th><th>Auditor</th><th>Status</th><th>Inspections</th><th>Last score</th></tr></thead><tbody id="ov-b-rows"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
   <!-- SCORECARD -->
   <div class="page" id="pg-scorecard">
     <div class="sc-hero">
@@ -859,6 +985,10 @@ let history = []; // loaded from the database
 let allState = {};
 let currentReportSaved = false;
 let editingRecordId = null;
+// Declared up here (not next to the /api/auth/me call) because pageAllowed() reads it during
+// the initial deep-link routing, which runs before the end of the script.
+let currentUser = null;
+let ovData = null, ovChart = null, ovReady = false; // Team Overview state
 let currentAssignmentId = null; // set when an inspection is started from "My Assignments"
 let saveChoiceMode = 'update';
 let dbOnline = false;
@@ -1072,7 +1202,7 @@ function updateCommentHint(si,ii){
 // so a page can be bookmarked, shared, or restored with the browser's
 // back/forward buttons.
 // ═══════════════════════════════════════════════════════════
-const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments']);
+const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments','pg-overview']);
 function hashToPage(hash){
   const id=(hash||'').replace(/^#/,'');
   return VALID_PAGES.has(id)?id:'pg-home';
@@ -1082,6 +1212,7 @@ function pageAllowed(pageId){
   if(!currentUser) return true;              // permissions not loaded yet
   if(pageId==='pg-new'||pageId.startsWith('pg-s')) return !!currentUser.canEdit;
   if(pageId==='pg-assignments') return currentUser.role==='quality_auditor';
+  if(pageId==='pg-overview') return currentUser.role==='quality_leader'||currentUser.role==='quality_admin';
   return true;
 }
 
@@ -1100,6 +1231,7 @@ function nav(pageId){
   if(pageId==='pg-home'){renderHistory();}
   if(pageId==='pg-new'){renderSpellBanner();}
   if(pageId==='pg-assignments') loadMyAssignments();
+  if(pageId==='pg-overview') loadOverview();
   if(pageId.startsWith('pg-s')) syncFormToState();
   document.getElementById('main').scrollTo(0,0);
   if(location.hash!=='#'+pageId) location.hash=pageId;
@@ -2389,8 +2521,152 @@ document.addEventListener('click',(e)=>{
 setInterval(loadNotifications,60000);
 loadNotifications();
 
+// ═══════════════════════════════════════════════════════════
+// TEAM OVERVIEW (Quality Leader)
+// ═══════════════════════════════════════════════════════════
+function ovEsc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function ovPct(done,total){
+  const p=total?Math.round(done/total*100):0;
+  return `<div class="ov-pct"><div class="ov-bar"><i style="width:${p}%"></i></div><span>${p}%</span></div>`;
+}
+function ovScore(v){ return v==null?'<span style="color:var(--muted)">–</span>':`<span class="ov-score" style="color:${grade(v).color}">${v}</span>`; }
+function ovSetOptions(sel,values,allLabel){
+  const cur=sel.value;
+  sel.innerHTML=`<option value="all">${allLabel}</option>`+values.map(v=>`<option value="${ovEsc(v)}">${ovEsc(v)}</option>`).join('');
+  sel.value=values.includes(cur)?cur:'all';
+}
+function initOverview(){
+  if(ovReady) return;
+  ovReady=true;
+  const cur=`${new Date().getFullYear()}-Q${Math.floor(new Date().getMonth()/3)+1}`;
+  const q=document.getElementById('ov-quarter');
+  q.innerHTML=`<option value="all">All quarters</option><option value="${cur}">${cur}</option>`;
+  q.value=cur;
+  ['ov-quarter','ov-type','ov-division'].forEach(id=>document.getElementById(id).addEventListener('change',loadOverview));
+  document.getElementById('ov-b-search').addEventListener('input',renderOvBuildings);
+  document.getElementById('ov-b-status').addEventListener('change',renderOvBuildings);
+  document.getElementById('ov-div-rows').addEventListener('click',e=>{
+    const tr=e.target.closest('tr[data-division]');
+    if(!tr) return;
+    const sel=document.getElementById('ov-division');
+    sel.value=sel.value===tr.dataset.division?'all':tr.dataset.division;
+    loadOverview();
+  });
+}
+async function loadOverview(){
+  initOverview();
+  const params=new URLSearchParams({
+    quarter:document.getElementById('ov-quarter').value,
+    type:document.getElementById('ov-type').value,
+    division:document.getElementById('ov-division').value,
+  });
+  document.getElementById('ov-updated').textContent='Loading…';
+  try{
+    const res=await fetch('/api/leader/overview?'+params);
+    if(!res.ok) throw new Error((await res.json()).error||'Could not load the overview.');
+    ovData=await res.json();
+    renderOverview();
+    document.getElementById('ov-updated').textContent='Updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  }catch(err){
+    document.getElementById('ov-updated').textContent=err.message;
+  }
+}
+function renderOverview(){
+  const d=ovData, s=d.summary;
+  const q=document.getElementById('ov-quarter');
+  const curQ=q.value;
+  const quarters=[...new Set([curQ!=='all'?curQ:null,...d.quarters].filter(Boolean))].sort().reverse();
+  q.innerHTML='<option value="all">All quarters</option>'+quarters.map(v=>`<option value="${ovEsc(v)}">${ovEsc(v)}</option>`).join('');
+  q.value=curQ;
+  ovSetOptions(document.getElementById('ov-division'),d.divisions,'All divisions');
+
+  const tile=(icon,value,label,extra='')=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b>${value}</b><span>${label}</span>${extra}</div>`;
+  document.getElementById('ov-stats').innerHTML=
+    tile('clipboard-check',`${s.completed}/${s.assignments}`,'Assignments completed',
+      `<div class="ov-bar" style="margin-top:10px"><i style="width:${s.completionPct}%"></i></div>`)+
+    tile('building-2',`${s.buildingsCovered}/${s.buildings}`,'Buildings assigned')+
+    tile('trending-up',s.avgScore??'–','Average score')+
+    tile('file-text',s.inspections,'Inspections')+
+    tile('users',s.activeAuditors,'Active auditors');
+
+  const divRows=document.getElementById('ov-div-rows');
+  const focused=document.getElementById('ov-division').value;
+  divRows.innerHTML=d.byDivision.length?d.byDivision.map(x=>`
+    <tr class="clickable" data-division="${ovEsc(x.division)}"${x.division===focused?' style="background:rgba(38,168,171,.08)"':''}>
+      <td><b>${ovEsc(x.division)}</b><small>${x.buildings} buildings · ${x.inspections} inspections</small></td>
+      <td>${ovPct(x.completed,x.assignments)}<small>${x.completed}/${x.assignments} assignments</small></td>
+      <td>${ovScore(x.avgScore)}</td>
+    </tr>`).join(''):'<tr><td colspan="3" class="ov-empty">No divisions match.</td></tr>';
+
+  if(ovChart) ovChart.destroy();
+  ovChart=new Chart(document.getElementById('ov-div-chart'),{
+    type:'bar',
+    data:{labels:d.byDivision.map(x=>x.division),datasets:[
+      {label:'Average score',data:d.byDivision.map(x=>x.avgScore??0),backgroundColor:'#0033A0',borderRadius:6},
+      {label:'Completion %',data:d.byDivision.map(x=>x.assignments?Math.round(x.completed/x.assignments*100):0),backgroundColor:'#26A8AB',borderRadius:6},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true,max:100,ticks:{font:{family:'Cairo'}}},x:{ticks:{font:{family:'Cairo',weight:'700'}}}},
+      plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo',weight:'700'}}}}},
+  });
+
+  document.getElementById('ov-aud-rows').innerHTML=d.auditors.length?d.auditors.map(x=>`
+    <tr>
+      <td><b>${ovEsc(x.name)}</b>${x.status!=='active'?'<small>Suspended</small>':''}</td>
+      <td>${x.assigned}</td>
+      <td>${ovPct(x.completed,x.assigned)}<small>${x.completed} done · ${x.assigned-x.completed} pending</small></td>
+      <td>${ovScore(x.avgScore)}</td>
+    </tr>`).join(''):'<tr><td colspan="4" class="ov-empty">No auditors yet.</td></tr>';
+
+  document.getElementById('ov-off-rows').innerHTML=d.officers.length?d.officers.map(x=>`
+    <tr>
+      <td><b>${ovEsc(x.name)}</b>${x.role!=='quality_officer'?'<small>Quality Admin</small>':''}</td>
+      <td>${x.assignmentsMade}</td>
+      <td>${ovPct(x.completed,x.assignmentsMade)}</td>
+    </tr>`).join(''):'<tr><td colspan="3" class="ov-empty">No officers yet.</td></tr>';
+
+  document.getElementById('ov-feed').innerHTML=d.activity.length?d.activity.map(x=>{
+    if(x.kind==='assignment') return `<li><span class="dot" style="background:var(--royal)"><svg data-lucide="clipboard-list" width="14" height="14"></svg></span>
+      <div><b>${ovEsc(x.actor)}</b> assigned <b>${ovEsc(x.building)}</b> to ${ovEsc(x.target)}<small>${ovEsc(x.quarter)} ${ovEsc(x.type)} · ${timeAgo(x.at)}</small></div></li>`;
+    const bg=x.score!=null?grade(x.score).color:'var(--teal)';
+    return `<li><span class="dot" style="background:${bg}"><svg data-lucide="check" width="14" height="14"></svg></span>
+      <div><b>${ovEsc(x.actor)}</b> submitted <b>${ovEsc(x.building)}</b>${x.score!=null?` — ${x.score}/100`:''}<small>${ovEsc(x.type||'')}${x.quarter?' · '+ovEsc(x.quarter):''}${x.linked?' · assigned':''} · ${timeAgo(x.at)}</small></div></li>`;
+  }).join(''):'<li class="ov-empty" style="display:block">No activity for these filters yet.</li>';
+
+  document.getElementById('ov-area-rows').innerHTML=d.byArea.length?d.byArea.map(x=>`
+    <tr>
+      <td><b>${ovEsc(x.area)}</b><small>${ovEsc(x.division)}</small></td>
+      <td>${x.buildings}</td>
+      <td>${x.assignments}</td>
+      <td>${ovPct(x.completed,x.assignments)}</td>
+      <td>${x.inspections}</td>
+      <td>${ovScore(x.avgScore)}</td>
+    </tr>`).join(''):'<tr><td colspan="6" class="ov-empty">No areas match.</td></tr>';
+
+  renderOvBuildings();
+  lucide.createIcons();
+}
+function renderOvBuildings(){
+  if(!ovData) return;
+  const term=document.getElementById('ov-b-search').value.trim().toLowerCase();
+  const status=document.getElementById('ov-b-status').value;
+  const rows=ovData.byBuilding.filter(x=>
+    (status==='all'||x.status===status) &&
+    (!term||x.name.toLowerCase().includes(term)||(x.auditorName||'').toLowerCase().includes(term)));
+  document.getElementById('ov-b-count').textContent=`${rows.length} of ${ovData.byBuilding.length} buildings`;
+  const label={completed:'Completed',pending:'Pending',unassigned:'Unassigned'};
+  document.getElementById('ov-b-rows').innerHTML=rows.length?rows.map(x=>`
+    <tr>
+      <td><b>${ovEsc(x.name)}</b><small>${ovEsc(x.location||'')}</small></td>
+      <td>${ovEsc(x.division)}<small>${ovEsc(x.area)}</small></td>
+      <td>${x.auditorName?ovEsc(x.auditorName):'<span style="color:var(--muted)">—</span>'}</td>
+      <td><span class="ov-pill ${x.status}">${label[x.status]}</span></td>
+      <td>${x.inspections}</td>
+      <td>${ovScore(x.lastScore)}${x.lastDate?`<small>${ovEsc(x.lastDate)}</small>`:''}</td>
+    </tr>`).join(''):'<tr><td colspan="6" class="ov-empty">No buildings match.</td></tr>';
+}
+
 // ── Account: show signed-in user, apply permissions, wire logout ──
-let currentUser=null;
 (async()=>{
   try{
     const res=await fetch('/api/auth/me');
@@ -2408,6 +2684,7 @@ let currentUser=null;
     const isOfficer=user.role==='quality_officer';
     if(isAdmin) document.getElementById('admin-link').hidden=false;
     if(isOfficer||isAdmin) document.getElementById('assign-link').hidden=false;
+    if(user.role==='quality_leader'||isAdmin) document.getElementById('overview-link').hidden=false;
     if(user.role==='quality_auditor'){ document.getElementById('my-assignments-link').hidden=false; initMyAssignments(); }
     if(user.canEdit){
       document.getElementById('new-insp-link').hidden=false;
@@ -2421,6 +2698,7 @@ let currentUser=null;
     // Permissions arrive after the initial hash routing, so re-check where we landed.
     const landed=hashToPage(location.hash);
     if(!pageAllowed(landed)) nav('pg-home');
+    else if(user.role==='quality_leader'&&!location.hash) nav('pg-overview');
   }catch{
     document.getElementById('acct-name').textContent='';
   }

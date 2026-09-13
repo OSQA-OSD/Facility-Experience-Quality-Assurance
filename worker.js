@@ -63,13 +63,52 @@ async function listInspections(env, limit = 500) {
 async function insertInspection(env, rec) {
   const r = recordToRow(rec);
   if (r.id == null) return fail('id is required', 400);
+
+  const assignmentId = rec?.assignmentId != null ? Number(rec.assignmentId) : null;
+  let firstCompletion = false;
+  if (assignmentId) {
+    const prior = await env.DB.prepare(
+      "SELECT 1 AS x FROM inspections WHERE json_extract(data, '$.assignmentId') = ?1 LIMIT 1",
+    ).bind(assignmentId).first();
+    firstCompletion = !prior;
+  }
+
   await env.DB.prepare(
     `INSERT INTO inspections
        (id, inspector, facility, division, date, type, type_label, overall, filename, data)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`
   ).bind(r.id, r.inspector, r.facility, r.division, r.date,
          r.type, r.type_label, r.overall, r.filename, r.data).run();
+
+  if (firstCompletion) await notifyAssignmentCompleted(env, assignmentId, r.overall);
   return json({ ok: true, id: r.id }, 201);
+}
+
+/** Tells every active Quality Leader (and whoever made the assignment) that it was completed. */
+async function notifyAssignmentCompleted(env, assignmentId, overall) {
+  const a = await env.DB.prepare(
+    `SELECT a.quarter, a.type, a.assigned_by, b.name AS building, u.name AS auditor, o.role AS assigner_role
+     FROM assignments a
+     JOIN buildings b ON b.id = a.building_id
+     JOIN qa_users u ON u.id = a.auditor_id
+     LEFT JOIN qa_users o ON o.id = a.assigned_by
+     WHERE a.id = ?1`,
+  ).bind(assignmentId).first();
+  if (!a) return;
+
+  const title = `Completed: ${a.building}`;
+  const score = overall != null ? ` — score ${Math.round(overall)}/100` : '';
+  const body = `${a.auditor} completed ${a.building} for ${a.quarter} ${a.type}${score}.`;
+
+  const recipients = new Map();
+  const { results: leaders } = await env.DB.prepare(
+    "SELECT id FROM qa_users WHERE role = 'quality_leader' AND status = 'active'",
+  ).all();
+  for (const l of leaders || []) recipients.set(l.id, '#pg-overview');
+  if (a.assigned_by && !recipients.has(a.assigned_by)) {
+    recipients.set(a.assigned_by, a.assigner_role === 'quality_admin' ? '#pg-overview' : null);
+  }
+  for (const [userId, link] of recipients) await notify(env, userId, 'completion', title, body, link);
 }
 
 async function updateInspection(env, id, rec) {
@@ -222,6 +261,182 @@ async function listMyAssignments(env, auditorId, quarter, type) {
     completed: completedIds.has(a.id),
   }));
   return json({ quarter, type, assignments });
+}
+
+/* ── Quality Leader: team overview ─────────────────────────
+ * One aggregate over buildings, assignments, users and inspections,
+ * filtered by quarter / type / division. An inspection is tied to a
+ * building through its assignment when it has one, otherwise by
+ * matching the building name. Assignment completion uses every
+ * inspection regardless of filters, same as the assignment board. */
+
+function quarterOf(date) {
+  const m = /^(\d{4})-(\d{2})/.exec(date || '');
+  return m ? `${m[1]}-Q${Math.floor((Number(m[2]) - 1) / 3) + 1}` : null;
+}
+const normName = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+const average = (xs) => (xs.length ? Math.round(xs.reduce((sum, x) => sum + x, 0) / xs.length) : null);
+
+async function leaderOverview(env, url) {
+  const quarter = url.searchParams.get('quarter') || 'all';
+  const type = url.searchParams.get('type') || 'all';
+  const division = url.searchParams.get('division') || 'all';
+
+  const [b, a, u, i] = await Promise.all([
+    env.DB.prepare('SELECT id, location, division, area, name FROM buildings').all(),
+    env.DB.prepare('SELECT id, building_id, auditor_id, quarter, type, assigned_by, created_at, updated_at FROM assignments').all(),
+    env.DB.prepare('SELECT id, name, role, status FROM qa_users').all(),
+    env.DB.prepare('SELECT id, inspector, facility, division, date, type, overall, data, created_at FROM inspections ORDER BY id').all(),
+  ]);
+  const buildings = b.results || [];
+  const assignments = a.results || [];
+  const users = u.results || [];
+
+  const userById = new Map(users.map((x) => [x.id, x]));
+  const buildingById = new Map(buildings.map((x) => [x.id, x]));
+  const buildingByName = new Map(buildings.map((x) => [normName(x.name), x]));
+  const assignmentById = new Map(assignments.map((x) => [x.id, x]));
+  const inDivision = (d) => division === 'all' || d === division;
+
+  const completedIds = new Set();
+  const scoreByAssignment = new Map();
+  const inspections = [];
+  for (const row of i.results || []) {
+    let extra = {};
+    try { extra = JSON.parse(row.data || '{}'); } catch { extra = {}; }
+    const asg = extra.assignmentId != null ? assignmentById.get(Number(extra.assignmentId)) : null;
+    if (asg) {
+      completedIds.add(asg.id);
+      if (typeof row.overall === 'number') scoreByAssignment.set(asg.id, row.overall);
+    }
+    const bld = (asg && buildingById.get(asg.building_id)) || buildingByName.get(normName(row.facility)) || null;
+    const q = quarterOf(row.date);
+    const div = bld ? bld.division : String(row.division || '').trim();
+    if (quarter !== 'all' && q !== quarter) continue;
+    if (type !== 'all' && row.type !== type) continue;
+    if (!inDivision(div)) continue;
+    inspections.push({
+      inspector: row.inspector, facility: row.facility, date: row.date, type: row.type, overall: row.overall,
+      quarter: q, division: div, area: bld ? bld.area : null, buildingId: bld ? bld.id : null,
+      linked: !!asg, createdAt: row.created_at,
+    });
+  }
+
+  const scopedBuildings = buildings.filter((x) => inDivision(x.division));
+  const scopedAssignments = assignments.filter((x) => {
+    const bld = buildingById.get(x.building_id);
+    return bld && inDivision(bld.division)
+      && (quarter === 'all' || x.quarter === quarter) && (type === 'all' || x.type === type);
+  });
+  const isDone = (x) => completedIds.has(x.id);
+
+  // Rollups by division and by area.
+  const divisions = new Map();
+  const areas = new Map();
+  const bucket = (map, key, seed) => {
+    if (!map.has(key)) map.set(key, { ...seed, buildings: 0, assignments: 0, completed: 0, inspections: 0, scores: [] });
+    return map.get(key);
+  };
+  const groupsFor = (div, area) => [
+    bucket(divisions, div, { division: div }),
+    ...(area ? [bucket(areas, `${div}|${area}`, { division: div, area })] : []),
+  ];
+  for (const x of scopedBuildings) groupsFor(x.division, x.area).forEach((g) => { g.buildings += 1; });
+  for (const x of scopedAssignments) {
+    const bld = buildingById.get(x.building_id);
+    groupsFor(bld.division, bld.area).forEach((g) => { g.assignments += 1; if (isDone(x)) g.completed += 1; });
+  }
+  for (const x of inspections) {
+    if (!x.division) continue;
+    groupsFor(x.division, x.area).forEach((g) => {
+      g.inspections += 1;
+      if (typeof x.overall === 'number') g.scores.push(x.overall);
+    });
+  }
+  const finish = ({ scores, ...rest }) => ({ ...rest, avgScore: average(scores) });
+  const byDivision = [...divisions.values()].map(finish).sort((x, y) => x.division.localeCompare(y.division));
+  const byArea = [...areas.values()].map(finish)
+    .sort((x, y) => x.division.localeCompare(y.division) || x.area.localeCompare(y.area));
+
+  // Team.
+  const auditors = users.filter((x) => x.role === 'quality_auditor').map((x) => {
+    const mine = scopedAssignments.filter((y) => y.auditor_id === x.id);
+    const done = mine.filter(isDone);
+    const scores = done.map((y) => scoreByAssignment.get(y.id)).filter((n) => typeof n === 'number');
+    return { id: x.id, name: x.name, status: x.status, assigned: mine.length, completed: done.length, avgScore: average(scores) };
+  }).sort((x, y) => y.assigned - x.assigned || x.name.localeCompare(y.name));
+
+  const madeBy = new Map();
+  for (const x of scopedAssignments) madeBy.set(x.assigned_by, (madeBy.get(x.assigned_by) || 0) + 1);
+  const officers = users.filter((x) => x.role === 'quality_officer' || madeBy.has(x.id)).map((x) => {
+    const made = scopedAssignments.filter((y) => y.assigned_by === x.id);
+    return { id: x.id, name: x.name, role: x.role, status: x.status, assignmentsMade: made.length, completed: made.filter(isDone).length };
+  }).sort((x, y) => y.assignmentsMade - x.assignmentsMade || x.name.localeCompare(y.name));
+
+  // Buildings.
+  const latestInspection = new Map();
+  const inspectionCount = new Map();
+  for (const x of inspections) {
+    if (x.buildingId == null) continue;
+    inspectionCount.set(x.buildingId, (inspectionCount.get(x.buildingId) || 0) + 1);
+    const cur = latestInspection.get(x.buildingId);
+    if (!cur || (x.date || '') >= (cur.date || '')) latestInspection.set(x.buildingId, x);
+  }
+  const latestAssignment = new Map();
+  for (const x of scopedAssignments) {
+    const cur = latestAssignment.get(x.building_id);
+    if (!cur || (x.updated_at || '') > (cur.updated_at || '')) latestAssignment.set(x.building_id, x);
+  }
+  const byBuilding = scopedBuildings.map((x) => {
+    const asg = latestAssignment.get(x.id);
+    const last = latestInspection.get(x.id);
+    return {
+      buildingId: x.id, name: x.name, division: x.division, area: x.area, location: x.location,
+      auditorName: asg ? (userById.get(asg.auditor_id)?.name || null) : null,
+      status: !asg ? 'unassigned' : isDone(asg) ? 'completed' : 'pending',
+      inspections: inspectionCount.get(x.id) || 0,
+      lastScore: last && typeof last.overall === 'number' ? Math.round(last.overall) : null,
+      lastDate: last ? last.date : null,
+    };
+  }).sort((x, y) => x.division.localeCompare(y.division) || x.area.localeCompare(y.area) || x.name.localeCompare(y.name));
+
+  // Recent activity from the people below the leader.
+  const activity = [
+    ...scopedAssignments.map((x) => ({
+      kind: 'assignment', at: x.updated_at || x.created_at,
+      actor: userById.get(x.assigned_by)?.name || 'Someone',
+      target: userById.get(x.auditor_id)?.name || 'an auditor',
+      building: buildingById.get(x.building_id)?.name || '', quarter: x.quarter, type: x.type,
+    })),
+    ...inspections.map((x) => ({
+      kind: 'inspection', at: x.createdAt, actor: x.inspector, building: x.facility,
+      score: typeof x.overall === 'number' ? Math.round(x.overall) : null, quarter: x.quarter, type: x.type, linked: x.linked,
+    })),
+  ].filter((x) => x.at).sort((x, y) => (y.at > x.at ? 1 : y.at < x.at ? -1 : 0)).slice(0, 30);
+
+  const completed = scopedAssignments.filter(isDone).length;
+  const scores = inspections.map((x) => x.overall).filter((n) => typeof n === 'number');
+  const summary = {
+    buildings: scopedBuildings.length,
+    buildingsCovered: new Set(scopedAssignments.map((x) => x.building_id)).size,
+    assignments: scopedAssignments.length,
+    completed,
+    completionPct: scopedAssignments.length ? Math.round((completed / scopedAssignments.length) * 100) : 0,
+    inspections: inspections.length,
+    avgScore: average(scores),
+    activeAuditors: auditors.filter((x) => x.status === 'active').length,
+  };
+
+  const quarters = [...new Set([
+    ...assignments.map((x) => x.quarter),
+    ...(i.results || []).map((row) => quarterOf(row.date)).filter(Boolean),
+  ])].sort().reverse();
+  const divisionList = [...new Set(buildings.map((x) => x.division))].sort();
+
+  return json({
+    filters: { quarter, type, division }, quarters, divisions: divisionList,
+    summary, byDivision, byArea, byBuilding, auditors, officers, activity,
+  });
 }
 
 async function handleAssignments(request, env, url, path, user) {
@@ -645,6 +860,13 @@ async function handleApi(request, env, url) {
   }
 
   if (path === 'buildings' && method === 'GET') return listBuildings(env);
+
+  if (path === 'leader/overview' && method === 'GET') {
+    if (user.role !== 'quality_leader' && user.role !== ADMIN_ROLE) {
+      return fail('you do not have permission to view the team overview', 403);
+    }
+    return leaderOverview(env, url);
+  }
 
   const assignmentResponse = await handleAssignments(request, env, url, path, user);
   if (assignmentResponse) return assignmentResponse;
