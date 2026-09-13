@@ -106,7 +106,7 @@ async function notifyAssignmentCompleted(env, assignmentId, overall) {
   ).all();
   for (const l of leaders || []) recipients.set(l.id, '#pg-overview');
   if (a.assigned_by && !recipients.has(a.assigned_by)) {
-    recipients.set(a.assigned_by, a.assigner_role === 'quality_admin' ? '#pg-overview' : null);
+    recipients.set(a.assigned_by, a.assigner_role === 'quality_officer' || a.assigner_role === 'quality_admin' ? '#pg-officer' : null);
   }
   for (const [userId, link] of recipients) await notify(env, userId, 'completion', title, body, link);
 }
@@ -155,6 +155,13 @@ async function completedAssignmentIds(env) {
      FROM inspections WHERE json_extract(data, '$.assignmentId') IS NOT NULL`,
   ).all();
   return new Set((results || []).map((r) => r.assignment_id));
+}
+
+async function isAssignmentCompleted(env, assignmentId) {
+  const row = await env.DB.prepare(
+    "SELECT 1 AS x FROM inspections WHERE CAST(json_extract(data, '$.assignmentId') AS INTEGER) = ?1 LIMIT 1",
+  ).bind(assignmentId).first();
+  return !!row;
 }
 
 async function listAuditors(env) {
@@ -218,8 +225,11 @@ async function upsertAssignment(env, officer, body) {
   if (!building) return fail('building not found', 404);
 
   const existing = await env.DB.prepare(
-    'SELECT auditor_id FROM assignments WHERE building_id = ?1 AND quarter = ?2 AND type = ?3',
+    'SELECT id, auditor_id FROM assignments WHERE building_id = ?1 AND quarter = ?2 AND type = ?3',
   ).bind(buildingId, quarter, type).first();
+  if (existing && existing.auditor_id !== auditorId && await isAssignmentCompleted(env, existing.id)) {
+    return fail('this building was already inspected for that quarter, so its auditor cannot change', 409);
+  }
 
   await env.DB.prepare(
     `INSERT INTO assignments (building_id, auditor_id, quarter, type, assigned_by)
@@ -241,9 +251,161 @@ async function upsertAssignment(env, officer, body) {
 }
 
 async function deleteAssignment(env, id) {
+  if (await isAssignmentCompleted(env, id)) {
+    return fail('this assignment is already completed and cannot be removed', 409);
+  }
   const res = await env.DB.prepare('DELETE FROM assignments WHERE id = ?1').bind(id).run();
   if (!res.meta.changes) return fail('assignment not found', 404);
   return json({ ok: true });
+}
+
+/* ── Quality Officer: board with live progress ─────────────
+ * Every building for one quarter + type with its assignment and, once an
+ * auditor has submitted it, the result. Per-auditor numbers are rolled up
+ * in the browser so the division filter applies without another request. */
+
+const QUARTER_RE = /^\d{4}-Q[1-4]$/;
+
+async function officerBoard(env, url) {
+  const quarter = url.searchParams.get('quarter') || '';
+  const type = url.searchParams.get('type') || '';
+  if (!QUARTER_RE.test(quarter) || !ASSIGNMENT_TYPES.has(type)) {
+    return fail('quarter (YYYY-Qn) and a valid type (BOQI/EOQI) are required', 400);
+  }
+  const [b, a, u, i] = await Promise.all([
+    env.DB.prepare('SELECT id, location, division, area, name FROM buildings ORDER BY division, area, name').all(),
+    env.DB.prepare('SELECT id, building_id, auditor_id, quarter, type, assigned_by, created_at, updated_at FROM assignments').all(),
+    env.DB.prepare('SELECT id, name, role, status FROM qa_users').all(),
+    env.DB.prepare(
+      `SELECT id, inspector, date, overall, created_at, CAST(json_extract(data, '$.assignmentId') AS INTEGER) AS assignment_id
+       FROM inspections WHERE json_extract(data, '$.assignmentId') IS NOT NULL ORDER BY id`,
+    ).all(),
+  ]);
+  const users = new Map((u.results || []).map((x) => [x.id, x]));
+  const assignments = a.results || [];
+
+  // First submission marks completion time; the latest one carries the current score.
+  const results = new Map();
+  for (const row of i.results || []) {
+    const prev = results.get(row.assignment_id);
+    results.set(row.assignment_id, {
+      completedAt: prev ? prev.completedAt : row.created_at,
+      score: typeof row.overall === 'number' ? Math.round(row.overall) : (prev ? prev.score : null),
+      inspector: row.inspector, date: row.date, submissions: (prev ? prev.submissions : 0) + 1,
+    });
+  }
+
+  const inPeriod = assignments.filter((x) => x.quarter === quarter && x.type === type);
+  const byBuilding = new Map(inPeriod.map((x) => [x.building_id, x]));
+  const buildings = (b.results || []).map((x) => {
+    const asg = byBuilding.get(x.id);
+    const res = asg ? results.get(asg.id) : null;
+    return {
+      buildingId: x.id, name: x.name, location: x.location, division: x.division, area: x.area,
+      assignmentId: asg ? asg.id : null,
+      auditorId: asg ? asg.auditor_id : null,
+      auditorName: asg ? (users.get(asg.auditor_id)?.name || null) : null,
+      assignedBy: asg ? (users.get(asg.assigned_by)?.name || null) : null,
+      assignedAt: asg ? asg.updated_at : null,
+      status: !asg ? 'unassigned' : res ? 'completed' : 'pending',
+      score: res ? res.score : null,
+      completedAt: res ? res.completedAt : null,
+      inspectionDate: res ? res.date : null,
+      inspector: res ? res.inspector : null,
+    };
+  });
+
+  // Auditors: everyone active, plus suspended ones still holding work this period.
+  const openElsewhere = new Map();
+  for (const x of assignments) {
+    if ((x.quarter === quarter && x.type === type) || results.has(x.id)) continue;
+    openElsewhere.set(x.auditor_id, (openElsewhere.get(x.auditor_id) || 0) + 1);
+  }
+  const holding = new Set(inPeriod.map((x) => x.auditor_id));
+  const auditors = [...users.values()]
+    .filter((x) => x.role === 'quality_auditor' && (x.status === 'active' || holding.has(x.id)))
+    .map((x) => ({ id: x.id, name: x.name, status: x.status, openElsewhere: openElsewhere.get(x.id) || 0 }))
+    .sort((x, y) => x.name.localeCompare(y.name));
+
+  const events = [
+    ...inPeriod.map((x) => ({
+      kind: 'assigned', at: x.updated_at, buildingId: x.building_id,
+      actor: users.get(x.assigned_by)?.name || 'Someone', auditor: users.get(x.auditor_id)?.name || 'an auditor',
+    })),
+    ...inPeriod.filter((x) => results.has(x.id)).map((x) => ({
+      kind: 'completed', at: results.get(x.id).completedAt, buildingId: x.building_id,
+      auditor: users.get(x.auditor_id)?.name || 'an auditor', score: results.get(x.id).score,
+    })),
+  ].filter((x) => x.at).sort((x, y) => (y.at > x.at ? 1 : y.at < x.at ? -1 : 0)).slice(0, 25);
+
+  const quarters = [...new Set(assignments.map((x) => x.quarter))].sort().reverse();
+  return json({ quarter, type, quarters, buildings, auditors, events, serverTime: new Date().toISOString() });
+}
+
+/* Assign (or unassign) many buildings in one go. Uses json_each so the
+ * whole set is one statement regardless of D1's bound-parameter limit.
+ * Buildings already inspected for the period are left untouched. */
+async function bulkAssign(env, officer, body) {
+  const quarter = String(body?.quarter || '').trim();
+  const type = body?.type;
+  const auditorId = body?.auditorId || null;
+  const ids = [...new Set((Array.isArray(body?.buildingIds) ? body.buildingIds : [])
+    .map(Number).filter((n) => Number.isInteger(n) && n > 0))];
+  if (!QUARTER_RE.test(quarter) || !ASSIGNMENT_TYPES.has(type) || !ids.length) {
+    return fail('quarter (YYYY-Qn), a valid type (BOQI/EOQI) and at least one building are required', 400);
+  }
+  if (ids.length > 1000) return fail('too many buildings in one request', 400);
+
+  let auditor = null;
+  if (auditorId) {
+    auditor = await env.DB.prepare(
+      "SELECT id, name, status FROM qa_users WHERE id = ?1 AND role = 'quality_auditor'",
+    ).bind(auditorId).first();
+    if (!auditor) return fail('auditor not found', 404);
+    if (auditor.status !== 'active') return fail('that auditor is suspended', 400);
+  }
+
+  const [{ results: buildingRows }, { results: existingRows }, completedIds] = await Promise.all([
+    env.DB.prepare('SELECT id, name FROM buildings').all(),
+    env.DB.prepare('SELECT id, building_id, auditor_id FROM assignments WHERE quarter = ?1 AND type = ?2').bind(quarter, type).all(),
+    completedAssignmentIds(env),
+  ]);
+  const buildingName = new Map((buildingRows || []).map((x) => [x.id, x.name]));
+  const existing = new Map((existingRows || []).map((x) => [x.building_id, x]));
+
+  let skippedCompleted = 0, unchanged = 0, notFound = 0;
+  const change = [];
+  for (const id of ids) {
+    if (!buildingName.has(id)) { notFound += 1; continue; }
+    const cur = existing.get(id);
+    if (cur && completedIds.has(cur.id)) { skippedCompleted += 1; continue; }
+    if (auditor ? cur && cur.auditor_id === auditor.id : !cur) { unchanged += 1; continue; }
+    change.push(id);
+  }
+
+  if (change.length && auditor) {
+    await env.DB.prepare(
+      `INSERT INTO assignments (building_id, auditor_id, quarter, type, assigned_by)
+       SELECT CAST(value AS INTEGER), ?2, ?3, ?4, ?5 FROM json_each(?1) WHERE true
+       ON CONFLICT(building_id, quarter, type)
+       DO UPDATE SET auditor_id = excluded.auditor_id, assigned_by = excluded.assigned_by, updated_at = datetime('now')`,
+    ).bind(JSON.stringify(change), auditor.id, quarter, type, officer.id).run();
+    const names = change.map((id) => buildingName.get(id));
+    const list = names.slice(0, 3).join(', ') + (names.length > 3 ? ` and ${names.length - 3} more` : '');
+    await notify(
+      env, auditor.id, 'assignment',
+      change.length === 1 ? `New assignment: ${names[0]}` : `${change.length} new assignments`,
+      `${officer.name} assigned you ${list} for ${quarter} ${type}.`,
+      '#pg-assignments',
+    );
+  } else if (change.length) {
+    await env.DB.prepare(
+      `DELETE FROM assignments WHERE quarter = ?2 AND type = ?3
+       AND building_id IN (SELECT CAST(value AS INTEGER) FROM json_each(?1))`,
+    ).bind(JSON.stringify(change), quarter, type).run();
+  }
+
+  return json({ ok: true, changed: change.length, unchanged, skippedCompleted, notFound });
 }
 
 async function listMyAssignments(env, auditorId, quarter, type) {
@@ -517,6 +679,10 @@ async function handleAssignments(request, env, url, path, user) {
   if (path === 'assignments' && method === 'POST') {
     if (!canManage) return fail('you do not have permission to assign buildings', 403);
     return upsertAssignment(env, user, await request.json());
+  }
+  if (path === 'assignments/bulk' && method === 'POST') {
+    if (!canManage) return fail('you do not have permission to assign buildings', 403);
+    return bulkAssign(env, user, await request.json());
   }
   const idMatch = path.match(/^assignments\/(\d+)$/);
   if (idMatch && method === 'DELETE') {
@@ -920,6 +1086,13 @@ async function handleApi(request, env, url) {
     return leaderOverview(env, url);
   }
 
+  if (path === 'officer/board' && method === 'GET') {
+    if (user.role !== 'quality_officer' && user.role !== ADMIN_ROLE) {
+      return fail('you do not have permission to view the assignment board', 403);
+    }
+    return officerBoard(env, url);
+  }
+
   const assignmentResponse = await handleAssignments(request, env, url, path, user);
   if (assignmentResponse) return assignmentResponse;
   if (path.startsWith('assignments')) return fail('not found', 404);
@@ -964,9 +1137,8 @@ async function handleAssets(request, env, url) {
     if (isAdminShell && user.role !== ADMIN_ROLE) {
       return Response.redirect(new URL('/app.html', url).toString(), 302);
     }
-    if (isAssignShell && user.role !== 'quality_officer' && user.role !== ADMIN_ROLE) {
-      return Response.redirect(new URL('/app.html', url).toString(), 302);
-    }
+    // Assigning moved into the app (Assign & Track); keep old links working.
+    if (isAssignShell) return Response.redirect(new URL('/app#pg-officer', url).toString(), 302);
   }
   return env.ASSETS.fetch(request);
 }

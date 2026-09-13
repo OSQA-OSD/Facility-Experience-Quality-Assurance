@@ -186,6 +186,52 @@ body.view-only .hc-edit{display:none}
 @media(max-width:1180px){.ov-grid2{grid-template-columns:1fr}}
 @media(max-width:780px){#pg-overview .ov-filters,.ov-stats,.ov-section{padding-left:14px;padding-right:14px}}
 
+/* Assign & Track (Quality Officer) */
+#pg-officer{background:var(--bg);padding-bottom:40px}
+#pg-officer .ov-filters{padding:20px 44px 0;margin:0}
+.of-live{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-size:.72rem;color:var(--muted);font-weight:700}
+.of-live i{width:8px;height:8px;border-radius:50%;background:var(--good);animation:of-pulse 2s infinite}
+.of-live.off i{background:var(--danger);animation:none}
+@keyframes of-pulse{0%{box-shadow:0 0 0 0 rgba(0,132,61,.45)}70%{box-shadow:0 0 0 7px rgba(0,132,61,0)}100%{box-shadow:0 0 0 0 rgba(0,132,61,0)}}
+#of-stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+#of-stats .hs-card.clickable{cursor:pointer}
+#of-stats .hs-card.active,.of-card.active{border-color:var(--royal);box-shadow:inset 0 0 0 1px var(--royal)}
+.of-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.of-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.of-card:hover{transform:translateY(-2px);box-shadow:0 14px 28px -18px rgba(0,32,112,.3)}
+.of-card-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.of-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(160deg,var(--royal),var(--teal));color:#fff;font-style:normal;
+  font-weight:900;font-size:.76rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.of-card-hd div{flex:1;min-width:0}
+.of-card-hd b{display:block;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.of-card-hd small{display:block;font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.of-pct{font-size:1.3rem;font-weight:900;color:var(--royal)}
+.of-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px;text-align:center}
+.of-nums span{font-size:.58rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.of-nums b{display:block;font-size:1rem;font-weight:900;color:var(--text)}
+.of-card-ft{margin-top:10px;padding-top:9px;border-top:1px solid var(--bg);font-size:.7rem;color:var(--muted)}
+.of-table .of-chk{width:38px;padding-right:0}
+.of-table input[type=checkbox],#of-check-all{width:16px;height:16px;accent-color:var(--royal);cursor:pointer}
+.of-sel{border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;font-family:var(--font);font-size:.78rem;color:var(--text);background:#fff;min-width:180px;outline:none}
+.of-sel:focus{border-color:var(--teal)}
+.of-sel.unassigned{color:var(--muted);border-style:dashed}
+.of-lock{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:.8rem;white-space:nowrap}
+.of-table tr.selected td{background:rgba(0,51,160,.05)}
+.of-foot{padding:10px 18px;border-top:1px solid var(--bg);font-size:.72rem;color:var(--muted);font-weight:700}
+.of-bulk{position:sticky;bottom:16px;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 14px;
+  background:var(--royal-dk);color:#fff;border-radius:14px;box-shadow:0 18px 40px -16px rgba(0,20,70,.6)}
+.of-bulk[hidden],.of-toast[hidden]{display:none}
+.of-bulk b{font-size:.8rem;margin-right:auto}
+.of-bulk select{border:none;border-radius:7px;padding:7px 10px;font-family:var(--font);font-size:.78rem;min-width:170px}
+.of-bulk .btn{padding:7px 14px;font-size:.76rem}
+.of-bulk .rp-link{color:var(--teal-lt)}
+@keyframes of-flash{0%{background:rgba(0,132,61,.25)}100%{background:transparent}}
+.of-table tr.flash td,.of-card.flash{animation:of-flash 2.6s ease-out}
+.of-toast{position:fixed;right:24px;bottom:24px;z-index:90;background:var(--royal-dk);color:#fff;padding:11px 16px;border-radius:10px;
+  font-size:.8rem;font-weight:700;box-shadow:0 14px 34px -12px rgba(0,0,0,.4);max-width:380px}
+.of-toast.err{background:var(--danger)}
+@media(max-width:780px){#pg-officer .ov-filters{padding-left:14px;padding-right:14px}.of-live{margin-left:0}.of-bulk b{margin-right:0;width:100%}}
+
 /* Reports & Analytics (all roles) */
 #pg-reports{background:var(--bg);padding-bottom:40px}
 #rp-stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
@@ -491,12 +537,12 @@ body.no-delete .hc-del{display:none}
   <nav id="sb-nav">
     <div class="ni active" data-page="pg-home"><i class="ni-num"></i>Home</div>
     <div class="ni" id="overview-link" data-page="pg-overview" hidden><i class="ni-num"></i>Team Overview</div>
+    <div class="ni" id="assign-link" data-page="pg-officer" hidden><i class="ni-num"></i>Assign &amp; Track</div>
     <div class="ni" id="my-assignments-link" data-page="pg-assignments" hidden><i class="ni-num"></i>My Assignments <span class="ns" id="ns-assign">–</span></div>
     <div class="ni" id="new-insp-link" data-page="pg-new" hidden><i class="ni-num"></i>New Inspection</div>
     <div class="ni" id="inspection-link" data-page="pg-s0" hidden><i class="ni-num"></i>Inspection <span class="ns" id="ns-progress">0%</span></div>
     <div class="ni" data-page="pg-scorecard"><i class="ni-num"></i>Score Card</div>
     <div class="ni" id="reports-link" data-page="pg-reports"><i class="ni-num"></i>Reports</div>
-    <a class="ni" id="assign-link" href="assign.html" hidden><i class="ni-num"></i>Assign Buildings</a>
     <a class="ni" id="admin-link" href="admin.html" hidden><i class="ni-num"></i>Admin Control</a>
   </nav>
   <div id="sb-foot">
@@ -772,6 +818,89 @@ body.no-delete .hc-del{display:none}
         <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Building</th><th>Division / Area</th><th>Auditor</th><th>Status</th><th>Inspections</th><th>Last score</th></tr></thead><tbody id="ov-b-rows"></tbody></table></div>
       </div>
     </div>
+  </div>
+
+  <!-- ASSIGN & TRACK (Quality Officer) -->
+  <div class="page" id="pg-officer">
+    <div class="home-hero">
+      <h2>Assign &amp;<br><span>Track</span></h2>
+      <p class="sub">Assign buildings to your auditors for the quarter and follow their progress live.</p>
+    </div>
+
+    <div class="hist-filters ov-filters">
+      <select id="of-quarter"></select>
+      <select id="of-type">
+        <option value="BOQI">BOQI — Beginning of Quarter</option>
+        <option value="EOQI">EOQI — End of Quarter</option>
+      </select>
+      <select id="of-division"><option value="">All divisions</option></select>
+      <span class="of-live" id="of-live"><i></i><span id="of-updated">Connecting…</span></span>
+      <button class="rp-link" id="of-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
+    </div>
+
+    <div class="ov-stats" id="of-stats"></div>
+
+    <div class="ov-section">
+      <div class="hist-hdr">
+        <div><span class="sec-eyebrow">Team</span><h3><svg data-lucide="users" width="18" height="18"></svg> Auditor Progress</h3></div>
+        <span class="ov-updated" id="of-team-note"></span>
+      </div>
+      <div class="of-cards" id="of-cards"></div>
+    </div>
+
+    <div class="ov-section">
+      <div class="ov-grid2">
+        <div>
+          <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3><svg data-lucide="map-pin" width="18" height="18"></svg> Progress by Area</h3></div></div>
+          <div class="ov-panel"><div class="ov-scroll" style="max-height:420px;overflow-y:auto"><table class="ov-table">
+            <thead><tr><th>Area</th><th>Buildings</th><th>Assigned</th><th>Completed</th></tr></thead>
+            <tbody id="of-area-rows"></tbody>
+          </table></div></div>
+        </div>
+        <div>
+          <div class="hist-hdr"><div><span class="sec-eyebrow">Live</span><h3><svg data-lucide="activity" width="18" height="18"></svg> Recent Activity</h3></div></div>
+          <div class="ov-panel"><ul class="ov-feed" id="of-feed"></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov-section" id="of-table-section">
+      <div class="hist-hdr">
+        <div><span class="sec-eyebrow">Buildings</span><h3><svg data-lucide="building-2" width="18" height="18"></svg> Assign Buildings</h3></div>
+        <div class="ov-tools">
+          <input type="text" id="of-search" placeholder="Search building or auditor…">
+          <select id="of-area"><option value="">All areas</option></select>
+          <select id="of-status">
+            <option value="">All statuses</option>
+            <option value="unassigned">Unassigned</option>
+            <option value="assigned">Assigned</option>
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+          </select>
+          <select id="of-auditor-filter"><option value="">All auditors</option></select>
+        </div>
+      </div>
+      <div class="ov-panel" style="margin-bottom:0">
+        <div class="ov-scroll"><table class="ov-table of-table">
+          <thead><tr>
+            <th class="of-chk"><input type="checkbox" id="of-check-all" title="Select every building shown that can still change"></th>
+            <th>Building</th><th>Division / Area</th><th>Auditor</th><th>Status</th><th>Result</th>
+          </tr></thead>
+          <tbody id="of-rows"></tbody>
+        </table></div>
+        <div class="of-foot" id="of-count"></div>
+      </div>
+      <div class="of-bulk" id="of-bulk" hidden>
+        <b id="of-sel-count">0 selected</b>
+        <select id="of-bulk-auditor" aria-label="Auditor for selected buildings"></select>
+        <button class="btn bt" id="of-bulk-assign">Assign</button>
+        <button class="btn bo" style="background:#fff" id="of-bulk-distribute" title="Split the selection across active auditors, lightest workload first, keeping each area together">
+          <svg data-lucide="shuffle" width="13" height="13"></svg> Distribute evenly</button>
+        <button class="btn bo" style="background:#fff" id="of-bulk-unassign">Unassign</button>
+        <button class="rp-link" id="of-bulk-clear">Clear</button>
+      </div>
+    </div>
+    <div class="of-toast" id="of-toast" hidden role="status"></div>
   </div>
 
   <!-- REPORTS & ANALYTICS (all roles) -->
@@ -1083,6 +1212,7 @@ let editingRecordId = null;
 // the initial deep-link routing, which runs before the end of the script.
 let currentUser = null;
 let ovData = null, ovChart = null, ovReady = false; // Team Overview state
+let ofData = null, ofReady = false, ofReq = 0, ofPrevDone = null, ofPrevKey = '', ofSelected = new Set(), ofRowsStale = false; // Assign & Track state
 let rpData = null, rpReady = false, rpCharts = {}, rpShown = 100, rpGroup = 'division', rpMetric = 'avg', rpTrend = 'quarter'; // Reports state
 const RP_FILTER_IDS = ['rp-year','rp-month','rp-quarter','rp-type','rp-division','rp-area','rp-building','rp-inspector','rp-rating','rp-from','rp-to','rp-search'];
 const RP_BANDS = ['Excellent','Good','Acceptable','Poor','Critical'];
@@ -1314,7 +1444,7 @@ function updateCommentHint(si,ii){
 // so a page can be bookmarked, shared, or restored with the browser's
 // back/forward buttons.
 // ═══════════════════════════════════════════════════════════
-const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments','pg-overview','pg-reports']);
+const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments','pg-overview','pg-reports','pg-officer']);
 function hashToPage(hash){
   const id=(hash||'').replace(/^#/,'');
   return VALID_PAGES.has(id)?id:'pg-home';
@@ -1325,6 +1455,7 @@ function pageAllowed(pageId){
   if(pageId==='pg-new'||pageId.startsWith('pg-s')) return !!currentUser.canEdit;
   if(pageId==='pg-assignments') return currentUser.role==='quality_auditor';
   if(pageId==='pg-overview') return currentUser.role==='quality_leader'||currentUser.role==='quality_admin';
+  if(pageId==='pg-officer') return currentUser.role==='quality_officer'||currentUser.role==='quality_admin';
   return true;
 }
 
@@ -1345,6 +1476,7 @@ function nav(pageId){
   if(pageId==='pg-assignments') loadMyAssignments();
   if(pageId==='pg-overview') loadOverview();
   if(pageId==='pg-reports') loadReports();
+  if(pageId==='pg-officer') loadOfficer();
   if(pageId.startsWith('pg-s')) syncFormToState();
   document.getElementById('main').scrollTo(0,0);
   if(location.hash!=='#'+pageId) location.hash=pageId;
@@ -2525,6 +2657,384 @@ function renderOvBuildings(){
 }
 
 // ═══════════════════════════════════════════════════════════
+// ASSIGN & TRACK (Quality Officer)
+// ═══════════════════════════════════════════════════════════
+// One request loads the whole quarter/type board; it refreshes every 30s
+// (and when the tab regains focus) so auditor progress stays live.
+function ofVal(id){ return document.getElementById(id).value; }
+function ofCurrentQuarter(){ const d=new Date(); return `${d.getFullYear()}-Q${Math.floor(d.getMonth()/3)+1}`; }
+function ofQuarterOptions(extra=[]){
+  const d=new Date(), y=d.getFullYear(), q=Math.floor(d.getMonth()/3)+1, out=[];
+  for(let i=-1;i<3;i++){
+    let qq=q+i, yy=y;
+    while(qq<1){qq+=4;yy--;}
+    while(qq>4){qq-=4;yy++;}
+    out.push(`${yy}-Q${qq}`);
+  }
+  return [...new Set([...out,...extra.filter(v=>/^\d{4}-Q[1-4]$/.test(v))])].sort().reverse();
+}
+function ofInitials(name){ return String(name||'?').split(/\s+/).filter(Boolean).map(p=>p[0]).slice(0,2).join('').toUpperCase(); }
+function ofOnPage(){ return document.getElementById('pg-officer').classList.contains('active'); }
+function ofToast(msg,isErr){
+  const t=document.getElementById('of-toast');
+  t.textContent=msg; t.classList.toggle('err',!!isErr); t.hidden=false;
+  clearTimeout(t._timer); t._timer=setTimeout(()=>{ t.hidden=true; },isErr?6000:3500);
+}
+function ofSave(){
+  try{ localStorage.setItem('of-state',JSON.stringify({quarter:ofVal('of-quarter'),type:ofVal('of-type'),division:ofVal('of-division')})); }catch{}
+}
+/** Buildings each auditor holds for the loaded quarter + type (all divisions). */
+function ofCounts(){
+  const m=new Map();
+  ofData.buildings.forEach(b=>{ if(b.auditorId) m.set(b.auditorId,(m.get(b.auditorId)||0)+1); });
+  return m;
+}
+function ofActiveAuditors(){ return ofData.auditors.filter(a=>a.status==='active'); }
+
+function initOfficer(){
+  if(ofReady) return;
+  ofReady=true;
+  let saved={};
+  try{ saved=JSON.parse(localStorage.getItem('of-state')||'{}')||{}; }catch{}
+  const qSel=document.getElementById('of-quarter');
+  const startQ=/^\d{4}-Q[1-4]$/.test(saved.quarter)?saved.quarter:ofCurrentQuarter();
+  qSel.innerHTML=ofQuarterOptions([startQ]).map(q=>`<option value="${q}">${q}</option>`).join('');
+  qSel.value=startQ;
+  if(['BOQI','EOQI'].includes(saved.type)) document.getElementById('of-type').value=saved.type;
+  if(typeof saved.division==='string'&&saved.division){
+    document.getElementById('of-division').add(new Option(saved.division,saved.division));
+    document.getElementById('of-division').value=saved.division;
+  }
+
+  const period=()=>{ ofSelected.clear(); ofPrevDone=null; ofData=null; ofSave(); loadOfficer(); };
+  document.getElementById('of-quarter').addEventListener('change',period);
+  document.getElementById('of-type').addEventListener('change',period);
+  document.getElementById('of-division').addEventListener('change',()=>{ document.getElementById('of-area').value=''; ofSave(); renderOfficer(); });
+  document.getElementById('of-search').addEventListener('input',()=>renderOfRows());
+  ['of-area','of-status','of-auditor-filter'].forEach(id=>document.getElementById(id).addEventListener('change',()=>renderOfficer()));
+  document.getElementById('of-refresh').addEventListener('click',()=>loadOfficer());
+
+  const toTable=()=>document.getElementById('of-table-section').scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('of-stats').addEventListener('click',e=>{
+    const tile=e.target.closest('[data-status]');
+    if(!tile) return;
+    const sel=document.getElementById('of-status');
+    sel.value=sel.value===tile.dataset.status?'':tile.dataset.status;
+    renderOfficer(); toTable();
+  });
+  document.getElementById('of-cards').addEventListener('click',e=>{
+    const card=e.target.closest('[data-auditor]');
+    if(!card) return;
+    const sel=document.getElementById('of-auditor-filter');
+    sel.value=sel.value===card.dataset.auditor?'':card.dataset.auditor;
+    renderOfficer(); if(sel.value) toTable();
+  });
+  document.getElementById('of-area-rows').addEventListener('click',e=>{
+    const tr=e.target.closest('tr[data-area]');
+    if(!tr) return;
+    document.getElementById('of-division').value=tr.dataset.division;
+    renderOfficer();
+    const sel=document.getElementById('of-area');
+    sel.value=sel.value===tr.dataset.area?'':tr.dataset.area;
+    ofSave(); renderOfficer(); toTable();
+  });
+
+  const rowsEl=document.getElementById('of-rows');
+  rowsEl.addEventListener('change',e=>{
+    const box=e.target.closest('[data-check]');
+    if(box){
+      const id=Number(box.dataset.check);
+      box.checked?ofSelected.add(id):ofSelected.delete(id);
+      box.closest('tr').classList.toggle('selected',box.checked);
+      ofSyncCheckAll(); ofUpdateBulk();
+      return;
+    }
+    const sel=e.target.closest('select[data-building]');
+    if(sel) ofAssignOne(Number(sel.dataset.building),sel.value,sel);
+  });
+  // A refresh never re-draws the table under an open auditor picker; it catches up on blur.
+  rowsEl.addEventListener('focusout',()=>setTimeout(()=>{ if(ofRowsStale&&!rowsEl.contains(document.activeElement)) renderOfRows(); },0));
+  document.getElementById('of-check-all').addEventListener('change',e=>{
+    ofFilteredRows().filter(b=>b.status!=='completed').forEach(b=>e.target.checked?ofSelected.add(b.buildingId):ofSelected.delete(b.buildingId));
+    renderOfRows();
+  });
+  document.getElementById('of-bulk-assign').addEventListener('click',()=>ofRunBulk('assign'));
+  document.getElementById('of-bulk-distribute').addEventListener('click',()=>ofRunBulk('distribute'));
+  document.getElementById('of-bulk-unassign').addEventListener('click',()=>ofRunBulk('unassign'));
+  document.getElementById('of-bulk-clear').addEventListener('click',()=>{ ofSelected.clear(); renderOfRows(); });
+
+  setInterval(()=>{ if(ofOnPage()&&document.visibilityState==='visible') loadOfficer({quiet:true}); },30000);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&ofOnPage()) loadOfficer({quiet:true}); });
+}
+
+async function loadOfficer({quiet=false}={}){
+  initOfficer();
+  const req=++ofReq, quarter=ofVal('of-quarter'), type=ofVal('of-type'), key=`${quarter}|${type}`;
+  const live=document.getElementById('of-live'), updated=document.getElementById('of-updated');
+  if(!quiet) updated.textContent='Loading…';
+  try{
+    const res=await fetch(`/api/officer/board?quarter=${encodeURIComponent(quarter)}&type=${encodeURIComponent(type)}`);
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error||'Could not load the board.');
+    if(req!==ofReq) return;
+    const doneNow=new Set(data.buildings.filter(b=>b.status==='completed').map(b=>b.buildingId));
+    const fresh=ofPrevDone&&ofPrevKey===key?[...doneNow].filter(id=>!ofPrevDone.has(id)):[];
+    ofPrevDone=doneNow; ofPrevKey=key; ofData=data;
+    for(const id of [...ofSelected]) if(doneNow.has(id)||!data.buildings.some(b=>b.buildingId===id)) ofSelected.delete(id);
+    renderOfficer(fresh);
+    if(fresh.length){
+      const b=data.buildings.find(x=>x.buildingId===fresh[0]);
+      ofToast(fresh.length===1?`${b.auditorName||'An auditor'} completed ${b.name}${b.score!=null?` — ${b.score}/100`:''}`:`${fresh.length} buildings were just completed`);
+    }
+    live.classList.remove('off');
+    updated.textContent='Live · updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }catch(err){
+    if(req!==ofReq) return;
+    live.classList.add('off');
+    updated.textContent=err.message;
+  }
+}
+
+function renderOfficer(fresh=[]){
+  if(!ofData) return;
+  const d=ofData, curQ=ofVal('of-quarter');
+  const qSel=document.getElementById('of-quarter');
+  qSel.innerHTML=ofQuarterOptions([...d.quarters,curQ]).map(q=>`<option value="${q}">${q}${q===ofCurrentQuarter()?' (current)':''}</option>`).join('');
+  qSel.value=curQ;
+  rpSelect('of-division',[...new Set(d.buildings.map(b=>b.division))].sort(),'All divisions');
+  const div=ofVal('of-division');
+  const scoped=d.buildings.filter(b=>!div||b.division===div);
+  rpSelect('of-area',[...new Set(scoped.map(b=>b.area))].sort(),'All areas');
+  const af=document.getElementById('of-auditor-filter'), curA=af.value;
+  af.innerHTML='<option value="">All auditors</option>'+d.auditors.map(a=>`<option value="${ovEsc(a.id)}">${ovEsc(a.name)}</option>`).join('');
+  af.value=d.auditors.some(a=>a.id===curA)?curA:'';
+
+  // KPI tiles (respect the division filter); four of them double as status filters
+  const total=scoped.length, assigned=scoped.filter(b=>b.assignmentId).length;
+  const completed=scoped.filter(b=>b.status==='completed').length, pending=assigned-completed;
+  const scores=scoped.map(b=>b.score).filter(v=>typeof v==='number');
+  const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+  const pct=(a,b)=>b?Math.round(a/b*100):0, status=ofVal('of-status');
+  const bar=p=>`<div class="ov-bar" style="margin-top:10px"><i style="width:${p}%"></i></div>`;
+  const note=t=>`<small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px">${t}</small>`;
+  const tile=(icon,value,label,extra,filter,color)=>`<div class="hs-card${filter?' clickable':''}${filter&&status===filter?' active':''}"${filter?` data-status="${filter}" title="Show these buildings"`:''}>
+    <div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b${color?` style="color:${color}"`:''}>${value}</b><span>${label}</span>${extra||''}</div>`;
+  document.getElementById('of-stats').innerHTML=
+    tile('building-2',total,'Buildings',note(ovEsc(div||'All divisions')))+
+    tile('user-check',`${assigned}/${total}`,'Assigned',bar(pct(assigned,total)),'assigned')+
+    tile('circle-check',`${pct(completed,assigned)}%`,'Completion',note(`${completed} of ${assigned} assigned done`)+bar(pct(completed,assigned)),'completed')+
+    tile('hourglass',pending,'Pending',note('Assigned, not yet inspected'),'pending')+
+    tile('circle-dashed',total-assigned,'Unassigned',note('Still need an auditor'),'unassigned')+
+    tile('trending-up',avg??'–','Average score',avg!=null?note(grade(avg).label):note('No results yet'),null,avg!=null?grade(avg).color:'');
+
+  // Auditor progress: the whole quarter + type, so workloads compare fairly
+  const byAud=new Map(d.auditors.map(a=>[a.id,{...a,assigned:0,completed:0,scores:[],last:null}]));
+  d.buildings.forEach(b=>{
+    const x=b.auditorId&&byAud.get(b.auditorId);
+    if(!x) return;
+    x.assigned++;
+    if(b.status!=='completed') return;
+    x.completed++;
+    if(typeof b.score==='number') x.scores.push(b.score);
+    if(!x.last||b.completedAt>x.last) x.last=b.completedAt;
+  });
+  const freshAud=new Set(fresh.map(id=>d.buildings.find(b=>b.buildingId===id)?.auditorId));
+  const selAud=ofVal('of-auditor-filter');
+  const cards=[...byAud.values()].sort((a,b)=>b.assigned-a.assigned||a.name.localeCompare(b.name));
+  document.getElementById('of-team-note').textContent=div?'Whole quarter, all divisions':'';
+  document.getElementById('of-cards').innerHTML=cards.length?cards.map(a=>{
+    const p=pct(a.completed,a.assigned), av=a.scores.length?Math.round(a.scores.reduce((s,v)=>s+v,0)/a.scores.length):null;
+    const sub=[a.status!=='active'?'Suspended':'',a.openElsewhere?`${a.openElsewhere} open in other periods`:''].filter(Boolean).join(' · ')||(a.assigned?'':'No buildings yet');
+    return `<div class="of-card${selAud===a.id?' active':''}${freshAud.has(a.id)?' flash':''}" data-auditor="${ovEsc(a.id)}" title="Show ${ovEsc(a.name)}'s buildings">
+      <div class="of-card-hd"><i class="of-av">${ovEsc(ofInitials(a.name))}</i><div><b>${ovEsc(a.name)}</b><small>${ovEsc(sub)}</small></div><span class="of-pct">${a.assigned?p+'%':'–'}</span></div>
+      <div class="ov-bar"><i style="width:${p}%"></i></div>
+      <div class="of-nums">
+        <span><b>${a.assigned}</b>Assigned</span><span><b>${a.completed}</b>Done</span>
+        <span><b>${a.assigned-a.completed}</b>Pending</span><span><b${av!=null?` style="color:${grade(av).color}"`:''}>${av??'–'}</b>Avg</span>
+      </div>
+      <div class="of-card-ft">${a.last?`Last submission ${timeAgo(a.last)}`:a.assigned?'No submissions yet':'Nothing assigned this period'}</div>
+    </div>`;
+  }).join(''):'<div class="ov-empty">No active auditors yet — an admin can create them in Admin Control.</div>';
+
+  // Progress by area
+  const areas=new Map();
+  scoped.forEach(b=>{
+    const k=b.division+'|'+b.area;
+    if(!areas.has(k)) areas.set(k,{division:b.division,area:b.area,buildings:0,assigned:0,completed:0});
+    const g=areas.get(k); g.buildings++;
+    if(b.assignmentId) g.assigned++;
+    if(b.status==='completed') g.completed++;
+  });
+  const curArea=ofVal('of-area');
+  document.getElementById('of-area-rows').innerHTML=areas.size?[...areas.values()].map(g=>`
+    <tr class="clickable" data-area="${ovEsc(g.area)}" data-division="${ovEsc(g.division)}"${g.area===curArea?' style="background:rgba(38,168,171,.08)"':''}>
+      <td><b>${ovEsc(g.area)}</b><small>${ovEsc(g.division)}</small></td>
+      <td>${g.buildings}</td>
+      <td>${ovPct(g.assigned,g.buildings)}<small>${g.assigned}/${g.buildings} assigned</small></td>
+      <td>${ovPct(g.completed,g.assigned)}<small>${g.completed}/${g.assigned} done</small></td>
+    </tr>`).join(''):'<tr><td colspan="4" class="ov-empty">No buildings.</td></tr>';
+
+  // Activity — assignments saved together (same person, auditor and second) collapse into one line
+  const bById=new Map(d.buildings.map(b=>[b.buildingId,b]));
+  const groups=new Map();
+  d.events.forEach((e,i)=>{
+    const b=bById.get(e.buildingId);
+    if(!b||(div&&b.division!==div)) return;
+    const key=e.kind==='assigned'?`a|${e.actor}|${e.auditor}|${e.at}`:`c|${i}`;
+    if(groups.has(key)) groups.get(key).names.push(b.name);
+    else groups.set(key,{...e,names:[b.name]});
+  });
+  const grouped=[...groups.values()];
+  document.getElementById('of-feed').innerHTML=grouped.length?grouped.map(e=>e.kind==='completed'
+    ?`<li><span class="dot" style="background:${e.score!=null?grade(e.score).color:'var(--teal)'}"><svg data-lucide="check" width="14" height="14"></svg></span>
+       <div><b>${ovEsc(e.auditor)}</b> completed <b>${ovEsc(e.names[0])}</b>${e.score!=null?` — ${e.score}/100`:''}<small>${timeAgo(e.at)}</small></div></li>`
+    :`<li><span class="dot" style="background:var(--royal)"><svg data-lucide="clipboard-list" width="14" height="14"></svg></span>
+       <div><b>${ovEsc(e.actor)}</b> assigned <b>${e.names.length===1?ovEsc(e.names[0]):e.names.length+' buildings'}</b> to ${ovEsc(e.auditor)}<small>${timeAgo(e.at)}</small></div></li>`
+  ).join(''):'<li class="ov-empty" style="display:block">Nothing has happened for this quarter yet.</li>';
+
+  renderOfRows(fresh);
+  lucide.createIcons();
+}
+
+function ofFilteredRows(){
+  const div=ofVal('of-division'), area=ofVal('of-area'), st=ofVal('of-status'), aud=ofVal('of-auditor-filter');
+  const term=ofVal('of-search').trim().toLowerCase();
+  return ofData.buildings.filter(b=>
+    (!div||b.division===div) && (!area||b.area===area) &&
+    (!st||(st==='assigned'?b.status!=='unassigned':b.status===st)) &&
+    (!aud||b.auditorId===aud) &&
+    (!term||b.name.toLowerCase().includes(term)||(b.location||'').toLowerCase().includes(term)||(b.auditorName||'').toLowerCase().includes(term)));
+}
+function renderOfRows(fresh=[]){
+  if(!ofData) return;
+  const rowsEl=document.getElementById('of-rows');
+  if(rowsEl.contains(document.activeElement)&&document.activeElement.tagName==='SELECT'){ ofRowsStale=true; return; }
+  ofRowsStale=false;
+  const rows=ofFilteredRows(), counts=ofCounts(), active=ofActiveAuditors(), freshSet=new Set(fresh);
+  const label={completed:'Completed',pending:'Pending',unassigned:'Unassigned'};
+  rowsEl.innerHTML=rows.length?rows.map(b=>{
+    const done=b.status==='completed', picked=ofSelected.has(b.buildingId);
+    const held=b.auditorId&&!active.some(a=>a.id===b.auditorId)?`<option value="${ovEsc(b.auditorId)}" selected disabled>${ovEsc(b.auditorName||'Unknown')} (suspended)</option>`:'';
+    const auditorCell=done
+      ?`<span class="of-lock"><svg data-lucide="lock" width="12" height="12"></svg> ${ovEsc(b.auditorName||'—')}</span><small>Locked — already inspected</small>`
+      :`<select class="of-sel${b.auditorId?'':' unassigned'}" data-building="${b.buildingId}" aria-label="Auditor for ${ovEsc(b.name)}">
+          <option value="">— Unassigned —</option>${held}
+          ${active.map(a=>`<option value="${ovEsc(a.id)}"${a.id===b.auditorId?' selected':''}>${ovEsc(a.name)} (${counts.get(a.id)||0})</option>`).join('')}
+        </select>${b.assignedBy?`<small>by ${ovEsc(b.assignedBy)} · ${timeAgo(b.assignedAt)}</small>`:''}`;
+    return `<tr class="${picked?'selected':''}${freshSet.has(b.buildingId)?' flash':''}">
+      <td class="of-chk">${done?'':`<input type="checkbox" data-check="${b.buildingId}"${picked?' checked':''} aria-label="Select ${ovEsc(b.name)}">`}</td>
+      <td><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
+      <td>${ovEsc(b.division)}<small>${ovEsc(b.area)}</small></td>
+      <td>${auditorCell}</td>
+      <td><span class="ov-pill ${b.status}">${label[b.status]}</span></td>
+      <td>${done?`${ovScore(b.score)}<small>${ovEsc(b.inspectionDate||'')}${b.inspector?' · '+ovEsc(b.inspector):''}</small>`:'<span style="color:var(--muted)">–</span>'}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="6" class="ov-empty">No buildings match these filters.</td></tr>';
+  const scopedTotal=ofData.buildings.filter(b=>!ofVal('of-division')||b.division===ofVal('of-division')).length;
+  document.getElementById('of-count').textContent=`${rows.length} of ${scopedTotal} buildings shown${ofSelected.size?` · ${ofSelected.size} selected`:''}`;
+  ofSyncCheckAll(); ofUpdateBulk();
+  lucide.createIcons();
+}
+function ofSyncCheckAll(){
+  const ids=ofFilteredRows().filter(b=>b.status!=='completed').map(b=>b.buildingId);
+  const n=ids.filter(id=>ofSelected.has(id)).length, box=document.getElementById('of-check-all');
+  box.checked=!!ids.length&&n===ids.length;
+  box.indeterminate=n>0&&n<ids.length;
+  box.disabled=!ids.length;
+}
+function ofUpdateBulk(){
+  const n=ofSelected.size;
+  document.getElementById('of-bulk').hidden=!n;
+  document.getElementById('of-sel-count').textContent=`${n} building${n===1?'':'s'} selected`;
+  const sel=document.getElementById('of-bulk-auditor'), cur=sel.value, counts=ofCounts();
+  sel.innerHTML='<option value="">Choose auditor…</option>'+ofActiveAuditors().map(a=>`<option value="${ovEsc(a.id)}">${ovEsc(a.name)} (${counts.get(a.id)||0})</option>`).join('');
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:'';
+  const box=document.getElementById('of-count');
+  box.textContent=box.textContent.replace(/ · \d+ selected$/,'')+(n?` · ${n} selected`:'');
+}
+
+async function ofAssignOne(buildingId,auditorId,el){
+  const b=ofData.buildings.find(x=>x.buildingId===buildingId);
+  if(!b) return;
+  const who=auditorId?el.options[el.selectedIndex].text.replace(/ \(\d+\)$/,''):'';
+  el.disabled=true;
+  try{
+    let res=null;
+    if(auditorId){
+      res=await fetch('/api/assignments',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({buildingId,auditorId,quarter:ofVal('of-quarter'),type:ofVal('of-type')})});
+    }else if(b.assignmentId){
+      res=await fetch('/api/assignments/'+b.assignmentId,{method:'DELETE'});
+    }
+    if(res&&!res.ok) throw new Error((await res.json().catch(()=>({}))).error||'Could not save the change.');
+    ofToast(auditorId?`${b.name} assigned to ${who}`:`${b.name} unassigned`);
+  }catch(err){
+    ofToast(err.message,true);
+  }
+  el.blur();
+  await loadOfficer({quiet:true});
+}
+
+async function ofBulk(auditorId,buildingIds){
+  const res=await fetch('/api/assignments/bulk',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({quarter:ofVal('of-quarter'),type:ofVal('of-type'),auditorId:auditorId||null,buildingIds})});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error||'Could not save the change.');
+  return data;
+}
+/** Even split that keeps neighbours together: each auditor gets a consecutive run of the
+ *  selected buildings (sorted by division → area → name), sized to level everyone's load. */
+function ofPlanDistribution(ids){
+  const active=ofActiveAuditors();
+  if(!active.length) return null;
+  const idSet=new Set(ids);
+  const blds=ofData.buildings.filter(b=>idSet.has(b.buildingId)&&b.status!=='completed')
+    .sort((a,b)=>a.division.localeCompare(b.division)||a.area.localeCompare(b.area)||a.name.localeCompare(b.name));
+  const slots=[...active].sort((a,b)=>a.name.localeCompare(b.name)).map(a=>({a,base:0,add:0}));
+  const byId=new Map(slots.map(s=>[s.a.id,s]));
+  ofData.buildings.forEach(b=>{ const s=b.auditorId&&!idSet.has(b.buildingId)&&byId.get(b.auditorId); if(s) s.base++; });
+  blds.forEach(()=>{ slots.reduce((m,s)=>s.base+s.add<m.base+m.add?s:m).add++; });
+  const plan=[]; let i=0;
+  slots.filter(s=>s.add).forEach(s=>{ plan.push({id:s.a.id,name:s.a.name,total:s.base+s.add,ids:blds.slice(i,i+s.add).map(b=>b.buildingId)}); i+=s.add; });
+  return plan;
+}
+async function ofRunBulk(action){
+  const ids=[...ofSelected];
+  if(!ids.length) return;
+  const buttons=[...document.querySelectorAll('#of-bulk button')];
+  const plural=n=>`${n} building${n===1?'':'s'}`;
+  try{
+    if(action==='assign'){
+      const aud=ofVal('of-bulk-auditor');
+      if(!aud){ ofToast('Choose an auditor first.',true); return; }
+      buttons.forEach(b=>b.disabled=true);
+      const r=await ofBulk(aud,ids);
+      ofToast(`Assigned ${plural(r.changed)}${r.unchanged?` · ${r.unchanged} already theirs`:''}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
+    }else if(action==='unassign'){
+      if(!confirm(`Unassign ${plural(ids.length)}? They go back to the unassigned list.`)) return;
+      buttons.forEach(b=>b.disabled=true);
+      const r=await ofBulk(null,ids);
+      ofToast(`Unassigned ${plural(r.changed)}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
+    }else if(action==='distribute'){
+      const plan=ofPlanDistribution(ids);
+      if(!plan){ ofToast('There are no active auditors to distribute to.',true); return; }
+      const lines=plan.map(p=>`• ${p.name}: +${p.ids.length} (total ${p.total})`).join('\n');
+      if(!confirm(`Distribute ${plural(ids.length)} across your auditors, keeping each area together:\n\n${lines}`)) return;
+      buttons.forEach(b=>b.disabled=true);
+      let changed=0;
+      for(const p of plan) changed+=(await ofBulk(p.id,p.ids)).changed;
+      ofToast(`Distributed ${plural(changed)} across ${plan.length} auditor${plan.length===1?'':'s'}`);
+    }
+    ofSelected.clear();
+  }catch(err){
+    ofToast(err.message,true);
+  }finally{
+    buttons.forEach(b=>b.disabled=false);
+    await loadOfficer({quiet:true});
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // REPORTS & ANALYTICS (every role; Data Analyst lands here)
 // ═══════════════════════════════════════════════════════════
 // All inspections arrive once from /api/reports/inspections; filtering,
@@ -2959,6 +3469,7 @@ function exportRpDetail(){
     if(!pageAllowed(landed)) nav('pg-home');
     else if(user.role==='quality_leader'&&!location.hash) nav('pg-overview');
     else if(user.role==='data_analyst'&&!location.hash) nav('pg-reports');
+    else if(user.role==='quality_officer'&&!location.hash) nav('pg-officer');
   }catch{
     document.getElementById('acct-name').textContent='';
   }
