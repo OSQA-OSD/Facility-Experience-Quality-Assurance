@@ -62,27 +62,34 @@ body.view-only .hc-edit{display:none}
 #acct-settings:hover{background:rgba(38,168,171,.35)}
 #acct-logout{padding:6px 9px;font-size:.66rem;font-weight:800}
 #acct-logout:hover{background:rgba(192,57,43,.35)}
-.oc{background:rgba(0,0,0,.22);border:1px solid rgba(38,168,171,.3);border-radius:var(--r);padding:10px;text-align:center}
+.ss-item{position:relative}
 
 /* Inspection layout: section list on the left, the active section on the right. */
 #sec-switch{display:none}
 #insp-layout.on{display:grid;grid-template-columns:238px minmax(0,1fr);align-items:start}
-#insp-layout.on #sec-switch{display:block;position:sticky;top:54px;padding:26px 0 26px 24px}
+#insp-layout.on #sec-switch{display:block;position:sticky;top:54px;padding:24px 0 24px 24px;max-height:calc(100vh - 54px);overflow-y:auto}
 .ss-label{display:block;font-size:.62rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 10px 4px}
 #ss-list{display:grid;gap:5px}
 .ss-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1px solid var(--border);
   border-radius:9px;padding:9px 11px;cursor:pointer;font-family:var(--font);color:var(--text);transition:border-color .13s,box-shadow .13s}
 .ss-item:hover{border-color:var(--teal)}
-.ss-item i{font-style:normal;font-size:.62rem;font-weight:800;color:var(--muted);min-width:15px}
-.ss-item div{display:grid;min-width:0;line-height:1.25}
+.ss-item div{display:grid;min-width:0;line-height:1.25;flex:1}
+.ss-item em{font-style:normal;font-size:.72rem;font-weight:900;color:var(--royal);flex-shrink:0}
+.ss-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);flex-shrink:0}
+.ss-dot.part{border-color:var(--warn);background:rgba(212,128,0,.3)}
+.ss-dot.full{border-color:var(--good);background:var(--good)}
+.ss-head{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.ss-head .ss-label{margin:0 0 6px}
+.ss-overall{display:flex;align-items:baseline;gap:4px}
+.ss-overall b{font-size:1.7rem;font-weight:900;color:var(--royal);line-height:1}
+.ss-overall small{font-size:.74rem;color:var(--muted);font-weight:700}
+.ss-overall span{margin-left:auto;align-self:center;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:999px;color:#fff;background:#9fb3c8;text-transform:uppercase;letter-spacing:.04em}
+.ss-head .ov-bar{margin:9px 0 4px}
+.ss-head>small{font-size:.68rem;color:var(--muted);font-weight:700}
 .ss-item b{font-size:.76rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ss-item small{font-size:.66rem;color:var(--muted);font-weight:600}
 .ss-item.active{border-color:var(--teal);background:rgba(38,168,171,.08);box-shadow:inset 3px 0 var(--teal)}
-.ss-item.active i,.ss-item.active b{color:var(--royal)}
-.oc .ol{font-size:.62rem;color:var(--teal-lt);text-transform:uppercase;letter-spacing:.12em;font-weight:700}
-.oc .ob{font-size:2rem;font-weight:900;color:#fff;line-height:1.1}
-.oc .og{font-size:.75rem;color:var(--teal-lt);font-weight:600;margin-top:2px}
-
+.ss-item.active b{color:var(--royal)}
 /* MAIN */
 #main{flex:1;min-width:0;height:100vh;overflow-y:auto}
 #pbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.97);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(38,168,171,.35);
@@ -209,40 +216,43 @@ body.view-only .hc-edit{display:none}
 .ad-d-body .ov-feed.ad-log li{padding-left:0;padding-right:0}
 .modal-box label{display:block;font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 @media(max-width:780px){#home-actions{padding:14px 14px 0}.ad-form{padding:14px}}
-.meta-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:13px;margin-bottom:20px}
-.mf{display:flex;flex-direction:column;gap:3px}
-.mf label{font-size:.65rem;text-transform:uppercase;letter-spacing:.14em;color:rgba(255,255,255,.5);font-weight:700}
-.mf input,.mf select{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;padding:8px 11px;color:#fff;font-size:.88rem;outline:none;font-family:var(--font);transition:border-color .15s,background .15s}
-.mf input::placeholder{color:rgba(255,255,255,.32)}
-.mf input:focus,.mf select:focus{border-color:var(--teal);background:rgba(255,255,255,.18)}
-.mf select option{background:#002280;color:#fff}
-.rscale{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px}
-.rc{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:6px;padding:5px 11px;font-size:.73rem}
-.rc strong{color:var(--teal-lt)}
-
-/* Inspector panel */
-#insp-panel{background:#fff;border-bottom:1px solid var(--border);padding:14px 44px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-#insp-chips{display:flex;gap:8px;flex-wrap:wrap}
-#insp-panel .ip-label{font-size:.8rem;font-weight:700;color:var(--royal);white-space:nowrap}
-.insp-chip{display:flex;align-items:center;gap:6px;background:var(--bg);border:2px solid var(--border);border-radius:20px;padding:5px 13px;cursor:pointer;font-size:.78rem;font-weight:700;color:var(--muted);transition:all .13s;white-space:nowrap}
-.insp-chip:hover{border-color:var(--teal);color:var(--royal)}
-.insp-chip.sel{background:var(--royal);border-color:var(--royal);color:#fff}
-.insp-chip .av{width:22px;height:22px;border-radius:50%;background:var(--teal);color:#fff;font-size:.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.insp-chip.sel .av{background:rgba(255,255,255,.22)}
-.insp-chip .chip-del{width:16px;height:16px;border-radius:50%;background:rgba(192,57,43,.15);border:none;color:#C0392B;font-size:.6rem;font-weight:900;cursor:pointer;display:none;align-items:center;justify-content:center;margin-left:2px;transition:background .13s;flex-shrink:0}
-.insp-chip:hover .chip-del{display:flex}
-.insp-chip.sel .chip-del{background:rgba(255,255,255,.15);color:#fff}
-.insp-chip.sel:hover .chip-del{display:flex}
-#add-insp-btn{display:flex;align-items:center;gap:5px;padding:5px 14px;border:2px dashed var(--teal);border-radius:20px;background:rgba(38,168,171,.06);cursor:pointer;font-size:.76rem;font-weight:700;color:var(--teal);transition:background .13s;white-space:nowrap;font-family:var(--font)}
-#add-insp-btn:hover{background:rgba(38,168,171,.14)}
-
-/* Spell banner */
-#spell-banner{display:none;background:#fff8e1;border-bottom:2px solid #D48000;padding:10px 44px;align-items:center;gap:12px;flex-wrap:wrap}
+/* INSPECTION DETAILS — step 1 */
+#pg-new{background:var(--bg);padding-bottom:40px}
+#pg-new [hidden]{display:none!important}
+.in-wrap{max-width:1020px}
+.in-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;padding:18px}
+.in-grid label,.in-lbl{display:grid;gap:6px;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.in-wide{grid-column:1/-1}
+.in-grid input,.in-grid select{border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:.88rem;font-family:var(--font);color:var(--text);
+  background:#fff;outline:none;text-transform:none;letter-spacing:0;font-weight:600;min-width:0;width:100%}
+.in-grid input:focus,.in-grid select:focus{border-color:var(--teal)}
+.in-grid .invalid,.in-types.invalid{border-color:var(--danger)!important;background:#fff7f7}
+.in-static{display:flex;align-items:center;gap:9px;min-height:40px;border:1.5px dashed var(--border);border-radius:8px;padding:6px 11px;font-size:.88rem;
+  font-weight:700;color:var(--text);text-transform:none;letter-spacing:0}
+.in-static i{width:26px;height:26px;border-radius:50%;background:linear-gradient(160deg,var(--royal),var(--teal));color:#fff;font-style:normal;font-size:.62rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.in-static small{font-size:.62rem;font-weight:800;color:#0c7b7d;background:rgba(38,168,171,.14);padding:1px 7px;border-radius:999px;text-transform:uppercase}
+.in-hint{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
+.in-hint.ok{color:var(--good)}
+.in-hint.warn{color:var(--warn)}
+.in-types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border:1.5px solid transparent;border-radius:12px}
+.in-type{border:1.5px solid var(--border);background:#fff;border-radius:10px;padding:10px 12px;text-align:left;cursor:pointer;font-family:var(--font)}
+.in-type b{display:block;font-size:.88rem;color:var(--royal)}
+.in-type small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}
+.in-type:hover{border-color:var(--teal)}
+.in-type.active{border-color:var(--royal);background:rgba(0,51,160,.05);box-shadow:inset 0 0 0 1px var(--royal)}
+.in-link{margin:0 18px 16px}
+.in-link .sc-callout{margin:0}
+.in-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-top:1px solid var(--bg)}
+.in-foot .sc-scale{flex:1;gap:6px}
+.in-foot .sc-band{padding:3px 10px 3px 6px;font-size:.68rem}
+.in-foot .btn{display:inline-flex;align-items:center;gap:7px}
+#spell-banner{display:none;margin-top:12px;background:#fffbeb;border:1px solid #f0c040;border-left:4px solid var(--warn);border-radius:var(--r);padding:10px 14px;align-items:center;gap:10px;flex-wrap:wrap}
 #spell-banner.show{display:flex}
 #spell-banner .sb-title{font-size:.78rem;font-weight:800;color:#6b4200}
-.spell-issue{display:inline-flex;align-items:center;gap:5px;background:#fff3cd;border:1px solid #D48000;border-radius:6px;padding:4px 10px;font-size:.75rem;color:#6b4200;cursor:pointer}
-.spell-issue:hover{background:#ffe082}
-#spell-banner .sb-clear{margin-left:auto;font-size:.75rem;font-weight:700;color:var(--muted);cursor:pointer;text-decoration:underline}
+.spell-issue{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #f0c040;border-radius:6px;padding:3px 9px;font-size:.74rem;color:#6b4200;cursor:pointer}
+.spell-issue:hover{background:#fff3cd}
+#spell-banner .sb-clear{margin-left:auto;font-size:.74rem;font-weight:700;color:var(--muted);cursor:pointer;text-decoration:underline}
+@media(max-width:780px){.in-grid{grid-template-columns:1fr;padding:14px}.in-types{grid-template-columns:1fr}}
 
 /* History */
 /* Home overview cards — same language as the landing page */
@@ -457,69 +467,89 @@ body.no-delete .hc-del{display:none}
 .no-hist{text-align:center;padding:32px;color:var(--muted);font-size:.85rem;background:#fff;border-radius:var(--r);border:1px dashed var(--border)}
 
 /* SECTION PAGE */
-.sp{padding:26px 32px 50px}
-.sh{display:flex;align-items:center;gap:13px;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--teal)}
-.si-icon{width:44px;height:44px;border-radius:10px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sh h2{font-size:1.15rem;font-weight:800;color:var(--royal)}
-.sh .sdesc{font-size:.76rem;color:var(--muted);margin-top:2px}
-.sbadge{margin-left:auto;flex-shrink:0;background:var(--teal);border-radius:7px;overflow:hidden;min-width:84px;box-shadow:0 3px 10px rgba(38,168,171,.3)}
-.sbt{background:var(--teal-lt);color:var(--royal);font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em;padding:3px 10px;text-align:center}
-.sbn{color:#fff;font-size:1.15rem;font-weight:900;padding:5px 10px;text-align:center}
+/* SECTION PAGES — step 2 */
+.sp{padding:24px 32px 24px;max-width:1020px}
+.sp-head{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--border);border-bottom:3px solid var(--teal);border-radius:var(--r);padding:16px 18px;margin-bottom:14px}
+.si-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(160deg,var(--royal),var(--teal));color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sp-title{flex:1;min-width:0}
+.sp-title small{display:block;font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.sp-title h2{font-size:1.2rem;font-weight:900;color:var(--royal);line-height:1.25}
+.sdesc{font-size:.74rem;color:var(--muted);margin-top:2px}
+.sp-score{flex-shrink:0;min-width:132px;text-align:right}
+.sp-score b{font-size:1.7rem;font-weight:900;color:var(--royal);line-height:1}
+.sp-score span{font-size:.8rem;color:var(--muted);font-weight:700}
+.sp-score .ov-bar{margin:7px 0 4px}
+.sp-score small{display:block;font-size:.66rem;color:var(--muted);font-weight:700}
 
-/* Validation warning */
-.val-alert{display:none;background:#fff0f0;border:1.5px solid var(--danger);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:.83rem;color:#7a0000}
+.val-alert{display:none;background:#fff5f5;border:1px solid rgba(192,57,43,.3);border-left:4px solid var(--danger);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:.82rem;color:#7a0000}
 .val-alert.show{display:block}
-.val-alert strong{display:block;margin-bottom:6px;font-size:.88rem;color:var(--danger)}
-.val-alert ul{padding-left:18px;display:flex;flex-direction:column;gap:3px}
-.val-alert ul li{cursor:pointer;text-decoration:underline dotted}
-.val-alert ul li:hover{color:var(--royal)}
+.val-alert strong{display:block;margin-bottom:6px;color:var(--danger)}
+.val-alert ul{padding-left:18px;display:grid;gap:3px}
+.val-alert li{cursor:pointer}
+.val-alert li:hover{color:var(--royal);text-decoration:underline}
 
-/* Checklist */
-.cl{display:flex;flex-direction:column;gap:11px}
-.ci{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;transition:box-shadow .13s,border-color .13s}
-.ci:hover{box-shadow:0 2px 10px rgba(0,51,160,.07);border-color:#aac4d8}
-.ci.needs-comment{border-color:var(--warn);background:#fffdf0}
-.ci-head{display:flex;align-items:center;gap:11px;padding:13px 14px}
-.in{width:27px;height:27px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.73rem;font-weight:800;flex-shrink:0}
-.il{flex:1;font-size:.9rem;font-weight:700;color:var(--text);line-height:1.4}
-
-/* Score buttons */
-.ss{display:flex;gap:5px;flex-shrink:0}
-.sb{width:42px;height:42px;border-radius:8px;border:2px solid var(--border);background:#fff;font-size:1rem;font-weight:900;cursor:pointer;transition:all .13s;color:var(--muted);font-family:var(--font);display:flex;align-items:center;justify-content:center}
-.sb:hover{border-color:var(--teal);color:var(--teal);background:rgba(38,168,171,.07)}
-.sb.s0{background:var(--danger);border-color:var(--danger);color:#fff}
-.sb.s1{background:var(--teal);border-color:var(--teal);color:#fff}
-/* for 0/2 sections */
-.sb.s2{background:var(--good);border-color:var(--good);color:#fff}
-.sb.hidden{display:none}
-
-.ci-body{padding:0 14px 13px;display:flex;flex-direction:column;gap:9px}
-.cmt-wrap{position:relative}
-.cmt-wrap input[type=text]{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;font-size:.85rem;color:var(--text);outline:none;background:var(--bg);font-family:var(--font);transition:border-color .14s}
+.cl{display:grid;gap:10px}
+.ci{background:#fff;border:1px solid var(--border);border-left:4px solid var(--border);border-radius:var(--r);transition:border-color .13s,box-shadow .13s}
+.ci:hover{box-shadow:0 10px 24px -18px rgba(0,32,112,.45)}
+.ci.done-yes{border-left-color:var(--good)}
+.ci.done-no{border-left-color:var(--danger)}
+.ci.needs-comment{border-color:var(--warn);border-left-color:var(--warn);background:#fffdf5}
+.ci-head{display:flex;align-items:center;gap:12px;padding:12px 14px 8px}
+.in{width:26px;height:26px;border-radius:50%;background:var(--bg);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0}
+.ci.done-yes .in{background:var(--good);color:#fff}
+.ci.done-no .in{background:var(--danger);color:#fff}
+.il{flex:1;font-size:.88rem;font-weight:700;color:var(--text);line-height:1.4}
+.ss{display:inline-flex;background:var(--bg);border-radius:10px;padding:3px;gap:3px;flex-shrink:0}
+.sb{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:8px;border:none;background:transparent;font-family:var(--font);
+  font-size:.76rem;font-weight:800;color:var(--muted);cursor:pointer;transition:background .13s,color .13s;white-space:nowrap}
+.sb svg{width:15px;height:15px}
+.sb em{font-style:normal;font-size:.64rem;background:rgba(0,0,0,.06);border-radius:5px;padding:0 5px}
+.sb:hover{color:var(--text);background:#fff}
+.sb.s0{background:var(--danger);color:#fff}
+.sb.s1,.sb.s2{background:var(--good);color:#fff}
+.sb.s0 em,.sb.s1 em,.sb.s2 em{background:rgba(255,255,255,.22)}
+.ci-body{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;padding:0 14px 12px 52px}
+.cmt-wrap{flex:1;min-width:220px;position:relative}
+.cmt-wrap input[type=text]{width:100%;height:34px;border:1.5px solid var(--border);border-radius:8px;padding:0 11px;font-size:.82rem;color:var(--text);outline:none;background:var(--bg);font-family:var(--font);transition:border-color .14s,background .14s}
 .cmt-wrap input:focus{border-color:var(--teal);background:#fff}
 .cmt-wrap input::placeholder{color:#8aaabb}
 .cmt-wrap input.has-error{border-color:var(--warn);background:#fffef0}
-.cmt-required-hint{display:none;font-size:.72rem;color:var(--danger);font-weight:700;margin-top:3px}
+.cmt-required-hint{display:none;font-size:.7rem;color:var(--danger);font-weight:700;margin-top:3px}
 .cmt-required-hint.show{display:block}
-
-/* Photo */
-.photo-area{display:flex;flex-direction:column;gap:8px}
-.photo-btns{display:flex;gap:8px;flex-wrap:wrap}
-.ph-btn{display:flex;align-items:center;gap:6px;padding:7px 15px;border-radius:7px;font-size:.78rem;font-weight:800;cursor:pointer;transition:all .13s;font-family:var(--font);border:2px solid var(--teal);background:rgba(38,168,171,.06);color:var(--teal)}
-.ph-btn:hover{background:rgba(38,168,171,.15)}
+.photo-btns{display:flex;gap:6px}
+.ph-btn{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 11px;border-radius:8px;font-size:.74rem;font-weight:800;cursor:pointer;
+  border:1.5px solid var(--border);color:var(--royal);background:#fff;font-family:var(--font);transition:border-color .13s,color .13s}
+.ph-btn:hover{border-color:var(--teal);color:#0c7b7d}
 .ph-btn svg{flex-shrink:0}
 .ph-btn input{display:none}
-.ph-thumbs{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+.ph-thumbs{display:flex;flex-wrap:wrap;gap:7px;padding:0 14px 12px 52px}
+.ph-thumbs:empty{display:none}
 .ptw{position:relative;display:inline-block}
-.pt-img{width:66px;height:66px;border-radius:7px;object-fit:cover;border:2px solid var(--teal);cursor:pointer;display:block;transition:transform .13s}
-.pt-img:hover{transform:scale(1.07)}
+.pt-img{width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid var(--teal);cursor:pointer;display:block;transition:transform .13s}
+.pt-img:hover{transform:scale(1.06)}
 .pt-rm{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--danger);color:#fff;font-size:.6rem;font-weight:900;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
-/* Section notes */
-.sn{margin-top:18px;background:#fff;border:1px solid var(--border);border-top:3px solid var(--teal);border-radius:var(--r);padding:13px}
-.sn label{font-size:.7rem;font-weight:800;color:var(--teal);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em}
-.sn textarea{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;font-size:.85rem;color:var(--text);resize:vertical;min-height:64px;outline:none;background:var(--bg);font-family:var(--font);transition:border-color .14s}
+.sn{margin-top:14px;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.sn label{display:flex;align-items:center;gap:6px;font-size:.66rem;font-weight:800;color:var(--royal);margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em}
+.sn label small{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:600}
+.sn textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:.84rem;color:var(--text);resize:vertical;min-height:60px;outline:none;background:var(--bg);font-family:var(--font);transition:border-color .14s}
 .sn textarea:focus{border-color:var(--teal);background:#fff}
+.sp-foot{position:sticky;bottom:14px;z-index:5;display:flex;align-items:center;gap:10px;margin-top:16px;background:rgba(255,255,255,.97);border:1px solid var(--border);
+  border-radius:14px;padding:10px 12px;box-shadow:0 16px 36px -18px rgba(0,32,112,.5)}
+.sp-foot-count{flex:1;text-align:center;font-size:.76rem;font-weight:700;color:var(--muted)}
+.sp-foot-count.done{color:var(--good)}
+.sp-foot .btn{padding:8px 16px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px}
+@media(max-width:780px){
+  .sp{padding:14px 12px 20px}
+  .sp-head{flex-wrap:wrap}.sp-score{text-align:left;min-width:0;width:100%}
+  .ci-head{flex-wrap:wrap}.ss{width:100%}.sb{flex:1;justify-content:center}
+  .ci-body,.ph-thumbs{padding-left:14px}
+  .sp-foot .btn span{display:none}
+  .ss-head{display:flex;align-items:center;gap:10px;padding:8px 12px}
+  .ss-head .ss-label,.ss-head>small{display:none}
+  .ss-head .ov-bar{flex:1;margin:0}
+  .ss-overall b{font-size:1.2rem}
+}
 
 /* Buttons */
 .abar{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
@@ -617,18 +647,15 @@ body.no-delete .hc-del{display:none}
   #insp-layout.on #sec-switch{position:static;padding:14px 13px 0}
   #ss-list{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px}
   .ss-item{flex:0 0 auto;width:auto;max-width:190px}
-  .oc{display:none}
   #acct-row{padding:2px}
-  .sp{padding:16px 13px 40px}
   .home-hero{padding:26px 18px}
-  #history-section,#insp-panel{padding:14px 16px}
-  #spell-banner{padding:8px 16px}
+  #history-section{padding:14px 16px}
 }
 
 
 
 /* Edit mode banner */
-#edit-banner{display:none;background:#fff3cd;border-bottom:2px solid #D48000;padding:10px 32px;align-items:center;gap:12px;flex-wrap:wrap}
+#edit-banner{display:none;margin:12px 28px 0;background:#fffbeb;border:1px solid #f0c040;border-left:4px solid var(--warn);border-radius:var(--r);padding:9px 14px;align-items:center;gap:12px;flex-wrap:wrap}
 #edit-banner.show{display:flex}
 #edit-banner .eb-text{font-size:.82rem;font-weight:700;color:#6b4200;flex:1}
 #edit-banner .eb-id{font-size:.75rem;color:#8a5500;font-style:italic}
@@ -730,11 +757,6 @@ body.no-delete .hc-del{display:none}
     </div>
   </nav>
   <div id="sb-foot">
-    <div class="oc" id="sb-score" hidden>
-      <div class="ol">Overall Score</div>
-      <div class="ob" id="sb-overall">–</div>
-      <div class="og" id="sb-grade">–</div>
-    </div>
     <div id="acct-row">
       <i id="acct-avatar">–</i>
       <div class="acct-meta"><span id="acct-name">…</span><span id="acct-role"></span></div>
@@ -782,7 +804,7 @@ body.no-delete .hc-del{display:none}
   <!-- Edit mode banner -->
   <div id="edit-banner">
     <svg data-lucide="pencil" width="16" height="16" style="color:#D48000;flex-shrink:0"></svg>
-    <div class="eb-text">You are editing a saved inspection. Make your changes, then go to Score Card and save to update the record.</div>
+    <div class="eb-text">Editing a saved inspection — make your changes, then save them from the Score Card.</div>
     <button class="btn bo" style="padding:6px 14px;font-size:.78rem;flex-shrink:0" onclick="cancelEdit()">Cancel Edit</button>
   </div>
   <!-- HOME -->
@@ -847,72 +869,77 @@ body.no-delete .hc-del{display:none}
 
   </div>
 
-  <!-- NEW INSPECTION -->
+  <!-- INSPECTION DETAILS (step 1 of 3) -->
   <div class="page" id="pg-new">
     <div class="home-hero">
+      <div class="ey">Step 1 of 3</div>
       <h2>Inspection <span>Details</span></h2>
-      <p class="sub">Step 1 of 3 — fill in the details, then score each section and review the score card.</p>
-      <div class="meta-g">
-        <div class="mf">
-          <label>Inspector Name</label>
-          <select id="meta-inspector" onchange="onInspectorDropdownChange()"></select>
-        </div>
-        <div class="mf">
-          <label>Facility / Building</label>
-          <input type="text" id="meta-facility" placeholder="Building name…">
-        </div>
-        <div class="mf">
-          <label>Date</label>
-          <input type="date" id="meta-date">
-        </div>
-        <div class="mf">
-          <label>Inspection Type</label>
-          <select id="meta-type">
-            <option value="">Select type…</option>
-            <option value="BOQI">Beginning of Quarter Inspection (BOQI)</option>
-            <option value="Follow-up">Follow-up and Edit</option>
-            <option value="EOQI">End of Quarter Inspection (EOQI)</option>
-          </select>
-        </div>
-        <div class="mf">
-          <label>Division Name</label>
-          <select id="meta-division">
-            <option value="">Select division…</option>
-            <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
-            <option>SAOSD</option><option>NAOSD</option><option>RYOSD</option>
-          </select>
-        </div>
-      </div>
-      <div class="rscale">
-        <span style="font-size:.65rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.12em;font-weight:700;align-self:center">Rating Scale:</span>
-        <div class="rc"><strong>91–100</strong> Excellent</div>
-        <div class="rc"><strong>81–90</strong> Good</div>
-        <div class="rc"><strong>71–80</strong> Acceptable</div>
-        <div class="rc"><strong>51–70</strong> Poor</div>
-        <div class="rc"><strong>0–50</strong> Critical</div>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
-        <button class="btn bt" id="start-insp-btn" onclick="startNewInspection()">Start Scoring <svg data-lucide="arrow-right" width="15" height="15"></svg></button>
-      </div>
+      <p class="sub">Choose the building and inspection type, then score the ten sections and review the score card.</p>
     </div>
-
-    <div id="insp-panel">
-      <span class="ip-label">Active Inspector:</span>
-      <div id="insp-chips"></div>
-      <button id="add-insp-btn" onclick="openAddInspector()">+ Add Inspector</button>
-    </div>
-
-    <div id="spell-banner">
-      <span class="sb-title">Possible spelling issues detected:</span>
-      <div id="spell-issues"></div>
-      <span class="sb-clear" onclick="dismissSpell()">Dismiss</span>
+    <div class="ov-section in-wrap">
+      <div class="sc-callout info" id="in-resume" hidden></div>
+      <div class="ov-panel">
+        <div class="ov-panel-hd">Details <small id="in-mode">New inspection</small></div>
+        <div class="in-grid">
+          <label>Inspector<div class="in-static" id="in-inspector">–</div></label>
+          <label>Date<input type="date" id="meta-date"></label>
+          <label class="in-wide">Building
+            <input id="meta-facility" list="in-buildings" placeholder="Start typing to search the buildings list…" autocomplete="off">
+            <span class="in-hint" id="in-bld-hint">Pick from the list so reports can link it to its division and area.</span>
+          </label>
+          <datalist id="in-buildings"></datalist>
+          <label>Division
+            <select id="meta-division">
+              <option value="">Select division…</option>
+              <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
+              <option>SAOSD</option><option>NAOSD</option><option>RYOSD</option>
+            </select>
+          </label>
+          <label>Area &amp; location<div class="in-static" id="in-area">–</div></label>
+          <div class="in-wide in-lbl">Inspection type
+            <div class="in-types" id="in-types">
+              <button type="button" class="in-type" data-type="BOQI"><b>BOQI</b><small>Beginning of quarter</small></button>
+              <button type="button" class="in-type" data-type="EOQI"><b>EOQI</b><small>End of quarter</small></button>
+              <button type="button" class="in-type" data-type="Follow-up"><b>Follow-up</b><small>Re-check after corrections</small></button>
+            </div>
+            <select id="meta-type" hidden>
+              <option value=""></option>
+              <option value="BOQI">Beginning of Quarter Inspection (BOQI)</option>
+              <option value="Follow-up">Follow-up and Edit</option>
+              <option value="EOQI">End of Quarter Inspection (EOQI)</option>
+            </select>
+          </div>
+        </div>
+        <div class="in-link" id="in-assign" hidden></div>
+        <div class="in-foot">
+          <div class="sc-scale">
+            <div class="sc-band"><i style="background:#00843D"></i>Excellent <small>91–100</small></div>
+            <div class="sc-band"><i style="background:#26A8AB"></i>Good <small>81–90</small></div>
+            <div class="sc-band"><i style="background:#D48000"></i>Acceptable <small>71–80</small></div>
+            <div class="sc-band"><i style="background:#C0392B"></i>Poor <small>51–70</small></div>
+            <div class="sc-band"><i style="background:#6B0000"></i>Critical <small>0–50</small></div>
+          </div>
+          <button class="btn bt" id="start-insp-btn" onclick="startNewInspection()">Start scoring <svg data-lucide="arrow-right" width="15" height="15"></svg></button>
+        </div>
+      </div>
+      <select id="meta-inspector" hidden aria-hidden="true"></select>
+      <div id="spell-banner">
+        <span class="sb-title">Possible spelling issues in comments:</span>
+        <div id="spell-issues"></div>
+        <span class="sb-clear" onclick="dismissSpell()">Dismiss</span>
+      </div>
     </div>
   </div>
 
   <!-- INSPECTION: section list + section pages (built by JS) -->
   <div id="insp-layout">
     <aside id="sec-switch">
-      <span class="ss-label">Inspection Sections</span>
+      <div class="ss-head">
+        <span class="ss-label">Score so far</span>
+        <div class="ss-overall"><b id="ss-overall">–</b><small>/100</small><span id="ss-grade">Not started</span></div>
+        <div class="ov-bar"><i id="ss-bar" style="width:0%"></i></div>
+        <small id="ss-summary">0 of 10 sections complete</small>
+      </div>
       <div id="ss-list"></div>
     </aside>
     <div id="secs-container"></div>
@@ -1480,7 +1507,7 @@ body.no-delete .hc-del{display:none}
   </div>
 </div>
 
-<!-- Add Inspector Modal -->
+<!-- Change password -->
 <div class="modal-bg" id="modal-change-pw">
   <div class="modal-box">
     <h3>Change Password</h3>
@@ -1496,17 +1523,6 @@ body.no-delete .hc-del{display:none}
   </div>
 </div>
 
-<div class="modal-bg" id="modal-add-insp">
-  <div class="modal-box">
-    <h3>Add New Inspector</h3>
-    <p class="msub">Enter the full name of the new inspector. They will be added to the list permanently.</p>
-    <input type="text" id="new-insp-name" placeholder="Full name…" onkeydown="if(event.key==='Enter')confirmAddInspector()">
-    <div class="mbtns">
-      <button class="btn bt" onclick="confirmAddInspector()">Add Inspector</button>
-      <button class="btn bo" onclick="closeModal('modal-add-insp')">Cancel</button>
-    </div>
-  </div>
-</div>
 
 
 <!-- Save choice modal (edit mode) -->
@@ -1599,12 +1615,10 @@ const SECTIONS=[
 // ═══════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════
-const DEFAULT_INSPECTORS=['Saad AlJubairah','Saad AlSaleh','Ali AlYami','Arsalan Saud'];
-let inspectors = JSON.parse(localStorage.getItem('qa_inspectors')||'null');
-if(!inspectors){ inspectors=[...DEFAULT_INSPECTORS]; localStorage.setItem('qa_inspectors',JSON.stringify(inspectors)); }
-DEFAULT_INSPECTORS.forEach(d=>{ if(!inspectors.includes(d)) inspectors.unshift(d); });
+// Inspections are recorded under the signed-in account's name (or, while editing, the name the report was saved under).
+let inspectors = [];
 
-let activeInspector = inspectors[0];
+let activeInspector = '';
 let history = []; // loaded from the database
 let allState = {};
 let currentReportSaved = false;
@@ -1615,6 +1629,7 @@ let currentUser = null;
 const ASSIGNEE_ROLES = ['quality_auditor','quality_officer','quality_admin']; // roles that can hold buildings
 let ovData = null, ovChart = null, ovReady = false; // Team Overview state
 let auData = null, auReady = false, auReq = 0, auId = null, auCharts = {}, auFilter = {status:'todo', type:'all'}; // Auditor profile state
+let inBuildings = null, inReady = false, inAssignCache = {}; // Inspection details state
 let adUsers = [], adReady = false, adTab = 'users', adRoleDefaults = null, adBuildings = null, adEditingBuilding = null, adAudit = [], adAuditMore = false, adOpenUserId = null, adUserFilter = 'all', adAuditFilter = 'all', lastSection = 'pg-s0'; // Admin Control state; last opened inspection section
 let ofData = null, ofReady = false, ofReq = 0, ofPrevDone = null, ofPrevKey = '', ofSelected = new Set(), ofRowsStale = false; // Assign & Track state
 let rpData = null, rpReady = false, rpCharts = {}, rpShown = 100, rpGroup = 'division', rpMetric = 'avg', rpTrend = 'quarter'; // Reports state
@@ -1649,7 +1664,6 @@ function getState(insp){
   return allState[insp];
 }
 function curState(){ return getState(activeInspector); }
-function saveInspectorList(){ localStorage.setItem('qa_inspectors',JSON.stringify(inspectors)); }
 
 // ═══════════════════════════════════════════════════════════
 // LOADING OVERLAY
@@ -1736,63 +1750,63 @@ function buildSections(){
   const cont=document.getElementById('secs-container');
   document.getElementById('ss-list').innerHTML=SECTIONS.map((sec,si)=>`
     <button class="ss-item" data-sec="${si}" onclick="nav('pg-s${si}')">
-      <i>${String(si+1).padStart(2,'0')}</i>
-      <div><b>${sec.title}</b><small id="ns-${si}">–/${sec.max}</small></div>
+      <span class="ss-dot" id="ssd-${si}"></span>
+      <div><b>${sec.title}</b><small id="ns-${si}">0/${sec.items.length} answered</small></div>
+      <em id="nss-${si}">–</em>
     </button>`).join('');
   SECTIONS.forEach((sec,si)=>{
-    const mode=sec.scoringMode;
-    const scoreDesc=mode==='02'?'0 or 2 per item':'0 or 1 per item';
+    const hi=sec.scoringMode==='02'?2:1, last=si===SECTIONS.length-1;
     const pg=document.createElement('div');
     pg.className='page sp';pg.id='pg-s'+si;
     pg.innerHTML=`
-      <div class="sh">
+      <div class="sp-head">
         <div class="si-icon"><svg data-lucide="${sec.lucide}" width="22" height="22"></svg></div>
-        <div><h2>${sec.title}</h2><div class="sdesc">${sec.items.length} items · Max ${sec.max} pts · Scored ${scoreDesc}</div></div>
-        <div class="sbadge"><div class="sbt">Total Score</div><div class="sbn" id="badge-${si}">–/${sec.max}</div></div>
+        <div class="sp-title"><small>Section ${si+1} of ${SECTIONS.length}</small><h2>${sec.title}</h2>
+          <div class="sdesc">${sec.items.length} items · each scored 0 or ${hi} · a 0 needs a comment</div></div>
+        <div class="sp-score"><b id="badge-${si}">–</b><span> / ${sec.max}</span>
+          <div class="ov-bar"><i id="sbar-${si}" style="width:0%"></i></div><small id="scount-${si}">0 of ${sec.items.length} answered</small></div>
       </div>
       <div class="val-alert" id="val-${si}"></div>
       <div class="cl" id="cl-${si}"></div>
-      <div class="sn"><label>Section Notes</label>
-        <textarea id="snote-${si}" placeholder="Add overall section notes…" oninput="curState().notes[${si}]=this.value"></textarea>
+      <div class="sn"><label for="snote-${si}"><svg data-lucide="notebook-pen" width="13" height="13"></svg> Section notes <small>optional</small></label>
+        <textarea id="snote-${si}" placeholder="Anything worth noting about this section as a whole…" oninput="curState().notes[${si}]=this.value;currentReportSaved=false;updatePDFButton()"></textarea>
       </div>
-      <div class="abar">
-        ${si>0?`<button class="btn bo" onclick="nav('pg-s${si-1}')">Previous</button>`:''}
-        ${si<SECTIONS.length-1
-          ?`<button class="btn bt" id="next-btn-${si}" onclick="tryNext(${si})">Next Section</button>`
-          :`<button class="btn bt" id="next-btn-${si}" onclick="tryNext(${si})">View Score Card</button>`}
+      <div class="sp-foot">
+        ${si>0?`<button class="btn bo" onclick="nav('pg-s${si-1}')"><svg data-lucide="arrow-left" width="14" height="14"></svg><span>Previous</span></button>`
+          :`<button class="btn bo" onclick="nav('pg-new')"><svg data-lucide="arrow-left" width="14" height="14"></svg><span>Details</span></button>`}
+        <span class="sp-foot-count" id="fcount-${si}">0 of ${sec.items.length} answered</span>
+        <button class="btn bt" id="next-btn-${si}" onclick="tryNext(${si})"><span>${last?'Review score card':'Next: '+SECTIONS[si+1].title}</span><svg data-lucide="arrow-right" width="14" height="14"></svg></button>
       </div>`;
     const cl=pg.querySelector(`#cl-${si}`);
     sec.items.forEach((item,ii)=>{
       const card=document.createElement('div');
       card.className='ci';card.id=`ci-${si}-${ii}`;
-      const btn0=`<button class="sb" id="sb-${si}-${ii}-0" onclick="setScore(${si},${ii},0)" title="Non-compliant (0)">0</button>`;
-      const btn1=mode==='01'?`<button class="sb" id="sb-${si}-${ii}-1" onclick="setScore(${si},${ii},1)" title="Compliant (1)">1</button>`:'';
-      const btn2=mode==='02'?`<button class="sb" id="sb-${si}-${ii}-2" onclick="setScore(${si},${ii},2)" title="Compliant (2)">2</button>`:'';
       card.innerHTML=`
         <div class="ci-head">
           <div class="in">${ii+1}</div><div class="il">${item}</div>
-          <div class="ss">${btn0}${btn1}${btn2}</div>
+          <div class="ss" role="group" aria-label="Score for item ${ii+1}">
+            <button class="sb" id="sb-${si}-${ii}-0" onclick="setScore(${si},${ii},0)" title="Not compliant (0)"><svg data-lucide="x" width="15" height="15"></svg>Not compliant<em>0</em></button>
+            <button class="sb" id="sb-${si}-${ii}-${hi}" onclick="setScore(${si},${ii},${hi})" title="Compliant (${hi})"><svg data-lucide="check" width="15" height="15"></svg>Compliant<em>${hi}</em></button>
+          </div>
         </div>
         <div class="ci-body">
           <div class="cmt-wrap">
-            <input type="text" id="cmt-${si}-${ii}" placeholder="Comments…" spellcheck="true"
-              oninput="curState().comments[${si}][${ii}]=this.value;checkSpell(this.value,${si},${ii},this);updateCommentHint(${si},${ii})">
-            <div class="cmt-required-hint" id="hint-${si}-${ii}">Comment required when score is 0</div>
+            <input type="text" id="cmt-${si}-${ii}" placeholder="Add a comment — required when not compliant" spellcheck="true"
+              oninput="curState().comments[${si}][${ii}]=this.value;currentReportSaved=false;updatePDFButton();checkSpell(this.value,${si},${ii},this);updateCommentHint(${si},${ii})">
+            <div class="cmt-required-hint" id="hint-${si}-${ii}">A comment is required when an item is not compliant.</div>
           </div>
-          <div class="photo-area">
-            <div class="photo-btns">
-              <label class="ph-btn" title="Select from photo library">
-                <svg data-lucide="image" width="15" height="15"></svg> Upload Photo
-                <input type="file" accept="image/*,.heic,.heif" multiple onchange="addPhotos(event,${si},${ii})">
-              </label>
-              <label class="ph-btn" title="Take a live photo">
-                <svg data-lucide="camera" width="15" height="15"></svg> Take Photo
-                <input type="file" accept="image/*,.heic,.heif" capture="environment" onchange="addPhotos(event,${si},${ii})">
-              </label>
-            </div>
-            <div class="ph-thumbs" id="ph-${si}-${ii}"></div>
+          <div class="photo-btns">
+            <label class="ph-btn" title="Add photos from the library">
+              <svg data-lucide="image-plus" width="14" height="14"></svg> Photo
+              <input type="file" accept="image/*,.heic,.heif" multiple onchange="addPhotos(event,${si},${ii})">
+            </label>
+            <label class="ph-btn" title="Take a photo with the camera">
+              <svg data-lucide="camera" width="14" height="14"></svg> Camera
+              <input type="file" accept="image/*,.heic,.heif" capture="environment" onchange="addPhotos(event,${si},${ii})">
+            </label>
           </div>
-        </div>`;
+        </div>
+        <div class="ph-thumbs" id="ph-${si}-${ii}"></div>`;
       cl.appendChild(card);
     });
     cont.appendChild(pg);
@@ -1820,7 +1834,7 @@ function tryNext(si){
     html+=`<li onclick="focusItem(${si},${e.ii})">${e.type==='missing'?'Score not selected':'Comment required for score 0'} — Item ${e.ii+1}: "${e.label}"</li>`;
   });
   html+='</ul>';
-  alert.innerHTML=html;alert.classList.add('show');
+  alert.innerHTML=html.replace('Please complete the following before proceeding:',`${errors.length} item${errors.length===1?' needs':'s need'} attention before you continue:`);alert.classList.add('show');
   alert.scrollIntoView({behavior:'smooth',block:'nearest'});
   SECTIONS[si].items.forEach((_,ii)=>{
     const ciEl=document.getElementById(`ci-${si}-${ii}`);if(!ciEl) return;
@@ -1880,10 +1894,9 @@ function nav(pageId){
   highlightNav(pageId);
   document.querySelectorAll('.ss-item').forEach(b=>b.classList.toggle('active','pg-s'+b.dataset.sec===pageId));
   document.getElementById('insp-layout').classList.toggle('on',isSection);
-  document.getElementById('sb-score').hidden=!pageId.startsWith('pg-s');
   if(pageId==='pg-scorecard') updateScoreCard();
   if(pageId==='pg-home'){renderHistory();}
-  if(pageId==='pg-new'){renderSpellBanner();}
+  if(pageId==='pg-new'){renderSpellBanner();inRenderDetails();}
   if(pageId==='pg-auditor') loadAuditorProfile();
   if(pageId==='pg-overview') loadOverview();
   if(pageId==='pg-reports') loadReports();
@@ -1962,9 +1975,16 @@ function getSecScore(si,insp){
   return{total:normalised,answered,max:SECTIONS[si].max};
 }
 function updateSectionBadge(si){
-  const{total,answered,max}=getSecScore(si);
-  const b=document.getElementById(`badge-${si}`);if(b)b.textContent=answered>0?`${total}/${max}`:`–/${max}`;
-  const n=document.getElementById(`ns-${si}`);if(n)n.textContent=answered>0?`${total}/${max}`:`–/${max}`;
+  const{total,answered}=getSecScore(si), n=SECTIONS[si].items.length, full=answered===n;
+  const set=(id,fn)=>{ const el=document.getElementById(id); if(el) fn(el); };
+  set(`badge-${si}`,el=>el.textContent=answered?total:'–');
+  set(`sbar-${si}`,el=>el.style.width=Math.round(answered/n*100)+'%');
+  set(`scount-${si}`,el=>el.textContent=`${answered} of ${n} answered`);
+  set(`fcount-${si}`,el=>{ el.textContent=full?'Section complete':`${answered} of ${n} answered`; el.classList.toggle('done',full); });
+  set(`ns-${si}`,el=>el.textContent=`${answered}/${n} answered`);
+  set(`nss-${si}`,el=>el.textContent=answered?total:'–');
+  set(`ssd-${si}`,el=>el.className='ss-dot'+(full?' full':answered?' part':''));
+  curState().scores[si].forEach((v,ii)=>set(`ci-${si}-${ii}`,el=>{ el.classList.toggle('done-yes',v!==null&&v>0); el.classList.toggle('done-no',v===0); }));
 }
 function updateProgress(){
   let total=0,answered=0;
@@ -2024,11 +2044,18 @@ function updateSteps(){
   details.classList.toggle('done',filled&&!details.classList.contains('active'));
   sections.classList.toggle('done',doneSecs===SECTIONS.length&&!sections.classList.contains('active'));
 }
+/** Running score at the top of the section list. */
 function updateSidebar(){
-  let t=0;SECTIONS.forEach((_,si)=>t+=getSecScore(si).total);
-  const o=Math.round(t);
-  document.getElementById('sb-overall').textContent=o;
-  document.getElementById('sb-grade').textContent=grade(o).label;
+  let t=0, complete=0, any=false;
+  SECTIONS.forEach((sec,si)=>{ const s=getSecScore(si); t+=s.total; if(s.answered) any=true; if(s.answered===sec.items.length) complete++; });
+  const o=Math.round(t), g=grade(o), badge=document.getElementById('ss-grade');
+  document.getElementById('ss-overall').textContent=any?o:'–';
+  // A grade only means something once every section is scored.
+  const doneAll=complete===SECTIONS.length;
+  badge.textContent=doneAll?g.label:any?'In progress':'Not started';
+  badge.style.background=doneAll?g.color:any?'var(--teal)':'';
+  document.getElementById('ss-bar').style.width=Math.round(complete/SECTIONS.length*100)+'%';
+  document.getElementById('ss-summary').textContent=`${complete} of ${SECTIONS.length} sections complete`;
 }
 function grade(s){
   if(s>=91)return{label:'Excellent',cls:'ge',color:'#00843D'};
@@ -2213,55 +2240,139 @@ function closeLB(){document.getElementById('lb').classList.remove('open');}
 // INSPECTORS
 // ═══════════════════════════════════════════════════════════
 function rebuildInspectorDropdown(){
-  const sel=document.getElementById('meta-inspector');sel.innerHTML='';
-  inspectors.forEach(name=>{
-    const o=document.createElement('option');o.value=name;o.textContent=name;
-    if(name===activeInspector)o.selected=true;sel.appendChild(o);
-  });
+  const sel=document.getElementById('meta-inspector');
+  sel.innerHTML=`<option value="${ovEsc(activeInspector)}">${ovEsc(activeInspector)}</option>`;
+  sel.value=activeInspector;
 }
-function onInspectorDropdownChange(){
-  activeInspector=document.getElementById('meta-inspector').value;
-  currentReportSaved=false;updatePDFButton();renderInspectorChips();syncFormToState();
-}
+/** Shows who the inspection is recorded under, and lists inspectors found in the history filter. */
 function renderInspectorChips(){
-  const cont=document.getElementById('insp-chips');cont.innerHTML='';
-  inspectors.forEach(name=>{
-    const chip=document.createElement('div');
-    chip.className='insp-chip'+(name===activeInspector?' sel':'');
-    const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    const delBtn=` <button class="chip-del" title="Remove inspector" onclick="confirmDeleteInspector(event,'${name.replace(/'/g,"\\'")}')">✕</button>`;
-    chip.innerHTML=`<div class="av">${initials}</div>${name}${delBtn}`;
-    chip.onclick=(e)=>{if(e.target.closest('.chip-del'))return;activeInspector=name;document.getElementById('meta-inspector').value=name;currentReportSaved=false;updatePDFButton();renderInspectorChips();syncFormToState();};
-    cont.appendChild(chip);
-  });
-  const hfI=document.getElementById('hf-insp');const curV=hfI.value;
-  hfI.innerHTML='<option value="">All Inspectors</option>';
-  inspectors.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;hfI.appendChild(o);});
-  hfI.value=curV;
+  const el=document.getElementById('in-inspector');
+  if(el) el.innerHTML=activeInspector
+    ?`<i>${ovEsc(ofInitials(activeInspector))}</i>${ovEsc(activeInspector)}${currentUser&&activeInspector===currentUser.name?' <small>you</small>':''}`
+    :'Signing in…';
+  const hfI=document.getElementById('hf-insp'), cur=hfI.value;
+  const names=[...new Set(history.map(r=>r.inspector).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  hfI.innerHTML='<option value="">All Inspectors</option>'+names.map(n=>`<option value="${ovEsc(n)}">${ovEsc(n)}</option>`).join('');
+  hfI.value=names.includes(cur)?cur:'';
 }
-function openAddInspector(){
-  document.getElementById('new-insp-name').value='';
-  document.getElementById('modal-add-insp').classList.add('open');
-  setTimeout(()=>document.getElementById('new-insp-name').focus(),100);
-}
-function confirmAddInspector(){
-  const name=document.getElementById('new-insp-name').value.trim();if(!name)return;
-  if(!inspectors.includes(name)){inspectors.push(name);saveInspectorList();}
-  activeInspector=name;closeModal('modal-add-insp');rebuildInspectorDropdown();renderInspectorChips();syncFormToState();
+function useAccountInspector(){
+  if(editingRecordId!==null||!currentUser?.name) return;
+  activeInspector=currentUser.name;
+  rebuildInspectorDropdown(); renderInspectorChips(); syncFormToState();
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
-function confirmDeleteInspector(e, name){
-  e.stopPropagation();
-  if(!confirm('Remove "'+name+'" from the inspector list?\n\nNote: Their saved inspection records will remain in history.')){return;}
-  if(activeInspector===name){
-    activeInspector=inspectors.find(i=>i!==name)||'';
+// ═══════════════════════════════════════════════════════════
+// INSPECTION DETAILS (step 1)
+// ═══════════════════════════════════════════════════════════
+function inVal(id){ return document.getElementById(id).value.trim(); }
+function inQuarterOf(date){ const m=/^(\d{4})-(\d{2})/.exec(date||''); return m?`${m[1]}-Q${Math.floor((+m[2]-1)/3)+1}`:null; }
+function inMarkChanged(){ currentReportSaved=false; updatePDFButton(); updateSteps(); }
+async function inLoadBuildings(){
+  if(inBuildings) return inBuildings;
+  try{
+    const res=await fetch('/api/buildings');
+    if(res.ok){
+      inBuildings=(await res.json()).buildings||[];
+      document.getElementById('in-buildings').innerHTML=inBuildings.map(b=>`<option value="${ovEsc(b.name)}">${ovEsc(b.division)} · ${ovEsc(b.area)}</option>`).join('');
+    }
+  }catch{}
+  return inBuildings||[];
+}
+function inMatchBuilding(){
+  const v=inVal('meta-facility').toLowerCase();
+  return v&&inBuildings?inBuildings.find(b=>b.name.toLowerCase()===v)||null:null;
+}
+function initInspectionDetails(){
+  if(inReady) return;
+  inReady=true;
+  const fac=document.getElementById('meta-facility');
+  fac.addEventListener('input',()=>{ inOnBuilding({final:false}); inMarkChanged(); });
+  fac.addEventListener('change',()=>inOnBuilding({final:true}));
+  document.getElementById('meta-division').addEventListener('change',e=>{ e.target.classList.remove('invalid'); inMarkChanged(); });
+  document.getElementById('meta-date').addEventListener('change',e=>{ e.target.classList.remove('invalid'); inCheckAssignment(); inMarkChanged(); });
+  document.getElementById('in-types').addEventListener('click',e=>{
+    const b=e.target.closest('[data-type]');
+    if(!b) return;
+    document.getElementById('meta-type').value=b.dataset.type;
+    document.getElementById('in-types').classList.remove('invalid');
+    inRenderTypes(); inCheckAssignment(); inMarkChanged();
+  });
+  document.getElementById('in-resume').addEventListener('click',e=>{
+    const b=e.target.closest('[data-in]');
+    if(!b) return;
+    if(b.dataset.in==='continue') nav(lastSection); else inStartOver();
+  });
+}
+function inOnBuilding({final}){
+  const b=inMatchBuilding(), hint=document.getElementById('in-bld-hint'), typed=inVal('meta-facility');
+  document.getElementById('meta-facility').classList.remove('invalid');
+  if(b){
+    const div=document.getElementById('meta-division');
+    if(![...div.options].some(o=>o.value===b.division)) div.add(new Option(b.division,b.division));
+    if(div.value!==b.division){ div.value=b.division; div.classList.remove('invalid'); }
+    document.getElementById('in-area').textContent=`${b.area} · ${b.location}`;
+    hint.textContent='From the buildings list'; hint.className='in-hint ok';
+  }else{
+    document.getElementById('in-area').textContent='–';
+    if(typed&&final&&inBuildings){ hint.textContent='Not in the buildings list — reports will not link it to a division or area.'; hint.className='in-hint warn'; }
+    else{ hint.textContent='Pick from the list so reports can link it to its division and area.'; hint.className='in-hint'; }
   }
-  inspectors=inspectors.filter(i=>i!==name);
-  saveInspectorList();
-  rebuildInspectorDropdown();
+  inCheckAssignment();
+}
+function inRenderTypes(){
+  const t=document.getElementById('meta-type').value;
+  document.querySelectorAll('#in-types .in-type').forEach(b=>b.classList.toggle('active',b.dataset.type===t));
+}
+/** Links the inspection to the person's own pending assignment for this building, type and quarter. */
+async function inCheckAssignment(){
+  const box=document.getElementById('in-assign');
+  if(editingRecordId!==null||!currentUser||!ASSIGNEE_ROLES.includes(currentUser.role)){ box.hidden=true; return; }
+  const b=inMatchBuilding(), type=document.getElementById('meta-type').value, q=inQuarterOf(document.getElementById('meta-date').value);
+  let match=null;
+  if(b&&q&&(type==='BOQI'||type==='EOQI')){
+    if(!inAssignCache[q]){
+      try{
+        const res=await fetch('/api/auditor/profile?quarter='+q);
+        const d=res.ok?await res.json():null;
+        inAssignCache[q]=d?[...d.assignments,...d.carriedOver].filter(a=>a.status==='pending'):[];
+      }catch{ inAssignCache[q]=[]; }
+    }
+    match=inAssignCache[q].find(a=>a.buildingId===b.id&&a.type===type)||null;
+  }
+  const had=currentAssignmentId;
+  currentAssignmentId=match?match.id:null;
+  document.getElementById('in-mode').textContent=match?'Assigned inspection':'New inspection';
+  box.hidden=!match&&!had;
+  box.innerHTML=match
+    ?`<div class="sc-callout info"><svg data-lucide="link" width="17" height="17"></svg><div><strong>Linked to your assignment</strong>${ovEsc(match.buildingName)} · ${match.quarter} ${match.type} — saving this inspection completes it.</div></div>`
+    :`<div class="sc-callout warn"><svg data-lucide="unlink" width="17" height="17"></svg><div><strong>No longer linked to an assignment</strong>The building, type or date no longer matches one of your assignments.</div></div>`;
+  lucide.createIcons();
+}
+function inRenderDetails(){
+  initInspectionDetails();
   renderInspectorChips();
-  syncFormToState();
+  inRenderTypes();
+  document.getElementById('in-mode').textContent=editingRecordId!==null?'Editing a saved report':currentAssignmentId?'Assigned inspection':'New inspection';
+  const answered=auAnsweredPct(), resume=document.getElementById('in-resume');
+  resume.hidden=!(answered>0&&!currentReportSaved&&editingRecordId===null);
+  if(!resume.hidden){
+    resume.innerHTML=`<svg data-lucide="history" width="17" height="17"></svg><div style="flex:1"><strong>Inspection in progress</strong>${ovEsc(inVal('meta-facility')||'Untitled building')} · ${answered}% answered</div>
+      <button class="btn bt" style="padding:6px 14px;font-size:.76rem" data-in="continue">Continue scoring</button>
+      <button class="btn bo" style="padding:6px 14px;font-size:.76rem" data-in="over">Start over</button>`;
+    resume.style.alignItems='center';
+  }
+  inLoadBuildings().then(()=>inOnBuilding({final:!!inVal('meta-facility')}));
+  lucide.createIcons();
+}
+function inStartOver(){
+  if(!confirm('Clear the answers, comments and photos of the inspection in progress?')) return;
+  clearInspectionState();
+  currentAssignmentId=null; currentReportSaved=false; lastSection='pg-s0';
+  ['meta-facility','meta-type','meta-division'].forEach(id=>{ document.getElementById(id).value=''; });
+  document.getElementById('meta-date').valueAsDate=new Date();
+  syncFormToState(); updatePDFButton(); dismissSpell();
+  inRenderDetails();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2342,6 +2453,9 @@ function tooLargeMessage(record){
 }
 
 async function saveInspection(updateExisting){
+  if(!inVal('meta-facility')||!document.getElementById('meta-type').value){
+    showToast('Add the building and inspection type in Details before saving.',true); nav('pg-new'); return;
+  }
   setSyncChip('sync','Saving…');showOverlay('Saving inspection…');
   try{
     const record=buildRecord(null);
@@ -2360,7 +2474,7 @@ async function saveInspection(updateExisting){
     }
     currentReportSaved=true;updatePDFButton();
     populateHistoryFilters();renderHistory();
-    if(record.assignmentId) loadAuditorProfile({quiet:true});
+    if(record.assignmentId){ inAssignCache={}; loadAuditorProfile({quiet:true}); }
     setSyncChip('ok','Saved');
     const btn=document.getElementById('btn-save');
     if(btn){btn.textContent='Saved ✓';btn.style.background='var(--good)';setTimeout(()=>{btn.textContent='Save to History';btn.style.background='';},3000);}
@@ -2405,6 +2519,7 @@ function populateHistoryFilters(){
     o.textContent=new Date(m+'-01').toLocaleDateString('en-GB',{month:'long',year:'numeric'});hfM.appendChild(o);
   });
   hfM.value=curM;
+  renderInspectorChips();
   const hfB=document.getElementById('hf-building');const curB=hfB.value;
   hfB.innerHTML='<option value="">All Buildings</option>';
   [...buildings].sort().forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;hfB.appendChild(o);});
@@ -2655,13 +2770,16 @@ function closeHistDetail(){document.getElementById('hd-modal').classList.remove(
 // ═══════════════════════════════════════════════════════════
 // EDIT FROM HISTORY
 // ═══════════════════════════════════════════════════════════
+/** "Start scoring": the details must be complete before the sections. */
 function startNewInspection(){
-  if(editingRecordId!==null){
-    if(!confirm('You are editing a saved record. Start a new inspection instead? Unsaved edits will be lost.'))return;
-    cancelEdit();return;
-  }
-  currentAssignmentId=null;
-  nav('pg-s0');
+  const missing=[];
+  if(!inVal('meta-facility')) missing.push('meta-facility');
+  if(!inVal('meta-division')) missing.push('meta-division');
+  if(!inVal('meta-date')) missing.push('meta-date');
+  if(!document.getElementById('meta-type').value) missing.push('in-types');
+  missing.forEach(id=>document.getElementById(id).classList.add('invalid'));
+  if(missing.length){ showToast('Add the building, division, date and inspection type first.',true); return; }
+  nav(lastSection);
 }
 
 function editInspection(e,id){
@@ -2670,7 +2788,7 @@ function editInspection(e,id){
   if(!record){alert('Record not found.');return;}
   if(!confirm(`Load "${record.facility}${record.division?' — '+record.division:''}" (${record.date}) for editing?\n\nUnsaved current data for ${record.inspector} will be replaced.`))return;
   currentAssignmentId=record.assignmentId||null;
-  if(!inspectors.includes(record.inspector)){inspectors.push(record.inspector);saveInspectorList();rebuildInspectorDropdown();renderInspectorChips();}
+  rebuildInspectorDropdown();
   activeInspector=record.inspector;
   document.getElementById('meta-inspector').value=record.inspector;
   renderInspectorChips();
@@ -2698,7 +2816,7 @@ function editInspection(e,id){
 
 function cancelEdit(){
   editingRecordId=null;currentAssignmentId=null;currentReportSaved=false;
-  clearInspectionState();
+  clearInspectionState();useAccountInspector();
   document.getElementById('edit-banner').classList.remove('show');
   updateScoreCardActionBar();syncFormToState();nav('pg-home');
 }
@@ -2829,7 +2947,7 @@ function exportPDF(){
 
 function resetForm(){
   if(!confirm('Start a new inspection for '+activeInspector+'? All unsaved data will be cleared.'))return;
-  clearInspectionState();currentAssignmentId=null;
+  clearInspectionState();currentAssignmentId=null;useAccountInspector();
   currentReportSaved=false;updatePDFButton();syncFormToState();nav('pg-home');
 }
 
@@ -2843,7 +2961,6 @@ document.getElementById('pb-steps').addEventListener('click',e=>{
   if(step) nav(step.dataset.step==='sections'?lastSection:step.dataset.step); // Sections reopens the last one you had open
 });
 document.getElementById('lb').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLB();});
-document.getElementById('modal-add-insp').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-add-insp');});
 document.getElementById('hd-modal').addEventListener('click',e=>{if(e.target===document.getElementById('hd-modal'))closeHistDetail();});
 document.getElementById('meta-date').valueAsDate=new Date();
 
@@ -3225,7 +3342,7 @@ function startAssignedInspection(id){
   // What an auditor submits carries their own account name.
   const me=currentUser?.name;
   if(me&&activeInspector!==me){
-    if(!inspectors.includes(me)){ inspectors.push(me); saveInspectorList(); rebuildInspectorDropdown(); }
+    rebuildInspectorDropdown();
     activeInspector=me;
     document.getElementById('meta-inspector').value=me;
     renderInspectorChips();
@@ -4706,6 +4823,7 @@ function adRenderAudit(){
     document.body.classList.toggle('no-delete',!user.canDelete);
     document.body.classList.toggle('view-only',!user.canEdit);
     refreshNav();
+    useAccountInspector();
     // Views drawn before the account loaded can now label "you" and apply permissions.
     if(ofData) renderOfficer();
     if(auData) renderAuditorProfile();
