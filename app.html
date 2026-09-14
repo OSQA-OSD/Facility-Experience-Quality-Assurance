@@ -2597,10 +2597,117 @@ function renderHistory(){
   });
 }
 
+function reportPrintEsc(value){
+  return String(value??'—').replace(/[&<>"']/g,char=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[char]);
+}
+
+function reportPrintTone(score){
+  const label=grade(Number(score)||0).label;
+  if(score>=90)return {label,color:'#198B82',soft:'#E5F3F1'};
+  if(score>=75)return {label,color:'#21998E',soft:'#E5F5F3'};
+  if(score>=60)return {label,color:'#70B7B0',soft:'#EFF8F7'};
+  if(score>=40)return {label,color:'#69727E',soft:'#F3F4F4'};
+  return {label,color:'#172C67',soft:'#EEF0F7'};
+}
+
+function printInspectionReport(report){
+  const sections=Array.isArray(report.sections)?report.sections:[];
+  const overall=Math.round(Number(report.overall)||0);
+  const overallTone=reportPrintTone(overall);
+  const value=v=>reportPrintEsc(v||'—');
+  const journeyMapUrl=new URL('/journey-map-QA-2026-Q3-EOQ-009.svg',location.origin).href;
+  const coverFacts=[
+    ['Inspector',report.inspector],['Facility',report.facility],['Division',report.division],
+    ['Inspection date',report.date],['Inspection type',report.typeLabel]
+  ].map(([label,item])=>`<div class="cover-fact"><span>${label}</span><strong>${value(item)}</strong></div>`).join('');
+
+  const scoreRows=sections.map((section,index)=>{
+    const max=Number(section.max)||10;
+    const score=Number(section.score)||0;
+    const tone=reportPrintTone(Math.round(score/max*100));
+    return `<tr class="${index%2?'muted-row':''}"><td>${value(section.title)}</td><td class="score-cell">${score}/${max}</td><td><span class="grade-chip" style="--tone:${tone.color};--soft:${tone.soft}">${tone.label}</span></td></tr>`;
+  }).join('');
+  const detailSections=sections.map(section=>{
+    const max=Number(section.max)||10;
+    const score=Number(section.score)||0;
+    const pct=Math.round(score/max*100);
+    const tone=reportPrintTone(pct);
+    const rows=(section.items||[]).map((item,index)=>{
+      const label=typeof item==='string'?item:item.label;
+      const itemScore=typeof item==='string'?null:item.score;
+      const comment=typeof item==='string'?'':item.comment;
+      const photos=typeof item==='string'?[]:(item.photos||[]);
+      const status=itemScore===null||itemScore===undefined?'not-scored':itemScore===0?'needs-attention':itemScore===1?'partial':'met';
+      const scoreLabel=itemScore===null||itemScore===undefined?'—':itemScore;
+      const photoHtml=photos.length?`<div class="photo-strip">${photos.map(src=>`<img src="${reportPrintEsc(src)}" alt="Inspection evidence">`).join('')}</div>`:'';
+      return `<tr><td class="item-label"><b>${index+1}.</b> ${value(label)}</td><td class="item-score ${status}">${scoreLabel}</td><td class="comments">${comment?value(comment):'<span class="empty-copy">No comment recorded</span>'}${photoHtml}</td></tr>`;
+    }).join('');
+    return `<section class="report-section">
+      <div class="section-head" style="--tone:${tone.color};--soft:${tone.soft}"><div><span class="section-kicker">Journey touchpoint</span><h2>${value(section.title)}</h2></div><div class="section-total"><b>${score}<small>/${max}</small></b><span>${tone.label}</span></div></div>
+      <table class="detail-table"><thead><tr><th>Inspection item</th><th>Score</th><th>Observations & evidence</th></tr></thead><tbody>${rows}</tbody>${section.notes?`<tfoot><tr><td colspan="3"><b>Inspector note</b><span>${value(section.notes)}</span></td></tr></tfoot>`:''}</table>
+    </section>`;
+  }).join('');
+  const filename=value(report.filename||'inspection-report.pdf');
+  const pw=window.open('','_blank');
+  if(!pw){alert('Please allow pop-ups to export the PDF.');return;}
+  pw.document.write(`<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8"><title>${filename}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      :root{--ink:#172C67;--deep:#1C315A;--teal:#198B82;--aqua:#21998E;--mist:#70B7B0;--paper:#F8F8F5;--line:#D8DBDA;--muted:#69727E}
+      *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      @page{size:A4;margin:0}
+      html,body{margin:0;padding:0;background:#fff;color:var(--deep);font-family:Cairo,Arial,sans-serif;line-height:1.45}
+      body{counter-reset:page}
+      .page{min-height:297mm;padding:15mm 14mm 16mm;position:relative;background:#fff}
+      .cover{page-break-after:always;display:flex;flex-direction:column;overflow:hidden}
+      .cover-accent{width:100%;height:7px;background:linear-gradient(90deg,var(--teal),var(--aqua),var(--mist));border-radius:12px;margin-bottom:27mm}
+      .brand{display:flex;align-items:center;gap:10px;color:var(--teal);font-weight:900;font-size:10px;letter-spacing:.17em;text-transform:uppercase}
+      .brand-mark{display:block;width:11px;height:11px;border-radius:50%;background:var(--aqua);box-shadow:17px 0 0 var(--mist)}
+      .cover h1{font-size:31px;line-height:1.13;letter-spacing:-.04em;color:var(--ink);margin:15mm 0 7px;max-width:430px}
+      .cover h1 span{color:var(--teal)}
+      .cover-lead{margin:0;max-width:400px;font-size:13px;color:var(--muted)}
+      .cover-content{margin-top:auto;display:grid;grid-template-columns:1fr 118px;gap:20px;align-items:end}
+      .cover-facts{border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:13px 22px;padding-top:13px}
+      .cover-fact{min-width:0}.cover-fact span,.section-kicker{display:block;color:var(--muted);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}.cover-fact strong{font-size:12px;color:var(--deep);display:block;overflow-wrap:anywhere}
+      .score-orb{width:112px;height:112px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--soft);border:7px solid var(--tone);color:var(--tone)}
+      .score-orb b{font-size:35px;letter-spacing:-.07em;line-height:.9}.score-orb small{font-size:10px;font-weight:800}.score-orb span{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-top:5px}
+      .cover-footer{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px;margin-top:26mm;font-size:8px;color:var(--muted)}
+      .content-page{padding-top:13mm}.page-title{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--teal);padding-bottom:8px;margin-bottom:13px}.page-title p{margin:0;color:var(--teal);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}.page-title h2{font-size:19px;color:var(--ink);letter-spacing:-.025em;margin:3px 0 0}.page-title .report-score{font-size:12px;color:var(--muted)}.page-title .report-score b{color:var(--teal);font-size:18px}
+      .summary-grid{display:grid;grid-template-columns:1.16fr .84fr;gap:13px;margin-bottom:16px}.summary-card,.action-note{border:1px solid var(--line);border-radius:8px;overflow:hidden}.summary-card h3{margin:0;padding:10px 13px;background:var(--paper);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink)}
+      table{border-collapse:collapse;width:100%}.score-table td{padding:8px 12px;border-top:1px solid var(--line);font-size:10px}.score-table .muted-row{background:var(--paper)}.score-cell{text-align:center;font-size:11px!important;font-weight:900;color:var(--ink)}.grade-chip{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--soft);color:var(--tone);font-size:8px;font-weight:900}.action-note{padding:15px;background:linear-gradient(145deg,#F8F8F5,#fff)}.action-note i{display:block;width:24px;height:5px;background:linear-gradient(90deg,var(--teal),var(--mist));border-radius:99px;margin-bottom:13px}.action-note h3{font-size:13px;color:var(--ink);margin:0 0 7px}.action-note p{margin:0;color:var(--muted);font-size:10px}
+      .report-section{break-inside:avoid;margin:0 0 15px;border:1px solid var(--line);border-radius:8px;overflow:hidden}.section-head{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:linear-gradient(90deg,var(--soft),#fff)}.section-head h2{font-size:13px;color:var(--ink);margin:1px 0 0}.section-total{text-align:right;color:var(--tone)}.section-total b{font-size:20px;line-height:1;letter-spacing:-.05em}.section-total small{font-size:10px}.section-total span{display:block;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+      .detail-table th{padding:7px 11px;background:var(--ink);color:#fff;text-align:left;font-size:8px;letter-spacing:.08em;text-transform:uppercase}.detail-table th:nth-child(2){text-align:center;width:48px}.detail-table td{padding:8px 11px;border-top:1px solid var(--line);vertical-align:top;font-size:9.5px}.item-label{width:47%;color:var(--deep);font-weight:600}.item-label b{color:var(--teal)}.item-score{text-align:center;font-size:14px!important;font-weight:900}.item-score.met{color:var(--teal)}.item-score.partial{color:var(--aqua)}.item-score.needs-attention{color:var(--ink)}.item-score.not-scored{color:var(--muted)}.comments{color:#526476;white-space:pre-line}.empty-copy{font-style:italic;color:#9AA2A9}.photo-strip{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.photo-strip img{width:52px;height:52px;border-radius:5px;object-fit:cover;border:1px solid var(--mist)}.detail-table tfoot td{background:var(--paper);color:var(--deep)}.detail-table tfoot b{display:block;color:var(--teal);font-size:8px;text-transform:uppercase;letter-spacing:.08em}.detail-table tfoot span{display:block;margin-top:2px;white-space:pre-line}
+      .signature{margin:25px 0 8px;padding-top:12px;border-top:1px solid var(--line);width:190px}.signature span{font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.signature b{display:block;border-bottom:1px solid var(--ink);padding-top:25px;font-size:10px;font-weight:700;color:var(--deep)}
+      .journey-page{break-before:page;display:flex;flex-direction:column;background:#fff}.journey-header{border-top:7px solid var(--teal);padding-top:13mm;margin-bottom:9mm}.journey-header p{margin:0;color:var(--teal);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}.journey-header h2{margin:3px 0 0;color:var(--ink);font-size:22px;letter-spacing:-.03em}.journey-header span{color:var(--muted);font-size:10px}.journey-frame{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:7mm;display:flex;align-items:center;justify-content:center}.journey-frame img{display:block;width:100%;max-height:232mm;object-fit:contain}.journey-footer{display:flex;justify-content:space-between;color:var(--muted);font-size:8px;padding-top:8px}
+      @media print{.page{min-height:auto}.cover{min-height:297mm}.content-page{padding-bottom:14mm}.journey-page{min-height:297mm}.report-section{break-inside:avoid}.page-number:after{content:counter(page)}}
+    </style></head><body>
+    <section class="page cover">
+      <div class="cover-accent"></div><div class="brand"><i class="brand-mark"></i>OSD Facility Experience</div>
+      <h1>Quality assurance<br><span>inspection report.</span></h1>
+      <p class="cover-lead">A clear record of the facility experience, touchpoints and actions observed during this inspection.</p>
+      <div class="cover-content"><div class="cover-facts">${coverFacts}</div><div class="score-orb" style="--tone:${overallTone.color};--soft:${overallTone.soft}"><b>${overall}</b><small>/100</small><span>${overallTone.label}</span></div></div>
+      <div class="cover-footer"><span>Facility Experience Quality Assurance</span><span>Generated ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span></div>
+    </section>
+    <main class="page content-page"><div class="page-title"><div><p>Inspection overview</p><h2>Journey Map Score Card</h2></div><span class="report-score"><b>${overall}</b> / 100</span></div><div class="summary-grid"><section class="summary-card"><h3>Touchpoint performance</h3><table class="score-table"><tbody>${scoreRows}</tbody></table></section><aside class="action-note"><i></i><h3>Focus for improvement</h3><p>Address any item marked below the expected level, record the corrective action, and confirm the improvement at the next inspection.</p></aside></div><div class="page-title"><div><p>Evidence & observations</p><h2>Detailed Inspection</h2></div></div>${detailSections}<div class="signature"><span>Inspector signature</span><b>${value(report.inspector)}</b></div></main>
+    <section class="page journey-page"><header class="journey-header"><p>Reference at the end of report</p><h2>Facility Experience Journey Map</h2><span>Visual reference for the inspection journey and its touchpoints.</span></header><div class="journey-frame"><img id="journey-map" src="${reportPrintEsc(journeyMapUrl)}" alt="Facility Experience Journey Map"></div><footer class="journey-footer"><span>Facility Experience Quality Assurance</span><span>Journey map reference</span></footer></section>
+    <script>document.title=${JSON.stringify(report.filename||'inspection-report.pdf')};window.addEventListener('load',function(){setTimeout(function(){window.print();},240);});<\/script>
+    </body></html>`);
+  pw.document.close();
+}
+
 function exportHistoryPDF(e,id){
   e.stopPropagation();
   const r=history.find(rec=>rec.id===id);
   if(!r){alert('Record not found.');return;}
+  return printInspectionReport({
+    inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,
+    typeLabel:r.typeLabel||r.type,overall:r.overall,
+    filename:r.filename||`${r.date||'inspection'}_${r.type||'Inspection'}_${r.facility||'facility'}.pdf`,
+    sections:r.sections||[]
+  });
 
   const inspector=r.inspector||'—';
   const facility=r.facility||'—';
@@ -2826,6 +2933,25 @@ function cancelEdit(){
 // ═══════════════════════════════════════════════════════════
 function exportPDF(){
   if(!currentReportSaved){alert('Please save the inspection before exporting the PDF.');return;}
+  const reportType=document.getElementById('meta-type').value;
+  const reportState=curState();
+  const reportSections=SECTIONS.map((section,sectionIndex)=>{
+    const sectionScore=getSecScore(sectionIndex);
+    return {
+      title:section.title,score:sectionScore.total,max:sectionScore.max,notes:reportState.notes[sectionIndex],
+      items:section.items.map((label,itemIndex)=>({label,score:reportState.scores[sectionIndex][itemIndex],comment:reportState.comments[sectionIndex][itemIndex],photos:reportState.photos[sectionIndex][itemIndex]}))
+    };
+  });
+  return printInspectionReport({
+    inspector:activeInspector,
+    facility:document.getElementById('meta-facility').value,
+    division:document.getElementById('meta-division').value,
+    date:document.getElementById('meta-date').value,
+    typeLabel:reportType==='BOQI'?'Beginning of Quarter Inspection (BOQI)':reportType==='EOQI'?'End of Quarter Inspection (EOQI)':reportType==='Follow-up'?'Follow-up and Edit':'—',
+    overall:reportSections.reduce((sum,section)=>sum+section.score,0),
+    filename:buildFilenameFrom(reportType,document.getElementById('meta-date').value,document.getElementById('meta-facility').value,document.getElementById('meta-division').value,activeInspector),
+    sections:reportSections
+  });
   const inspector=activeInspector;
   const facility=document.getElementById('meta-facility').value||'—';
   const division=document.getElementById('meta-division').value||'—';
