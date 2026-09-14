@@ -25,23 +25,31 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 #sb-head{background:linear-gradient(160deg,#001555 0%,var(--royal) 100%);padding:18px 16px 14px;border-bottom:2px solid var(--teal)}
 #sb-head .eyebrow{font-size:.62rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:4px}
 #sb-head h1{font-size:.92rem;font-weight:900;line-height:1.35;color:#fff}
-/* Flat, numbered list of top-level destinations only; the ten inspection sections live
-   inside the inspection page itself (#sec-switch). Numbers are filled in by renumberNav()
-   so hidden items never leave a gap. */
-#sb-nav{flex:1;padding:18px 10px;overflow-y:auto;display:grid;gap:5px;align-content:start}
-.ni{display:flex;align-items:center;gap:11px;padding:10px 12px;cursor:pointer;border-radius:9px;transition:background .13s,color .13s;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.72);text-decoration:none}
+/* Grouped destinations with icons. A group whose items are all hidden for this account
+   hides its label too (refreshNav). Pages that belong together share one entry: Inspection
+   covers details → sections → score card, Team covers Overview and Assign & Track.
+   The ten inspection sections live inside the inspection page itself (#sec-switch). */
+#sb-nav{flex:1;padding:14px 10px;overflow-y:auto;display:grid;gap:16px;align-content:start}
+.nav-group{display:grid;gap:3px}
+.nav-group[hidden]{display:none}
+.nav-label{font-size:.58rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.45);padding:0 12px 3px}
+.ni{display:flex;align-items:center;gap:11px;padding:9px 12px;cursor:pointer;border-radius:9px;transition:background .13s,color .13s;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.76);text-decoration:none}
 .ni[hidden]{display:none}
-/* An account without edit rights has nothing to do on the scoring pages (Inspection and
-   Score Card both route to pg-s*), so those entries are hidden for them. */
+.ni svg{width:18px;height:18px;flex-shrink:0;opacity:.75;transition:opacity .13s}
+/* An account without edit rights has nothing to do on the scoring pages. */
 body.view-only .ni[data-page^="pg-s"]{display:none}
 /* ...and nothing that opens a record for editing */
 body.view-only .hc-edit{display:none}
 .ni:hover{background:rgba(255,255,255,.08);color:#fff}
-.ni.active{background:rgba(38,168,171,.2);box-shadow:inset 3px 0 var(--teal);color:#fff;font-weight:800}
-.ni .ni-num{font-style:normal;font-size:.62rem;font-weight:800;letter-spacing:.04em;opacity:.5;min-width:15px}
-.ni.active .ni-num{opacity:1;color:var(--teal-lt)}
+.ni:hover svg{opacity:1}
+.ni.active{background:rgba(255,255,255,.15);box-shadow:inset 3px 0 var(--teal-lt);color:#fff;font-weight:800}
+.ni.active svg{opacity:1;color:var(--teal-lt)}
 .ni .ns{margin-left:auto;font-size:.68rem;font-weight:800;background:rgba(255,255,255,.1);border-radius:20px;padding:2px 7px;min-width:30px;text-align:center}
 .ni.active .ns{background:var(--teal);color:#fff}
+.sb-brand{display:flex;align-items:center;gap:11px}
+.sb-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(160deg,var(--teal) 0%,var(--royal) 100%);border:1px solid rgba(140,254,227,.35);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.sb-logo svg{width:19px;height:19px}
 #sb-foot{padding:12px 12px 14px;border-top:1px solid rgba(255,255,255,.12);display:grid;gap:12px}
 #acct-row{display:flex;align-items:center;gap:9px;color:rgba(255,255,255,.82)}
 #acct-avatar{width:32px;height:32px;border-radius:50%;background:rgba(38,168,171,.3);border:1px solid rgba(140,254,227,.35);
@@ -59,7 +67,7 @@ body.view-only .hc-edit{display:none}
 /* Inspection layout: section list on the left, the active section on the right. */
 #sec-switch{display:none}
 #insp-layout.on{display:grid;grid-template-columns:238px minmax(0,1fr);align-items:start}
-#insp-layout.on #sec-switch{display:block;position:sticky;top:50px;padding:26px 0 26px 24px}
+#insp-layout.on #sec-switch{display:block;position:sticky;top:54px;padding:26px 0 26px 24px}
 .ss-label{display:block;font-size:.62rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 10px 4px}
 #ss-list{display:grid;gap:5px}
 .ss-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1px solid var(--border);
@@ -76,9 +84,28 @@ body.view-only .hc-edit{display:none}
 .oc .og{font-size:.75rem;color:var(--teal-lt);font-weight:600;margin-top:2px}
 
 /* MAIN */
-#main{flex:1;overflow-y:auto;min-height:100vh}
-#pbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:2px solid var(--teal);padding:8px 32px;display:flex;align-items:center;gap:11px}
-#pbar .pl{font-size:.73rem;font-weight:700;color:var(--muted);min-width:95px}
+#main{flex:1;min-width:0;height:100vh;overflow-y:auto}
+#pbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.97);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(38,168,171,.35);
+  padding:8px 28px;display:flex;align-items:center;gap:14px;min-height:54px}
+#pb-title{display:flex;align-items:center;gap:10px;min-width:0;color:var(--royal);font-weight:800;font-size:.9rem;white-space:nowrap}
+#pb-ic{width:30px;height:30px;border-radius:8px;background:linear-gradient(160deg,var(--royal),var(--teal));color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#pb-ic svg{width:16px;height:16px}
+#pb-sub{font-size:.76rem;color:var(--muted);font-weight:600;overflow:hidden;text-overflow:ellipsis}
+#pb-sub:not(:empty)::before{content:'›';margin:0 8px 0 0;color:var(--border);font-weight:800}
+.pb-steps{display:flex;align-items:center;gap:6px}
+.pb-steps[hidden],#pb-progress[hidden]{display:none}
+.pb-step{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);background:#fff;border-radius:999px;padding:3px 12px 3px 3px;
+  font-family:var(--font);font-size:.74rem;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:border-color .13s,color .13s}
+.pb-step:hover{border-color:var(--teal);color:var(--royal)}
+.pb-step i{width:22px;height:22px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:.68rem;font-weight:900}
+.pb-step small{font-weight:800;color:var(--teal);font-size:.7rem}
+.pb-step.done i{background:var(--good);color:#fff}
+.pb-step.active{border-color:var(--royal);color:var(--royal);background:rgba(0,51,160,.05)}
+.pb-step.active i{background:var(--royal);color:#fff}
+.pb-sep{width:16px;height:2px;background:var(--border);border-radius:2px;flex-shrink:0}
+#pb-progress{flex:1;display:flex;align-items:center;gap:10px;min-width:110px;max-width:320px;margin-left:auto}
+.pb-right{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0}
+#pb-progress:not([hidden])~.pb-right{margin-left:0}
 .pt{flex:1;height:7px;background:var(--border);border-radius:8px;overflow:hidden}
 .pf{height:100%;background:linear-gradient(90deg,var(--royal),var(--teal));border-radius:8px;transition:width .5s}
 #pbar .pp{font-size:.78rem;font-weight:800;color:var(--royal);min-width:34px;text-align:right}
@@ -88,12 +115,63 @@ body.view-only .hc-edit{display:none}
 
 /* HOME */
 #pg-home{padding:0}
-.home-hero{background:linear-gradient(145deg,#001540 0%,#002280 50%,#0a5f60 100%);color:#fff;padding:40px 44px 32px;position:relative;overflow:hidden;border-bottom:4px solid var(--teal)}
+.home-hero{background:linear-gradient(145deg,#001540 0%,#002280 50%,#0a5f60 100%);color:#fff;padding:30px 44px 26px;position:relative;overflow:hidden;border-bottom:4px solid var(--teal)}
 .home-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(38,168,171,.2) 0%,transparent 70%);pointer-events:none}
 .home-hero .ey{font-size:.65rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:5px}
-.home-hero h2{font-size:1.9rem;font-weight:900;line-height:1.15;margin-bottom:5px}
+.home-hero h2{font-size:1.65rem;font-weight:900;line-height:1.2;margin-bottom:4px}
 .home-hero h2 span{color:var(--teal)}
-.home-hero .sub{font-size:.82rem;color:rgba(255,255,255,.52);margin-bottom:24px;max-width:460px}
+.home-hero .sub{font-size:.82rem;color:rgba(255,255,255,.6);margin-bottom:0;max-width:560px}
+#pg-new .home-hero .sub{margin-bottom:22px}
+.home-hero .ey{font-size:.62rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:6px}
+/* Tabs for pages that share one sidebar entry (Team: Overview / Assign & Track) */
+.page-tabs{display:flex;gap:6px;margin-top:18px;flex-wrap:wrap;position:relative}
+.page-tabs[hidden]{display:none}
+.page-tab{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:rgba(255,255,255,.82);padding:6px 16px 6px 12px;border-radius:999px;
+  font-family:var(--font);font-size:.76rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:background .13s}
+.page-tab:hover{background:rgba(255,255,255,.16);color:#fff}
+.page-tab.active{background:#fff;color:var(--royal);border-color:#fff}
+.page-tab svg{width:14px;height:14px}
+/* Home quick actions */
+#home-actions{padding:16px 44px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+#home-actions:empty{display:none}
+.qa-card{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;
+  text-align:left;font-family:var(--font);color:var(--text);transition:border-color .13s,transform .15s,box-shadow .15s}
+.qa-card:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 14px 28px -20px rgba(0,32,112,.35)}
+.qa-card .hs-ic{margin:0;flex-shrink:0}
+.qa-card div{flex:1;min-width:0}
+.qa-card b{display:block;font-size:.86rem;color:var(--royal);font-weight:800}
+.qa-card small{display:block;font-size:.72rem;color:var(--muted)}
+.qa-card .qa-go{width:16px;height:16px;color:var(--muted);flex-shrink:0}
+/* Admin Control */
+#pg-admin{background:var(--bg);padding-bottom:40px}
+.ad-form{padding:18px}
+.ad-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
+.ad-grid label{display:grid;gap:5px;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.ad-grid input,.ad-grid select{border:1.5px solid var(--border);border-radius:7px;padding:8px 10px;font-size:.84rem;font-family:var(--font);color:var(--text);
+  background:#fff;outline:none;text-transform:none;letter-spacing:0;font-weight:600;min-width:0}
+.ad-grid input:focus,.ad-grid select:focus{border-color:var(--teal)}
+.ad-perms{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.ad-perms label{display:flex;align-items:center;gap:7px;font-size:.8rem;font-weight:700;cursor:pointer}
+.ad-perms input{width:16px;height:16px;accent-color:var(--teal)}
+.ad-msg{margin-top:12px;padding:9px 12px;border-radius:8px;font-size:.78rem;font-weight:700}
+.ad-msg[hidden]{display:none}
+.ad-msg.ok{background:rgba(0,132,61,.1);color:var(--good)}
+.ad-msg.err{background:rgba(192,57,43,.1);color:var(--danger)}
+.ad-role{border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;font-family:var(--font);font-size:.76rem;background:#fff;color:var(--text)}
+.ad-perm{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);background:#fff;color:var(--muted);border-radius:999px;
+  padding:3px 10px 3px 7px;font-family:var(--font);font-size:.7rem;font-weight:700;cursor:pointer;margin:0 4px 4px 0}
+.ad-perm svg{width:13px;height:13px}
+.ad-perm.on{background:rgba(38,168,171,.12);border-color:rgba(38,168,171,.45);color:#0c7b7d}
+.ad-perm:disabled{cursor:default}
+.ad-actions{display:flex;gap:6px;flex-wrap:wrap}
+.ad-btn{border:1px solid var(--border);background:#fff;color:var(--royal);border-radius:7px;padding:5px 10px;font-family:var(--font);font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.ad-btn:hover{border-color:var(--royal)}
+.ad-btn.danger{color:var(--danger);border-color:rgba(192,57,43,.3)}
+.ad-btn.danger:hover{background:rgba(192,57,43,.07)}
+.ov-pill.active{background:rgba(0,132,61,.1);color:var(--good)}
+.ov-pill.suspended{background:rgba(192,57,43,.1);color:var(--danger)}
+.ov-pill.setup{background:rgba(212,128,0,.12);color:var(--warn)}
+@media(max-width:780px){#home-actions{padding:14px 14px 0}.ad-form{padding:14px}}
 .meta-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:13px;margin-bottom:20px}
 .mf{display:flex;flex-direction:column;gap:3px}
 .mf label{font-size:.65rem;text-transform:uppercase;letter-spacing:.14em;color:rgba(255,255,255,.5);font-weight:700}
@@ -107,6 +185,7 @@ body.view-only .hc-edit{display:none}
 
 /* Inspector panel */
 #insp-panel{background:#fff;border-bottom:1px solid var(--border);padding:14px 44px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+#insp-chips{display:flex;gap:8px;flex-wrap:wrap}
 #insp-panel .ip-label{font-size:.8rem;font-weight:700;color:var(--royal);white-space:nowrap}
 .insp-chip{display:flex;align-items:center;gap:6px;background:var(--bg);border:2px solid var(--border);border-radius:20px;padding:5px 13px;cursor:pointer;font-size:.78rem;font-weight:700;color:var(--muted);transition:all .13s;white-space:nowrap}
 .insp-chip:hover{border-color:var(--teal);color:var(--royal)}
@@ -220,16 +299,16 @@ body.view-only .hc-edit{display:none}
 .of-foot{padding:10px 18px;border-top:1px solid var(--bg);font-size:.72rem;color:var(--muted);font-weight:700}
 .of-bulk{position:sticky;bottom:16px;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 14px;
   background:var(--royal-dk);color:#fff;border-radius:14px;box-shadow:0 18px 40px -16px rgba(0,20,70,.6)}
-.of-bulk[hidden],.of-toast[hidden]{display:none}
+.of-bulk[hidden],.app-toast[hidden]{display:none}
 .of-bulk b{font-size:.8rem;margin-right:auto}
 .of-bulk select{border:none;border-radius:7px;padding:7px 10px;font-family:var(--font);font-size:.78rem;min-width:170px}
 .of-bulk .btn{padding:7px 14px;font-size:.76rem}
 .of-bulk .rp-link{color:var(--teal-lt)}
 @keyframes of-flash{0%{background:rgba(0,132,61,.25)}100%{background:transparent}}
 .of-table tr.flash td,.of-card.flash{animation:of-flash 2.6s ease-out}
-.of-toast{position:fixed;right:24px;bottom:24px;z-index:90;background:var(--royal-dk);color:#fff;padding:11px 16px;border-radius:10px;
+.app-toast{position:fixed;right:24px;bottom:24px;z-index:90;background:var(--royal-dk);color:#fff;padding:11px 16px;border-radius:10px;
   font-size:.8rem;font-weight:700;box-shadow:0 14px 34px -12px rgba(0,0,0,.4);max-width:380px}
-.of-toast.err{background:var(--danger)}
+.app-toast.err{background:var(--danger)}
 @media(max-width:780px){#pg-officer .ov-filters{padding-left:14px;padding-right:14px}.of-live{margin-left:0}.of-bulk b{margin-right:0;width:100%}}
 
 /* Reports & Analytics (all roles) */
@@ -426,9 +505,20 @@ body.no-delete .hc-del{display:none}
 @media(max-width:780px){
   body{flex-direction:column}
   #sidebar{width:100%;min-width:0;height:auto;position:static}
-  #sb-nav{display:flex;flex-wrap:wrap;padding:6px;gap:4px}
-  .ni{font-size:.7rem;padding:6px 9px;gap:6px}
-  .ni.active{box-shadow:inset 0 -2px var(--teal)}
+  #main{height:auto;overflow:visible}
+  #sb-head{padding:12px 14px 10px}
+  #sb-nav{display:flex;overflow-x:auto;padding:6px 8px;gap:4px}
+  .nav-group{display:flex;gap:4px}
+  .nav-group[hidden]{display:none}
+  .nav-label{display:none}
+  .ni{font-size:.72rem;padding:7px 10px;gap:6px;white-space:nowrap}
+  .ni svg{width:15px;height:15px}
+  .ni.active{box-shadow:inset 0 -2px var(--teal-lt)}
+  #pbar{padding:8px 14px;flex-wrap:wrap;gap:8px}
+  .pb-step{font-size:0;padding:3px}
+  .pb-step i{font-size:.68rem}
+  .pb-step small{display:none}
+  #pb-progress{order:5;max-width:none;flex-basis:100%}
   #sb-foot{padding:8px 12px}
   #insp-layout.on{display:block}
   #insp-layout.on #sec-switch{position:static;padding:14px 13px 0}
@@ -445,14 +535,6 @@ body.no-delete .hc-del{display:none}
 }
 
 
-/* Home → Reports pointer (the old charts panel now lives in Reports & Analytics) */
-.home-reports-cta{margin:0 44px 40px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#fff;border:1px solid var(--border);
-  border-radius:var(--r);padding:18px 20px}
-.home-reports-cta .hs-ic{margin:0;flex-shrink:0}
-.home-reports-cta .cta-text{flex:1;min-width:200px}
-.home-reports-cta b{display:block;color:var(--royal);font-size:.92rem;font-weight:800}
-.home-reports-cta span{font-size:.78rem;color:var(--muted)}
-@media(max-width:780px){.home-reports-cta{margin:0 14px 28px}}
 
 /* Edit mode banner */
 #edit-banner{display:none;background:#fff3cd;border-bottom:2px solid #D48000;padding:10px 32px;align-items:center;gap:12px;flex-wrap:wrap}
@@ -531,19 +613,30 @@ body.no-delete .hc-del{display:none}
 <!-- SIDEBAR -->
 <aside id="sidebar">
   <div id="sb-head">
-    <div class="eyebrow"><span id="conn-dot"></span>OSD · Facility Experience</div>
-    <h1>Quality Assurance<br>Check List</h1>
+    <div class="sb-brand">
+      <span class="sb-logo"><svg data-lucide="shield-check" width="19" height="19"></svg></span>
+      <div>
+        <div class="eyebrow"><span id="conn-dot"></span>OSD · Facility Experience</div>
+        <h1>Quality Assurance</h1>
+      </div>
+    </div>
   </div>
   <nav id="sb-nav">
-    <div class="ni active" data-page="pg-home"><i class="ni-num"></i>Home</div>
-    <div class="ni" id="overview-link" data-page="pg-overview" hidden><i class="ni-num"></i>Team Overview</div>
-    <div class="ni" id="assign-link" data-page="pg-officer" hidden><i class="ni-num"></i>Assign &amp; Track</div>
-    <div class="ni" id="my-assignments-link" data-page="pg-assignments" hidden><i class="ni-num"></i>My Assignments <span class="ns" id="ns-assign">–</span></div>
-    <div class="ni" id="new-insp-link" data-page="pg-new" hidden><i class="ni-num"></i>New Inspection</div>
-    <div class="ni" id="inspection-link" data-page="pg-s0" hidden><i class="ni-num"></i>Inspection <span class="ns" id="ns-progress">0%</span></div>
-    <div class="ni" data-page="pg-scorecard"><i class="ni-num"></i>Score Card</div>
-    <div class="ni" id="reports-link" data-page="pg-reports"><i class="ni-num"></i>Reports</div>
-    <a class="ni" id="admin-link" href="admin.html" hidden><i class="ni-num"></i>Admin Control</a>
+    <div class="nav-group">
+      <span class="nav-label">Workspace</span>
+      <div class="ni active" data-page="pg-home"><svg data-lucide="layout-dashboard" width="18" height="18"></svg><span class="ni-txt">Home</span></div>
+      <div class="ni" id="my-assignments-link" data-page="pg-assignments" hidden><svg data-lucide="calendar-check" width="18" height="18"></svg><span class="ni-txt">My Assignments</span><span class="ns" id="ns-assign">–</span></div>
+      <div class="ni" id="inspection-link" data-page="pg-new" hidden><svg data-lucide="clipboard-check" width="18" height="18"></svg><span class="ni-txt">Inspection</span><span class="ns" id="ns-progress">0%</span></div>
+    </div>
+    <div class="nav-group">
+      <span class="nav-label">Team &amp; Insights</span>
+      <div class="ni" id="team-link" data-page="pg-overview" hidden><svg data-lucide="users" width="18" height="18"></svg><span class="ni-txt">Team</span></div>
+      <div class="ni" id="reports-link" data-page="pg-reports"><svg data-lucide="bar-chart-3" width="18" height="18"></svg><span class="ni-txt">Reports</span></div>
+    </div>
+    <div class="nav-group">
+      <span class="nav-label">Administration</span>
+      <div class="ni" id="admin-link" data-page="pg-admin" hidden><svg data-lucide="shield-check" width="18" height="18"></svg><span class="ni-txt">Admin Control</span></div>
+    </div>
   </nav>
   <div id="sb-foot">
     <div class="oc" id="sb-score" hidden>
@@ -563,9 +656,19 @@ body.no-delete .hc-del{display:none}
 <!-- MAIN -->
 <main id="main">
   <div id="pbar">
-    <span class="pl">Completion</span>
-    <div class="pt"><div class="pf" id="pf" style="width:0%"></div></div>
-    <span class="pp" id="pp">0%</span>
+    <div id="pb-title"><span id="pb-ic"></span><span id="pb-name">Home</span><span id="pb-sub"></span></div>
+    <div class="pb-steps" id="pb-steps" hidden>
+      <button class="pb-step" data-step="pg-new"><i>1</i>Details</button>
+      <span class="pb-sep"></span>
+      <button class="pb-step" data-step="sections"><i>2</i>Sections <small id="pb-sec-count">0/10</small></button>
+      <span class="pb-sep"></span>
+      <button class="pb-step" data-step="pg-scorecard"><i>3</i>Score Card</button>
+    </div>
+    <div id="pb-progress" hidden>
+      <div class="pt"><div class="pf" id="pf" style="width:0%"></div></div>
+      <span class="pp" id="pp">0%</span>
+    </div>
+    <div class="pb-right">
     <div id="sync-chip" class="syncing">Connecting…</div>
     <div id="notif-bell-wrap">
       <button id="notif-bell" title="Notifications">
@@ -580,7 +683,10 @@ body.no-delete .hc-del{display:none}
         <div id="notif-list"><div class="notif-empty">No notifications yet.</div></div>
       </div>
     </div>
+    </div>
   </div>
+
+  <div class="app-toast" id="app-toast" hidden role="status"></div>
 
   <!-- Edit mode banner -->
   <div id="edit-banner">
@@ -591,8 +697,9 @@ body.no-delete .hc-del{display:none}
   <!-- HOME -->
   <div class="page active" id="pg-home">
     <div class="home-hero">
-      <h2>Facility Experience<br><span>Quality Assurance</span><br>Check List</h2>
-      <p class="sub">Your inspection history at a glance.</p>
+      <div class="ey">OSD · Facility Experience Quality Assurance</div>
+      <h2>Welcome, <span id="home-name">…</span></h2>
+      <p class="sub">Pick up where you left off, or browse the inspection history below.</p>
     </div>
 
     <div id="home-stats">
@@ -613,6 +720,8 @@ body.no-delete .hc-del{display:none}
         <b id="hs-quarter">–</b><span id="hs-quarter-label">This quarter</span>
       </div>
     </div>
+
+    <div id="home-actions"></div>
 
     <div id="history-section">
       <div class="hist-hdr">
@@ -645,18 +754,13 @@ body.no-delete .hc-del{display:none}
       <div id="hist-list"><div class="no-hist">No inspections saved yet. Complete an inspection and save it from the Score Card page.</div></div>
     </div>
 
-    <div class="home-reports-cta">
-      <div class="hs-ic"><svg data-lucide="bar-chart-2" width="19" height="19"></svg></div>
-      <div class="cta-text"><b>Analytics &amp; Charts</b><span>Charts, filters, statistics and exports are in Reports &amp; Analytics.</span></div>
-      <button class="btn bt" style="padding:7px 16px;font-size:.78rem" onclick="nav('pg-reports')">Open Reports <svg data-lucide="arrow-right" width="14" height="14"></svg></button>
-    </div>
   </div>
 
   <!-- NEW INSPECTION -->
   <div class="page" id="pg-new">
     <div class="home-hero">
-      <h2>Start a<br><span>New Inspection</span></h2>
-      <p class="sub">Fill in the details below, then move through each section to score it.</p>
+      <h2>Inspection <span>Details</span></h2>
+      <p class="sub">Step 1 of 3 — fill in the details, then score each section and review the score card.</p>
       <div class="meta-g">
         <div class="mf">
           <label>Inspector Name</label>
@@ -697,7 +801,7 @@ body.no-delete .hc-del{display:none}
         <div class="rc"><strong>0–50</strong> Critical</div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
-        <button class="btn bt" id="start-insp-btn" onclick="startNewInspection()">Start New Inspection</button>
+        <button class="btn bt" id="start-insp-btn" onclick="startNewInspection()">Start Scoring <svg data-lucide="arrow-right" width="15" height="15"></svg></button>
       </div>
     </div>
 
@@ -726,24 +830,25 @@ body.no-delete .hc-del{display:none}
   <!-- MY ASSIGNMENTS (Quality Auditor) -->
   <div class="page" id="pg-assignments">
     <div class="home-hero">
-      <h2>My Assignments</h2>
+      <h2>My <span>Assignments</span></h2>
       <p class="sub">Buildings assigned to you for inspection.</p>
     </div>
-    <div id="assign-filters" class="hist-filters" style="padding:16px 32px 0">
+    <div id="assign-filters" class="hist-filters" style="padding:18px 44px 0">
       <select id="assign-quarter"></select>
       <select id="assign-type">
         <option value="BOQI">BOQI — Beginning of Quarter</option>
         <option value="EOQI">EOQI — End of Quarter</option>
       </select>
     </div>
-    <div id="assign-list" style="padding:0 32px 32px"></div>
+    <div id="assign-list" style="padding:0 44px 32px"></div>
   </div>
 
   <!-- TEAM OVERVIEW (Quality Leader) -->
   <div class="page" id="pg-overview">
     <div class="home-hero">
-      <h2>Team<br><span>Overview</span></h2>
+      <h2>Team <span>Overview</span></h2>
       <p class="sub">Everything your officers and auditors are working on — assignments, results and progress by division, area and building.</p>
+      <div class="page-tabs team-tabs" hidden></div>
     </div>
 
     <div class="hist-filters ov-filters">
@@ -823,8 +928,9 @@ body.no-delete .hc-del{display:none}
   <!-- ASSIGN & TRACK (Quality Officer) -->
   <div class="page" id="pg-officer">
     <div class="home-hero">
-      <h2>Assign &amp;<br><span>Track</span></h2>
+      <h2>Assign &amp; <span>Track</span></h2>
       <p class="sub">Assign buildings to your auditors for the quarter and follow their progress live.</p>
+      <div class="page-tabs team-tabs" hidden></div>
     </div>
 
     <div class="hist-filters ov-filters">
@@ -900,13 +1006,68 @@ body.no-delete .hc-del{display:none}
         <button class="rp-link" id="of-bulk-clear">Clear</button>
       </div>
     </div>
-    <div class="of-toast" id="of-toast" hidden role="status"></div>
+  </div>
+
+  <!-- ADMIN CONTROL (Quality Admin) -->
+  <div class="page" id="pg-admin">
+    <div class="home-hero">
+      <h2>Admin <span>Control</span></h2>
+      <p class="sub">Create accounts and control what each person can do.</p>
+    </div>
+
+    <div class="ov-stats" id="ad-stats"></div>
+
+    <div class="ov-section">
+      <div class="hist-hdr"><div><span class="sec-eyebrow">New account</span><h3><svg data-lucide="user-plus" width="18" height="18"></svg> Add a Team Member</h3></div></div>
+      <div class="ov-panel">
+        <form class="ad-form" id="ad-form" autocomplete="off">
+          <div class="ad-grid">
+            <label>Full name<input id="ad-name" type="text" required></label>
+            <label>Username<input id="ad-username" type="text" required></label>
+            <label>Temporary password<input id="ad-password" type="text" minlength="8" required></label>
+            <label>Role
+              <select id="ad-role">
+                <option value="quality_auditor">Quality Auditor</option>
+                <option value="quality_officer">Quality Officer</option>
+                <option value="quality_leader">Quality Leader</option>
+                <option value="data_analyst">Data Analyst</option>
+                <option value="quality_admin">Quality Admin</option>
+              </select>
+            </label>
+          </div>
+          <div class="ad-perms">
+            <label><input type="checkbox" id="ad-edit" checked> Can edit inspections</label>
+            <label><input type="checkbox" id="ad-delete"> Can delete inspections</label>
+            <label><input type="checkbox" id="ad-export" checked> Can export data</label>
+          </div>
+          <button class="btn br" type="submit" id="ad-submit"><svg data-lucide="user-plus" width="15" height="15"></svg> Create account</button>
+          <p class="sub" style="font-size:.74rem;color:var(--muted);margin-top:10px">They sign in with this temporary password and must set their own before entering the workspace.</p>
+          <div class="ad-msg" id="ad-msg" hidden></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="ov-section">
+      <div class="hist-hdr">
+        <div><span class="sec-eyebrow">Accounts</span><h3><svg data-lucide="users" width="18" height="18"></svg> All Accounts</h3></div>
+        <div class="ov-tools">
+          <input type="text" id="ad-search" placeholder="Search name or username…">
+          <select id="ad-role-filter"><option value="">All roles</option></select>
+        </div>
+      </div>
+      <div class="ov-panel">
+        <div class="ov-scroll"><table class="ov-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Permissions</th><th>Actions</th></tr></thead>
+          <tbody id="ad-rows"></tbody>
+        </table></div>
+      </div>
+    </div>
   </div>
 
   <!-- REPORTS & ANALYTICS (all roles) -->
   <div class="page" id="pg-reports">
     <div class="home-hero">
-      <h2>Reports &amp;<br><span>Analytics</span></h2>
+      <h2>Reports &amp; <span>Analytics</span></h2>
       <p class="sub">Build the report you need — filter every inspection, then break the numbers down by division, area, building or time.</p>
     </div>
 
@@ -1212,6 +1373,7 @@ let editingRecordId = null;
 // the initial deep-link routing, which runs before the end of the script.
 let currentUser = null;
 let ovData = null, ovChart = null, ovReady = false; // Team Overview state
+let adUsers = [], adReady = false, lastSection = 'pg-s0'; // Admin Control state; last opened inspection section
 let ofData = null, ofReady = false, ofReq = 0, ofPrevDone = null, ofPrevKey = '', ofSelected = new Set(), ofRowsStale = false; // Assign & Track state
 let rpData = null, rpReady = false, rpCharts = {}, rpShown = 100, rpGroup = 'division', rpMetric = 'avg', rpTrend = 'quarter'; // Reports state
 const RP_FILTER_IDS = ['rp-year','rp-month','rp-quarter','rp-type','rp-division','rp-area','rp-building','rp-inspector','rp-rating','rp-from','rp-to','rp-search'];
@@ -1444,7 +1606,7 @@ function updateCommentHint(si,ii){
 // so a page can be bookmarked, shared, or restored with the browser's
 // back/forward buttons.
 // ═══════════════════════════════════════════════════════════
-const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments','pg-overview','pg-reports','pg-officer']);
+const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments','pg-overview','pg-reports','pg-officer','pg-admin']);
 function hashToPage(hash){
   const id=(hash||'').replace(/^#/,'');
   return VALID_PAGES.has(id)?id:'pg-home';
@@ -1456,6 +1618,7 @@ function pageAllowed(pageId){
   if(pageId==='pg-assignments') return currentUser.role==='quality_auditor';
   if(pageId==='pg-overview') return currentUser.role==='quality_leader'||currentUser.role==='quality_admin';
   if(pageId==='pg-officer') return currentUser.role==='quality_officer'||currentUser.role==='quality_admin';
+  if(pageId==='pg-admin') return currentUser.role==='quality_admin';
   return true;
 }
 
@@ -1464,9 +1627,11 @@ function nav(pageId){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
   const isSection=/^pg-s\d$/.test(pageId);
-  // "Inspection" returns to whichever section was open last.
-  if(isSection) document.getElementById('inspection-link').dataset.page=pageId;
-  document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('active',n.dataset.page===pageId));
+  // Grouped entries (Inspection, Team) reopen whichever of their pages was open last.
+  const group=navGroupOf(pageId);
+  if(group) document.getElementById(group+'-link').dataset.page=pageId;
+  if(isSection) lastSection=pageId;
+  document.querySelectorAll('#sb-nav .ni').forEach(n=>n.classList.toggle('active',n.dataset.page===pageId));
   document.querySelectorAll('.ss-item').forEach(b=>b.classList.toggle('active','pg-s'+b.dataset.sec===pageId));
   document.getElementById('insp-layout').classList.toggle('on',isSection);
   document.getElementById('sb-score').hidden=!pageId.startsWith('pg-s');
@@ -1477,9 +1642,12 @@ function nav(pageId){
   if(pageId==='pg-overview') loadOverview();
   if(pageId==='pg-reports') loadReports();
   if(pageId==='pg-officer') loadOfficer();
+  if(pageId==='pg-admin') loadAdmin();
+  updateTopBar(pageId);
   if(pageId.startsWith('pg-s')) syncFormToState();
-  document.getElementById('main').scrollTo(0,0);
+  // Setting the hash makes the browser jump to the element with that id, so reset the scroll after it.
   if(location.hash!=='#'+pageId) location.hash=pageId;
+  document.getElementById('main').scrollTo(0,0);
 }
 window.addEventListener('hashchange',()=>{
   const pid=hashToPage(location.hash);
@@ -1549,14 +1717,46 @@ function updateProgress(){
   document.getElementById('pf').style.width=pct+'%';
   document.getElementById('pp').textContent=pct+'%';
   document.getElementById('ns-progress').textContent=pct+'%';
+  updateSteps();
 }
-function renumberNav(){
-  let i=0;
-  document.querySelectorAll('#sb-nav .ni').forEach(n=>{
-    const num=n.querySelector('.ni-num');
-    if(!num) return;
-    num.textContent=getComputedStyle(n).display==='none'?'':String(++i).padStart(2,'0');
+/** Hides a sidebar group's label when none of its entries apply to this account. */
+function refreshNav(){
+  document.querySelectorAll('#sb-nav .nav-group').forEach(g=>{
+    g.hidden=false;
+    g.hidden=![...g.querySelectorAll('.ni')].some(n=>getComputedStyle(n).display!=='none');
   });
+}
+/** Pages that share one sidebar entry. */
+function navGroupOf(pageId){
+  if(pageId==='pg-new'||pageId==='pg-scorecard'||/^pg-s\d$/.test(pageId)) return 'inspection';
+  if(pageId==='pg-overview'||pageId==='pg-officer') return 'team';
+  return null;
+}
+/** Top bar: where you are (icon, page, sub-page) plus, while inspecting, the three steps. */
+function updateTopBar(pageId){
+  const group=navGroupOf(pageId);
+  const link=[...document.querySelectorAll('#sb-nav .ni')].find(n=>n.dataset.page===pageId);
+  document.getElementById('pb-ic').innerHTML=link?.querySelector('svg')?.outerHTML||'';
+  document.getElementById('pb-name').textContent=link?link.querySelector('.ni-txt').textContent:'';
+  const sec=/^pg-s(\d)$/.exec(pageId);
+  document.getElementById('pb-sub').textContent=
+    pageId==='pg-overview'?'Overview':pageId==='pg-officer'?'Assign & Track':sec?SECTIONS[+sec[1]].title:'';
+  const inspecting=group==='inspection';
+  document.getElementById('pb-steps').hidden=!inspecting;
+  document.getElementById('pb-progress').hidden=!inspecting;
+  if(!inspecting) return;
+  const stepOf=el=>el.dataset.step==='sections'?!!sec:el.dataset.step===pageId;
+  document.querySelectorAll('.pb-step').forEach(el=>el.classList.toggle('active',stepOf(el)));
+  updateSteps();
+}
+function updateSteps(){
+  const filled=['meta-facility','meta-type','meta-division'].every(id=>document.getElementById(id).value.trim());
+  const st=curState();
+  const doneSecs=SECTIONS.filter((_,si)=>st.scores[si].every(v=>v!==null)).length;
+  document.getElementById('pb-sec-count').textContent=`${doneSecs}/${SECTIONS.length}`;
+  const [details,sections]=document.querySelectorAll('.pb-step');
+  details.classList.toggle('done',filled&&!details.classList.contains('active'));
+  sections.classList.toggle('done',doneSecs===SECTIONS.length&&!sections.classList.contains('active'));
 }
 function updateSidebar(){
   let t=0;SECTIONS.forEach((_,si)=>t+=getSecScore(si).total);
@@ -2346,13 +2546,17 @@ function resetForm(){
 // INIT
 // ═══════════════════════════════════════════════════════════
 document.querySelectorAll('.ni[data-page]').forEach(n=>n.addEventListener('click',()=>nav(n.dataset.page)));
+document.getElementById('pb-steps').addEventListener('click',e=>{
+  const step=e.target.closest('.pb-step');
+  if(step) nav(step.dataset.step==='sections'?lastSection:step.dataset.step); // Sections reopens the last one you had open
+});
 document.getElementById('lb').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLB();});
 document.getElementById('modal-add-insp').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-add-insp');});
 document.getElementById('hd-modal').addEventListener('click',e=>{if(e.target===document.getElementById('hd-modal'))closeHistDetail();});
 document.getElementById('meta-date').valueAsDate=new Date();
 
 buildSections();
-renumberNav();
+refreshNav();
 lucide.createIcons();
 rebuildInspectorDropdown();
 renderInspectorChips();
@@ -2364,6 +2568,7 @@ updateScoreCardActionBar();
 {
   const initialPageId=hashToPage(location.hash);
   if(initialPageId!=='pg-home') nav(initialPageId);
+  else updateTopBar('pg-home');
 }
 
 // ── Boot: connect to the database and load history ──
@@ -2675,8 +2880,8 @@ function ofQuarterOptions(extra=[]){
 }
 function ofInitials(name){ return String(name||'?').split(/\s+/).filter(Boolean).map(p=>p[0]).slice(0,2).join('').toUpperCase(); }
 function ofOnPage(){ return document.getElementById('pg-officer').classList.contains('active'); }
-function ofToast(msg,isErr){
-  const t=document.getElementById('of-toast');
+function showToast(msg,isErr){
+  const t=document.getElementById('app-toast');
   t.textContent=msg; t.classList.toggle('err',!!isErr); t.hidden=false;
   clearTimeout(t._timer); t._timer=setTimeout(()=>{ t.hidden=true; },isErr?6000:3500);
 }
@@ -2784,7 +2989,7 @@ async function loadOfficer({quiet=false}={}){
     renderOfficer(fresh);
     if(fresh.length){
       const b=data.buildings.find(x=>x.buildingId===fresh[0]);
-      ofToast(fresh.length===1?`${b.auditorName||'An auditor'} completed ${b.name}${b.score!=null?` — ${b.score}/100`:''}`:`${fresh.length} buildings were just completed`);
+      showToast(fresh.length===1?`${b.auditorName||'An auditor'} completed ${b.name}${b.score!=null?` — ${b.score}/100`:''}`:`${fresh.length} buildings were just completed`);
     }
     live.classList.remove('off');
     updated.textContent='Live · updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -2967,9 +3172,9 @@ async function ofAssignOne(buildingId,auditorId,el){
       res=await fetch('/api/assignments/'+b.assignmentId,{method:'DELETE'});
     }
     if(res&&!res.ok) throw new Error((await res.json().catch(()=>({}))).error||'Could not save the change.');
-    ofToast(auditorId?`${b.name} assigned to ${who}`:`${b.name} unassigned`);
+    showToast(auditorId?`${b.name} assigned to ${who}`:`${b.name} unassigned`);
   }catch(err){
-    ofToast(err.message,true);
+    showToast(err.message,true);
   }
   el.blur();
   await loadOfficer({quiet:true});
@@ -3006,28 +3211,28 @@ async function ofRunBulk(action){
   try{
     if(action==='assign'){
       const aud=ofVal('of-bulk-auditor');
-      if(!aud){ ofToast('Choose an auditor first.',true); return; }
+      if(!aud){ showToast('Choose an auditor first.',true); return; }
       buttons.forEach(b=>b.disabled=true);
       const r=await ofBulk(aud,ids);
-      ofToast(`Assigned ${plural(r.changed)}${r.unchanged?` · ${r.unchanged} already theirs`:''}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
+      showToast(`Assigned ${plural(r.changed)}${r.unchanged?` · ${r.unchanged} already theirs`:''}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
     }else if(action==='unassign'){
       if(!confirm(`Unassign ${plural(ids.length)}? They go back to the unassigned list.`)) return;
       buttons.forEach(b=>b.disabled=true);
       const r=await ofBulk(null,ids);
-      ofToast(`Unassigned ${plural(r.changed)}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
+      showToast(`Unassigned ${plural(r.changed)}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
     }else if(action==='distribute'){
       const plan=ofPlanDistribution(ids);
-      if(!plan){ ofToast('There are no active auditors to distribute to.',true); return; }
+      if(!plan){ showToast('There are no active auditors to distribute to.',true); return; }
       const lines=plan.map(p=>`• ${p.name}: +${p.ids.length} (total ${p.total})`).join('\n');
       if(!confirm(`Distribute ${plural(ids.length)} across your auditors, keeping each area together:\n\n${lines}`)) return;
       buttons.forEach(b=>b.disabled=true);
       let changed=0;
       for(const p of plan) changed+=(await ofBulk(p.id,p.ids)).changed;
-      ofToast(`Distributed ${plural(changed)} across ${plan.length} auditor${plan.length===1?'':'s'}`);
+      showToast(`Distributed ${plural(changed)} across ${plan.length} auditor${plan.length===1?'':'s'}`);
     }
     ofSelected.clear();
   }catch(err){
-    ofToast(err.message,true);
+    showToast(err.message,true);
   }finally{
     buttons.forEach(b=>b.disabled=false);
     await loadOfficer({quiet:true});
@@ -3435,6 +3640,178 @@ function exportRpDetail(){
   rpDownload(`inspections-detail-${new Date().toISOString().slice(0,10)}.csv`,rows);
 }
 
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION HELPERS: team tabs, home quick actions
+// ═══════════════════════════════════════════════════════════
+function renderTeamTabs(pages){
+  const meta={'pg-overview':['layout-grid','Overview'],'pg-officer':['clipboard-list','Assign & Track']};
+  document.querySelectorAll('.team-tabs').forEach(el=>{
+    const here=el.closest('.page').id;
+    el.hidden=pages.length<2;
+    el.innerHTML=pages.map(pid=>`<button class="page-tab${pid===here?' active':''}" data-page="${pid}"><svg data-lucide="${meta[pid][0]}" width="14" height="14"></svg>${meta[pid][1]}</button>`).join('');
+    el.onclick=e=>{ const b=e.target.closest('[data-page]'); if(b&&b.dataset.page!==here) nav(b.dataset.page); };
+  });
+  lucide.createIcons();
+}
+function renderHomeActions(user,teamPages){
+  const actions=[];
+  if(user.role==='quality_auditor') actions.push(['pg-assignments','calendar-check','My Assignments','Buildings assigned to you this quarter']);
+  if(user.canEdit) actions.push(['pg-new','clipboard-check','Start an Inspection','Details → sections → score card']);
+  if(teamPages.length) actions.push([teamPages[0],'users','Team',
+    teamPages.length>1?'Team overview and building assignments':teamPages[0]==='pg-officer'?'Assign buildings and track auditors live':'Progress of officers and auditors']);
+  actions.push(['pg-reports','bar-chart-3','Reports & Analytics','Filters, charts, statistics and exports']);
+  if(user.role==='quality_admin') actions.push(['pg-admin','shield-check','Admin Control','Accounts and permissions']);
+  const box=document.getElementById('home-actions');
+  box.innerHTML=actions.map(([pid,icon,title,sub])=>`<button class="qa-card" data-page="${pid}">
+    <span class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></span>
+    <div><b>${title}</b><small>${sub}</small></div>
+    <svg class="qa-go" data-lucide="chevron-right" width="16" height="16"></svg></button>`).join('');
+  box.onclick=e=>{ const b=e.target.closest('[data-page]'); if(b) nav(b.dataset.page); };
+  lucide.createIcons();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN CONTROL (Quality Admin)
+// ═══════════════════════════════════════════════════════════
+function adRoleLabels(){
+  return {quality_auditor:'Quality Auditor',quality_officer:'Quality Officer',quality_leader:'Quality Leader',data_analyst:'Data Analyst',quality_admin:'Quality Admin'};
+}
+function adDefaults(role){
+  return ({
+    quality_admin:{canEdit:true,canDelete:true,canExport:true},
+    quality_leader:{canEdit:false,canDelete:false,canExport:true},
+    quality_officer:{canEdit:false,canDelete:false,canExport:true},
+    quality_auditor:{canEdit:true,canDelete:false,canExport:true},
+    data_analyst:{canEdit:false,canDelete:false,canExport:true},
+  })[role]||{canEdit:true,canDelete:false,canExport:true};
+}
+function adApplyDefaults(){
+  const d=adDefaults(document.getElementById('ad-role').value);
+  document.getElementById('ad-edit').checked=d.canEdit;
+  document.getElementById('ad-delete').checked=d.canDelete;
+  document.getElementById('ad-export').checked=d.canExport;
+}
+function initAdmin(){
+  if(adReady) return;
+  adReady=true;
+  const labels=adRoleLabels();
+  document.getElementById('ad-role-filter').innerHTML='<option value="">All roles</option>'+Object.entries(labels).map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  document.getElementById('ad-role').addEventListener('change',adApplyDefaults);
+  document.getElementById('ad-search').addEventListener('input',renderAdmin);
+  document.getElementById('ad-role-filter').addEventListener('change',renderAdmin);
+  document.getElementById('ad-form').addEventListener('submit',adCreate);
+  const rows=document.getElementById('ad-rows');
+  rows.addEventListener('change',e=>{
+    const sel=e.target.closest('select[data-role-for]');
+    if(sel) adPatch(sel.dataset.roleFor,{role:sel.value},`Role changed to ${labels[sel.value]}`);
+  });
+  rows.addEventListener('click',e=>{
+    const btn=e.target.closest('button[data-act]');
+    const u=btn&&adUsers.find(x=>x.id===btn.dataset.id);
+    if(!u) return;
+    const act=btn.dataset.act;
+    if(act==='perm') adPatch(u.id,{[btn.dataset.perm]:!u[btn.dataset.perm]},'Permissions updated');
+    else if(act==='status') adPatch(u.id,{status:u.status==='active'?'suspended':'active'},u.status==='active'?`${u.name} suspended`:`${u.name} reactivated`);
+    else if(act==='reset') adResetPassword(u);
+    else if(act==='delete') adDelete(u);
+  });
+}
+async function loadAdmin(){
+  initAdmin();
+  try{
+    const res=await fetch('/api/admin/users');
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error||'Could not load accounts.');
+    adUsers=data.users||[];
+    renderAdmin();
+  }catch(err){
+    document.getElementById('ad-rows').innerHTML=`<tr><td colspan="5" class="ov-empty">${ovEsc(err.message)}</td></tr>`;
+  }
+}
+function renderAdmin(){
+  const labels=adRoleLabels(), me=currentUser?.id;
+  const count=f=>adUsers.filter(f).length;
+  const tile=(icon,value,label)=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b>${value}</b><span>${label}</span></div>`;
+  document.getElementById('ad-stats').innerHTML=
+    tile('users',adUsers.length,'Accounts')+
+    tile('user-check',count(u=>u.status==='active'&&!u.mustChangePassword),'Active')+
+    tile('key-round',count(u=>u.mustChangePassword),'Pending setup')+
+    tile('user-x',count(u=>u.status!=='active'),'Suspended');
+  const term=document.getElementById('ad-search').value.trim().toLowerCase(), role=document.getElementById('ad-role-filter').value;
+  const list=adUsers.filter(u=>(!role||u.role===role)&&(!term||u.name.toLowerCase().includes(term)||u.username.toLowerCase().includes(term)));
+  const perm=(u,key,icon,label,self)=>`<button class="ad-perm${u[key]?' on':''}" data-act="perm" data-perm="${key}" data-id="${ovEsc(u.id)}"${self?' disabled':''} title="${self?'You cannot change your own permissions':`${u[key]?'Turn off':'Turn on'} ${label.toLowerCase()}`}"><svg data-lucide="${icon}" width="13" height="13"></svg>${label}</button>`;
+  document.getElementById('ad-rows').innerHTML=list.length?list.map(u=>{
+    const self=u.id===me;
+    const status=u.mustChangePassword?'<span class="ov-pill setup">Pending setup</span>':u.status==='active'?'<span class="ov-pill active">Active</span>':'<span class="ov-pill suspended">Suspended</span>';
+    return `<tr>
+      <td><b>${ovEsc(u.name)}</b><small>@${ovEsc(u.username)}${self?' · you':''}</small></td>
+      <td>${self?`<span class="ov-pill completed">${labels[u.role]||ovEsc(u.role)}</span>`
+        :`<select class="ad-role" data-role-for="${ovEsc(u.id)}" aria-label="Role for ${ovEsc(u.name)}">${Object.entries(labels).map(([v,l])=>`<option value="${v}"${v===u.role?' selected':''}>${l}</option>`).join('')}</select>`}</td>
+      <td>${status}</td>
+      <td style="white-space:nowrap">${perm(u,'canEdit','pencil','Edit',self)}${perm(u,'canDelete','trash-2','Delete',self)}${perm(u,'canExport','download','Export',self)}</td>
+      <td>${self?'<small style="color:var(--muted)">This is you</small>':`<div class="ad-actions">
+        <button class="ad-btn" data-act="status" data-id="${ovEsc(u.id)}">${u.status==='active'?'Suspend':'Reactivate'}</button>
+        <button class="ad-btn" data-act="reset" data-id="${ovEsc(u.id)}">Reset password</button>
+        <button class="ad-btn danger" data-act="delete" data-id="${ovEsc(u.id)}">Delete</button></div>`}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="5" class="ov-empty">No accounts match.</td></tr>';
+  lucide.createIcons();
+}
+async function adRequest(url,options,fallback){
+  const res=await fetch(url,options);
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error||fallback);
+  return data;
+}
+async function adPatch(id,body,done){
+  try{
+    await adRequest('/api/admin/users/'+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},'Could not update the account.');
+    showToast(done);
+  }catch(err){ showToast(err.message,true); }
+  await loadAdmin();
+}
+async function adResetPassword(u){
+  const pw=prompt(`New temporary password for ${u.name} (at least 8 characters):`);
+  if(!pw) return;
+  try{
+    await adRequest(`/api/admin/users/${encodeURIComponent(u.id)}/reset-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})},'Could not reset the password.');
+    showToast(`Password reset — ${u.name} must set a new one at next sign-in`);
+  }catch(err){ showToast(err.message,true); }
+  await loadAdmin();
+}
+async function adDelete(u){
+  if(!confirm(`Delete ${u.name}? This cannot be undone.`)) return;
+  try{
+    await adRequest('/api/admin/users/'+encodeURIComponent(u.id),{method:'DELETE'},'Could not delete the account.');
+    showToast(`${u.name} deleted`);
+  }catch(err){ showToast(err.message,true); }
+  await loadAdmin();
+}
+async function adCreate(e){
+  e.preventDefault();
+  const submit=document.getElementById('ad-submit'), msg=document.getElementById('ad-msg');
+  msg.hidden=true; submit.disabled=true;
+  try{
+    await adRequest('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      name:document.getElementById('ad-name').value.trim(),
+      username:document.getElementById('ad-username').value.trim(),
+      password:document.getElementById('ad-password').value,
+      role:document.getElementById('ad-role').value,
+      canEdit:document.getElementById('ad-edit').checked,
+      canDelete:document.getElementById('ad-delete').checked,
+      canExport:document.getElementById('ad-export').checked,
+    })},'Could not create the account.');
+    document.getElementById('ad-form').reset();
+    adApplyDefaults();
+    msg.textContent='Account created.'; msg.className='ad-msg ok'; msg.hidden=false;
+    await loadAdmin();
+  }catch(err){
+    msg.textContent=err.message; msg.className='ad-msg err'; msg.hidden=false;
+  }finally{
+    submit.disabled=false;
+  }
+}
+
 // ── Account: show signed-in user, apply permissions, wire logout ──
 (async()=>{
   try{
@@ -3451,25 +3828,34 @@ function exportRpDetail(){
     })[user.role]||user.role;
     const isAdmin=user.role==='quality_admin';
     const isOfficer=user.role==='quality_officer';
+    document.getElementById('home-name').textContent=displayName.split(/\s+/)[0];
     if(isAdmin) document.getElementById('admin-link').hidden=false;
-    if(isOfficer||isAdmin) document.getElementById('assign-link').hidden=false;
-    if(user.role==='quality_leader'||isAdmin) document.getElementById('overview-link').hidden=false;
     if(user.role==='quality_auditor'){ document.getElementById('my-assignments-link').hidden=false; initMyAssignments(); }
-    if(user.canEdit){
-      document.getElementById('new-insp-link').hidden=false;
-      document.getElementById('inspection-link').hidden=false;
+    if(user.canEdit) document.getElementById('inspection-link').hidden=false;
+    // Team: Overview for leaders, Assign & Track for officers, both (as tabs) for admins.
+    const teamPages=[
+      ...(user.role==='quality_leader'||isAdmin?['pg-overview']:[]),
+      ...(isOfficer||isAdmin?['pg-officer']:[]),
+    ];
+    if(teamPages.length){
+      const teamLink=document.getElementById('team-link');
+      teamLink.hidden=false;
+      if(!teamPages.includes(teamLink.dataset.page)) teamLink.dataset.page=teamPages[0];
+      renderTeamTabs(teamPages);
     }
+    renderHomeActions(user,teamPages);
     if(!user.canExport){ document.getElementById('export-csv-btn')?.remove(); document.querySelectorAll('.rp-export').forEach(b=>b.remove()); }
     if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
     document.body.classList.toggle('no-delete',!user.canDelete);
     document.body.classList.toggle('view-only',!user.canEdit);
-    renumberNav();
+    refreshNav();
     // Permissions arrive after the initial hash routing, so re-check where we landed.
     const landed=hashToPage(location.hash);
     if(!pageAllowed(landed)) nav('pg-home');
     else if(user.role==='quality_leader'&&!location.hash) nav('pg-overview');
     else if(user.role==='data_analyst'&&!location.hash) nav('pg-reports');
     else if(user.role==='quality_officer'&&!location.hash) nav('pg-officer');
+    else updateTopBar(document.querySelector('.page.active')?.id||landed);
   }catch{
     document.getElementById('acct-name').textContent='';
   }

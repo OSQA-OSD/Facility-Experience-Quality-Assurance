@@ -1134,10 +1134,10 @@ async function handleAssets(request, env, url) {
   if (isAppShell || isAdminShell || isAssignShell) {
     const user = await getUserFromRequest(request, env);
     if (!user) return Response.redirect(new URL('/login.html', url).toString(), 302);
-    if (isAdminShell && user.role !== ADMIN_ROLE) {
-      return Response.redirect(new URL('/app.html', url).toString(), 302);
+    // User management and assigning moved inside the app; keep old links working.
+    if (isAdminShell) {
+      return Response.redirect(new URL(user.role === ADMIN_ROLE ? '/app#pg-admin' : '/app', url).toString(), 302);
     }
-    // Assigning moved into the app (Assign & Track); keep old links working.
     if (isAssignShell) return Response.redirect(new URL('/app#pg-officer', url).toString(), 302);
   }
   return env.ASSETS.fetch(request);
