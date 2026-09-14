@@ -12,17 +12,19 @@
 <style>
 :root{
   --teal:#26A8AB;--teal-lt:#8CFEE3;--royal:#0033A0;--royal-dk:#002070;
-  --bg:#EEF3F7;--border:#C8D8E4;--text:#102040;--muted:#456080;
+  --bg:#F1F5F8;--border:#C8D8E4;--text:#102040;--muted:#456080;
   --good:#00843D;--warn:#D48000;--danger:#C0392B;
-  --sw:272px;--r:9px;--font:'Cairo',system-ui,sans-serif;
+  --sw:268px;--rail:76px;--r:12px;--font:'Cairo',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+button,input,select,textarea{-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid rgba(38,168,171,.5);outline-offset:2px}
 html{font-size:15px}
 body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;min-height:100vh}
 
 /* SIDEBAR */
-#sidebar{width:var(--sw);min-width:var(--sw);background:linear-gradient(180deg,var(--royal-dk) 0%,var(--royal) 40%,var(--teal) 100%);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:20}
-#sb-head{background:linear-gradient(160deg,#001555 0%,var(--royal) 100%);padding:18px 16px 14px;border-bottom:2px solid var(--teal)}
+#sidebar{width:var(--sw);min-width:var(--sw);background:linear-gradient(180deg,#001a5c 0%,#002b86 48%,#0d6c77 100%);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;height:100dvh;overflow-x:hidden;overflow-y:auto;z-index:40;transition:width .22s ease,min-width .22s ease,transform .25s ease}
+#sb-head{background:linear-gradient(160deg,#001555 0%,var(--royal) 100%);padding:18px 16px 14px;border-bottom:2px solid var(--teal);display:flex;align-items:center;justify-content:space-between;gap:10px}
 #sb-head .eyebrow{font-size:.62rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:4px}
 #sb-head h1{font-size:.92rem;font-weight:900;line-height:1.35;color:#fff}
 /* Grouped destinations with icons. A group whose items are all hidden for this account
@@ -50,6 +52,13 @@ body.view-only .hc-edit{display:none}
 .sb-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(160deg,var(--teal) 0%,var(--royal) 100%);border:1px solid rgba(140,254,227,.35);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
 .sb-logo svg{width:19px;height:19px}
+#nav-btn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--border);border-radius:10px;
+  background:#fff;color:var(--royal);cursor:pointer;transition:border-color .14s,background .14s}
+#nav-btn:hover{border-color:var(--teal);background:rgba(38,168,171,.07)}
+#nav-btn svg{width:18px;height:18px}
+#nav-close{display:none;width:34px;height:34px;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(255,255,255,.2);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;cursor:pointer}
+#nav-close svg{width:17px;height:17px}
+#nav-scrim{position:fixed;inset:0;background:rgba(0,16,50,.45);z-index:35;opacity:0;pointer-events:none;transition:opacity .2s}
 #sb-foot{padding:12px 12px 14px;border-top:1px solid rgba(255,255,255,.12);display:grid;gap:12px}
 #acct-row{display:flex;align-items:center;gap:9px;color:rgba(255,255,255,.82)}
 #acct-avatar{width:32px;height:32px;border-radius:50%;background:rgba(38,168,171,.3);border:1px solid rgba(140,254,227,.35);
@@ -91,8 +100,8 @@ body.view-only .hc-edit{display:none}
 .ss-item.active{border-color:var(--teal);background:rgba(38,168,171,.08);box-shadow:inset 3px 0 var(--teal)}
 .ss-item.active b{color:var(--royal)}
 /* MAIN */
-#main{flex:1;min-width:0;height:100vh;overflow-y:auto}
-#pbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.97);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(38,168,171,.35);
+#main{flex:1;min-width:0;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(135deg,#F7FAFB 0%,var(--bg) 52%,#F4F8F9 100%)}
+#pbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(38,168,171,.35);
   padding:8px 28px;display:flex;align-items:center;gap:14px;min-height:54px}
 #pb-title{display:flex;align-items:center;gap:10px;min-width:0;color:var(--royal);font-weight:800;font-size:.9rem;white-space:nowrap}
 #pb-ic{width:30px;height:30px;border-radius:8px;background:linear-gradient(160deg,var(--royal),var(--teal));color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -259,7 +268,7 @@ body.view-only .hc-edit{display:none}
 #home-stats{padding:24px 44px 4px;background:var(--bg);display:grid;
   grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
 .hs-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;
-  transition:transform .15s,box-shadow .15s}
+  box-shadow:0 1px 2px rgba(16,32,64,.04);transition:transform .15s,box-shadow .15s}
 .hs-card:hover{transform:translateY(-3px);box-shadow:0 16px 32px -18px rgba(0,32,112,.3)}
 .hs-ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);
   display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:12px}
@@ -275,7 +284,7 @@ body.view-only .hc-edit{display:none}
 .ov-stats{padding:16px 44px 4px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
 .ov-section{padding:22px 44px 0}
 .ov-grid2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start}
-.ov-panel{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+.ov-panel{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px;box-shadow:0 1px 2px rgba(16,32,64,.04),0 8px 24px -20px rgba(0,32,112,.18)}
 .ov-panel-hd{padding:13px 18px;border-bottom:1px solid var(--bg);font-size:.8rem;font-weight:800;color:var(--royal);
   display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .ov-panel-hd small{font-size:.7rem;color:var(--muted);font-weight:600}
@@ -309,7 +318,8 @@ body.view-only .hc-edit{display:none}
 .ov-tools input,.ov-tools select{border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-size:.76rem;
   font-family:var(--font);color:var(--text);background:#fff;outline:none}
 .ov-tools input:focus,.ov-tools select:focus{border-color:var(--teal)}
-@media(max-width:1180px){.ov-grid2{grid-template-columns:1fr}}
+@media(max-width:1180px){.ov-grid2{grid-template-columns:minmax(0,1fr)}}
+.ov-grid2>*{min-width:0}
 @media(max-width:780px){#pg-overview .ov-filters,.ov-stats,.ov-section{padding-left:14px;padding-right:14px}}
 
 /* Auditor profile (My Assignments for auditors; profile for managers) */
@@ -625,31 +635,103 @@ body.no-delete .hc-del{display:none}
 .hd-photos{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
 .hd-photos img{width:50px;height:50px;object-fit:cover;border-radius:5px;border:1.5px solid var(--teal);cursor:pointer}
 
+/* ── Navigation modes ─────────────────────────────────────
+   Laptop/desktop (≥1200px): full menu by default, can shrink to an icon rail.
+   iPad landscape & small laptops (901–1199px): icon rail by default, can expand.
+   Phone & iPad portrait (≤900px): the menu is a slide-in panel opened from the top bar.
+   The choice on larger screens is remembered per browser. */
+body.nav-rail #sidebar{width:var(--rail);min-width:var(--rail)}
+body.nav-rail #sb-head{padding:16px 0;justify-content:center}
+body.nav-rail .sb-brand>div,
+body.nav-rail .nav-label,
+body.nav-rail .ni-txt,
+body.nav-rail .ni .ns,
+body.nav-rail .acct-meta,
+body.nav-rail #acct-logout,
+body.nav-rail #acct-settings{display:none}
+body.nav-rail #sb-nav{padding:14px 0;justify-items:center}
+body.nav-rail .nav-group{width:100%;justify-items:center;gap:6px}
+body.nav-rail .nav-group+.nav-group{border-top:1px solid rgba(255,255,255,.1);padding-top:12px}
+body.nav-rail .ni{width:48px;height:44px;padding:0;justify-content:center;gap:0;position:relative}
+body.nav-rail .ni.active{box-shadow:inset 0 0 0 1px rgba(140,254,227,.4)}
+body.nav-rail .ni .ns:not(:empty){display:none}
+body.nav-rail #sb-foot{padding:12px 0;justify-items:center}
+body.nav-rail #acct-row{justify-content:center}
+
+@media(max-width:900px){
+  #sidebar{position:fixed;left:0;top:0;bottom:0;width:min(300px,86vw);min-width:0;transform:translateX(-105%);box-shadow:none}
+  body.nav-rail #sidebar{width:min(300px,86vw);min-width:0}
+  body.nav-open #sidebar{transform:none;box-shadow:24px 0 60px -20px rgba(0,0,0,.5)}
+  body.nav-open #nav-scrim{opacity:1;pointer-events:auto}
+  #nav-close{display:inline-flex}
+  #sb-head{justify-content:space-between}
+  body.nav-rail #sb-head{padding:18px 16px 14px;justify-content:space-between}
+  body.nav-rail .sb-brand>div,body.nav-rail .nav-label,body.nav-rail .ni-txt,body.nav-rail .acct-meta,body.nav-rail #acct-logout,body.nav-rail #acct-settings{display:revert}
+  body.nav-rail .ni-txt{display:inline}
+  body.nav-rail .ni .ns{display:inline-block}
+  body.nav-rail #sb-nav{padding:14px 10px;justify-items:stretch}
+  body.nav-rail .nav-group{justify-items:stretch}
+  body.nav-rail .nav-group+.nav-group{border-top:none;padding-top:0}
+  body.nav-rail .ni{width:auto;height:auto;padding:11px 12px;justify-content:flex-start;gap:11px}
+  body.nav-rail #sb-foot{padding:12px 12px 14px;justify-items:stretch}
+  body.nav-rail #acct-row{justify-content:flex-start}
+  .ni{padding:11px 12px;font-size:.86rem}
+}
 @media(max-width:780px){
-  body{flex-direction:column}
-  #sidebar{width:100%;min-width:0;height:auto;position:static}
-  #main{height:auto;overflow:visible}
-  #sb-head{padding:12px 14px 10px}
-  #sb-nav{display:flex;overflow-x:auto;padding:6px 8px;gap:4px}
-  .nav-group{display:flex;gap:4px}
-  .nav-group[hidden]{display:none}
-  .nav-label{display:none}
-  .ni{font-size:.72rem;padding:7px 10px;gap:6px;white-space:nowrap}
-  .ni svg{width:15px;height:15px}
-  .ni.active{box-shadow:inset 0 -2px var(--teal-lt)}
-  #pbar{padding:8px 14px;flex-wrap:wrap;gap:8px}
+  #pbar{padding:8px 12px;flex-wrap:wrap;gap:8px}
   .pb-step{font-size:0;padding:3px}
   .pb-step i{font-size:.68rem}
   .pb-step small{display:none}
   #pb-progress{order:5;max-width:none;flex-basis:100%}
-  #sb-foot{padding:8px 12px}
+  #sync-chip{font-size:0;padding:0;width:10px;height:10px;flex:0 0 10px;border-radius:50%;overflow:hidden;text-indent:-999px}
+  #sync-chip>*{display:none}
+  #sync-chip.ok{background:var(--good)}#sync-chip.syncing{background:var(--warn)}#sync-chip.err{background:var(--danger)}
   #insp-layout.on{display:block}
-  #insp-layout.on #sec-switch{position:static;padding:14px 13px 0}
+  #insp-layout.on #sec-switch{position:static;padding:14px 13px 0;max-height:none}
   #ss-list{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px}
   .ss-item{flex:0 0 auto;width:auto;max-width:190px}
-  #acct-row{padding:2px}
-  .home-hero{padding:26px 18px}
+  .home-hero{padding:24px 16px}
   #history-section{padding:14px 16px}
+}
+
+@media (min-width:901px) and (max-width:1199px){
+  #pbar{padding-left:20px;padding-right:20px}
+  .home-hero{padding-left:30px;padding-right:30px}
+  #home-actions,.rp-panel-wrap,.rp-bands,#history-section{padding-left:30px;padding-right:30px}
+  .ov-section{padding-left:30px;padding-right:30px}
+}
+@media(max-width:780px){
+  #pbar{box-shadow:0 2px 12px rgba(0,32,112,.08)}
+  .page-tabs{margin-top:14px}
+  .hist-card{align-items:flex-start;padding:12px;gap:10px}
+  .hc-score{min-width:48px;height:48px;font-size:1rem}
+  .hc-grade{display:none}
+  .ov-tools{width:100%;justify-content:space-between}
+  .ov-tools .rp-chips{max-width:100%;overflow-x:auto;flex-wrap:nowrap}
+  .rp-filters{grid-template-columns:1fr}
+  .rp-filters label{font-size:.66rem}
+  .rp-bar{align-items:flex-start}
+  .rp-chips{overflow-x:auto;max-width:100%;flex-wrap:nowrap;scrollbar-width:none}
+  .rp-chip{flex:0 0 auto}
+}
+@media(max-width:480px){
+  html{font-size:14px}
+  .home-hero{padding:22px 14px}
+  .home-hero h2{font-size:1.42rem}
+  #home-actions,.rp-panel-wrap,.rp-bands,#history-section{padding-left:12px;padding-right:12px}
+  .ov-section{padding-left:12px;padding-right:12px}
+  .hist-filters select,.hist-filters input{width:100%;min-width:0}
+  .app-toast{right:12px;bottom:12px;left:12px;max-width:none}
+  #hd-modal{padding:10px}#hd-inner{padding:18px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+@media(pointer:coarse){
+  #nav-btn{width:42px;height:42px}
+  .ni{min-height:44px}
+  .btn{min-height:42px}
+  .rp-chip,.page-tab{min-height:38px}
+  .rp-filters select,.rp-filters input,.hist-filters select,.hist-filters input{min-height:40px}
+  .of-sel{min-height:40px}
 }
 
 
@@ -738,6 +820,7 @@ body.no-delete .hc-del{display:none}
         <h1>Quality Assurance</h1>
       </div>
     </div>
+    <button type="button" id="nav-close" aria-label="Close menu" title="Close menu"><svg data-lucide="x" width="17" height="17"></svg></button>
   </div>
   <nav id="sb-nav">
     <div class="nav-group">
@@ -766,9 +849,12 @@ body.no-delete .hc-del{display:none}
   </div>
 </aside>
 
+<div id="nav-scrim"></div>
+
 <!-- MAIN -->
 <main id="main">
   <div id="pbar">
+    <button type="button" id="nav-btn" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse menu" title="Collapse menu"><svg data-lucide="panel-left-close" width="18" height="18"></svg></button>
     <div id="pb-title"><span id="pb-ic"></span><span id="pb-name">Home</span><span id="pb-sub"></span></div>
     <div class="pb-steps" id="pb-steps" hidden>
       <button class="pb-step" data-step="pg-new"><i>1</i>Details</button>
@@ -850,7 +936,7 @@ body.no-delete .hc-del{display:none}
         </div>
       </div>
       <div class="hist-filters">
-        <select id="hf-insp" onchange="renderHistory()"><option value="">All Inspectors</option></select>
+        <select id="hf-insp" onchange="renderHistory()"><option value="">All Auditors</option></select>
         <select id="hf-month" onchange="renderHistory()"><option value="">All Months</option></select>
         <select id="hf-div" onchange="renderHistory()"><option value="">All Divisions</option>
           <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
@@ -881,7 +967,7 @@ body.no-delete .hc-del{display:none}
       <div class="ov-panel">
         <div class="ov-panel-hd">Details <small id="in-mode">New inspection</small></div>
         <div class="in-grid">
-          <label>Inspector<div class="in-static" id="in-inspector">–</div></label>
+          <label>Auditor<div class="in-static" id="in-inspector">–</div></label>
           <label>Date<input type="date" id="meta-date"></label>
           <label class="in-wide">Building
             <input id="meta-facility" list="in-buildings" placeholder="Start typing to search the buildings list…" autocomplete="off">
@@ -1307,11 +1393,11 @@ body.no-delete .hc-del{display:none}
           <label>Division<select id="rp-division"><option value="">All divisions</option></select></label>
           <label>Area<select id="rp-area"><option value="">All areas</option></select></label>
           <label>Building<select id="rp-building"><option value="">All buildings</option></select></label>
-          <label>Inspector<select id="rp-inspector"><option value="">All inspectors</option></select></label>
+          <label>Auditor<select id="rp-inspector"><option value="">All auditors</option></select></label>
           <label>Rating<select id="rp-rating"><option value="">All ratings</option><option>Excellent</option><option>Good</option><option>Acceptable</option><option>Poor</option><option>Critical</option></select></label>
           <label>From<input type="date" id="rp-from"></label>
           <label>To<input type="date" id="rp-to"></label>
-          <label>Search<input type="text" id="rp-search" placeholder="Building or inspector…"></label>
+          <label>Search<input type="text" id="rp-search" placeholder="Building or auditor…"></label>
         </div>
         <div class="rp-bar">
           <span class="rp-lbl">Group by</span>
@@ -1321,7 +1407,7 @@ body.no-delete .hc-del{display:none}
             <button class="rp-chip" data-group="building">Building</button>
             <button class="rp-chip" data-group="quarter">Quarter</button>
             <button class="rp-chip" data-group="month">Month</button>
-            <button class="rp-chip" data-group="inspector">Inspector</button>
+            <button class="rp-chip" data-group="inspector">Auditor</button>
             <button class="rp-chip" data-group="type">Type</button>
           </div>
           <span class="rp-count" id="rp-count"></span>
@@ -1400,7 +1486,7 @@ body.no-delete .hc-del{display:none}
       </div>
       <div class="ov-panel">
         <div class="ov-scroll"><table class="ov-table">
-          <thead><tr><th>Date</th><th>Building</th><th>Division / Area</th><th>Type</th><th>Inspector</th><th>Score</th><th>Rating</th></tr></thead>
+          <thead><tr><th>Date</th><th>Building</th><th>Division / Area</th><th>Type</th><th>Auditor</th><th>Score</th><th>Rating</th></tr></thead>
           <tbody id="rp-detail-rows"></tbody>
         </table></div>
         <button class="btn bo rp-more" id="rp-more" hidden>Show more</button>
@@ -1645,7 +1731,7 @@ const RP_GROUPS = {
     drill:k=>{ document.getElementById('rp-building').value=k; }},
   quarter:  {label:'Quarter', time:true, key:x=>x.quarter||'No date'},
   month:    {label:'Month', time:true, key:x=>(x.date||'').slice(0,7)||'No date'},
-  inspector:{label:'Inspector', key:x=>x.inspector||'Unknown',
+  inspector:{label:'Auditor', key:x=>x.inspector||'Unknown',
     drill:k=>{ document.getElementById('rp-inspector').value=k; }},
   type:     {label:'Type', key:x=>x.type||'Unknown',
     drill:k=>{ document.getElementById('rp-type').value=k; }},
@@ -1923,6 +2009,64 @@ window.addEventListener('hashchange',()=>{
   if(!document.getElementById(pid).classList.contains('active')) nav(pid);
 });
 
+// ── Responsive navigation ─────────────────────────────────
+// ≥1200px: full menu (or the icon rail if the person collapsed it). 901–1199px: icon rail unless expanded.
+// ≤900px: slide-in panel. The larger-screen choice is remembered in this browser only.
+const drawerQuery=window.matchMedia('(max-width:900px)');
+const railQuery=window.matchMedia('(max-width:1199px)');
+let navPref=null;
+try{ navPref=localStorage.getItem('qa-nav'); }catch{}
+function navIcon(name){
+  const btn=document.getElementById('nav-btn');
+  btn.innerHTML=`<svg data-lucide="${name}" width="18" height="18"></svg>`;
+  lucide.createIcons({nodes:[btn]});
+}
+function applyNavMode(){
+  const btn=document.getElementById('nav-btn');
+  const sidebar=document.getElementById('sidebar');
+  if(drawerQuery.matches){
+    document.body.classList.remove('nav-rail');
+    const open=document.body.classList.contains('nav-open');
+    sidebar.inert=!open;   // a closed panel is off-screen, so keep it out of keyboard and screen-reader reach
+    btn.setAttribute('aria-expanded',String(open));
+    btn.setAttribute('aria-label',open?'Close menu':'Open menu'); btn.title=btn.getAttribute('aria-label');
+    navIcon('menu');
+    return;
+  }
+  document.body.classList.remove('nav-open');
+  sidebar.inert=false;
+  const rail=navPref?navPref==='rail':railQuery.matches;
+  document.body.classList.toggle('nav-rail',rail);
+  btn.setAttribute('aria-expanded',String(!rail));
+  btn.setAttribute('aria-label',rail?'Expand menu':'Collapse menu'); btn.title=btn.getAttribute('aria-label');
+  navIcon(rail?'panel-left-open':'panel-left-close');
+}
+function setDrawer(open){
+  document.body.classList.toggle('nav-open',open);
+  applyNavMode();
+  if(open) document.querySelector('#sb-nav .ni.active,#sb-nav .ni:not([hidden])')?.focus({preventScroll:true});
+}
+document.getElementById('nav-btn').addEventListener('click',()=>{
+  if(drawerQuery.matches){ setDrawer(!document.body.classList.contains('nav-open')); return; }
+  navPref=document.body.classList.contains('nav-rail')?'full':'rail';
+  try{ localStorage.setItem('qa-nav',navPref); }catch{}
+  applyNavMode();
+});
+document.getElementById('nav-close').addEventListener('click',()=>{ setDrawer(false); document.getElementById('nav-btn').focus(); });
+document.getElementById('nav-scrim').addEventListener('click',()=>setDrawer(false));
+document.querySelectorAll('#sb-nav .ni').forEach(link=>{
+  const label=link.querySelector('.ni-txt')?.textContent.trim();
+  if(label){ link.title=label; link.setAttribute('aria-label',label); }
+  link.setAttribute('tabindex','0'); link.setAttribute('role','link');
+  link.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); link.click(); } });
+  link.addEventListener('click',()=>{ if(drawerQuery.matches) setDrawer(false); });
+});
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.body.classList.contains('nav-open')){ setDrawer(false); document.getElementById('nav-btn').focus(); }
+});
+[drawerQuery,railQuery].forEach(q=>q.addEventListener?q.addEventListener('change',applyNavMode):q.addListener(applyNavMode));
+applyNavMode();
+
 // ═══════════════════════════════════════════════════════════
 // SYNC FORM ↔ STATE
 // ═══════════════════════════════════════════════════════════
@@ -2089,7 +2233,7 @@ function updateScoreCard(){
   document.getElementById('sc-total').textContent=started?overall:'–';
   document.getElementById('sc-grade').textContent=started?og.label:'Not started';
   const tv=document.getElementById('meta-type').value;
-  const fields=[['Inspector',activeInspector],['Building',document.getElementById('meta-facility').value],['Division',document.getElementById('meta-division').value],
+  const fields=[['Auditor',activeInspector],['Building',document.getElementById('meta-facility').value],['Division',document.getElementById('meta-division').value],
     ['Date',document.getElementById('meta-date').value],['Type',tv==='Follow-up'?'Follow-up':tv]];
   document.getElementById('sc-header-grid').innerHTML=fields
     .map(([l,v])=>`<div class="sc-hf"><span class="sc-hl">${l}</span><span class="sc-hv">${ovEsc(v||'—')}</span></div>`).join('');
@@ -2237,14 +2381,14 @@ function openLB(src){document.getElementById('lb-img').src=src;document.getEleme
 function closeLB(){document.getElementById('lb').classList.remove('open');}
 
 // ═══════════════════════════════════════════════════════════
-// INSPECTORS
+// AUDITORS (the stored field remains `inspector` for backwards compatibility)
 // ═══════════════════════════════════════════════════════════
 function rebuildInspectorDropdown(){
   const sel=document.getElementById('meta-inspector');
   sel.innerHTML=`<option value="${ovEsc(activeInspector)}">${ovEsc(activeInspector)}</option>`;
   sel.value=activeInspector;
 }
-/** Shows who the inspection is recorded under, and lists inspectors found in the history filter. */
+/** Shows who the inspection is recorded under, and lists auditors found in the history filter. */
 function renderInspectorChips(){
   const el=document.getElementById('in-inspector');
   if(el) el.innerHTML=activeInspector
@@ -2252,7 +2396,7 @@ function renderInspectorChips(){
     :'Signing in…';
   const hfI=document.getElementById('hf-insp'), cur=hfI.value;
   const names=[...new Set(history.map(r=>r.inspector).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  hfI.innerHTML='<option value="">All Inspectors</option>'+names.map(n=>`<option value="${ovEsc(n)}">${ovEsc(n)}</option>`).join('');
+  hfI.innerHTML='<option value="">All Auditors</option>'+names.map(n=>`<option value="${ovEsc(n)}">${ovEsc(n)}</option>`).join('');
   hfI.value=names.includes(cur)?cur:'';
 }
 function useAccountInspector(){
@@ -2383,7 +2527,7 @@ function buildFilenameFrom(typeVal, date, facility, division, inspector){
   const tl=typeVal==='BOQI'?'BOQI':typeVal==='EOQI'?'EOQI':typeVal==='Follow-up'?'Follow-up':'Inspection';
   const b=(facility||'Building').replace(/\s+/g,'-');
   const d=(division||'').replace(/\s+/g,'-');
-  const i=(inspector||'Inspector').replace(/\s+/g,'-');
+  const i=(inspector||'Auditor').replace(/\s+/g,'-');
   return [month,tl,b,d,i].filter(Boolean).join('_')+'.pdf';
 }
 
@@ -2619,7 +2763,7 @@ function printInspectionReport(report){
   const value=v=>reportPrintEsc(v||'—');
   const journeyMapUrl=new URL('/journey-map-QA-2026-Q3-EOQ-009.svg',location.origin).href;
   const coverFacts=[
-    ['Inspector',report.inspector],['Facility',report.facility],['Division',report.division],
+    ['Auditor',report.inspector],['Facility',report.facility],['Division',report.division],
     ['Inspection date',report.date],['Inspection type',report.typeLabel]
   ].map(([label,item])=>`<div class="cover-fact"><span>${label}</span><strong>${value(item)}</strong></div>`).join('');
 
@@ -2646,7 +2790,7 @@ function printInspectionReport(report){
     }).join('');
     return `<section class="report-section">
       <div class="section-head" style="--tone:${tone.color};--soft:${tone.soft}"><div><span class="section-kicker">Journey touchpoint</span><h2>${value(section.title)}</h2></div><div class="section-total"><b>${score}<small>/${max}</small></b><span>${tone.label}</span></div></div>
-      <table class="detail-table"><thead><tr><th>Inspection item</th><th>Score</th><th>Observations & evidence</th></tr></thead><tbody>${rows}</tbody>${section.notes?`<tfoot><tr><td colspan="3"><b>Inspector note</b><span>${value(section.notes)}</span></td></tr></tfoot>`:''}</table>
+      <table class="detail-table"><thead><tr><th>Inspection item</th><th>Score</th><th>Observations & evidence</th></tr></thead><tbody>${rows}</tbody>${section.notes?`<tfoot><tr><td colspan="3"><b>Auditor note</b><span>${value(section.notes)}</span></td></tr></tfoot>`:''}</table>
     </section>`;
   }).join('');
   const filename=value(report.filename||'inspection-report.pdf');
@@ -2691,7 +2835,7 @@ function printInspectionReport(report){
       <div class="cover-content"><div class="cover-facts">${coverFacts}</div><div class="score-orb" style="--tone:${overallTone.color};--soft:${overallTone.soft}"><b>${overall}</b><small>/100</small><span>${overallTone.label}</span></div></div>
       <div class="cover-footer"><span>Facility Experience Quality Assurance</span><span>Generated ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span></div>
     </section>
-    <main class="page content-page"><div class="page-title"><div><p>Inspection overview</p><h2>Journey Map Score Card</h2></div><span class="report-score"><b>${overall}</b> / 100</span></div><div class="summary-grid"><section class="summary-card"><h3>Touchpoint performance</h3><table class="score-table"><tbody>${scoreRows}</tbody></table></section><aside class="action-note"><i></i><h3>Focus for improvement</h3><p>Address any item marked below the expected level, record the corrective action, and confirm the improvement at the next inspection.</p></aside></div><div class="page-title"><div><p>Evidence & observations</p><h2>Detailed Inspection</h2></div></div>${detailSections}<div class="signature"><span>Inspector signature</span><b>${value(report.inspector)}</b></div></main>
+    <main class="page content-page"><div class="page-title"><div><p>Inspection overview</p><h2>Journey Map Score Card</h2></div><span class="report-score"><b>${overall}</b> / 100</span></div><div class="summary-grid"><section class="summary-card"><h3>Touchpoint performance</h3><table class="score-table"><tbody>${scoreRows}</tbody></table></section><aside class="action-note"><i></i><h3>Focus for improvement</h3><p>Address any item marked below the expected level, record the corrective action, and confirm the improvement at the next inspection.</p></aside></div><div class="page-title"><div><p>Evidence & observations</p><h2>Detailed Inspection</h2></div></div>${detailSections}<div class="signature"><span>Auditor signature</span><b>${value(report.inspector)}</b></div></main>
     <section class="page journey-page"><header class="journey-header"><p>Reference at the end of report</p><h2>Facility Experience Journey Map</h2><span>Visual reference for the inspection journey and its touchpoints.</span></header><div class="journey-frame"><img id="journey-map" src="${reportPrintEsc(journeyMapUrl)}" alt="Facility Experience Journey Map"></div><footer class="journey-footer"><span>Facility Experience Quality Assurance</span><span>Journey map reference</span></footer></section>
     <script>document.title=${JSON.stringify(report.filename||'inspection-report.pdf')};window.addEventListener('load',function(){setTimeout(function(){window.print();},240);});<\/script>
     </body></html>`);
@@ -2786,7 +2930,7 @@ function exportHistoryPDF(e,id){
     <h1 style="font-size:19px;font-weight:900;margin:0 0 4px">Quality Assurance Check List</h1>
     <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0 0 20px">Quality assurance inspection of end-to-end facility user experience.</p>
     <table style="width:100%;border-collapse:collapse"><tr>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Inspector</div><div style="font-size:12px;font-weight:800">${inspector}</div></td>
+      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Auditor</div><div style="font-size:12px;font-weight:800">${inspector}</div></td>
       <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Facility</div><div style="font-size:12px;font-weight:800">${facility}</div></td>
       <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Division</div><div style="font-size:12px;font-weight:800">${division}</div></td>
       <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Date</div><div style="font-size:12px;font-weight:800">${date}</div></td>
@@ -2816,7 +2960,7 @@ function exportHistoryPDF(e,id){
   <h2 style="font-size:14px;font-weight:900;color:#0033A0;margin-bottom:14px">Detailed Inspection Report</h2>
   ${sectHtml}
   <div style="margin-top:36px;border-top:2px solid #0033A0;padding-top:14px;display:flex;justify-content:flex-start">
-    <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.1em">Inspector Signature</div>
+    <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.1em">Auditor Signature</div>
       <div style="width:180px;border-bottom:1.5px solid #0033A0;margin-top:28px"></div>
       <div style="font-size:10px;color:#456080;margin-top:4px">${inspector}</div></div>
 
@@ -2851,7 +2995,7 @@ function showHistDetail(r){
   const g=grade(r.overall);
   const ds=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'–';
   document.getElementById('hd-title').textContent=`${r.facility}${r.division?' — '+r.division:''} · ${r.overall}/100 (${g.label})`;
-  document.getElementById('hd-meta').textContent=`Inspector: ${r.inspector} · ${ds} · ${r.typeLabel||r.type||'–'}`;
+  document.getElementById('hd-meta').textContent=`Auditor: ${r.inspector} · ${ds} · ${r.typeLabel||r.type||'–'}`;
   const body=document.getElementById('hd-body');body.innerHTML='';
   (r.sections||[]).forEach(sec=>{
     const pct=Math.round(sec.score/sec.max*100);const sg=grade(pct);
@@ -3025,7 +3169,7 @@ function exportPDF(){
     <h1 style="font-size:19px;font-weight:900;margin:0 0 4px">Quality Assurance Check List</h1>
     <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0 0 20px">Quality assurance inspection of end-to-end facility user experience.</p>
     <table style="width:100%;border-collapse:collapse"><tr>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Inspector</div><div style="font-size:12px;font-weight:800">${inspector}</div></td>
+      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Auditor</div><div style="font-size:12px;font-weight:800">${inspector}</div></td>
       <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Facility</div><div style="font-size:12px;font-weight:800">${facility}</div></td>
       <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Division</div><div style="font-size:12px;font-weight:800">${division}</div></td>
       <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Date</div><div style="font-size:12px;font-weight:800">${date}</div></td>
@@ -3055,7 +3199,7 @@ function exportPDF(){
   <h2 style="font-size:14px;font-weight:900;color:#0033A0;margin-bottom:14px">Detailed Inspection Report</h2>
   ${sectHtml}
   <div style="margin-top:36px;border-top:2px solid #0033A0;padding-top:14px;display:flex;justify-content:flex-start">
-    <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.1em">Inspector Signature</div>
+    <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.1em">Auditor Signature</div>
       <div style="width:180px;border-bottom:1.5px solid #0033A0;margin-top:28px"></div>
       <div style="font-size:10px;color:#456080;margin-top:4px">${inspector}</div></div>
 
@@ -3438,7 +3582,7 @@ function auViewReport(id){
   if(r) showHistDetail(r);
   else showToast('That report is still loading — try again in a moment.',true);
 }
-/** Opens Reports filtered to one inspector (everything else cleared). */
+/** Opens Reports filtered to one auditor (everything else cleared). */
 function openReportsForInspector(name){
   try{ localStorage.setItem('rp-state',JSON.stringify({filters:{'rp-inspector':name},group:'quarter',sort:'newest'})); }catch{}
   if(rpData){
@@ -4241,7 +4385,7 @@ async function loadReports(){
     const months=[...new Set(rpData.inspections.map(x=>x.date.slice(0,7)).filter(m=>/^\d{4}-\d{2}$/.test(m)))].sort().reverse();
     rpSelect('rp-month',months,'All months');
     [...document.getElementById('rp-month').options].forEach(o=>{ if(o.value) o.textContent=rpMonthLabel(o.value); });
-    rpSelect('rp-inspector',[...new Set(rpData.inspections.map(x=>x.inspector).filter(Boolean))].sort((a,b)=>a.localeCompare(b)),'All inspectors');
+    rpSelect('rp-inspector',[...new Set(rpData.inspections.map(x=>x.inspector).filter(Boolean))].sort((a,b)=>a.localeCompare(b)),'All auditors');
     rpCascade();
     if(first){ rpRestore(); rpCascade(); }
     renderReports();
@@ -4469,7 +4613,7 @@ function exportRpSummary(){
 function exportRpDetail(){
   if(!rpData) return;
   const titles=SECTIONS.map(s=>s.title);
-  const rows=[['Date','Quarter','Type','Building','Location','Division','Area','Inspector','Score','Rating',...titles.map(t=>`${t} (/10)`)]];
+  const rows=[['Date','Quarter','Type','Building','Location','Division','Area','Auditor','Score','Rating',...titles.map(t=>`${t} (/10)`)]];
   rpSorted(rpFilter()).forEach(x=>{
     const sec=new Map(x.sections.map(s=>[s.title,s.score==null?null:rpRound(s.score/s.max*10)]));
     rows.push([x.date,x.quarter,x.type,x.building,x.location,x.division,x.area,x.inspector,x.overall,rpBandOf(x),...titles.map(t=>sec.get(t)??null)]);
