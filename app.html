@@ -144,33 +144,70 @@ body.view-only .hc-edit{display:none}
 .qa-card .qa-go{width:16px;height:16px;color:var(--muted);flex-shrink:0}
 /* Admin Control */
 #pg-admin{background:var(--bg);padding-bottom:40px}
+#pg-admin [hidden]{display:none!important}
+#ad-stats .hs-card.clickable{cursor:pointer}
 .ad-form{padding:18px}
 .ad-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
 .ad-grid label{display:grid;gap:5px;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .ad-grid input,.ad-grid select{border:1.5px solid var(--border);border-radius:7px;padding:8px 10px;font-size:.84rem;font-family:var(--font);color:var(--text);
   background:#fff;outline:none;text-transform:none;letter-spacing:0;font-weight:600;min-width:0}
 .ad-grid input:focus,.ad-grid select:focus{border-color:var(--teal)}
-.ad-perms{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
-.ad-perms label{display:flex;align-items:center;gap:7px;font-size:.8rem;font-weight:700;cursor:pointer}
-.ad-perms input{width:16px;height:16px;accent-color:var(--teal)}
 .ad-msg{margin-top:12px;padding:9px 12px;border-radius:8px;font-size:.78rem;font-weight:700}
-.ad-msg[hidden]{display:none}
 .ad-msg.ok{background:rgba(0,132,61,.1);color:var(--good)}
 .ad-msg.err{background:rgba(192,57,43,.1);color:var(--danger)}
-.ad-role{border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;font-family:var(--font);font-size:.76rem;background:#fff;color:var(--text)}
-.ad-perm{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);background:#fff;color:var(--muted);border-radius:999px;
-  padding:3px 10px 3px 7px;font-family:var(--font);font-size:.7rem;font-weight:700;cursor:pointer;margin:0 4px 4px 0}
-.ad-perm svg{width:13px;height:13px}
-.ad-perm.on{background:rgba(38,168,171,.12);border-color:rgba(38,168,171,.45);color:#0c7b7d}
-.ad-perm:disabled{cursor:default}
-.ad-actions{display:flex;gap:6px;flex-wrap:wrap}
+.ad-role{border:1.5px solid var(--border);border-radius:7px;padding:6px 8px;font-family:var(--font);font-size:.8rem;background:#fff;color:var(--text)}
 .ad-btn{border:1px solid var(--border);background:#fff;color:var(--royal);border-radius:7px;padding:5px 10px;font-family:var(--font);font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap}
 .ad-btn:hover{border-color:var(--royal)}
+.ad-btn:disabled{opacity:.45;cursor:not-allowed}
 .ad-btn.danger{color:var(--danger);border-color:rgba(192,57,43,.3)}
-.ad-btn.danger:hover{background:rgba(192,57,43,.07)}
+.ad-btn.danger:hover:not(:disabled){background:rgba(192,57,43,.07)}
 .ov-pill.active{background:rgba(0,132,61,.1);color:var(--good)}
 .ov-pill.suspended{background:rgba(192,57,43,.1);color:var(--danger)}
 .ov-pill.setup{background:rgba(212,128,0,.12);color:var(--warn)}
+.ad-who{display:flex;align-items:center;gap:10px}
+.ad-who i{width:32px;height:32px;border-radius:50%;background:linear-gradient(160deg,var(--royal),var(--teal));color:#fff;font-style:normal;font-size:.68rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ad-pcount{font-weight:800;font-size:.78rem;color:var(--royal)}
+.ad-pcount.all{color:var(--good)}
+.ad-custom{display:inline-block;margin-left:6px;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:rgba(38,168,171,.14);color:#0c7b7d;padding:1px 7px;border-radius:999px;vertical-align:2px}
+.ad-online{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:800;color:var(--good);margin-right:6px}
+.ad-online::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--good)}
+.ad-pgroup{margin-bottom:10px}
+.ad-pgroup>span{display:block;font-size:.6rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:6px 0 2px}
+.ad-switch{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--bg);cursor:pointer;text-transform:none;letter-spacing:0}
+.ad-switch input{appearance:none;-webkit-appearance:none;width:36px;height:20px;border-radius:999px;background:var(--border);position:relative;flex-shrink:0;cursor:pointer;transition:background .15s;margin:1px 0 0}
+.ad-switch input::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.ad-switch input:checked{background:var(--teal)}
+.ad-switch input:checked::after{transform:translateX(16px)}
+.ad-switch input:disabled{opacity:.55;cursor:not-allowed}
+.ad-switch b{display:block;font-size:.82rem;color:var(--text)}
+.ad-switch b em{font-style:normal;font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--bg);padding:1px 6px;border-radius:5px;margin-left:4px;vertical-align:1px}
+.ad-switch small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}
+.ad-locked{display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--muted);padding:8px 0}
+#ad-new-perms{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 24px;margin-bottom:14px}
+.ad-drawer-bg[hidden]{display:none}
+.ad-drawer-bg{position:fixed;inset:0;background:rgba(0,16,50,.45);z-index:150;display:flex;justify-content:flex-end}
+.ad-drawer{width:480px;max-width:100%;height:100%;background:#fff;display:flex;flex-direction:column;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4);animation:adSlide .18s ease-out}
+@keyframes adSlide{from{transform:translateX(30px);opacity:.6}to{transform:none;opacity:1}}
+.ad-d-head{background:linear-gradient(145deg,#001540 0%,#002280 50%,#0a5f60 100%);color:#fff;padding:20px 22px;display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--teal)}
+.ad-d-head i{width:48px;height:48px;border-radius:50%;background:linear-gradient(160deg,var(--teal),var(--royal));border:2px solid rgba(140,254,227,.45);font-style:normal;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ad-d-head b{display:block;font-size:1.05rem}
+.ad-d-head small{display:block;font-size:.72rem;color:rgba(255,255,255,.65)}
+.ad-d-head button{margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ad-d-body{flex:1;overflow-y:auto;padding:6px 22px 26px}
+.ad-d-body section{padding:14px 0;border-bottom:1px solid var(--bg)}
+.ad-d-body section:last-child{border-bottom:none}
+.ad-d-body h4{font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--royal);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ad-kv{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:.8rem}
+.ad-kv>span{width:118px;flex-shrink:0;color:var(--muted);font-weight:700;font-size:.74rem}
+.ad-kv>div{flex:1;min-width:0}
+.ad-kv small{color:var(--muted);margin-left:4px}
+.ad-note{font-size:.76rem;color:var(--muted);margin:0 0 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ad-danger h4{color:var(--danger)}
+.ad-log li{padding:9px 0}
+.ad-log-details{font-size:.74rem;color:var(--muted);margin-top:1px}
+.ov-feed.ad-log li{padding-left:18px;padding-right:18px}
+.ad-d-body .ov-feed.ad-log li{padding-left:0;padding-right:0}
+.modal-box label{display:block;font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 @media(max-width:780px){#home-actions{padding:14px 14px 0}.ad-form{padding:14px}}
 .meta-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:13px;margin-bottom:20px}
 .mf{display:flex;flex-direction:column;gap:3px}
@@ -685,7 +722,7 @@ body.no-delete .hc-del{display:none}
     <div class="nav-group">
       <span class="nav-label">Team &amp; Insights</span>
       <div class="ni" id="team-link" data-page="pg-overview" hidden><svg data-lucide="users" width="18" height="18"></svg><span class="ni-txt">Team</span></div>
-      <div class="ni" id="reports-link" data-page="pg-reports"><svg data-lucide="bar-chart-3" width="18" height="18"></svg><span class="ni-txt">Reports</span></div>
+      <div class="ni" id="reports-link" data-page="pg-reports" hidden><svg data-lucide="bar-chart-3" width="18" height="18"></svg><span class="ni-txt">Reports</span></div>
     </div>
     <div class="nav-group">
       <span class="nav-label">Administration</span>
@@ -1134,54 +1171,90 @@ body.no-delete .hc-del{display:none}
   <div class="page" id="pg-admin">
     <div class="home-hero">
       <h2>Admin <span>Control</span></h2>
-      <p class="sub">Create accounts and control what each person can do.</p>
-    </div>
-
-    <div class="ov-stats" id="ad-stats"></div>
-
-    <div class="ov-section">
-      <div class="hist-hdr"><div><span class="sec-eyebrow">New account</span><h3><svg data-lucide="user-plus" width="18" height="18"></svg> Add a Team Member</h3></div></div>
-      <div class="ov-panel">
-        <form class="ad-form" id="ad-form" autocomplete="off">
-          <div class="ad-grid">
-            <label>Full name<input id="ad-name" type="text" required></label>
-            <label>Username<input id="ad-username" type="text" required></label>
-            <label>Temporary password<input id="ad-password" type="text" minlength="8" required></label>
-            <label>Role
-              <select id="ad-role">
-                <option value="quality_auditor">Quality Auditor</option>
-                <option value="quality_officer">Quality Officer</option>
-                <option value="quality_leader">Quality Leader</option>
-                <option value="data_analyst">Data Analyst</option>
-                <option value="quality_admin">Quality Admin</option>
-              </select>
-            </label>
-          </div>
-          <div class="ad-perms">
-            <label><input type="checkbox" id="ad-edit" checked> Can edit inspections</label>
-            <label><input type="checkbox" id="ad-delete"> Can delete inspections</label>
-            <label><input type="checkbox" id="ad-export" checked> Can export data</label>
-          </div>
-          <button class="btn br" type="submit" id="ad-submit"><svg data-lucide="user-plus" width="15" height="15"></svg> Create account</button>
-          <p class="sub" style="font-size:.74rem;color:var(--muted);margin-top:10px">They sign in with this temporary password and must set their own before entering the workspace.</p>
-          <div class="ad-msg" id="ad-msg" hidden></div>
-        </form>
+      <p class="sub">Accounts and detailed permissions, the buildings list, and a record of every sensitive change.</p>
+      <div class="page-tabs" id="ad-tabs">
+        <button class="page-tab active" data-tab="users"><svg data-lucide="users" width="14" height="14"></svg>Users &amp; Permissions</button>
+        <button class="page-tab" data-tab="buildings"><svg data-lucide="building-2" width="14" height="14"></svg>Buildings</button>
+        <button class="page-tab" data-tab="audit"><svg data-lucide="scroll-text" width="14" height="14"></svg>Audit Log</button>
       </div>
     </div>
 
-    <div class="ov-section">
-      <div class="hist-hdr">
-        <div><span class="sec-eyebrow">Accounts</span><h3><svg data-lucide="users" width="18" height="18"></svg> All Accounts</h3></div>
-        <div class="ov-tools">
-          <input type="text" id="ad-search" placeholder="Search name or username…">
-          <select id="ad-role-filter"><option value="">All roles</option></select>
+    <div id="ad-users">
+      <div class="ov-stats" id="ad-stats"></div>
+      <div class="ov-section">
+        <div class="sc-callout warn" id="ad-single-admin" hidden>
+          <svg data-lucide="triangle-alert" width="17" height="17"></svg>
+          <div><strong>Only one active administrator</strong>If that account is locked out or unavailable, nobody can manage users. Consider giving a trusted person the Quality Admin role.</div>
+        </div>
+        <div class="hist-hdr">
+          <div><span class="sec-eyebrow">Accounts</span><h3><svg data-lucide="users" width="18" height="18"></svg> Team Members</h3></div>
+          <div class="ov-tools">
+            <div class="rp-chips" id="ad-filter"></div>
+            <select id="ad-role-filter" aria-label="Role"></select>
+            <input type="text" id="ad-search" placeholder="Search name or username…">
+            <button class="btn br" style="padding:7px 14px;font-size:.76rem" id="ad-new-btn"><svg data-lucide="user-plus" width="14" height="14"></svg> Add member</button>
+          </div>
+        </div>
+        <div class="ov-panel" id="ad-create" hidden>
+          <div class="ov-panel-hd">New account <small>They sign in with the temporary password and must choose their own before entering.</small></div>
+          <form class="ad-form" id="ad-form" autocomplete="off">
+            <div class="ad-grid">
+              <label>Full name<input id="ad-name" type="text" required></label>
+              <label>Username<input id="ad-username" type="text" required pattern="[A-Za-z0-9._\-]{3,40}" title="3–40 letters, numbers, dot, dash or underscore"></label>
+              <label>Temporary password<input id="ad-password" type="text" minlength="8" required></label>
+              <label>Role<select id="ad-role"></select></label>
+            </div>
+            <div id="ad-new-perms"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn br" type="submit" id="ad-submit"><svg data-lucide="user-plus" width="15" height="15"></svg> Create account</button>
+              <button class="btn bo" type="button" id="ad-cancel">Cancel</button>
+            </div>
+            <div class="ad-msg" id="ad-msg" hidden></div>
+          </form>
+        </div>
+        <div class="ov-panel">
+          <div class="ov-scroll"><table class="ov-table">
+            <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Permissions</th><th>Last sign-in</th><th></th></tr></thead>
+            <tbody id="ad-rows"></tbody>
+          </table></div>
         </div>
       </div>
-      <div class="ov-panel">
-        <div class="ov-scroll"><table class="ov-table">
-          <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Permissions</th><th>Actions</th></tr></thead>
-          <tbody id="ad-rows"></tbody>
-        </table></div>
+    </div>
+
+    <div id="ad-buildings" hidden>
+      <div class="ov-stats" id="ad-b-stats"></div>
+      <div class="ov-section">
+        <div class="hist-hdr">
+          <div><span class="sec-eyebrow">Master list</span><h3><svg data-lucide="building-2" width="18" height="18"></svg> Buildings</h3></div>
+          <div class="ov-tools">
+            <select id="ad-b-division" aria-label="Division"><option value="">All divisions</option></select>
+            <input type="text" id="ad-b-search" placeholder="Search building, area or location…">
+            <button class="btn br" style="padding:7px 14px;font-size:.76rem" id="ad-b-new"><svg data-lucide="plus" width="14" height="14"></svg> Add building</button>
+          </div>
+        </div>
+        <div class="ov-panel">
+          <div class="ov-scroll"><table class="ov-table">
+            <thead><tr><th>Building</th><th>Division / Area</th><th>Location</th><th>Assignments</th><th></th></tr></thead>
+            <tbody id="ad-b-rows"></tbody>
+          </table></div>
+          <div class="of-foot" id="ad-b-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ad-audit" hidden>
+      <div class="ov-section">
+        <div class="hist-hdr">
+          <div><span class="sec-eyebrow">Record</span><h3><svg data-lucide="scroll-text" width="18" height="18"></svg> Audit Log</h3></div>
+          <div class="ov-tools">
+            <div class="rp-chips" id="ad-a-filter"></div>
+            <input type="text" id="ad-a-search" placeholder="Search person, account or detail…">
+          </div>
+        </div>
+        <div class="ov-panel">
+          <ul class="ov-feed ad-log" id="ad-a-list" style="max-height:none"></ul>
+          <button class="btn bo rp-more" id="ad-a-more" hidden>Load older entries</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1375,6 +1448,38 @@ body.no-delete .hc-del{display:none}
   </div>
 </main>
 
+<!-- Admin: account panel -->
+<div class="ad-drawer-bg" id="ad-drawer" hidden>
+  <aside class="ad-drawer" role="dialog" aria-modal="true" aria-labelledby="ad-d-name">
+    <div class="ad-d-head">
+      <i id="ad-d-avatar">–</i>
+      <div><b id="ad-d-name"></b><small id="ad-d-user"></small></div>
+      <button id="ad-d-close" title="Close" aria-label="Close"><svg data-lucide="x" width="16" height="16"></svg></button>
+    </div>
+    <div class="ad-d-body" id="ad-d-body"></div>
+  </aside>
+</div>
+
+<!-- Admin: add / edit building -->
+<div class="modal-bg" id="modal-building">
+  <div class="modal-box">
+    <h3 id="mb-title">Add building</h3>
+    <p class="msub" id="mb-sub"></p>
+    <form id="mb-form" autocomplete="off">
+      <label for="mb-name">Building name</label><input id="mb-name" required>
+      <label for="mb-division">Division</label><input id="mb-division" list="mb-divisions" required>
+      <label for="mb-area">Area</label><input id="mb-area" list="mb-areas" required>
+      <label for="mb-location">Location</label><input id="mb-location" list="mb-locations" required>
+      <datalist id="mb-divisions"></datalist><datalist id="mb-areas"></datalist><datalist id="mb-locations"></datalist>
+      <p class="msub" id="mb-msg" style="display:none;color:var(--danger)"></p>
+      <div class="mbtns">
+        <button class="btn bt" type="submit">Save building</button>
+        <button class="btn bo" type="button" onclick="closeModal('modal-building')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Add Inspector Modal -->
 <div class="modal-bg" id="modal-change-pw">
   <div class="modal-box">
@@ -1509,7 +1614,7 @@ let editingRecordId = null;
 let currentUser = null;
 let ovData = null, ovChart = null, ovReady = false; // Team Overview state
 let auData = null, auReady = false, auReq = 0, auId = null, auCharts = {}, auFilter = {status:'todo', type:'all'}; // Auditor profile state
-let adUsers = [], adReady = false, lastSection = 'pg-s0'; // Admin Control state; last opened inspection section
+let adUsers = [], adReady = false, adTab = 'users', adRoleDefaults = null, adBuildings = null, adEditingBuilding = null, adAudit = [], adAuditMore = false, adOpenUserId = null, adUserFilter = 'all', adAuditFilter = 'all', lastSection = 'pg-s0'; // Admin Control state; last opened inspection section
 let ofData = null, ofReady = false, ofReq = 0, ofPrevDone = null, ofPrevKey = '', ofSelected = new Set(), ofRowsStale = false; // Assign & Track state
 let rpData = null, rpReady = false, rpCharts = {}, rpShown = 100, rpGroup = 'division', rpMetric = 'avg', rpTrend = 'quarter'; // Reports state
 const RP_FILTER_IDS = ['rp-year','rp-month','rp-quarter','rp-type','rp-division','rp-area','rp-building','rp-inspector','rp-rating','rp-from','rp-to','rp-search'];
@@ -1753,10 +1858,11 @@ function hashParam(hash){ return (hash||'').replace(/^#/,'').split('/')[1]||null
 /** Pages this account may not open, so a hand-typed hash can't reach them either. */
 function pageAllowed(pageId){
   if(!currentUser) return true;              // permissions not loaded yet
-  if(pageId==='pg-new'||pageId.startsWith('pg-s')) return !!currentUser.canEdit;
-  if(pageId==='pg-auditor') return currentUser.role==='quality_auditor'?!auId||auId===currentUser.id:['quality_officer','quality_leader','quality_admin'].includes(currentUser.role);
-  if(pageId==='pg-overview') return currentUser.role==='quality_leader'||currentUser.role==='quality_admin';
-  if(pageId==='pg-officer') return currentUser.role==='quality_officer'||currentUser.role==='quality_admin';
+  if(pageId==='pg-new'||pageId.startsWith('pg-s')) return hasPerm('inspect');
+  if(pageId==='pg-auditor') return !auId||auId===currentUser.id?currentUser.role==='quality_auditor'||hasPerm('profiles'):hasPerm('profiles');
+  if(pageId==='pg-overview') return hasPerm('team');
+  if(pageId==='pg-officer') return hasPerm('assign');
+  if(pageId==='pg-reports') return hasPerm('reports');
   if(pageId==='pg-admin') return currentUser.role==='quality_admin';
   return true;
 }
@@ -1786,7 +1892,7 @@ function nav(pageId){
   if(pageId.startsWith('pg-s')) syncFormToState();
   // pushState rather than location.hash: pages carry the same id as their hash, and assigning the
   // hash would make the browser jump to that element (under the sticky top bar).
-  const wanted=pageId==='pg-auditor'&&auId?`pg-auditor/${auId}`:pageId;
+  const wanted=pageId==='pg-auditor'&&auId?`pg-auditor/${auId}`:pageId==='pg-admin'&&adTab!=='users'?`pg-admin/${adTab}`:pageId;
   if(location.hash!=='#'+wanted) window.history.pushState(null,'','#'+wanted);
   document.getElementById('main').scrollTo(0,0);
 }
@@ -1799,6 +1905,7 @@ window.addEventListener('popstate',()=>window.dispatchEvent(new HashChangeEvent(
 window.addEventListener('hashchange',()=>{
   const pid=hashToPage(location.hash);
   if(pid==='pg-auditor'&&hashParam(location.hash)!==auId){ auId=hashParam(location.hash); nav(pid); return; }
+  if(pid==='pg-admin'&&(hashParam(location.hash)||'users')!==adTab){ adTab=hashParam(location.hash)||'users'; nav(pid); return; }
   if(!document.getElementById(pid).classList.contains('active')) nav(pid);
 });
 
@@ -1876,7 +1983,7 @@ function refreshNav(){
 }
 /** Sidebar entry for a page. A manager looking at an auditor's profile is still in Team. */
 function navLinkFor(pageId){
-  if(pageId==='pg-auditor'&&currentUser&&currentUser.role!=='quality_auditor') return document.getElementById('team-link');
+  if(pageId==='pg-auditor'&&currentUser&&(currentUser.role!=='quality_auditor'||(auId&&auId!==currentUser.id))) return document.getElementById('team-link');
   return [...document.querySelectorAll('#sb-nav .ni')].find(n=>n.dataset.page===pageId)||null;
 }
 function highlightNav(pageId){
@@ -1898,7 +2005,7 @@ function updateTopBar(pageId){
   const sec=/^pg-s(\d)$/.exec(pageId);
   document.getElementById('pb-sub').textContent=
     pageId==='pg-overview'?'Overview':pageId==='pg-officer'?'Assign & Track':sec?SECTIONS[+sec[1]].title:
-    pageId==='pg-auditor'&&auData&&!auData.isSelf?auData.auditor.name:'';
+    pageId==='pg-auditor'&&auData&&!auData.isSelf?auData.auditor.name:pageId==='pg-admin'?adTabLabel(adTab):'';
   const inspecting=group==='inspection';
   document.getElementById('pb-steps').hidden=!inspecting;
   document.getElementById('pb-progress').hidden=!inspecting;
@@ -2752,6 +2859,7 @@ updateScoreCardActionBar();
 {
   const initialPageId=hashToPage(location.hash);
   if(initialPageId==='pg-auditor') auId=hashParam(location.hash);
+  if(initialPageId==='pg-admin') adTab=['buildings','audit'].includes(hashParam(location.hash))?hashParam(location.hash):'users';
   if(initialPageId!=='pg-home') nav(initialPageId);
   else updateTopBar('pg-home');
 }
@@ -2783,6 +2891,7 @@ updateScoreCardActionBar();
 function auVal(id){ return document.getElementById(id).value; }
 function auIsManagerView(){ return !!(auData&&!auData.isSelf); }
 function openAuditorProfile(id){
+  if(!hasPerm('profiles')&&!(currentUser&&id===currentUser.id)){ showToast('Your account does not have access to auditor profiles.',true); return; }
   auId=currentUser&&id===currentUser.id?null:id;
   auData=null;
   nav('pg-auditor');
@@ -2887,7 +2996,7 @@ function renderAuditorProfile(){
   sw.hidden=self||!d.auditors.length;
   sw.innerHTML=d.auditors.map(x=>`<option value="${ovEsc(x.id)}">${ovEsc(x.name)}${x.status!=='active'?' (suspended)':''}</option>`).join('');
   sw.value=a.id;
-  document.getElementById('au-reports').hidden=self;
+  document.getElementById('au-reports').hidden=self||!hasPerm('reports');
   document.getElementById('au-manage').hidden=self||!d.canManage;
   document.getElementById('au-mark-all').hidden=!self;
   document.getElementById('au-feed-ic-inbox').hidden=!self;
@@ -3159,8 +3268,8 @@ async function loadNotifications(){
     if(!notifications.length){ list.innerHTML='<div class="notif-empty">No notifications yet.</div>'; return; }
     list.innerHTML=notifications.map(n=>`
       <div class="notif-item ${n.read?'':'unread'}" data-id="${n.id}" data-link="${escapeHtmlAttr(n.link||'')}">
-        <div class="n-title">${n.read?'':'<span class="n-dot"></span>'}${n.title}</div>
-        ${n.body?`<div class="n-body">${n.body}</div>`:''}
+        <div class="n-title">${n.read?'':'<span class="n-dot"></span>'}${escapeHtmlAttr(n.title)}</div>
+        ${n.body?`<div class="n-body">${escapeHtmlAttr(n.body)}</div>`:''}
         <div class="n-time">${timeAgo(n.createdAt)}</div>
       </div>`).join('');
   }catch{}
@@ -4133,11 +4242,11 @@ function renderTeamTabs(pages){
 function renderHomeActions(user,teamPages){
   const actions=[];
   if(user.role==='quality_auditor') actions.push(['pg-auditor','calendar-check','My Assignments','Your buildings, schedule and results']);
-  if(user.canEdit) actions.push(['pg-new','clipboard-check','Start an Inspection','Details → sections → score card']);
+  if(hasPerm('inspect')) actions.push(['pg-new','clipboard-check','Start an Inspection','Details → sections → score card']);
   if(teamPages.length) actions.push([teamPages[0],'users','Team',
     teamPages.length>1?'Team overview and building assignments':teamPages[0]==='pg-officer'?'Assign buildings and track auditors live':'Progress of officers and auditors']);
-  actions.push(['pg-reports','bar-chart-3','Reports & Analytics','Filters, charts, statistics and exports']);
-  if(user.role==='quality_admin') actions.push(['pg-admin','shield-check','Admin Control','Accounts and permissions']);
+  if(hasPerm('reports')) actions.push(['pg-reports','bar-chart-3','Reports & Analytics','Filters, charts, statistics and exports']);
+  if(user.role==='quality_admin') actions.push(['pg-admin','shield-check','Admin Control','Accounts, permissions, buildings and audit log']);
   const box=document.getElementById('home-actions');
   box.innerHTML=actions.map(([pid,icon,title,sub])=>`<button class="qa-card" data-page="${pid}">
     <span class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></span>
@@ -4148,91 +4257,114 @@ function renderHomeActions(user,teamPages){
 }
 
 // ═══════════════════════════════════════════════════════════
-// ADMIN CONTROL (Quality Admin)
+// ADMIN CONTROL (Quality Admin) — Users & Permissions · Buildings · Audit Log
 // ═══════════════════════════════════════════════════════════
+function hasPerm(key){ return !!currentUser&&(currentUser.permissions||[]).includes(key); }
 function adRoleLabels(){
   return {quality_auditor:'Quality Auditor',quality_officer:'Quality Officer',quality_leader:'Quality Leader',data_analyst:'Data Analyst',quality_admin:'Quality Admin'};
 }
-function adDefaults(role){
-  return ({
-    quality_admin:{canEdit:true,canDelete:true,canExport:true},
-    quality_leader:{canEdit:false,canDelete:false,canExport:true},
-    quality_officer:{canEdit:false,canDelete:false,canExport:true},
-    quality_auditor:{canEdit:true,canDelete:false,canExport:true},
-    data_analyst:{canEdit:false,canDelete:false,canExport:true},
-  })[role]||{canEdit:true,canDelete:false,canExport:true};
+function adPermCatalog(){
+  return [
+    ['Inspections',[
+      ['inspect','Create & edit inspections','Start inspections, score sections and save reports'],
+      ['delete','Delete inspections','Remove saved reports from the history'],
+      ['export','Export data','Download CSV exports from Home and Reports'],
+    ]],
+    ['Team',[
+      ['assign','Assign buildings','Use Assign & Track to assign and move buildings between auditors'],
+      ['team','View team overview','Progress across officers, auditors, divisions and buildings'],
+      ['profiles','View auditor profiles','Any auditor’s assignments, schedule and quality of work'],
+    ]],
+    ['Insights',[
+      ['reports','Reports & Analytics','Filter every inspection, charts and statistics'],
+    ]],
+  ];
 }
-function adApplyDefaults(){
-  const d=adDefaults(document.getElementById('ad-role').value);
-  document.getElementById('ad-edit').checked=d.canEdit;
-  document.getElementById('ad-delete').checked=d.canDelete;
-  document.getElementById('ad-export').checked=d.canExport;
-}
+function adPermLabel(key){ for(const [,items] of adPermCatalog()) for(const [k,l] of items) if(k===key) return l; return key; }
+function adTabLabel(tab){ return {users:'Users & Permissions',buildings:'Buildings',audit:'Audit Log'}[tab]||''; }
+
 function initAdmin(){
   if(adReady) return;
   adReady=true;
   const labels=adRoleLabels();
   document.getElementById('ad-role-filter').innerHTML='<option value="">All roles</option>'+Object.entries(labels).map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
-  document.getElementById('ad-role').addEventListener('change',adApplyDefaults);
-  document.getElementById('ad-search').addEventListener('input',renderAdmin);
-  document.getElementById('ad-role-filter').addEventListener('change',renderAdmin);
+  document.getElementById('ad-role').innerHTML=Object.entries(labels).map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  document.getElementById('ad-tabs').addEventListener('click',e=>{
+    const b=e.target.closest('[data-tab]');
+    if(!b||b.dataset.tab===adTab) return;
+    adTab=b.dataset.tab;
+    window.history.pushState(null,'','#'+(adTab==='users'?'pg-admin':`pg-admin/${adTab}`));
+    loadAdmin();
+  });
+  // Users
+  document.getElementById('ad-search').addEventListener('input',adRenderUsers);
+  document.getElementById('ad-role-filter').addEventListener('change',adRenderUsers);
+  document.getElementById('ad-filter').addEventListener('click',e=>{ const c=e.target.closest('[data-v]'); if(c){ adUserFilter=c.dataset.v; adRenderUsers(); } });
+  document.getElementById('ad-stats').addEventListener('click',e=>{ const t=e.target.closest('[data-filter]'); if(t){ adUserFilter=t.dataset.filter; adRenderUsers(); } });
+  document.getElementById('ad-new-btn').addEventListener('click',()=>adToggleCreate(true));
+  document.getElementById('ad-cancel').addEventListener('click',()=>adToggleCreate(false));
+  document.getElementById('ad-role').addEventListener('change',()=>adRenderNewPerms());
   document.getElementById('ad-form').addEventListener('submit',adCreate);
-  const rows=document.getElementById('ad-rows');
-  rows.addEventListener('change',e=>{
-    const sel=e.target.closest('select[data-role-for]');
-    if(sel) adPatch(sel.dataset.roleFor,{role:sel.value},`Role changed to ${labels[sel.value]}`);
-  });
-  rows.addEventListener('click',e=>{
-    const btn=e.target.closest('button[data-act]');
-    const u=btn&&adUsers.find(x=>x.id===btn.dataset.id);
+  document.getElementById('ad-rows').addEventListener('click',e=>{ const tr=e.target.closest('tr[data-user]'); if(tr) adOpenDrawer(tr.dataset.user); });
+  // Drawer
+  document.getElementById('ad-drawer').addEventListener('click',e=>{ if(e.target.id==='ad-drawer') adCloseDrawer(); });
+  document.getElementById('ad-d-close').addEventListener('click',adCloseDrawer);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!document.getElementById('ad-drawer').hidden) adCloseDrawer(); });
+  const body=document.getElementById('ad-d-body');
+  body.addEventListener('change',e=>{
+    const u=adUsers.find(x=>x.id===adOpenUserId);
     if(!u) return;
-    const act=btn.dataset.act;
-    if(act==='perm') adPatch(u.id,{[btn.dataset.perm]:!u[btn.dataset.perm]},'Permissions updated');
-    else if(act==='status') adPatch(u.id,{status:u.status==='active'?'suspended':'active'},u.status==='active'?`${u.name} suspended`:`${u.name} reactivated`);
-    else if(act==='reset') adResetPassword(u);
-    else if(act==='delete') adDelete(u);
+    if(e.target.matches('input[data-perm]')){
+      const next=[...body.querySelectorAll('input[data-perm]')].filter(i=>i.checked).map(i=>i.dataset.perm);
+      adPatch(u.id,{permissions:next},`Permissions updated for ${u.name}`);
+    }else if(e.target.id==='ad-d-role'){
+      const role=e.target.value;
+      if(!confirm(`Change ${u.name} to ${adRoleLabels()[role]}? Their permissions will reset to that role's defaults.`)){ e.target.value=u.role; return; }
+      adPatch(u.id,{role},`${u.name} is now ${adRoleLabels()[role]}`);
+    }
   });
+  body.addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]');
+    const u=b&&adUsers.find(x=>x.id===adOpenUserId);
+    if(!u) return;
+    const act=b.dataset.act;
+    if(act==='defaults') adPatch(u.id,{permissions:null},`${u.name} is back on ${adRoleLabels()[u.role]} defaults`);
+    else if(act==='status'){
+      if(u.status==='active'&&!confirm(`Suspend ${u.name}? They are signed out and cannot sign in until reactivated.`)) return;
+      adPatch(u.id,{status:u.status==='active'?'suspended':'active'},u.status==='active'?`${u.name} suspended`:`${u.name} reactivated`);
+    }
+    else if(act==='reset') adResetPassword(u);
+    else if(act==='unlock') adPost(`/api/admin/users/${encodeURIComponent(u.id)}/unlock`,`${u.name} unlocked`);
+    else if(act==='signout'){ if(confirm(`Sign ${u.name} out on every device?`)) adPost(`/api/admin/users/${encodeURIComponent(u.id)}/signout`,`${u.name} signed out everywhere`); }
+    else if(act==='delete') adDelete(u);
+    else if(act==='profile'){ adCloseDrawer(); openAuditorProfile(u.id); }
+  });
+  // Buildings
+  document.getElementById('ad-b-search').addEventListener('input',adRenderBuildings);
+  document.getElementById('ad-b-division').addEventListener('change',adRenderBuildings);
+  document.getElementById('ad-b-new').addEventListener('click',()=>adOpenBuilding(null));
+  document.getElementById('ad-b-rows').addEventListener('click',e=>{
+    const b=e.target.closest('[data-b-act]');
+    const row=b&&adBuildings.find(x=>x.id===Number(b.dataset.id));
+    if(!row) return;
+    if(b.dataset.bAct==='edit') adOpenBuilding(row); else adDeleteBuilding(row);
+  });
+  document.getElementById('mb-form').addEventListener('submit',adSaveBuilding);
+  document.getElementById('modal-building').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal('modal-building'); });
+  // Audit
+  document.getElementById('ad-a-filter').addEventListener('click',e=>{ const c=e.target.closest('[data-v]'); if(c){ adAuditFilter=c.dataset.v; adRenderAudit(); } });
+  document.getElementById('ad-a-search').addEventListener('input',adRenderAudit);
+  document.getElementById('ad-a-more').addEventListener('click',()=>adLoadAudit({more:true}));
 }
+
 async function loadAdmin(){
   initAdmin();
-  try{
-    const res=await fetch('/api/admin/users');
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error||'Could not load accounts.');
-    adUsers=data.users||[];
-    renderAdmin();
-  }catch(err){
-    document.getElementById('ad-rows').innerHTML=`<tr><td colspan="5" class="ov-empty">${ovEsc(err.message)}</td></tr>`;
-  }
-}
-function renderAdmin(){
-  const labels=adRoleLabels(), me=currentUser?.id;
-  const count=f=>adUsers.filter(f).length;
-  const tile=(icon,value,label)=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b>${value}</b><span>${label}</span></div>`;
-  document.getElementById('ad-stats').innerHTML=
-    tile('users',adUsers.length,'Accounts')+
-    tile('user-check',count(u=>u.status==='active'&&!u.mustChangePassword),'Active')+
-    tile('key-round',count(u=>u.mustChangePassword),'Pending setup')+
-    tile('user-x',count(u=>u.status!=='active'),'Suspended');
-  const term=document.getElementById('ad-search').value.trim().toLowerCase(), role=document.getElementById('ad-role-filter').value;
-  const list=adUsers.filter(u=>(!role||u.role===role)&&(!term||u.name.toLowerCase().includes(term)||u.username.toLowerCase().includes(term)));
-  const perm=(u,key,icon,label,self)=>`<button class="ad-perm${u[key]?' on':''}" data-act="perm" data-perm="${key}" data-id="${ovEsc(u.id)}"${self?' disabled':''} title="${self?'You cannot change your own permissions':`${u[key]?'Turn off':'Turn on'} ${label.toLowerCase()}`}"><svg data-lucide="${icon}" width="13" height="13"></svg>${label}</button>`;
-  document.getElementById('ad-rows').innerHTML=list.length?list.map(u=>{
-    const self=u.id===me;
-    const status=u.mustChangePassword?'<span class="ov-pill setup">Pending setup</span>':u.status==='active'?'<span class="ov-pill active">Active</span>':'<span class="ov-pill suspended">Suspended</span>';
-    return `<tr>
-      <td><b>${ovEsc(u.name)}</b><small>@${ovEsc(u.username)}${self?' · you':''}</small></td>
-      <td>${self?`<span class="ov-pill completed">${labels[u.role]||ovEsc(u.role)}</span>`
-        :`<select class="ad-role" data-role-for="${ovEsc(u.id)}" aria-label="Role for ${ovEsc(u.name)}">${Object.entries(labels).map(([v,l])=>`<option value="${v}"${v===u.role?' selected':''}>${l}</option>`).join('')}</select>`}</td>
-      <td>${status}</td>
-      <td style="white-space:nowrap">${perm(u,'canEdit','pencil','Edit',self)}${perm(u,'canDelete','trash-2','Delete',self)}${perm(u,'canExport','download','Export',self)}</td>
-      <td>${self?'<small style="color:var(--muted)">This is you</small>':`<div class="ad-actions">
-        <button class="ad-btn" data-act="status" data-id="${ovEsc(u.id)}">${u.status==='active'?'Suspend':'Reactivate'}</button>
-        <button class="ad-btn" data-act="reset" data-id="${ovEsc(u.id)}">Reset password</button>
-        <button class="ad-btn danger" data-act="delete" data-id="${ovEsc(u.id)}">Delete</button></div>`}</td>
-    </tr>`;
-  }).join(''):'<tr><td colspan="5" class="ov-empty">No accounts match.</td></tr>';
-  lucide.createIcons();
+  document.querySelectorAll('#ad-tabs [data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===adTab));
+  ['users','buildings','audit'].forEach(t=>{ document.getElementById('ad-'+t).hidden=t!==adTab; });
+  updateTopBar('pg-admin');
+  if(adTab==='buildings') return adLoadBuildings();
+  if(adTab==='audit') return adLoadAudit();
+  return adLoadUsers();
 }
 async function adRequest(url,options,fallback){
   const res=await fetch(url,options);
@@ -4240,53 +4372,295 @@ async function adRequest(url,options,fallback){
   if(!res.ok) throw new Error(data.error||fallback);
   return data;
 }
-async function adPatch(id,body,done){
+
+// ── Users & Permissions ──
+async function adLoadUsers(){
   try{
-    await adRequest('/api/admin/users/'+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},'Could not update the account.');
-    showToast(done);
-  }catch(err){ showToast(err.message,true); }
-  await loadAdmin();
+    const data=await adRequest('/api/admin/users',{},'Could not load accounts.');
+    adUsers=data.users||[]; adRoleDefaults=data.roleDefaults||{};
+    adRenderUsers();
+    if(adOpenUserId) adRenderDrawer();
+  }catch(err){
+    document.getElementById('ad-rows').innerHTML=`<tr><td colspan="6" class="ov-empty">${ovEsc(err.message)}</td></tr>`;
+  }
 }
-async function adResetPassword(u){
-  const pw=prompt(`New temporary password for ${u.name} (at least 8 characters):`);
-  if(!pw) return;
-  try{
-    await adRequest(`/api/admin/users/${encodeURIComponent(u.id)}/reset-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})},'Could not reset the password.');
-    showToast(`Password reset — ${u.name} must set a new one at next sign-in`);
-  }catch(err){ showToast(err.message,true); }
-  await loadAdmin();
+function adStatusOf(u){
+  if(u.status!=='active') return ['suspended','Suspended'];
+  if(u.lockedUntil) return ['suspended','Locked'];
+  if(u.mustChangePassword) return ['setup','Pending setup'];
+  return ['active','Active'];
 }
-async function adDelete(u){
-  if(!confirm(`Delete ${u.name}? This cannot be undone.`)) return;
-  try{
-    await adRequest('/api/admin/users/'+encodeURIComponent(u.id),{method:'DELETE'},'Could not delete the account.');
-    showToast(`${u.name} deleted`);
-  }catch(err){ showToast(err.message,true); }
-  await loadAdmin();
+const adNeedsAttention=u=>u.status!=='active'||!!u.lockedUntil||u.mustChangePassword;
+function adRenderUsers(){
+  const labels=adRoleLabels(), me=currentUser?.id;
+  const admins=adUsers.filter(u=>u.role==='quality_admin'&&u.status==='active').length;
+  const online=adUsers.filter(u=>u.activeSessions>0).length, attention=adUsers.filter(adNeedsAttention).length;
+  const roleMix=Object.entries(labels).map(([r,l])=>[l,adUsers.filter(u=>u.role===r).length]).filter(([,n])=>n).map(([l,n])=>`${n} ${l.replace('Quality ','')}`).join(' · ');
+  const tile=(icon,value,label,note,filter)=>`<div class="hs-card${filter?' clickable':''}"${filter?` data-filter="${filter}"`:''}><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b>${value}</b><span>${label}</span><small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px">${note}</small></div>`;
+  document.getElementById('ad-stats').innerHTML=
+    tile('users',adUsers.length,'Accounts',roleMix||'No accounts yet','all')+
+    tile('radio',online,'Signed in now','Accounts with an active session','online')+
+    tile('bell-ring',attention,'Needs attention','Suspended, locked or pending setup','attention')+
+    tile('shield-check',admins,'Active admins',admins<2?'Consider a second admin as backup':'Backup access in place');
+  document.getElementById('ad-single-admin').hidden=admins>=2;
+
+  const counts={all:adUsers.length,attention,online,custom:adUsers.filter(u=>u.customPermissions).length};
+  const chipLabels={all:'All',attention:'Needs attention',online:'Signed in',custom:'Custom permissions'};
+  document.getElementById('ad-filter').innerHTML=Object.keys(chipLabels).map(k=>`<button class="rp-chip${adUserFilter===k?' active':''}" data-v="${k}">${chipLabels[k]} ${counts[k]}</button>`).join('');
+
+  const term=document.getElementById('ad-search').value.trim().toLowerCase(), role=document.getElementById('ad-role-filter').value;
+  const list=adUsers.filter(u=>
+    (adUserFilter==='all'||(adUserFilter==='attention'?adNeedsAttention(u):adUserFilter==='online'?u.activeSessions>0:u.customPermissions)) &&
+    (!role||u.role===role) && (!term||u.name.toLowerCase().includes(term)||u.username.toLowerCase().includes(term)));
+  const total=adPermCatalog().reduce((n,[,items])=>n+items.length,0);
+  document.getElementById('ad-rows').innerHTML=list.length?list.map(u=>{
+    const [cls,label]=adStatusOf(u);
+    return `<tr class="clickable" data-user="${ovEsc(u.id)}" title="Manage ${ovEsc(u.name)}">
+      <td><div class="ad-who"><i>${ovEsc(ofInitials(u.name))}</i><div><b>${ovEsc(u.name)}</b><small>@${ovEsc(u.username)}${u.id===me?' · you':''}</small></div></div></td>
+      <td>${labels[u.role]||ovEsc(u.role)}</td>
+      <td><span class="ov-pill ${cls}">${label}</span></td>
+      <td>${u.role==='quality_admin'?'<span class="ad-pcount all">All</span>':`<span class="ad-pcount">${u.permissions.length}/${total}</span>${u.customPermissions?'<span class="ad-custom">Custom</span>':''}`}</td>
+      <td>${u.activeSessions?'<span class="ad-online">Online</span>':''}${u.lastLoginAt?`<small style="display:inline">${timeAgo(u.lastLoginAt)}</small>`:'<small style="display:inline">Never</small>'}</td>
+      <td style="text-align:right"><svg data-lucide="chevron-right" width="16" height="16" style="color:var(--muted)"></svg></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="6" class="ov-empty">No accounts match.</td></tr>';
+  lucide.createIcons();
+}
+
+function adPermMatrix(selected,{locked=false,defaults=[],prefix=''}={}){
+  return adPermCatalog().map(([group,items])=>`<div class="ad-pgroup"><span>${group}</span>${items.map(([k,l,d])=>`
+    <label class="ad-switch">
+      <input type="checkbox" data-perm="${k}"${prefix?` data-new="1"`:''}${selected.includes(k)?' checked':''}${locked?' disabled':''}>
+      <div><b>${l}${defaults.includes(k)?' <em>Role default</em>':''}</b><small>${d}</small></div>
+    </label>`).join('')}</div>`).join('')+
+    `<div class="ad-pgroup"><span>Administration</span><div class="ad-locked"><svg data-lucide="lock" width="13" height="13"></svg> Managing users, buildings and the audit log stays with the Quality Admin role.</div></div>`;
+}
+function adToggleCreate(open){
+  document.getElementById('ad-create').hidden=!open;
+  document.getElementById('ad-new-btn').hidden=open;
+  if(open){
+    document.getElementById('ad-form').reset();
+    document.getElementById('ad-msg').hidden=true;
+    adRenderNewPerms();
+    document.getElementById('ad-name').focus();
+  }
+}
+function adRenderNewPerms(){
+  const role=document.getElementById('ad-role').value, defaults=(adRoleDefaults||{})[role]||[];
+  document.getElementById('ad-new-perms').innerHTML=adPermMatrix(defaults,{locked:role==='quality_admin',defaults,prefix:'new'});
+  lucide.createIcons();
 }
 async function adCreate(e){
   e.preventDefault();
   const submit=document.getElementById('ad-submit'), msg=document.getElementById('ad-msg');
   msg.hidden=true; submit.disabled=true;
   try{
+    const name=document.getElementById('ad-name').value.trim();
     await adRequest('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      name:document.getElementById('ad-name').value.trim(),
-      username:document.getElementById('ad-username').value.trim(),
-      password:document.getElementById('ad-password').value,
-      role:document.getElementById('ad-role').value,
-      canEdit:document.getElementById('ad-edit').checked,
-      canDelete:document.getElementById('ad-delete').checked,
-      canExport:document.getElementById('ad-export').checked,
+      name, username:document.getElementById('ad-username').value.trim(),
+      password:document.getElementById('ad-password').value, role:document.getElementById('ad-role').value,
+      permissions:[...document.querySelectorAll('#ad-new-perms input[data-perm]')].filter(i=>i.checked).map(i=>i.dataset.perm),
     })},'Could not create the account.');
-    document.getElementById('ad-form').reset();
-    adApplyDefaults();
-    msg.textContent='Account created.'; msg.className='ad-msg ok'; msg.hidden=false;
-    await loadAdmin();
+    adToggleCreate(false);
+    showToast(`Account created for ${name} — share the temporary password with them`);
+    await adLoadUsers();
   }catch(err){
     msg.textContent=err.message; msg.className='ad-msg err'; msg.hidden=false;
-  }finally{
-    submit.disabled=false;
+  }finally{ submit.disabled=false; }
+}
+
+function adOpenDrawer(id){
+  adOpenUserId=id;
+  document.getElementById('ad-drawer').hidden=false;
+  adRenderDrawer();
+}
+function adCloseDrawer(){ adOpenUserId=null; document.getElementById('ad-drawer').hidden=true; }
+async function adRenderDrawer(){
+  const u=adUsers.find(x=>x.id===adOpenUserId);
+  if(!u){ adCloseDrawer(); return; }
+  const labels=adRoleLabels(), self=u.id===currentUser?.id, isAdmin=u.role==='quality_admin';
+  const [cls,label]=adStatusOf(u), defaults=(adRoleDefaults||{})[u.role]||[];
+  document.getElementById('ad-d-avatar').textContent=ofInitials(u.name);
+  document.getElementById('ad-d-name').textContent=u.name;
+  document.getElementById('ad-d-user').textContent=`@${u.username} · joined ${u.createdAt?new Date(u.createdAt.replace(' ','T')+'Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—'}`;
+  const row=(k,v,action='')=>`<div class="ad-kv"><span>${k}</span><div>${v}</div>${action}</div>`;
+  const btn=(act,text,danger)=>`<button class="ad-btn${danger?' danger':''}" data-act="${act}">${text}</button>`;
+  document.getElementById('ad-d-body').innerHTML=`
+    <section><h4>Account</h4>
+      ${row('Role',self?`<b>${labels[u.role]}</b>`:`<select class="ad-role" id="ad-d-role">${Object.entries(labels).map(([v,l])=>`<option value="${v}"${v===u.role?' selected':''}>${l}</option>`).join('')}</select>`)}
+      ${row('Status',`<span class="ov-pill ${cls}">${label}</span>`,self?'':btn('status',u.status==='active'?'Suspend':'Reactivate',u.status==='active'))}
+      ${u.role==='quality_auditor'?row('Work','Assignments, schedule and quality of work',btn('profile','Open auditor profile')):''}
+    </section>
+    <section><h4>Permissions ${u.customPermissions?'<span class="ad-custom">Custom</span>':''}</h4>
+      ${isAdmin?'<p class="ad-note">Quality Admins always have every permission.</p>':self?'<p class="ad-note">You cannot change your own permissions.</p>':
+        u.customPermissions?`<p class="ad-note">Tailored for this person. ${btn('defaults',`Reset to ${labels[u.role]} defaults`)}</p>`:`<p class="ad-note">Using the ${labels[u.role]} defaults — switch anything on or off to tailor it.</p>`}
+      <div class="ad-matrix">${adPermMatrix(u.permissions,{locked:isAdmin||self,defaults})}</div>
+    </section>
+    <section><h4>Sign-in &amp; security</h4>
+      ${row('Last sign-in',u.lastLoginAt?`${timeAgo(u.lastLoginAt)} <small>${new Date(u.lastLoginAt.replace(' ','T')+'Z').toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</small>`:'Never')}
+      ${row('Active sessions',u.activeSessions?`<span class="ad-online">${u.activeSessions} active</span>`:'None',u.activeSessions&&!self?btn('signout','Sign out everywhere'):'')}
+      ${row('Failed sign-ins',u.lockedUntil?`<span class="ov-pill suspended">Locked</span> until ${new Date(u.lockedUntil).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:`${u.failedAttempts} since last success`,u.lockedUntil||u.failedAttempts?btn('unlock','Unlock'):'')}
+      ${row('Password',u.mustChangePassword?'Temporary — must be changed at next sign-in':'Set by the user',self?'':btn('reset','Reset password'))}
+    </section>
+    ${self?'':`<section class="ad-danger"><h4>Delete account</h4><p class="ad-note">Only possible for accounts with no assignments — otherwise suspend them so the history stays intact.</p>${btn('delete','Delete account',true)}</section>`}
+    <section><h4>History</h4><ul class="ov-feed ad-log" id="ad-d-log"><li class="ov-empty" style="display:block">Loading…</li></ul></section>`;
+  lucide.createIcons();
+  try{
+    const {entries}=await adRequest(`/api/admin/audit?target=${encodeURIComponent(u.id)}&limit=20`,{},'Could not load history.');
+    const log=document.getElementById('ad-d-log');
+    if(log&&adOpenUserId===u.id){ log.innerHTML=entries.length?entries.map(adLogItem).join(''):'<li class="ov-empty" style="display:block">No recorded changes yet.</li>'; lucide.createIcons(); }
+  }catch{}
+}
+async function adPatch(id,body,done){
+  try{
+    await adRequest('/api/admin/users/'+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},'Could not update the account.');
+    showToast(done);
+  }catch(err){ showToast(err.message,true); }
+  await adLoadUsers();
+}
+async function adPost(url,done){
+  try{ await adRequest(url,{method:'POST'},'Could not complete that action.'); showToast(done); }
+  catch(err){ showToast(err.message,true); }
+  await adLoadUsers();
+}
+async function adResetPassword(u){
+  const pw=prompt(`New temporary password for ${u.name} (at least 8 characters). They will be signed out and must choose a new one:`);
+  if(!pw) return;
+  try{
+    await adRequest(`/api/admin/users/${encodeURIComponent(u.id)}/reset-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})},'Could not reset the password.');
+    showToast(`Temporary password set for ${u.name}`);
+  }catch(err){ showToast(err.message,true); }
+  await adLoadUsers();
+}
+async function adDelete(u){
+  if(!confirm(`Delete ${u.name}? This cannot be undone.`)) return;
+  try{
+    await adRequest('/api/admin/users/'+encodeURIComponent(u.id),{method:'DELETE'},'Could not delete the account.');
+    showToast(`${u.name} deleted`); adCloseDrawer();
+  }catch(err){ showToast(err.message,true); }
+  await adLoadUsers();
+}
+
+// ── Buildings ──
+async function adLoadBuildings(){
+  try{
+    const data=await adRequest('/api/buildings?usage=1',{},'Could not load buildings.');
+    adBuildings=data.buildings||[];
+    adRenderBuildings();
+  }catch(err){
+    document.getElementById('ad-b-rows').innerHTML=`<tr><td colspan="5" class="ov-empty">${ovEsc(err.message)}</td></tr>`;
   }
+}
+function adRenderBuildings(){
+  const list=adBuildings||[];
+  const uniq=key=>[...new Set(list.map(b=>b[key]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const tile=(icon,value,label)=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b>${value}</b><span>${label}</span></div>`;
+  document.getElementById('ad-b-stats').innerHTML=
+    tile('building-2',list.length,'Buildings')+tile('network',uniq('division').length,'Divisions')+
+    tile('map-pin',uniq('area').length,'Areas')+tile('circle-dashed',list.filter(b=>!b.assignments).length,'Never assigned');
+  rpSelect('ad-b-division',uniq('division'),'All divisions');
+  const div=document.getElementById('ad-b-division').value, term=document.getElementById('ad-b-search').value.trim().toLowerCase();
+  const rows=list.filter(b=>(!div||b.division===div)&&(!term||[b.name,b.area,b.location].some(v=>(v||'').toLowerCase().includes(term))));
+  document.getElementById('ad-b-count').textContent=`${rows.length} of ${list.length} buildings`;
+  document.getElementById('ad-b-rows').innerHTML=rows.length?rows.map(b=>`<tr>
+      <td><b>${ovEsc(b.name)}</b></td>
+      <td>${ovEsc(b.division)}<small>${ovEsc(b.area)}</small></td>
+      <td>${ovEsc(b.location)}</td>
+      <td>${b.assignments||'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="ad-btn" data-b-act="edit" data-id="${b.id}">Edit</button>
+        <button class="ad-btn danger" data-b-act="delete" data-id="${b.id}"${b.assignments?' disabled title="Has assignments — cannot be deleted"':''}>Delete</button>
+      </td></tr>`).join(''):'<tr><td colspan="5" class="ov-empty">No buildings match.</td></tr>';
+  lucide.createIcons();
+}
+function adOpenBuilding(b){
+  adEditingBuilding=b;
+  const list=adBuildings||[];
+  const opts=key=>[...new Set(list.map(x=>x[key]))].sort().map(v=>`<option value="${ovEsc(v)}">`).join('');
+  document.getElementById('mb-divisions').innerHTML=opts('division');
+  document.getElementById('mb-areas').innerHTML=opts('area');
+  document.getElementById('mb-locations').innerHTML=opts('location');
+  document.getElementById('mb-title').textContent=b?'Edit building':'Add building';
+  document.getElementById('mb-sub').textContent=b
+    ?'Renaming a building also changes how older, unassigned inspections are matched to it in Reports.'
+    :'New buildings can be assigned right away in Assign & Track.';
+  ['name','division','area','location'].forEach(k=>{ document.getElementById('mb-'+k).value=b?b[k]:''; });
+  document.getElementById('mb-msg').style.display='none';
+  document.getElementById('modal-building').classList.add('open');
+  document.getElementById('mb-name').focus();
+}
+async function adSaveBuilding(e){
+  e.preventDefault();
+  const body=Object.fromEntries(['name','division','area','location'].map(k=>[k,document.getElementById('mb-'+k).value.trim()]));
+  const msg=document.getElementById('mb-msg');
+  try{
+    const b=adEditingBuilding;
+    await adRequest(b?`/api/buildings/${b.id}`:'/api/buildings',{method:b?'PATCH':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},'Could not save the building.');
+    closeModal('modal-building');
+    showToast(b?`${body.name} updated`:`${body.name} added`);
+    ofData=null; rpData=null;   // lists elsewhere reload with the change
+    await adLoadBuildings();
+  }catch(err){ msg.textContent=err.message; msg.style.display='block'; }
+}
+async function adDeleteBuilding(b){
+  if(!confirm(`Delete ${b.name}? This cannot be undone.`)) return;
+  try{
+    await adRequest(`/api/buildings/${b.id}`,{method:'DELETE'},'Could not delete the building.');
+    showToast(`${b.name} deleted`); ofData=null; rpData=null;
+  }catch(err){ showToast(err.message,true); }
+  await adLoadBuildings();
+}
+
+// ── Audit log ──
+function adActionMeta(action){
+  return ({
+    'user.create':['user-plus','created the account for','accounts'],
+    'user.update':['pencil','updated','accounts'],
+    'user.status':['user-x','changed the status of','accounts'],
+    'user.delete':['trash-2','deleted the account for','accounts'],
+    'user.role':['user-cog','changed the role of','permissions'],
+    'user.permissions':['key-round','changed permissions for','permissions'],
+    'user.password_reset':['key-round','reset the password for','security'],
+    'security.lockout':['lock','locked after failed sign-ins:','security'],
+    'security.unlock':['lock-open','unlocked','security'],
+    'security.signout':['log-out','signed out','security'],
+    'building.create':['building-2','added building','buildings'],
+    'building.update':['building-2','edited building','buildings'],
+    'building.delete':['trash-2','deleted building','buildings'],
+    'inspection.delete':['file-x','deleted inspection','inspections'],
+  })[action]||['activity',action,'other'];
+}
+function adLogItem(e){
+  const [icon,verb,cat]=adActionMeta(e.action);
+  const color={accounts:'var(--royal)',permissions:'var(--teal)',security:'var(--warn)',buildings:'#5b6f8a',inspections:'var(--danger)'}[cat]||'var(--muted)';
+  const at=new Date(e.at.replace(' ','T')+'Z');
+  return `<li><span class="dot" style="background:${color}"><svg data-lucide="${icon}" width="14" height="14"></svg></span>
+    <div><b>${ovEsc(e.actor||'System')}</b> ${verb} <b>${ovEsc(e.target||'')}</b>${e.details?`<div class="ad-log-details">${ovEsc(e.details)}</div>`:''}
+    <small title="${at.toLocaleString('en-GB')}">${timeAgo(e.at)} · ${at.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</small></div></li>`;
+}
+async function adLoadAudit({more=false}={}){
+  try{
+    const before=more&&adAudit.length?`&before=${adAudit[adAudit.length-1].id}`:'';
+    const data=await adRequest(`/api/admin/audit?limit=100${before}`,{},'Could not load the audit log.');
+    adAudit=more?adAudit.concat(data.entries):data.entries;
+    adAuditMore=data.more;
+    adRenderAudit();
+  }catch(err){
+    document.getElementById('ad-a-list').innerHTML=`<li class="ov-empty" style="display:block">${ovEsc(err.message)}</li>`;
+  }
+}
+function adRenderAudit(){
+  const cats={all:'All',accounts:'Accounts',permissions:'Permissions',security:'Security',buildings:'Buildings',inspections:'Inspections'};
+  const catOf=e=>adActionMeta(e.action)[2];
+  document.getElementById('ad-a-filter').innerHTML=Object.entries(cats).map(([k,l])=>{
+    const n=k==='all'?adAudit.length:adAudit.filter(e=>catOf(e)===k).length;
+    return `<button class="rp-chip${adAuditFilter===k?' active':''}" data-v="${k}">${l} ${n}</button>`;
+  }).join('');
+  const term=document.getElementById('ad-a-search').value.trim().toLowerCase();
+  const rows=adAudit.filter(e=>(adAuditFilter==='all'||catOf(e)===adAuditFilter)&&(!term||[e.actor,e.target,e.details].some(v=>(v||'').toLowerCase().includes(term))));
+  document.getElementById('ad-a-list').innerHTML=rows.length?rows.map(adLogItem).join(''):'<li class="ov-empty" style="display:block">No entries match.</li>';
+  document.getElementById('ad-a-more').hidden=!adAuditMore;
+  lucide.createIcons();
 }
 
 // ── Account: show signed-in user, apply permissions, wire logout ──
@@ -4307,13 +4681,11 @@ async function adCreate(e){
     const isOfficer=user.role==='quality_officer';
     document.getElementById('home-name').textContent=displayName.split(/\s+/)[0];
     if(isAdmin) document.getElementById('admin-link').hidden=false;
+    document.getElementById('reports-link').hidden=!hasPerm('reports');
     if(user.role==='quality_auditor'){ document.getElementById('my-assignments-link').hidden=false; if(!document.getElementById('pg-auditor').classList.contains('active')) loadAuditorProfile({quiet:true}); }
-    if(user.canEdit) document.getElementById('inspection-link').hidden=false;
-    // Team: Overview for leaders, Assign & Track for officers, both (as tabs) for admins.
-    const teamPages=[
-      ...(user.role==='quality_leader'||isAdmin?['pg-overview']:[]),
-      ...(isOfficer||isAdmin?['pg-officer']:[]),
-    ];
+    if(hasPerm('inspect')) document.getElementById('inspection-link').hidden=false;
+    // Team: Overview and/or Assign & Track, as the account's permissions allow (tabs when both).
+    const teamPages=[...(hasPerm('team')?['pg-overview']:[]),...(hasPerm('assign')?['pg-officer']:[])];
     if(teamPages.length){
       const teamLink=document.getElementById('team-link');
       teamLink.hidden=false;
@@ -4329,9 +4701,9 @@ async function adCreate(e){
     // Permissions arrive after the initial hash routing, so re-check where we landed.
     const landed=hashToPage(location.hash);
     if(!pageAllowed(landed)) nav('pg-home');
-    else if(user.role==='quality_leader'&&!location.hash) nav('pg-overview');
-    else if(user.role==='data_analyst'&&!location.hash) nav('pg-reports');
-    else if(user.role==='quality_officer'&&!location.hash) nav('pg-officer');
+    else if(user.role==='quality_leader'&&hasPerm('team')&&!location.hash) nav('pg-overview');
+    else if(user.role==='data_analyst'&&hasPerm('reports')&&!location.hash) nav('pg-reports');
+    else if(isOfficer&&hasPerm('assign')&&!location.hash) nav('pg-officer');
     else { highlightNav(document.querySelector('.page.active')?.id||landed); updateTopBar(document.querySelector('.page.active')?.id||landed); }
   }catch{
     document.getElementById('acct-name').textContent='';

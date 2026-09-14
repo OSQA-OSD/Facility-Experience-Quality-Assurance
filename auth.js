@@ -10,7 +10,7 @@
 const ITERATIONS = 100_000;
 const ROUNDS = 6;
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
-const MAX_FAILED_ATTEMPTS = 5;
+export const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
 
 export const SESSION_COOKIE = 'qa_session';
@@ -98,7 +98,7 @@ export async function getUserFromRequest(request, env) {
   ).bind(tokenHash).first();
   if (!session || session.expires_at < Date.now()) return null;
   const user = await env.DB.prepare(
-    `SELECT id, name, username, role, status, can_edit, can_delete, can_export, must_change_password
+    `SELECT id, name, username, role, status, can_edit, can_delete, can_export, permissions, must_change_password
      FROM qa_users WHERE id = ?1`,
   ).bind(session.user_id).first();
   if (!user || user.status !== 'active') return null;
