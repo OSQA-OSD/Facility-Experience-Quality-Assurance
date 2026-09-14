@@ -6,7 +6,7 @@
 import {
   hashPassword, verifyPassword, createSession, destroySession, getUserFromRequest,
   readCookie, sessionCookieHeader, clearCookieHeader, isLocked,
-  registerFailedAttempt, clearFailedAttempts, SESSION_COOKIE,
+  registerFailedAttempt, clearFailedAttempts, SESSION_COOKIE, MAX_FAILED_ATTEMPTS,
 } from './auth.js';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
@@ -125,15 +125,71 @@ async function updateInspection(env, id, rec) {
   return json({ ok: true, id });
 }
 
-async function deleteInspection(env, id) {
+async function deleteInspection(env, user, id) {
+  const row = await env.DB.prepare('SELECT facility, date, inspector FROM inspections WHERE id = ?1').bind(id).first();
   const res = await env.DB.prepare('DELETE FROM inspections WHERE id = ?1').bind(id).run();
   if (!res.meta.changes) return fail('record not found', 404);
+  await audit(env, user, 'inspection.delete', String(id), row ? `${row.facility} · ${row.date}` : `#${id}`,
+    row ? `Inspection by ${row.inspector}` : null);
   return json({ ok: true, id });
 }
 
 /* ── Buildings ──────────────────────────────────────────── */
 
-async function listBuildings(env) {
+async function listBuildings(env, url, user) {
+  if (url.searchParams.get('usage') === '1' && user.role === ADMIN_ROLE) {
+    const { results } = await env.DB.prepare(
+      `SELECT b.id, b.location, b.division, b.area, b.name, b.created_at,
+              (SELECT COUNT(*) FROM assignments a WHERE a.building_id = b.id) AS assignments
+       FROM buildings b ORDER BY b.division, b.area, b.name`,
+    ).all();
+    return json({ buildings: results || [] });
+  }
+  return listBuildingsBasic(env);
+}
+
+function cleanBuilding(body) {
+  const out = {};
+  for (const key of ['location', 'division', 'area', 'name']) out[key] = String(body?.[key] || '').trim().replace(/\s+/g, ' ');
+  return Object.values(out).every(Boolean) ? out : null;
+}
+
+async function createBuilding(env, user, body) {
+  const b = cleanBuilding(body);
+  if (!b) return fail('location, division, area and name are all required', 400);
+  const dup = await env.DB.prepare('SELECT id FROM buildings WHERE lower(name) = lower(?1)').bind(b.name).first();
+  if (dup) return fail('a building with that name already exists', 409);
+  const res = await env.DB.prepare('INSERT INTO buildings (location, division, area, name) VALUES (?1, ?2, ?3, ?4)')
+    .bind(b.location, b.division, b.area, b.name).run();
+  await audit(env, user, 'building.create', String(res.meta.last_row_id), b.name, `${b.division} · ${b.area} · ${b.location}`);
+  return json({ ok: true, id: res.meta.last_row_id }, 201);
+}
+
+async function updateBuilding(env, user, id, body) {
+  const b = cleanBuilding(body);
+  if (!b) return fail('location, division, area and name are all required', 400);
+  const cur = await env.DB.prepare('SELECT * FROM buildings WHERE id = ?1').bind(id).first();
+  if (!cur) return fail('building not found', 404);
+  const dup = await env.DB.prepare('SELECT id FROM buildings WHERE lower(name) = lower(?1) AND id != ?2').bind(b.name, id).first();
+  if (dup) return fail('a building with that name already exists', 409);
+  await env.DB.prepare('UPDATE buildings SET location = ?2, division = ?3, area = ?4, name = ?5 WHERE id = ?1')
+    .bind(id, b.location, b.division, b.area, b.name).run();
+  const changed = ['name', 'division', 'area', 'location'].filter((k) => cur[k] !== b[k]).map((k) => `${k}: ${cur[k]} → ${b[k]}`);
+  if (changed.length) await audit(env, user, 'building.update', String(id), b.name, changed.join(' · '));
+  return json({ ok: true });
+}
+
+async function deleteBuilding(env, user, id) {
+  const cur = await env.DB.prepare('SELECT name FROM buildings WHERE id = ?1').bind(id).first();
+  if (!cur) return fail('building not found', 404);
+  const { c } = await env.DB.prepare('SELECT COUNT(*) AS c FROM assignments WHERE building_id = ?1').bind(id).first();
+  if (c) return fail(`this building has ${c} assignment${c === 1 ? '' : 's'} and cannot be deleted`, 409);
+  await env.DB.prepare('DELETE FROM buildings WHERE id = ?1').bind(id).run();
+  await audit(env, user, 'building.delete', String(id), cur.name, null);
+  return json({ ok: true });
+}
+
+async function listBuildingsBasic(env) {
   const { results } = await env.DB.prepare(
     'SELECT id, location, division, area, name FROM buildings ORDER BY division, area, name',
   ).all();
@@ -415,7 +471,6 @@ async function bulkAssign(env, officer, body) {
  * results by quarter, turnaround, section averages and the items most often
  * marked non-compliant (read from the latest submission per assignment). */
 
-const isManagerRole = (role) => role === 'quality_officer' || role === 'quality_leader' || role === ADMIN_ROLE;
 const nextQuarterOf = (q) => {
   let y = Number(q.slice(0, 4)), n = Number(q.slice(-1)) + 1;
   if (n > 4) { n = 1; y += 1; }
@@ -428,7 +483,7 @@ async function auditorProfile(env, viewer, url) {
   if (!QUARTER_RE.test(quarter)) return fail('quarter (YYYY-Qn) is required', 400);
   const requested = url.searchParams.get('auditorId') || viewer.id;
   const isSelf = requested === viewer.id;
-  if (!isSelf && !isManagerRole(viewer.role)) return fail('you can only view your own assignments', 403);
+  if (!isSelf && !can(viewer, 'profiles')) return fail('you can only view your own assignments', 403);
 
   const auditor = await env.DB.prepare(
     "SELECT id, name, username, status, role FROM qa_users WHERE id = ?1",
@@ -446,7 +501,7 @@ async function auditorProfile(env, viewer, url) {
        FROM inspections WHERE CAST(json_extract(data, '$.assignmentId') AS INTEGER) IN (SELECT id FROM assignments WHERE auditor_id = ?1)
        ORDER BY id`,
     ).bind(auditor.id).all(),
-    isManagerRole(viewer.role)
+    can(viewer, 'profiles')
       ? env.DB.prepare(
         `SELECT u.id, u.name, u.status FROM qa_users u WHERE u.role = 'quality_auditor'
          AND (u.status = 'active' OR EXISTS (SELECT 1 FROM assignments x WHERE x.auditor_id = u.id)) ORDER BY u.name`,
@@ -514,7 +569,7 @@ async function auditorProfile(env, viewer, url) {
   const next = nextQuarterOf(quarter);
   return json({
     auditor: { id: auditor.id, name: auditor.name, username: auditor.username, status: auditor.status },
-    isSelf, canManage: viewer.role === 'quality_officer' || viewer.role === ADMIN_ROLE,
+    isSelf, canManage: can(viewer, 'assign'),
     auditors: team.results || [],
     quarter, quarters: [...quarters].reverse(),
     assignments: all.filter((x) => x.quarter === quarter),
@@ -763,8 +818,8 @@ async function handleAssignments(request, env, url, path, user) {
   const method = request.method.toUpperCase();
   if (!path.startsWith('assignments')) return null;
 
-  const canManage = user.role === 'quality_officer' || user.role === ADMIN_ROLE;
-  const canView = canManage || user.role === 'quality_leader';
+  const canManage = can(user, 'assign');
+  const canView = canManage || can(user, 'team');
 
   if (path === 'assignments/auditors' && method === 'GET') {
     if (!canManage) return fail('you do not have permission to view this', 403);
@@ -886,6 +941,49 @@ const ADMIN_ROLE = 'quality_admin';
 const ASSIGNABLE_ROLES = new Set(['quality_leader', 'quality_officer', 'quality_auditor', 'data_analyst']);
 const ALL_ROLES = new Set([ADMIN_ROLE, ...ASSIGNABLE_ROLES]);
 
+/* ── Permissions ───────────────────────────────────────────
+ * Each role comes with a default set; an admin can tailor any non-admin
+ * account (stored as a JSON array in qa_users.permissions, NULL = defaults).
+ * Quality Admins always hold every permission, and managing users, buildings
+ * and the audit log stays with that role so access can't be escalated.
+ * can_edit / can_delete / can_export are kept in step for older code paths. */
+
+const PERMISSIONS = ['inspect', 'delete', 'export', 'assign', 'team', 'profiles', 'reports'];
+const ROLE_PERMISSIONS = {
+  quality_admin: PERMISSIONS,
+  quality_leader: ['team', 'profiles', 'reports', 'export'],
+  quality_officer: ['assign', 'profiles', 'reports', 'export'],
+  quality_auditor: ['inspect', 'reports', 'export'],
+  data_analyst: ['reports', 'export'],
+};
+const LEGACY_FLAGS = { inspect: 'can_edit', delete: 'can_delete', export: 'can_export' };
+
+function effectivePermissions(user) {
+  if (user.role === ADMIN_ROLE) return [...PERMISSIONS];
+  if (user.permissions) {
+    try {
+      const list = JSON.parse(user.permissions);
+      if (Array.isArray(list)) return PERMISSIONS.filter((k) => list.includes(k));
+    } catch { /* fall through to defaults */ }
+  }
+  // Accounts from before detailed permissions: role defaults, with the three original switches as they were.
+  const set = new Set((ROLE_PERMISSIONS[user.role] || []).filter((k) => !LEGACY_FLAGS[k]));
+  for (const [key, col] of Object.entries(LEGACY_FLAGS)) if (user[col]) set.add(key);
+  return PERMISSIONS.filter((k) => set.has(k));
+}
+const can = (user, key) => effectivePermissions(user).includes(key);
+const sameSet = (a, b) => a.length === b.length && a.every((k) => b.includes(k));
+
+async function audit(env, actor, action, targetId, target, details) {
+  try {
+    await env.DB.prepare(
+      'INSERT INTO audit_log (actor_id, actor_name, action, target_id, target, details) VALUES (?1, ?2, ?3, ?4, ?5, ?6)',
+    ).bind(actor?.id || null, actor?.name || null, action, targetId || null, target || null, details || null).run();
+  } catch { /* logging must never block the action itself */ }
+}
+const touchLogin = (env, id) => env.DB.prepare("UPDATE qa_users SET last_login_at = datetime('now') WHERE id = ?1").bind(id).run()
+  .catch(() => {});
+
 async function hasAnyUser(env) {
   const row = await env.DB.prepare('SELECT id FROM qa_users LIMIT 1').first();
   return !!row;
@@ -912,22 +1010,26 @@ async function authBootstrap(env, body) {
   ).bind(id, name, username, hash, salt, iterations, rounds, ADMIN_ROLE).run();
 
   const { token, expiresAt } = await createSession(env, id);
+  await touchLogin(env, id);
+  await audit(env, { id, name }, 'user.create', id, `${name} (@${username})`, 'First administrator created at setup');
   return json(
-    { ok: true, user: { id, name, username, role: ADMIN_ROLE, canEdit: true, canDelete: true, canExport: true } },
+    { ok: true, user: publicUser({ id, name, username, role: ADMIN_ROLE }) },
     201,
     { 'Set-Cookie': sessionCookieHeader(token, expiresAt) },
   );
 }
 
 function publicUser(user) {
+  const permissions = effectivePermissions(user);
   return {
     id: user.id,
     name: user.name,
     username: user.username,
     role: user.role,
-    canEdit: !!user.can_edit,
-    canDelete: !!user.can_delete,
-    canExport: !!user.can_export,
+    permissions,
+    canEdit: permissions.includes('inspect'),
+    canDelete: permissions.includes('delete'),
+    canExport: permissions.includes('export'),
   };
 }
 
@@ -944,6 +1046,10 @@ async function authLogin(env, body) {
   const valid = await verifyPassword(password, user);
   if (!valid) {
     await registerFailedAttempt(env, user);
+    if ((user.failed_attempts || 0) + 1 === MAX_FAILED_ATTEMPTS) {
+      await audit(env, null, 'security.lockout', user.id, `${user.name} (@${user.username})`,
+        `Locked for 15 minutes after ${MAX_FAILED_ATTEMPTS} failed sign-in attempts`);
+    }
     return fail('invalid username or password', 401);
   }
 
@@ -954,6 +1060,7 @@ async function authLogin(env, body) {
   }
 
   const { token, expiresAt } = await createSession(env, user.id);
+  await touchLogin(env, user.id);
   return json(
     { ok: true, user: publicUser(user) },
     200,
@@ -982,6 +1089,7 @@ async function authCompleteSetup(env, body) {
   ).bind(user.id, hash, salt, iterations, rounds).run();
 
   const { token, expiresAt } = await createSession(env, user.id);
+  await touchLogin(env, user.id);
   return json(
     { ok: true, user: publicUser(user) },
     200,
@@ -1027,25 +1135,41 @@ async function authChangePassword(request, env, body) {
 
 async function adminListUsers(env) {
   const { results } = await env.DB.prepare(
-    `SELECT id, name, username, role, status, can_edit, can_delete, can_export, must_change_password, created_at
-     FROM qa_users ORDER BY created_at ASC`,
-  ).all();
-  const users = (results || []).map((u) => ({
-    id: u.id,
-    name: u.name,
-    username: u.username,
-    role: u.role,
-    status: u.status,
-    canEdit: !!u.can_edit,
-    canDelete: !!u.can_delete,
-    canExport: !!u.can_export,
-    mustChangePassword: !!u.must_change_password,
-    createdAt: u.created_at,
-  }));
-  return json({ users });
+    `SELECT u.id, u.name, u.username, u.role, u.status, u.can_edit, u.can_delete, u.can_export, u.permissions,
+            u.must_change_password, u.failed_attempts, u.locked_until, u.last_login_at, u.created_at,
+            (SELECT COUNT(*) FROM qa_sessions s WHERE s.user_id = u.id AND s.expires_at > ?1) AS sessions
+     FROM qa_users u ORDER BY u.created_at ASC`,
+  ).bind(Date.now()).all();
+  const users = (results || []).map((u) => {
+    const permissions = effectivePermissions(u);
+    return {
+      id: u.id, name: u.name, username: u.username, role: u.role, status: u.status,
+      permissions, customPermissions: u.role !== ADMIN_ROLE && !sameSet(permissions, ROLE_PERMISSIONS[u.role] || []),
+      canEdit: permissions.includes('inspect'), canDelete: permissions.includes('delete'), canExport: permissions.includes('export'),
+      mustChangePassword: !!u.must_change_password,
+      failedAttempts: u.failed_attempts || 0,
+      lockedUntil: u.locked_until && u.locked_until > Date.now() ? new Date(u.locked_until).toISOString() : null,
+      lastLoginAt: u.last_login_at, activeSessions: u.sessions, createdAt: u.created_at,
+    };
+  });
+  return json({ users, catalog: PERMISSIONS, roleDefaults: ROLE_PERMISSIONS });
 }
 
-async function adminCreateUser(env, body) {
+function cleanPermissions(list) {
+  return Array.isArray(list) ? PERMISSIONS.filter((k) => list.includes(k)) : null;
+}
+/** Columns for a permission set; NULL JSON when it equals the role defaults. */
+function permissionColumns(role, perms) {
+  const custom = role !== ADMIN_ROLE && !sameSet(perms, ROLE_PERMISSIONS[role] || []);
+  return {
+    permissions: custom ? JSON.stringify(perms) : null,
+    can_edit: perms.includes('inspect') ? 1 : 0,
+    can_delete: perms.includes('delete') ? 1 : 0,
+    can_export: perms.includes('export') ? 1 : 0,
+  };
+}
+
+async function adminCreateUser(env, actingUser, body) {
   const name = (body?.name || '').trim();
   const username = (body?.username || '').trim().toLowerCase();
   const password = body?.password || '';
@@ -1053,42 +1177,78 @@ async function adminCreateUser(env, body) {
   if (!name || !username || password.length < MIN_PASSWORD_LENGTH) {
     return fail(`name, username, and a temporary password of at least ${MIN_PASSWORD_LENGTH} characters are required`, 400);
   }
+  if (!/^[a-z0-9._-]{3,40}$/.test(username)) return fail('username must be 3–40 characters: letters, numbers, dot, dash or underscore', 400);
   const existing = await env.DB.prepare('SELECT id FROM qa_users WHERE username = ?1').bind(username).first();
   if (existing) return fail('that username is already taken', 409);
 
-  const canEdit = body?.canEdit !== false ? 1 : 0;
-  const canDelete = body?.canDelete === true ? 1 : 0;
-  const canExport = body?.canExport !== false ? 1 : 0;
-
+  const perms = role === ADMIN_ROLE ? [...PERMISSIONS] : (cleanPermissions(body?.permissions) || ROLE_PERMISSIONS[role]);
+  const cols = permissionColumns(role, perms);
   const { hash, salt, iterations, rounds } = await hashPassword(password);
   const id = crypto.randomUUID();
   await env.DB.prepare(
     `INSERT INTO qa_users
        (id, name, username, password_hash, password_salt, password_iterations, password_rounds,
-        role, can_edit, can_delete, can_export, must_change_password)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 1)`,
-  ).bind(id, name, username, hash, salt, iterations, rounds, role, canEdit, canDelete, canExport).run();
+        role, can_edit, can_delete, can_export, permissions, must_change_password)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 1)`,
+  ).bind(id, name, username, hash, salt, iterations, rounds, role, cols.can_edit, cols.can_delete, cols.can_export, cols.permissions).run();
 
+  await audit(env, actingUser, 'user.create', id, `${name} (@${username})`,
+    `Role ${role}${cols.permissions ? ` · custom permissions: ${perms.join(', ') || 'none'}` : ''}`);
   return json({ ok: true, id }, 201);
 }
 
 async function adminUpdateUser(env, actingUser, targetId, body) {
   if (targetId === actingUser.id) return fail('use your account settings to change your own access', 400);
-  const target = await env.DB.prepare('SELECT id, role FROM qa_users WHERE id = ?1').bind(targetId).first();
+  const target = await env.DB.prepare('SELECT * FROM qa_users WHERE id = ?1').bind(targetId).first();
   if (!target) return fail('user not found', 404);
-
+  const label = `${target.name} (@${target.username})`;
   const sets = [];
   const values = [targetId];
-  let n = 2;
-  if (typeof body?.canEdit === 'boolean') { sets.push(`can_edit = ?${n++}`); values.push(body.canEdit ? 1 : 0); }
-  if (typeof body?.canDelete === 'boolean') { sets.push(`can_delete = ?${n++}`); values.push(body.canDelete ? 1 : 0); }
-  if (typeof body?.canExport === 'boolean') { sets.push(`can_export = ?${n++}`); values.push(body.canExport ? 1 : 0); }
-  if (body?.status === 'active' || body?.status === 'suspended') { sets.push(`status = ?${n++}`); values.push(body.status); }
-  if (ALL_ROLES.has(body?.role)) { sets.push(`role = ?${n++}`); values.push(body.role); }
-  if (!sets.length) return fail('nothing to update', 400);
+  const put = (col, val) => { sets.push(`${col} = ?${values.length + 1}`); values.push(val); };
+  const notes = [];
+
+  const before = effectivePermissions(target);
+  let role = target.role;
+  if (ALL_ROLES.has(body?.role) && body.role !== target.role) {
+    if (target.role === ADMIN_ROLE) {
+      const { c } = await env.DB.prepare("SELECT COUNT(*) AS c FROM qa_users WHERE role = ?1 AND status = 'active'").bind(ADMIN_ROLE).first();
+      if (c <= 1) return fail('cannot change the role of the last active administrator', 400);
+    }
+    role = body.role;
+    put('role', role);
+    notes.push(['user.role', `${target.role} → ${role} (permissions reset to role defaults)`]);
+  }
+  // A role change resets to that role's defaults unless a new set arrives with it.
+  let perms = null;
+  if (body && 'permissions' in body) perms = body.permissions === null ? [...(ROLE_PERMISSIONS[role] || [])] : cleanPermissions(body.permissions);
+  else if (role !== target.role) perms = [...(ROLE_PERMISSIONS[role] || [])];
+  if (body && 'permissions' in body && perms === null) return fail('permissions must be a list', 400);
+  if (perms) {
+    const cols = permissionColumns(role, perms);
+    for (const [col, val] of Object.entries(cols)) put(col, val);
+    const added = perms.filter((k) => !before.includes(k)), removed = before.filter((k) => !perms.includes(k));
+    if (role === target.role && (added.length || removed.length)) {
+      notes.push(['user.permissions', [added.length ? `granted ${added.join(', ')}` : '', removed.length ? `removed ${removed.join(', ')}` : ''].filter(Boolean).join(' · ')]);
+    }
+  }
+  if ((body?.status === 'active' || body?.status === 'suspended') && body.status !== target.status) {
+    if (body.status === 'suspended' && target.role === ADMIN_ROLE) {
+      const { c } = await env.DB.prepare("SELECT COUNT(*) AS c FROM qa_users WHERE role = ?1 AND status = 'active'").bind(ADMIN_ROLE).first();
+      if (c <= 1) return fail('cannot suspend the last active administrator', 400);
+    }
+    put('status', body.status);
+    notes.push(['user.status', body.status === 'suspended' ? 'Suspended' : 'Reactivated']);
+  }
+  if (typeof body?.name === 'string' && body.name.trim() && body.name.trim() !== target.name) {
+    put('name', body.name.trim());
+    notes.push(['user.update', `name: ${target.name} → ${body.name.trim()}`]);
+  }
+  if (!sets.length) return json({ ok: true, unchanged: true });
   sets.push(`updated_at = datetime('now')`);
 
   await env.DB.prepare(`UPDATE qa_users SET ${sets.join(', ')} WHERE id = ?1`).bind(...values).run();
+  if (body?.status === 'suspended') await env.DB.prepare('DELETE FROM qa_sessions WHERE user_id = ?1').bind(targetId).run();
+  for (const [action, details] of notes) await audit(env, actingUser, action, targetId, label, details);
   return json({ ok: true });
 }
 
@@ -1098,28 +1258,73 @@ async function adminResetPassword(env, actingUser, targetId, body) {
   if (password.length < MIN_PASSWORD_LENGTH) {
     return fail(`temporary password must be at least ${MIN_PASSWORD_LENGTH} characters`, 400);
   }
+  const target = await env.DB.prepare('SELECT name, username FROM qa_users WHERE id = ?1').bind(targetId).first();
+  if (!target) return fail('user not found', 404);
   const { hash, salt, iterations, rounds } = await hashPassword(password);
-  const res = await env.DB.prepare(
+  await env.DB.prepare(
     `UPDATE qa_users SET password_hash = ?2, password_salt = ?3, password_iterations = ?4, password_rounds = ?5,
        must_change_password = 1, failed_attempts = 0, locked_until = NULL, updated_at = datetime('now')
      WHERE id = ?1`,
   ).bind(targetId, hash, salt, iterations, rounds).run();
-  if (!res.meta.changes) return fail('user not found', 404);
   await env.DB.prepare('DELETE FROM qa_sessions WHERE user_id = ?1').bind(targetId).run();
+  await audit(env, actingUser, 'user.password_reset', targetId, `${target.name} (@${target.username})`, 'Temporary password issued; signed out everywhere');
   return json({ ok: true });
+}
+
+async function adminUnlockUser(env, actingUser, targetId) {
+  const target = await env.DB.prepare('SELECT name, username FROM qa_users WHERE id = ?1').bind(targetId).first();
+  if (!target) return fail('user not found', 404);
+  await clearFailedAttempts(env, targetId);
+  await audit(env, actingUser, 'security.unlock', targetId, `${target.name} (@${target.username})`, 'Failed sign-in attempts cleared');
+  return json({ ok: true });
+}
+
+async function adminSignOutUser(env, actingUser, targetId) {
+  if (targetId === actingUser.id) return fail('use Sign out to end your own session', 400);
+  const target = await env.DB.prepare('SELECT name, username FROM qa_users WHERE id = ?1').bind(targetId).first();
+  if (!target) return fail('user not found', 404);
+  const res = await env.DB.prepare('DELETE FROM qa_sessions WHERE user_id = ?1').bind(targetId).run();
+  await audit(env, actingUser, 'security.signout', targetId, `${target.name} (@${target.username})`,
+    `Ended ${res.meta.changes} session${res.meta.changes === 1 ? '' : 's'}`);
+  return json({ ok: true, ended: res.meta.changes });
 }
 
 async function adminDeleteUser(env, actingUser, targetId) {
   if (targetId === actingUser.id) return fail('you cannot delete your own account', 400);
-  const target = await env.DB.prepare('SELECT role FROM qa_users WHERE id = ?1').bind(targetId).first();
+  const target = await env.DB.prepare('SELECT name, username, role FROM qa_users WHERE id = ?1').bind(targetId).first();
   if (!target) return fail('user not found', 404);
   if (target.role === ADMIN_ROLE) {
     const { c } = await env.DB.prepare('SELECT COUNT(*) as c FROM qa_users WHERE role = ?1').bind(ADMIN_ROLE).first();
     if (c <= 1) return fail('cannot delete the last administrator', 400);
   }
-  await env.DB.prepare('DELETE FROM qa_users WHERE id = ?1').bind(targetId).run();
+  const { a } = await env.DB.prepare('SELECT COUNT(*) AS a FROM assignments WHERE auditor_id = ?1 OR assigned_by = ?1').bind(targetId).first();
+  if (a) return fail(`this account is linked to ${a} assignment${a === 1 ? '' : 's'} — suspend it instead so the history stays intact`, 409);
+  await env.DB.prepare('DELETE FROM notifications WHERE user_id = ?1').bind(targetId).run();
   await env.DB.prepare('DELETE FROM qa_sessions WHERE user_id = ?1').bind(targetId).run();
+  await env.DB.prepare('DELETE FROM qa_users WHERE id = ?1').bind(targetId).run();
+  await audit(env, actingUser, 'user.delete', targetId, `${target.name} (@${target.username})`, `Role ${target.role}`);
   return json({ ok: true });
+}
+
+async function adminAuditLog(env, url) {
+  const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || 100, 1), 500);
+  const before = Number(url.searchParams.get('before')) || null;
+  const target = url.searchParams.get('target') || null;
+  const where = [], binds = [];
+  if (before) { where.push(`id < ?${binds.length + 1}`); binds.push(before); }
+  if (target) { where.push(`target_id = ?${binds.length + 1}`); binds.push(target); }
+  const { results } = await env.DB.prepare(
+    `SELECT id, actor_id, actor_name, action, target_id, target, details, created_at FROM audit_log
+     ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY id DESC LIMIT ${limit + 1}`,
+  ).bind(...binds).all();
+  const rows = results || [];
+  return json({
+    entries: rows.slice(0, limit).map((r) => ({
+      id: r.id, actorId: r.actor_id, actor: r.actor_name, action: r.action, targetId: r.target_id,
+      target: r.target, details: r.details, at: r.created_at,
+    })),
+    more: rows.length > limit,
+  });
 }
 
 async function handleAdmin(request, env, path, user) {
@@ -1128,7 +1333,8 @@ async function handleAdmin(request, env, path, user) {
   if (!user || user.role !== ADMIN_ROLE) return fail('administrator access required', 403);
 
   if (path === 'admin/users' && method === 'GET') return adminListUsers(env);
-  if (path === 'admin/users' && method === 'POST') return adminCreateUser(env, await request.json());
+  if (path === 'admin/users' && method === 'POST') return adminCreateUser(env, user, await request.json());
+  if (path === 'admin/audit' && method === 'GET') return adminAuditLog(env, new URL(request.url));
 
   const idMatch = path.match(/^admin\/users\/([^/]+)$/);
   if (idMatch && method === 'PATCH') return adminUpdateUser(env, user, idMatch[1], await request.json());
@@ -1136,6 +1342,10 @@ async function handleAdmin(request, env, path, user) {
 
   const resetMatch = path.match(/^admin\/users\/([^/]+)\/reset-password$/);
   if (resetMatch && method === 'POST') return adminResetPassword(env, user, resetMatch[1], await request.json());
+  const unlockMatch = path.match(/^admin\/users\/([^/]+)\/unlock$/);
+  if (unlockMatch && method === 'POST') return adminUnlockUser(env, user, unlockMatch[1]);
+  const signoutMatch = path.match(/^admin\/users\/([^/]+)\/signout$/);
+  if (signoutMatch && method === 'POST') return adminSignOutUser(env, user, signoutMatch[1]);
 
   return fail('not found', 404);
 }
@@ -1172,16 +1382,30 @@ async function handleApi(request, env, url) {
   if (path.startsWith('admin/')) return fail('not found', 404);
 
   if (path === 'export.csv' && method === 'GET') {
-    if (!user.can_export) return fail('you do not have permission to export data', 403);
+    if (!can(user, 'export')) return fail('you do not have permission to export data', 403);
     return exportCsv(env);
   }
 
-  if (path === 'buildings' && method === 'GET') return listBuildings(env);
+  if (path === 'buildings' && method === 'GET') return listBuildings(env, url, user);
+  if (path === 'buildings' && method === 'POST') {
+    if (user.role !== ADMIN_ROLE) return fail('administrator access required', 403);
+    return createBuilding(env, user, await request.json());
+  }
+  const buildingMatch = path.match(/^buildings\/(\d+)$/);
+  if (buildingMatch && (method === 'PATCH' || method === 'DELETE')) {
+    if (user.role !== ADMIN_ROLE) return fail('administrator access required', 403);
+    return method === 'PATCH'
+      ? updateBuilding(env, user, Number(buildingMatch[1]), await request.json())
+      : deleteBuilding(env, user, Number(buildingMatch[1]));
+  }
 
-  if (path === 'reports/inspections' && method === 'GET') return reportInspections(env);
+  if (path === 'reports/inspections' && method === 'GET') {
+    if (!can(user, 'reports')) return fail('you do not have permission to view reports', 403);
+    return reportInspections(env);
+  }
 
   if (path === 'leader/overview' && method === 'GET') {
-    if (user.role !== 'quality_leader' && user.role !== ADMIN_ROLE) {
+    if (!can(user, 'team')) {
       return fail('you do not have permission to view the team overview', 403);
     }
     return leaderOverview(env, url);
@@ -1190,7 +1414,7 @@ async function handleApi(request, env, url) {
   if (path === 'auditor/profile' && method === 'GET') return auditorProfile(env, user, url);
 
   if (path === 'officer/board' && method === 'GET') {
-    if (user.role !== 'quality_officer' && user.role !== ADMIN_ROLE) {
+    if (!can(user, 'assign')) {
       return fail('you do not have permission to view the assignment board', 403);
     }
     return officerBoard(env, url);
@@ -1207,7 +1431,7 @@ async function handleApi(request, env, url) {
   if (path === 'inspections') {
     if (method === 'GET') return json(await listInspections(env));
     if (method === 'POST') {
-      if (!user.can_edit) return fail('you do not have permission to create inspections', 403);
+      if (!can(user, 'inspect')) return fail('you do not have permission to create inspections', 403);
       return insertInspection(env, await request.json());
     }
     return fail('method not allowed', 405);
@@ -1217,12 +1441,12 @@ async function handleApi(request, env, url) {
   if (match) {
     const id = Number(match[1]);
     if (method === 'PATCH' || method === 'PUT') {
-      if (!user.can_edit) return fail('you do not have permission to edit inspections', 403);
+      if (!can(user, 'inspect')) return fail('you do not have permission to edit inspections', 403);
       return updateInspection(env, id, await request.json());
     }
     if (method === 'DELETE') {
-      if (!user.can_delete) return fail('you do not have permission to delete inspections', 403);
-      return deleteInspection(env, id);
+      if (!can(user, 'delete')) return fail('you do not have permission to delete inspections', 403);
+      return deleteInspection(env, user, id);
     }
     return fail('method not allowed', 405);
   }
