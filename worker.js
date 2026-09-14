@@ -243,7 +243,7 @@ async function upsertAssignment(env, officer, body) {
       env, auditorId, 'assignment',
       `New assignment: ${building.name}`,
       `${officer.name} assigned you ${building.name} for ${quarter} ${type}.`,
-      '#pg-assignments',
+      '#pg-auditor',
     );
   }
 
@@ -396,7 +396,7 @@ async function bulkAssign(env, officer, body) {
       env, auditor.id, 'assignment',
       change.length === 1 ? `New assignment: ${names[0]}` : `${change.length} new assignments`,
       `${officer.name} assigned you ${list} for ${quarter} ${type}.`,
-      '#pg-assignments',
+      '#pg-auditor',
     );
   } else if (change.length) {
     await env.DB.prepare(
@@ -408,21 +408,129 @@ async function bulkAssign(env, officer, body) {
   return json({ ok: true, changed: change.length, unchanged, skippedCompleted, notFound });
 }
 
-async function listMyAssignments(env, auditorId, quarter, type) {
-  const { results } = await env.DB.prepare(
-    `SELECT a.id, a.building_id, b.name as building_name, b.division, b.area, b.location
-     FROM assignments a JOIN buildings b ON b.id = a.building_id
-     WHERE a.auditor_id = ?1 AND a.quarter = ?2 AND a.type = ?3
-     ORDER BY b.division, b.area, b.name`,
-  ).bind(auditorId, quarter, type).all();
-  const completedIds = await completedAssignmentIds(env);
+/* ── Auditor profile ───────────────────────────────────────
+ * One view of an auditor's work, used both by the auditor ("My Assignments")
+ * and by officers, leaders and admins looking at any auditor: the quarter's
+ * buildings, work carried over, next quarter, and all-time performance —
+ * results by quarter, turnaround, section averages and the items most often
+ * marked non-compliant (read from the latest submission per assignment). */
 
-  const assignments = (results || []).map((a) => ({
-    id: a.id, buildingId: a.building_id, buildingName: a.building_name,
-    division: a.division, area: a.area, location: a.location,
-    completed: completedIds.has(a.id),
+const isManagerRole = (role) => role === 'quality_officer' || role === 'quality_leader' || role === ADMIN_ROLE;
+const nextQuarterOf = (q) => {
+  let y = Number(q.slice(0, 4)), n = Number(q.slice(-1)) + 1;
+  if (n > 4) { n = 1; y += 1; }
+  return `${y}-Q${n}`;
+};
+const daysBetween = (a, b) => (new Date(b.replace(' ', 'T') + 'Z') - new Date(a.replace(' ', 'T') + 'Z')) / 86400000;
+
+async function auditorProfile(env, viewer, url) {
+  const quarter = url.searchParams.get('quarter') || '';
+  if (!QUARTER_RE.test(quarter)) return fail('quarter (YYYY-Qn) is required', 400);
+  const requested = url.searchParams.get('auditorId') || viewer.id;
+  const isSelf = requested === viewer.id;
+  if (!isSelf && !isManagerRole(viewer.role)) return fail('you can only view your own assignments', 403);
+
+  const auditor = await env.DB.prepare(
+    "SELECT id, name, username, status, role FROM qa_users WHERE id = ?1",
+  ).bind(requested).first();
+  if (!auditor || (!isSelf && auditor.role !== 'quality_auditor')) return fail('auditor not found', 404);
+
+  const [a, i, team] = await Promise.all([
+    env.DB.prepare(
+      `SELECT a.id, a.quarter, a.type, a.building_id, a.updated_at, b.name AS building_name, b.division, b.area, b.location, o.name AS assigned_by
+       FROM assignments a JOIN buildings b ON b.id = a.building_id LEFT JOIN qa_users o ON o.id = a.assigned_by
+       WHERE a.auditor_id = ?1 ORDER BY b.division, b.area, b.name`,
+    ).bind(auditor.id).all(),
+    env.DB.prepare(
+      `SELECT id, inspector, date, overall, created_at, CAST(json_extract(data, '$.assignmentId') AS INTEGER) AS assignment_id
+       FROM inspections WHERE CAST(json_extract(data, '$.assignmentId') AS INTEGER) IN (SELECT id FROM assignments WHERE auditor_id = ?1)
+       ORDER BY id`,
+    ).bind(auditor.id).all(),
+    isManagerRole(viewer.role)
+      ? env.DB.prepare(
+        `SELECT u.id, u.name, u.status FROM qa_users u WHERE u.role = 'quality_auditor'
+         AND (u.status = 'active' OR EXISTS (SELECT 1 FROM assignments x WHERE x.auditor_id = u.id)) ORDER BY u.name`,
+      ).all()
+      : Promise.resolve({ results: [] }),
+  ]);
+
+  const results = new Map();
+  for (const row of i.results || []) {
+    const prev = results.get(row.assignment_id);
+    results.set(row.assignment_id, {
+      completedAt: prev ? prev.completedAt : row.created_at,
+      score: typeof row.overall === 'number' ? Math.round(row.overall) : (prev ? prev.score : null),
+      inspectionId: row.id, date: row.date,
+    });
+  }
+  const all = (a.results || []).map((x) => {
+    const r = results.get(x.id);
+    return {
+      id: x.id, quarter: x.quarter, type: x.type, buildingId: x.building_id, buildingName: x.building_name,
+      division: x.division, area: x.area, location: x.location, assignedBy: x.assigned_by, assignedAt: x.updated_at,
+      status: r ? 'completed' : 'pending', score: r ? r.score : null, completedAt: r ? r.completedAt : null,
+      inspectionId: r ? r.inspectionId : null, inspectionDate: r ? r.date : null,
+    };
+  });
+  const done = all.filter((x) => x.status === 'completed');
+
+  // Performance, all quarters
+  const quarters = [...new Set(all.map((x) => x.quarter))].sort();
+  const byQuarter = quarters.map((q) => {
+    const inQ = all.filter((x) => x.quarter === q);
+    const scores = inQ.map((x) => x.score).filter((n) => typeof n === 'number');
+    return { quarter: q, assigned: inQ.length, completed: inQ.filter((x) => x.status === 'completed').length, avgScore: average(scores) };
+  });
+  const byType = Object.fromEntries(['BOQI', 'EOQI'].map((t) => {
+    const scores = done.filter((x) => x.type === t).map((x) => x.score).filter((n) => typeof n === 'number');
+    return [t, { completed: done.filter((x) => x.type === t).length, avgScore: average(scores) }];
   }));
-  return json({ quarter, type, assignments });
+  const turnarounds = done.filter((x) => x.assignedAt && x.completedAt)
+    .map((x) => Math.max(0, daysBetween(x.assignedAt, x.completedAt)));
+
+  const latestIds = JSON.stringify(done.map((x) => x.inspectionId));
+  const [sec, find] = done.length ? await Promise.all([
+    env.DB.prepare(
+      `SELECT json_extract(s.value, '$.title') AS title,
+              AVG(CAST(json_extract(s.value, '$.score') AS REAL) * 10.0 / NULLIF(CAST(json_extract(s.value, '$.max') AS REAL), 0)) AS avg10,
+              COUNT(*) AS n
+       FROM inspections i, json_each(i.data, '$.sections') s
+       WHERE i.id IN (SELECT value FROM json_each(?1))
+       GROUP BY title`,
+    ).bind(latestIds).all(),
+    env.DB.prepare(
+      `SELECT json_extract(s.value, '$.title') AS section, json_extract(it.value, '$.label') AS item, COUNT(*) AS count
+       FROM inspections i, json_each(i.data, '$.sections') s, json_each(s.value, '$.items') it
+       WHERE i.id IN (SELECT value FROM json_each(?1)) AND json_extract(it.value, '$.score') = 0
+       GROUP BY section, item ORDER BY count DESC, section, item LIMIT 10`,
+    ).bind(latestIds).all(),
+  ]) : [{ results: [] }, { results: [] }];
+
+  const events = [
+    ...all.map((x) => ({ kind: 'assigned', at: x.assignedAt, building: x.buildingName, quarter: x.quarter, type: x.type, actor: x.assignedBy })),
+    ...done.map((x) => ({ kind: 'completed', at: x.completedAt, building: x.buildingName, quarter: x.quarter, type: x.type, score: x.score })),
+  ].filter((x) => x.at).sort((x, y) => (y.at > x.at ? 1 : y.at < x.at ? -1 : 0)).slice(0, 20);
+
+  const next = nextQuarterOf(quarter);
+  return json({
+    auditor: { id: auditor.id, name: auditor.name, username: auditor.username, status: auditor.status },
+    isSelf, canManage: viewer.role === 'quality_officer' || viewer.role === ADMIN_ROLE,
+    auditors: team.results || [],
+    quarter, quarters: [...quarters].reverse(),
+    assignments: all.filter((x) => x.quarter === quarter),
+    carriedOver: all.filter((x) => x.status === 'pending' && x.quarter < quarter),
+    upcoming: { quarter: next, total: all.filter((x) => x.quarter === next).length },
+    performance: {
+      assigned: all.length, completed: done.length,
+      avgScore: average(done.map((x) => x.score).filter((n) => typeof n === 'number')),
+      avgTurnaroundDays: turnarounds.length ? Math.round((turnarounds.reduce((t, n) => t + n, 0) / turnarounds.length) * 10) / 10 : null,
+      byQuarter, byType,
+      sections: (sec.results || []).filter((x) => x.title).map((x) => ({ title: x.title, avg: Math.round(x.avg10 * 10) / 10, n: x.n })),
+      findings: (find.results || []).map((x) => ({ section: x.section, item: x.item, count: x.count })),
+      results: [...done].sort((x, y) => (y.completedAt || '').localeCompare(x.completedAt || '')),
+    },
+    events,
+  });
 }
 
 /* ── Quality Leader: team overview ─────────────────────────
@@ -654,13 +762,6 @@ async function reportInspections(env) {
 async function handleAssignments(request, env, url, path, user) {
   const method = request.method.toUpperCase();
   if (!path.startsWith('assignments')) return null;
-
-  if (path === 'assignments/mine' && method === 'GET') {
-    const quarter = url.searchParams.get('quarter') || '';
-    const type = url.searchParams.get('type') || '';
-    if (!quarter || !ASSIGNMENT_TYPES.has(type)) return fail('quarter and a valid type (BOQI/EOQI) are required', 400);
-    return listMyAssignments(env, user.id, quarter, type);
-  }
 
   const canManage = user.role === 'quality_officer' || user.role === ADMIN_ROLE;
   const canView = canManage || user.role === 'quality_leader';
@@ -1085,6 +1186,8 @@ async function handleApi(request, env, url) {
     }
     return leaderOverview(env, url);
   }
+
+  if (path === 'auditor/profile' && method === 'GET') return auditorProfile(env, user, url);
 
   if (path === 'officer/board' && method === 'GET') {
     if (user.role !== 'quality_officer' && user.role !== ADMIN_ROLE) {
