@@ -7,159 +7,194 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
 <style>
+/* Same tokens and building blocks as the app (app.html): royal/teal gradient heroes,
+   white cards with gradient icon tiles, pill buttons, the five-band rating scale. */
 :root{
   --teal:#26A8AB;--teal-lt:#8CFEE3;--royal:#0033A0;--royal-dk:#002070;
   --bg:#EEF3F7;--border:#C8D8E4;--text:#102040;--muted:#456080;
   --good:#00843D;--r:12px;--font:'Cairo',system-ui,sans-serif;
+  --hero:linear-gradient(145deg,#001540 0%,#002280 50%,#0a5f60 100%);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6}
+[hidden]{display:none!important}
 
-header{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--border);padding:14px 6%;display:flex;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:1.02rem;color:var(--royal)}
-.brand .dot{width:34px;height:34px;border-radius:9px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;color:#fff}
-.brand .dot svg{width:18px;height:18px}
-header nav{display:flex;gap:24px}
-header nav a{color:var(--muted);text-decoration:none;font-weight:700;font-size:.88rem}
+/* Header — matches the app's top bar */
+header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.97);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(38,168,171,.35);
+  padding:10px 6%;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none}
+.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(160deg,var(--teal) 0%,var(--royal) 100%);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.logo svg{width:20px;height:20px}
+.brand b{display:block;font-weight:900;font-size:.98rem;color:var(--royal-dk);line-height:1.2}
+.brand small{display:block;font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+header nav{display:flex;gap:26px}
+header nav a{color:var(--muted);text-decoration:none;font-weight:700;font-size:.86rem}
 header nav a:hover{color:var(--royal)}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:999px;font-weight:800;font-size:.88rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.hd-right{display:flex;align-items:center;gap:10px}
+.hd-user{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:700;color:var(--text)}
+.hd-user i{width:30px;height:30px;border-radius:50%;background:linear-gradient(160deg,var(--royal),var(--teal));color:#fff;font-style:normal;font-size:.68rem;font-weight:900;display:flex;align-items:center;justify-content:center}
+.hd-link{background:none;border:none;color:var(--muted);font-family:var(--font);font-weight:700;font-size:.8rem;cursor:pointer}
+.hd-link:hover{color:var(--royal)}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:999px;font-family:var(--font);font-weight:800;font-size:.86rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s}
+.btn svg{width:15px;height:15px}
 .btn-primary{background:var(--royal);color:#fff;box-shadow:0 8px 20px -6px rgba(0,51,160,.5)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 24px -6px rgba(0,51,160,.55)}
-.btn-ghost{background:transparent;color:var(--royal);border:1.5px solid var(--border)}
-.btn-ghost:hover{border-color:var(--royal)}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-teal{background:var(--teal);color:#fff;box-shadow:0 8px 20px -8px rgba(38,168,171,.7)}
+.btn-teal:hover{transform:translateY(-2px)}
+.btn-light{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.3)}
+.btn-light:hover{background:rgba(255,255,255,.18)}
 
-@keyframes bgFloat{
-  0%,100%{background-position:15% -10%, 100% 8%;background-size:820px 820px, 1150px 1150px}
-  50%{background-position:5% 2%, 88% 22%;background-size:900px 900px, 1300px 1300px}
-}
-.hero{
-  padding:76px 6% 60px;display:flex;align-items:center;gap:56px;flex-wrap:wrap;
-  background-repeat:no-repeat;
-  background-image:radial-gradient(circle, rgba(38,168,171,.16), transparent 55%),
-                    radial-gradient(circle, rgba(0,51,160,.26), transparent 60%);
-  background-position:15% -10%, 100% 8%;
-  background-size:820px 820px, 1150px 1150px;
-  animation:bgFloat 16s ease-in-out infinite;
-}
-.hero-copy{flex:1 1 460px;max-width:620px}
-.eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(38,168,171,.14);color:#0c7b7d;font-weight:800;font-size:.72rem;letter-spacing:.06em;padding:6px 14px;border-radius:999px;margin-bottom:18px}
-.hero h1{font-size:clamp(1.9rem,3.6vw,2.7rem);font-weight:900;color:var(--royal-dk);line-height:1.28;margin-bottom:16px}
+/* Hero — the app's page header, full size */
+.hero{background:var(--hero);color:#fff;border-bottom:4px solid var(--teal);position:relative;overflow:hidden;
+  padding:72px 6% 64px;display:flex;align-items:center;gap:56px;flex-wrap:wrap}
+.hero::before{content:'';position:absolute;top:-120px;right:-80px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(38,168,171,.25) 0%,transparent 70%);pointer-events:none}
+.hero-copy{flex:1 1 460px;max-width:600px;position:relative}
+.ey{display:inline-flex;align-items:center;gap:7px;background:rgba(140,254,227,.12);border:1px solid rgba(140,254,227,.3);color:var(--teal-lt);font-weight:800;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;padding:5px 13px;border-radius:999px;margin-bottom:18px}
+.ey svg{width:13px;height:13px}
+.hero h1{font-size:clamp(1.9rem,3.6vw,2.7rem);font-weight:900;line-height:1.25;margin-bottom:16px}
 .hero h1 span{color:var(--teal)}
-.hero p{color:var(--muted);font-size:1.02rem;margin-bottom:30px;max-width:540px}
-.hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:34px}
-.hero-stats{display:flex;gap:30px;flex-wrap:wrap}
-.hero-stats div b{display:block;font-size:1.5rem;font-weight:900;color:var(--royal)}
-.hero-stats div span{font-size:.76rem;color:var(--muted);font-weight:700}
+.hero p{color:rgba(255,255,255,.7);font-size:1rem;margin-bottom:30px;max-width:540px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:34px}
+.hero-stats{display:flex;gap:12px;flex-wrap:wrap}
+.hero-stats div{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:8px 16px}
+.hero-stats b{display:block;font-size:1.25rem;font-weight:900;color:#fff;line-height:1.2}
+.hero-stats span{font-size:.64rem;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
 
-.hero-visual{flex:1 1 380px;max-width:480px}
-.mock{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 60px -20px rgba(0,32,112,.28);overflow:hidden}
-.mock-bar{background:var(--royal);padding:12px 16px;display:flex;align-items:center;gap:8px}
-.mock-bar span{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35)}
-.mock-body{padding:20px}
-.mock-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bg)}
-.mock-row:last-child{border-bottom:none}
-.mock-ic{width:34px;height:34px;border-radius:9px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--teal);flex-shrink:0}
-.mock-ic svg{width:17px;height:17px}
-.mock-line{flex:1}
-.mock-line b{display:block;font-size:.82rem;font-weight:800;color:var(--text)}
-.mock-line span{font-size:.72rem;color:var(--muted)}
-.mock-score{font-weight:900;font-size:.85rem;color:var(--good)}
+/* App preview */
+.hero-visual{flex:1 1 420px;max-width:520px;position:relative}
+.mock{display:grid;grid-template-columns:150px 1fr;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 30px 70px -24px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.2)}
+.mock-side{background:linear-gradient(180deg,var(--royal-dk) 0%,var(--royal) 45%,var(--teal) 100%);padding:14px 8px;display:grid;gap:4px;align-content:start}
+.mock-side .ms-brand{display:flex;align-items:center;gap:7px;padding:0 6px 12px;color:#fff;font-size:.62rem;font-weight:900;line-height:1.2}
+.mock-side .ms-brand span{width:22px;height:22px;border-radius:6px;background:linear-gradient(160deg,var(--teal),var(--royal));border:1px solid rgba(140,254,227,.35);display:flex;align-items:center;justify-content:center}
+.mock-side .ms-brand svg{width:12px;height:12px}
+.ms-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:7px;font-size:.64rem;font-weight:700;color:rgba(255,255,255,.75)}
+.ms-item svg{width:13px;height:13px;opacity:.8}
+.ms-item.on{background:rgba(255,255,255,.15);color:#fff;box-shadow:inset 2px 0 var(--teal-lt)}
+.ms-item.on svg{color:var(--teal-lt);opacity:1}
+.mock-main{padding:16px;background:var(--bg);color:var(--text)}
+.mm-head{background:var(--hero);border-radius:10px;padding:14px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.mm-head small{display:block;font-size:.52rem;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-lt);font-weight:800}
+.mm-head b{font-size:.92rem;font-weight:900}
+.mm-head b span{color:var(--teal)}
+.ring{width:62px;height:62px;border-radius:50%;background:conic-gradient(#00843D 92%,rgba(255,255,255,.15) 0);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ring div{width:50px;height:50px;border-radius:50%;background:#02205f;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.ring b{font-size:1rem}
+.ring small{font-size:.44rem;color:var(--teal-lt);letter-spacing:.06em;margin-top:2px}
+.mm-row{background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 10px;margin-bottom:7px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.mm-row b{font-size:.66rem;font-weight:800}
+.mm-row em{font-style:normal;font-size:.62rem;font-weight:900;color:var(--royal)}
+.mm-bar{grid-column:1/-1;height:5px;background:var(--bg);border-radius:9px;overflow:hidden}
+.mm-bar i{display:block;height:100%;border-radius:9px}
 
-section{padding:64px 6%}
-.section-head{text-align:center;max-width:620px;margin:0 auto 44px}
-.section-head .eyebrow{margin-bottom:12px}
-.section-head h2{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:900;color:var(--royal-dk);margin-bottom:10px}
+/* Sections */
+section{padding:68px 6%;scroll-margin-top:58px}
+.section-head{text-align:center;max-width:640px;margin:0 auto 40px}
+.eyebrow{display:inline-flex;align-items:center;gap:6px;background:rgba(38,168,171,.14);color:#0c7b7d;font-weight:800;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:999px;margin-bottom:12px}
+.section-head h2{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:900;color:var(--royal-dk);margin-bottom:8px;line-height:1.3}
+.section-head h2 span{color:var(--teal)}
 .section-head p{color:var(--muted)}
+.alt{background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;max-width:1100px;margin:0 auto}
-.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:26px 22px;transition:transform .15s,box-shadow .15s}
-.card:hover{transform:translateY(-4px);box-shadow:0 16px 32px -14px rgba(0,32,112,.18)}
-.card .ic{width:42px;height:42px;border-radius:10px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:16px}
-.card .ic svg{width:21px;height:21px}
-.card h3{font-size:1rem;font-weight:800;margin-bottom:8px}
-.card p{font-size:.86rem;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;max-width:1120px;margin:0 auto}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:22px;transition:transform .15s,box-shadow .15s,border-color .15s}
+.card:hover{transform:translateY(-3px);box-shadow:0 16px 32px -18px rgba(0,32,112,.3);border-color:var(--teal)}
+.ic{width:40px;height:40px;border-radius:10px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:14px}
+.ic svg{width:20px;height:20px}
+.card h3{font-size:.98rem;font-weight:800;color:var(--royal);margin-bottom:6px}
+.card p{font-size:.84rem;color:var(--muted)}
 
-.steps{max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;counter-reset:step}
-.step{position:relative;padding-top:14px}
-.step::before{counter-increment:step;content:counter(step);position:absolute;top:-8px;left:0;width:30px;height:30px;border-radius:50%;background:var(--teal);color:#fff;font-weight:900;font-size:.82rem;display:flex;align-items:center;justify-content:center}
-.step h4{font-weight:800;font-size:.92rem;margin-bottom:6px;padding-top:10px;border-top:2px solid var(--border)}
-.step p{font-size:.82rem;color:var(--muted)}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:1120px;margin:0 auto}
+.role{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.role .ic{width:34px;height:34px;border-radius:9px;margin-bottom:10px}
+.role .ic svg{width:17px;height:17px}
+.role b{display:block;font-size:.9rem;color:var(--royal-dk);margin-bottom:4px}
+.role span{font-size:.8rem;color:var(--muted)}
 
-.cta{background:linear-gradient(160deg,var(--royal-dk) 0%,var(--royal) 60%,var(--teal) 140%);border-radius:20px;max-width:1100px;margin:0 auto;padding:50px 6%;text-align:center;color:#fff}
-.cta h2{font-size:clamp(1.4rem,2.4vw,1.9rem);font-weight:900;margin-bottom:12px}
-.cta p{color:rgba(255,255,255,.82);margin-bottom:26px;max-width:480px;margin-inline:auto}
-.cta .btn-primary{background:#fff;color:var(--royal-dk)}
-.cta .btn-primary:hover{box-shadow:0 12px 24px -6px rgba(0,0,0,.3)}
+/* Steps — the app's inspection stepper */
+.steps{max-width:980px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:18px;position:relative}
+.step{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative}
+.step-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--royal);background:rgba(0,51,160,.05);color:var(--royal);border-radius:999px;padding:3px 13px 3px 3px;font-weight:800;font-size:.78rem;margin-bottom:12px}
+.step-pill i{width:24px;height:24px;border-radius:50%;background:var(--royal);color:#fff;font-style:normal;font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center}
+.step p{font-size:.84rem;color:var(--muted)}
 
-footer{padding:28px 6%;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border)}
+.scale{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:980px;margin:34px auto 0}
+.band{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:7px 15px 7px 9px;font-size:.8rem;font-weight:800}
+.band i{width:12px;height:12px;border-radius:50%}
+.band small{color:var(--muted);font-weight:700}
 
+.cta{background:var(--hero);border-bottom:4px solid var(--teal);border-radius:20px;max-width:1120px;margin:0 auto;padding:48px 6%;text-align:center;color:#fff;position:relative;overflow:hidden}
+.cta h2{font-size:clamp(1.4rem,2.4vw,1.9rem);font-weight:900;margin-bottom:10px}
+.cta h2 span{color:var(--teal)}
+.cta p{color:rgba(255,255,255,.72);margin:0 auto 24px;max-width:480px}
+
+footer{padding:26px 6%;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);background:#fff}
+footer .brand b{font-size:.86rem}
+
+@media (max-width:900px){.steps{grid-template-columns:1fr}}
 @media (max-width:720px){
-  header nav{display:none}
-  .hero{padding:52px 6% 40px}
+  header nav,.hd-user span{display:none}
+  .hero{padding:48px 6% 44px;gap:36px}
+  .mock{grid-template-columns:1fr}
+  .mock-side{display:none}
+  section{padding:52px 6%}
 }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="brand">
-    <span class="dot"><svg data-lucide="shield-check" width="18" height="18"></svg></span>
-    Facility Experience QA
-  </div>
+  <a class="brand" href="/">
+    <span class="logo"><svg data-lucide="shield-check" width="20" height="20"></svg></span>
+    <div><small>OSD · Facility Experience</small><b>Quality Assurance</b></div>
+  </a>
   <nav>
     <a href="#features">Features</a>
+    <a href="#roles">Roles</a>
     <a href="#how">How it works</a>
   </nav>
-  <a class="btn btn-primary" href="login.html">
-    Sign In
-    <svg data-lucide="arrow-right" width="15" height="15"></svg>
-  </a>
+  <div class="hd-right">
+    <div class="hd-user" id="hd-user" hidden><i id="hd-avatar"></i><span id="hd-name"></span></div>
+    <button class="hd-link" id="hd-signout" hidden>Sign out</button>
+    <a class="btn btn-primary js-enter" href="login.html"><span class="js-enter-label">Sign In</span><svg data-lucide="arrow-right" width="15" height="15"></svg></a>
+  </div>
 </header>
 
 <section class="hero">
   <div class="hero-copy">
-    <span class="eyebrow"><svg data-lucide="sparkles" width="13" height="13"></svg> Facility Experience Quality Assurance</span>
-    <h1>Sharper facility inspections, <span>real-time data</span> you can act on</h1>
-    <p>A unified digital platform for logging facility quality inspections, tracking performance across departments, and exporting reports — all from one fast interface that works on any device.</p>
+    <span class="ey"><svg data-lucide="sparkles" width="13" height="13"></svg> Facility Experience Quality Assurance</span>
+    <h1 id="hero-title">Sharper facility inspections, <span>real-time data</span> you can act on</h1>
+    <p>One workspace for the whole quality team — assign buildings, score inspections section by section, follow progress live and turn the results into reports.</p>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="app.html">
-        Start Inspecting
-        <svg data-lucide="arrow-right" width="15" height="15"></svg>
-      </a>
-      <a class="btn btn-ghost" href="#features">Explore Features</a>
+      <a class="btn btn-teal js-enter" href="login.html"><span class="js-enter-label">Sign In</span><svg data-lucide="arrow-right" width="15" height="15"></svg></a>
+      <a class="btn btn-light" href="#features">Explore features</a>
     </div>
     <div class="hero-stats">
-      <div><b>100%</b><span>Cloud & instant</span></div>
-      <div><b>CSV</b><span>Report exports</span></div>
-      <div><b>24/7</b><span>Always available</span></div>
+      <div><b>10</b><span>Inspection sections</span></div>
+      <div><b>5</b><span>Team roles</span></div>
+      <div><b>PDF · CSV · PNG</b><span>Exports</span></div>
     </div>
   </div>
 
-  <div class="hero-visual">
+  <div class="hero-visual" aria-hidden="true">
     <div class="mock">
-      <div class="mock-bar"><span></span><span></span><span></span></div>
-      <div class="mock-body">
-        <div class="mock-row">
-          <div class="mock-ic"><svg data-lucide="check-circle-2" width="16" height="16"></svg></div>
-          <div class="mock-line"><b>General Cleanliness</b><span>Facilities Division</span></div>
-          <div class="mock-score">96%</div>
+      <div class="mock-side">
+        <div class="ms-brand"><span><svg data-lucide="shield-check"></svg></span>Quality<br>Assurance</div>
+        <div class="ms-item"><svg data-lucide="layout-dashboard"></svg>Home</div>
+        <div class="ms-item on"><svg data-lucide="clipboard-check"></svg>Inspection</div>
+        <div class="ms-item"><svg data-lucide="users"></svg>Team</div>
+        <div class="ms-item"><svg data-lucide="bar-chart-3"></svg>Reports</div>
+      </div>
+      <div class="mock-main">
+        <div class="mm-head">
+          <div><small>Step 3 of 3</small><b>Score <span>Card</span></b></div>
+          <div class="ring"><div><b>92</b><small>EXCELLENT</small></div></div>
         </div>
-        <div class="mock-row">
-          <div class="mock-ic"><svg data-lucide="shield" width="16" height="16"></svg></div>
-          <div class="mock-line"><b>Safety & Security</b><span>Operations Division</span></div>
-          <div class="mock-score">91%</div>
-        </div>
-        <div class="mock-row">
-          <div class="mock-ic"><svg data-lucide="users" width="16" height="16"></svg></div>
-          <div class="mock-line"><b>Visitor Experience</b><span>Customer Service</span></div>
-          <div class="mock-score">88%</div>
-        </div>
-        <div class="mock-row">
-          <div class="mock-ic"><svg data-lucide="trending-up" width="16" height="16"></svg></div>
-          <div class="mock-line"><b>Overall Performance</b><span>All Divisions</span></div>
-          <div class="mock-score">92%</div>
-        </div>
+        <div class="mm-row"><b>Arrival &amp; Parking</b><em>9.5/10</em><div class="mm-bar"><i style="width:95%;background:#00843D"></i></div></div>
+        <div class="mm-row"><b>Entrance &amp; Lobby</b><em>9/10</em><div class="mm-bar"><i style="width:90%;background:#26A8AB"></i></div></div>
+        <div class="mm-row"><b>Washrooms / Bathrooms</b><em>8/10</em><div class="mm-bar"><i style="width:80%;background:#D48000"></i></div></div>
+        <div class="mm-row" style="margin-bottom:0"><b>Health, Safety &amp; Emergency</b><em>10/10</em><div class="mm-bar"><i style="width:100%;background:#00843D"></i></div></div>
       </div>
     </div>
   </div>
@@ -168,74 +203,128 @@ footer{padding:28px 6%;text-align:center;color:var(--muted);font-size:.8rem;bord
 <section id="features">
   <div class="section-head">
     <span class="eyebrow">Features</span>
-    <h2>Everything quality teams need, in one place</h2>
-    <p>Purpose-built to make facility inspections faster and more precise.</p>
+    <h2>Everything quality teams need, <span>in one place</span></h2>
+    <p>From the first assignment to the final report, every step happens in the same workspace.</p>
   </div>
   <div class="grid">
     <div class="card">
-      <div class="ic"><svg data-lucide="clipboard-list" width="20" height="20"></svg></div>
-      <h3>Structured Checklists</h3>
-      <p>Inspection forms organized by section and item, with instant scoring for every entry.</p>
+      <div class="ic"><svg data-lucide="clipboard-check"></svg></div>
+      <h3>Structured inspections</h3>
+      <p>Ten sections from Arrival &amp; Parking to Washrooms, scored item by item with comments and photos.</p>
     </div>
     <div class="card">
-      <div class="ic"><svg data-lucide="bar-chart-2" width="20" height="20"></svg></div>
-      <h3>Analytics Dashboard</h3>
-      <p>Visual summaries of inspection results that surface areas for improvement right away.</p>
+      <div class="ic"><svg data-lucide="calendar-check"></svg></div>
+      <h3>Assign &amp; track</h3>
+      <p>Officers assign buildings for each quarter and watch every auditor's completion rate update live.</p>
     </div>
     <div class="card">
-      <div class="ic"><svg data-lucide="download" width="20" height="20"></svg></div>
-      <h3>Report Exports</h3>
-      <p>Export the full record set as CSV in one click for sharing or archiving.</p>
+      <div class="ic"><svg data-lucide="users"></svg></div>
+      <h3>Team overview</h3>
+      <p>Leaders follow assignments, results and progress by division, area and building.</p>
     </div>
     <div class="card">
-      <div class="ic"><svg data-lucide="cloud" width="20" height="20"></svg></div>
-      <h3>Reliable Cloud Storage</h3>
-      <p>All data is stored in the cloud and reaches your team the moment it's entered, from anywhere.</p>
+      <div class="ic"><svg data-lucide="bar-chart-3"></svg></div>
+      <h3>Reports &amp; analytics</h3>
+      <p>Filter every inspection, then break results down by division, area, building, quarter or inspector.</p>
     </div>
     <div class="card">
-      <div class="ic"><svg data-lucide="shield-check" width="20" height="20"></svg></div>
-      <h3>Secure Access Control</h3>
-      <p>Every account is issued by an administrator and every session is protected with hashed credentials — no public sign-up, no shared logins.</p>
+      <div class="ic"><svg data-lucide="bell"></svg></div>
+      <h3>Notifications</h3>
+      <p>Auditors hear about new assignments; officers and leaders hear the moment a building is completed.</p>
     </div>
+    <div class="card">
+      <div class="ic"><svg data-lucide="download"></svg></div>
+      <h3>Exports</h3>
+      <p>A PDF for every inspection, CSV for the data and PNG for any chart.</p>
+    </div>
+  </div>
+</section>
+
+<section id="roles" class="alt">
+  <div class="section-head">
+    <span class="eyebrow">Roles</span>
+    <h2>Built for <span>every role</span> on the team</h2>
+    <p>Accounts are issued by an administrator, and each person sees only what their role needs.</p>
+  </div>
+  <div class="roles">
+    <div class="role"><div class="ic"><svg data-lucide="shield-check"></svg></div><b>Quality Admin</b><span>Creates accounts and sets each person's permissions.</span></div>
+    <div class="role"><div class="ic"><svg data-lucide="users"></svg></div><b>Quality Leader</b><span>Oversees officers, auditors and results across divisions.</span></div>
+    <div class="role"><div class="ic"><svg data-lucide="clipboard-list"></svg></div><b>Quality Officer</b><span>Assigns buildings and tracks auditor progress live.</span></div>
+    <div class="role"><div class="ic"><svg data-lucide="calendar-check"></svg></div><b>Quality Auditor</b><span>Receives assignments and completes the inspections.</span></div>
+    <div class="role"><div class="ic"><svg data-lucide="bar-chart-3"></svg></div><b>Data Analyst</b><span>Builds filtered reports by division, area and building.</span></div>
   </div>
 </section>
 
 <section id="how">
   <div class="section-head">
     <span class="eyebrow">How it works</span>
-    <h2>Three simple steps</h2>
+    <h2>Three steps to a <span>complete report</span></h2>
+    <p>The same three steps you'll see at the top of every inspection.</p>
   </div>
   <div class="steps">
     <div class="step">
-      <h4>Pick the facility & division</h4>
-      <p>Select the inspection type and target facility from the sidebar.</p>
+      <span class="step-pill"><i>1</i>Details</span>
+      <p>Choose the building, date, inspection type (BOQI, EOQI or follow-up) and division.</p>
     </div>
     <div class="step">
-      <h4>Score each item</h4>
-      <p>Rate every checklist item and add notes wherever needed.</p>
+      <span class="step-pill"><i>2</i>Sections</span>
+      <p>Score each of the ten sections, adding comments and photos wherever they help.</p>
     </div>
     <div class="step">
-      <h4>Review & export</h4>
-      <p>Track the overall score instantly, then export the report when you're done.</p>
+      <span class="step-pill"><i>3</i>Score Card</span>
+      <p>Review the overall score and each section, save the inspection and export the PDF.</p>
     </div>
+  </div>
+  <div class="scale">
+    <div class="band"><i style="background:#00843D"></i>Excellent <small>91–100</small></div>
+    <div class="band"><i style="background:#26A8AB"></i>Good <small>81–90</small></div>
+    <div class="band"><i style="background:#D48000"></i>Acceptable <small>71–80</small></div>
+    <div class="band"><i style="background:#C0392B"></i>Poor <small>51–70</small></div>
+    <div class="band"><i style="background:#6B0000"></i>Critical <small>0–50</small></div>
   </div>
 </section>
 
-<section>
+<section style="padding-top:0">
   <div class="cta">
-    <h2>Ready to run your first inspection?</h2>
-    <p>Open the app now and start documenting your facility's quality in minutes.</p>
-    <a class="btn btn-primary" href="login.html">Sign In</a>
+    <h2 id="cta-title">Ready to run your <span>next inspection?</span></h2>
+    <p id="cta-text">Sign in with the account issued by your administrator.</p>
+    <a class="btn btn-teal js-enter" href="login.html"><span class="js-enter-label">Sign In</span><svg data-lucide="arrow-right" width="15" height="15"></svg></a>
   </div>
 </section>
 
 <footer>
-  Facility Experience Quality Assurance — © <span id="yr"></span>
+  <a class="brand" href="/">
+    <span class="logo" style="width:30px;height:30px;border-radius:8px"><svg data-lucide="shield-check" width="16" height="16"></svg></span>
+    <div><b>Facility Experience QA</b></div>
+  </a>
+  <span>Facility Experience Quality Assurance — © <span id="yr"></span></span>
 </footer>
 
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
 lucide.createIcons();
+
+// Signed in? Every "Sign In" button becomes "Open Workspace" and the header shows who you are.
+(async () => {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (!res.ok) return;
+    const { user } = await res.json();
+    const name = user.name || user.username;
+    document.querySelectorAll('.js-enter').forEach((a) => { a.href = '/app'; });
+    document.querySelectorAll('.js-enter-label').forEach((el) => { el.textContent = 'Open Workspace'; });
+    document.getElementById('hd-avatar').textContent = name.split(/\s+/).filter(Boolean).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+    document.getElementById('hd-name').textContent = name;
+    document.getElementById('hd-user').hidden = false;
+    document.getElementById('hd-signout').hidden = false;
+    document.getElementById('cta-title').innerHTML = 'Welcome back, <span></span>';
+    document.querySelector('#cta-title span').textContent = name.split(/\s+/)[0];
+    document.getElementById('cta-text').textContent = 'Your workspace is ready — pick up where you left off.';
+  } catch { /* stay in signed-out mode */ }
+})();
+document.getElementById('hd-signout').addEventListener('click', async () => {
+  try { await fetch('/api/auth/logout', { method: 'POST' }); } finally { window.location.reload(); }
+});
 </script>
 </body>
 </html>

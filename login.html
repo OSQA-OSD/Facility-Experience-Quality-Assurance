@@ -13,29 +13,25 @@
   --good:#00843D;--danger:#C0392B;--r:12px;--font:'Cairo',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-@keyframes bgFloat{
-  0%,100%{background-position:85% -10%, 0% 110%;background-size:900px 900px, 1200px 1200px}
-  50%{background-position:95% 4%, -8% 96%;background-size:1000px 1000px, 1350px 1350px}
-}
+/* Same look as the app and landing page: royal/teal gradient ground, white card, gradient logo tile */
 body{
   font-family:var(--font);color:var(--text);min-height:100vh;
-  display:flex;align-items:center;justify-content:center;padding:24px;
-  background-color:var(--bg);
-  background-repeat:no-repeat;
-  background-image:radial-gradient(circle, rgba(38,168,171,.16), transparent 55%),
-                    radial-gradient(circle, rgba(0,51,160,.28), transparent 60%);
-  background-position:85% -10%, 0% 110%;
-  background-size:900px 900px, 1200px 1200px;
-  animation:bgFloat 16s ease-in-out infinite;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;
+  background:radial-gradient(circle at 85% 0%,rgba(38,168,171,.28),transparent 45%),
+             linear-gradient(145deg,#001540 0%,#002280 50%,#0a5f60 100%);
+  background-attachment:fixed;
 }
-.card{width:100%;max-width:380px;background:#fff;border:1px solid var(--border);border-radius:16px;
-  box-shadow:0 24px 60px -20px rgba(0,32,112,.28);padding:36px 32px;}
+.back{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.75);text-decoration:none;font-weight:700;font-size:.8rem;width:100%;max-width:400px}
+.back:hover{color:#fff}
+.back svg{width:15px;height:15px}
+.card{width:100%;max-width:400px;background:#fff;border:1px solid rgba(255,255,255,.4);border-bottom:4px solid var(--teal);border-radius:16px;
+  box-shadow:0 30px 70px -24px rgba(0,0,0,.55);padding:34px 32px;}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:24px}
-.brand .dot{width:38px;height:38px;border-radius:10px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);
+.brand .dot{width:38px;height:38px;border-radius:10px;background:linear-gradient(160deg,var(--teal) 0%,var(--royal) 100%);
   display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
 .brand .dot svg{width:20px;height:20px}
 .brand b{font-weight:900;font-size:1rem;color:var(--royal-dk);display:block;line-height:1.25}
-.brand span{font-size:.72rem;color:var(--muted);font-weight:700}
+.brand span{font-size:.62rem;color:var(--teal);font-weight:800;letter-spacing:.14em;text-transform:uppercase}
 
 h2{font-size:1.25rem;font-weight:900;color:var(--royal-dk);margin-bottom:6px}
 .sub{font-size:.83rem;color:var(--muted);margin-bottom:24px;line-height:1.5}
@@ -47,7 +43,7 @@ input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radiu
 input:focus{border-color:var(--teal)}
 .hint{font-size:.72rem;color:var(--muted);margin-top:6px}
 
-.btn{width:100%;margin-top:22px;padding:12px;border:none;border-radius:9px;background:var(--royal);color:#fff;
+.btn{width:100%;margin-top:22px;padding:12px;border:none;border-radius:999px;background:var(--royal);color:#fff;
   font-family:var(--font);font-weight:800;font-size:.9rem;cursor:pointer;display:flex;align-items:center;
   justify-content:center;gap:8px;transition:transform .15s,box-shadow .15s;
   box-shadow:0 8px 20px -6px rgba(0,51,160,.5)}
@@ -68,12 +64,13 @@ input:focus{border-color:var(--teal)}
 </head>
 <body class="loading">
 
+<a class="back" href="/"><svg data-lucide="arrow-left" width="15" height="15"></svg> Back to home</a>
 <div class="card">
   <div class="brand">
     <span class="dot"><svg data-lucide="shield-check" width="20" height="20"></svg></span>
     <div>
-      <b>Facility Experience QA</b>
-      <span>Secure inspection portal</span>
+      <span>OSD · Facility Experience</span>
+      <b>Quality Assurance</b>
     </div>
   </div>
 
@@ -151,6 +148,8 @@ function showMsg(el, text, ok) {
 
 (async () => {
   try {
+    const me = await fetch('/api/auth/me');
+    if (me.ok) { window.location.replace('/'); return; }
     const res = await fetch('/api/auth/status');
     const data = await res.json();
     if (data.hasUsers) {
@@ -183,7 +182,7 @@ document.getElementById('bootstrap-form').addEventListener('submit', async (e) =
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not create the administrator account.');
-    window.location.href = '/app.html';
+    window.location.href = '/';
   } catch (err) {
     showMsg(msg, err.message, false);
     setBusy(submit, false, '<svg data-lucide="user-plus" width="16" height="16"></svg> Create Administrator');
@@ -217,7 +216,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       forceChangeView.hidden = false;
       return;
     }
-    window.location.href = '/app.html';
+    window.location.href = '/';
   } catch (err) {
     showMsg(msg, err.message, false);
     setBusy(submit, false, '<svg data-lucide="log-in" width="16" height="16"></svg> Sign In');
@@ -242,7 +241,7 @@ document.getElementById('force-change-form').addEventListener('submit', async (e
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not set your new password.');
-    window.location.href = '/app.html';
+    window.location.href = '/';
   } catch (err) {
     showMsg(msg, err.message, false);
     setBusy(submit, false, '<svg data-lucide="check" width="16" height="16"></svg> Set password and sign in');
