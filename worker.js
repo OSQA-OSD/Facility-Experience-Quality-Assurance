@@ -911,7 +911,7 @@ const csvCell = (v) => {
 
 async function exportCsv(env) {
   const records = await listInspections(env, 10000);
-  const head = ['ID', 'Inspector', 'Facility', 'Division', 'Date',
+  const head = ['ID', 'Auditor', 'Facility', 'Division', 'Date',
                 'Type', 'Type Label', 'Overall Score', 'Section', 'Item', 'Score', 'Comment'];
   const lines = [head.join(',')];
 
