@@ -265,6 +265,63 @@ body.view-only .hc-edit{display:none}
 @media(max-width:1180px){.ov-grid2{grid-template-columns:1fr}}
 @media(max-width:780px){#pg-overview .ov-filters,.ov-stats,.ov-section{padding-left:14px;padding-right:14px}}
 
+/* Auditor profile (My Assignments for auditors; profile for managers) */
+#pg-auditor{background:var(--bg);padding-bottom:40px}
+#pg-auditor .ov-filters{padding:20px 44px 0;margin:0}
+.au-hero{display:flex;flex-direction:column;gap:12px}
+.au-back{align-self:flex-start;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);border-radius:999px;
+  padding:4px 12px 4px 8px;font-family:var(--font);font-size:.72rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;position:relative}
+.au-back:hover{background:rgba(255,255,255,.16);color:#fff}
+#pg-auditor [hidden]{display:none!important}
+.au-id{display:flex;align-items:center;gap:18px;position:relative}
+.au-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(160deg,var(--teal),var(--royal));border:3px solid rgba(140,254,227,.45);
+  color:#fff;font-style:normal;font-weight:900;font-size:1.25rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#au-stats,.au-perf{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.au-perf{display:grid;gap:16px;margin-bottom:16px}
+#au-stats .hs-card.clickable{cursor:pointer}
+.au-sched{padding:18px}
+.au-months{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.au-months span{display:flex;align-items:center;gap:7px;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.au-months em{font-style:normal;font-size:.56rem;padding:1px 7px;border-radius:5px;color:#fff;background:var(--teal)}
+.au-months em.EOQI{background:var(--royal)}
+.au-track{position:relative;height:10px;background:var(--bg);border-radius:999px;margin-top:26px}
+.au-track i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:linear-gradient(90deg,var(--teal),var(--royal))}
+.au-track b{position:absolute;top:-22px;transform:translateX(-50%);font-size:.6rem;font-weight:800;color:var(--royal);white-space:nowrap}
+.au-track b::after{content:'';position:absolute;left:50%;top:17px;width:2px;height:15px;background:var(--royal);transform:translateX(-50%)}
+.au-track-note{display:flex;justify-content:space-between;gap:8px;font-size:.7rem;color:var(--muted);margin:6px 0 16px;font-weight:600}
+.au-track-note strong{color:var(--royal)}
+.au-phases{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.au-phase{border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.au-phase.open{border-color:var(--teal);background:rgba(38,168,171,.05)}
+.au-phase-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.au-phase b{display:block;font-size:.84rem;color:var(--royal)}
+.au-phase small{display:block;font-size:.7rem;color:var(--muted);margin-bottom:6px}
+.au-state{font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.au-state.open{background:rgba(0,132,61,.1);color:var(--good)}
+.au-state.soon{background:rgba(0,51,160,.08);color:var(--royal)}
+.au-state.closed{background:var(--bg);color:var(--muted)}
+.au-type{display:inline-flex;align-items:center;justify-content:center;min-width:46px;font-size:.6rem;font-weight:900;letter-spacing:.04em;padding:3px 7px;border-radius:6px;color:#fff;background:var(--teal);flex-shrink:0}
+.au-type.EOQI{background:var(--royal)}
+.au-list{display:grid;gap:8px}
+.au-group{display:flex;align-items:center;gap:8px;margin:12px 2px 2px;font-size:.72rem;font-weight:800;color:var(--royal)}
+.au-group:first-child{margin-top:0}
+.au-group small{color:var(--muted);font-weight:600}
+.au-card{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;transition:border-color .13s}
+.au-card:hover{border-color:var(--teal)}
+.au-card.carried{border-left:4px solid var(--warn)}
+.au-card.current{border-color:var(--teal);box-shadow:inset 3px 0 var(--teal)}
+.au-main{flex:1;min-width:0}
+.au-main b{display:block;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.au-main small{display:block;font-size:.72rem;color:var(--muted)}
+.au-card .btn{padding:7px 14px;font-size:.76rem;flex-shrink:0}
+.au-progress{font-size:.68rem;font-weight:800;color:var(--teal);white-space:nowrap}
+.au-empty{background:#fff;border:1px dashed var(--border);border-radius:var(--r);padding:26px;text-align:center;color:var(--muted);font-size:.84rem}
+.ov-feed li.unread{background:rgba(38,168,171,.07)}
+.ov-feed li.clickable{cursor:pointer}
+.ov-feed li.clickable:hover{background:var(--bg)}
+.ov-table tr[data-auditor]{cursor:pointer}
+@media(max-width:780px){#pg-auditor .ov-filters{padding-left:14px;padding-right:14px}.au-phases{grid-template-columns:1fr}.au-card{flex-wrap:wrap}.au-avatar{width:52px;height:52px;font-size:1rem}}
+
 /* Assign & Track (Quality Officer) */
 #pg-officer{background:var(--bg);padding-bottom:40px}
 #pg-officer .ov-filters{padding:20px 44px 0;margin:0}
@@ -288,7 +345,8 @@ body.view-only .hc-edit{display:none}
 .of-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px;text-align:center}
 .of-nums span{font-size:.58rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .of-nums b{display:block;font-size:1rem;font-weight:900;color:var(--text)}
-.of-card-ft{margin-top:10px;padding-top:9px;border-top:1px solid var(--bg);font-size:.7rem;color:var(--muted)}
+.of-card-ft{margin-top:10px;padding-top:9px;border-top:1px solid var(--bg);font-size:.7rem;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.of-card-ft b{display:inline-flex;align-items:center;gap:2px;color:var(--royal);font-weight:800}
 .of-table .of-chk{width:38px;padding-right:0}
 .of-table input[type=checkbox],#of-check-all{width:16px;height:16px;accent-color:var(--royal);cursor:pointer}
 .of-sel{border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;font-family:var(--font);font-size:.78rem;color:var(--text);background:#fff;min-width:180px;outline:none}
@@ -621,7 +679,7 @@ body.no-delete .hc-del{display:none}
     <div class="nav-group">
       <span class="nav-label">Workspace</span>
       <div class="ni active" data-page="pg-home"><svg data-lucide="layout-dashboard" width="18" height="18"></svg><span class="ni-txt">Home</span></div>
-      <div class="ni" id="my-assignments-link" data-page="pg-assignments" hidden><svg data-lucide="calendar-check" width="18" height="18"></svg><span class="ni-txt">My Assignments</span><span class="ns" id="ns-assign">–</span></div>
+      <div class="ni" id="my-assignments-link" data-page="pg-auditor" hidden><svg data-lucide="calendar-check" width="18" height="18"></svg><span class="ni-txt">My Assignments</span><span class="ns" id="ns-assign">–</span></div>
       <div class="ni" id="inspection-link" data-page="pg-new" hidden><svg data-lucide="clipboard-check" width="18" height="18"></svg><span class="ni-txt">Inspection</span><span class="ns" id="ns-progress">0%</span></div>
     </div>
     <div class="nav-group">
@@ -823,20 +881,88 @@ body.no-delete .hc-del{display:none}
     <div id="secs-container"></div>
   </div>
 
-  <!-- MY ASSIGNMENTS (Quality Auditor) -->
-  <div class="page" id="pg-assignments">
-    <div class="home-hero">
-      <h2>My <span>Assignments</span></h2>
-      <p class="sub">Buildings assigned to you for inspection.</p>
+  <!-- AUDITOR PROFILE: an auditor's own "My Assignments", and the profile managers open from Team -->
+  <div class="page" id="pg-auditor">
+    <div class="home-hero au-hero">
+      <button class="au-back" id="au-back" hidden><svg data-lucide="arrow-left" width="13" height="13"></svg> Back to Team</button>
+      <div class="au-id">
+        <i class="au-avatar" id="au-avatar">–</i>
+        <div>
+          <div class="ey" id="au-eyebrow">My assignments</div>
+          <h2 id="au-title">My <span>Assignments</span></h2>
+          <p class="sub" id="au-sub">Your buildings for the quarter, the inspection schedule and your results.</p>
+        </div>
+      </div>
     </div>
-    <div id="assign-filters" class="hist-filters" style="padding:18px 44px 0">
-      <select id="assign-quarter"></select>
-      <select id="assign-type">
-        <option value="BOQI">BOQI — Beginning of Quarter</option>
-        <option value="EOQI">EOQI — End of Quarter</option>
-      </select>
+
+    <div class="hist-filters ov-filters">
+      <select id="au-switch" hidden aria-label="Auditor"></select>
+      <select id="assign-quarter" aria-label="Quarter"></select>
+      <span class="ov-updated" id="au-updated"></span>
+      <button class="rp-link" id="au-reports" hidden><svg data-lucide="bar-chart-3" width="13" height="13" style="vertical-align:-2px"></svg> Reports</button>
+      <button class="rp-link" id="au-manage" hidden><svg data-lucide="clipboard-list" width="13" height="13" style="vertical-align:-2px"></svg> Manage assignments</button>
+      <button class="rp-link" id="au-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
     </div>
-    <div id="assign-list" style="padding:0 44px 32px"></div>
+
+    <div class="ov-stats" id="au-stats"></div>
+
+    <div class="ov-section" id="au-carried" hidden>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Carried over</span><h3><svg data-lucide="triangle-alert" width="18" height="18"></svg> Still Open From Earlier Quarters</h3></div></div>
+      <div class="au-list" id="au-carried-list"></div>
+    </div>
+
+    <div class="ov-section">
+      <div class="ov-grid2">
+        <div>
+          <div class="hist-hdr"><div><span class="sec-eyebrow">Schedule</span><h3><svg data-lucide="calendar-range" width="18" height="18"></svg> Quarter Schedule</h3></div></div>
+          <div class="ov-panel" id="au-schedule"></div>
+        </div>
+        <div>
+          <div class="hist-hdr">
+            <div><span class="sec-eyebrow" id="au-feed-eyebrow">Inbox</span><h3><span id="au-feed-ic-inbox"><svg data-lucide="bell" width="18" height="18"></svg></span><span id="au-feed-ic-activity" hidden><svg data-lucide="activity" width="18" height="18"></svg></span> <span id="au-feed-title">Assignment Notifications</span></h3></div>
+            <button class="rp-link" id="au-mark-all" hidden>Mark all read</button>
+          </div>
+          <div class="ov-panel"><ul class="ov-feed" id="au-feed"></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov-section" id="au-buildings">
+      <div class="hist-hdr">
+        <div><span class="sec-eyebrow">Buildings</span><h3><svg data-lucide="building-2" width="18" height="18"></svg> Assigned Buildings</h3></div>
+        <div class="ov-tools">
+          <div class="rp-chips" id="au-status"></div>
+          <div class="rp-chips" id="au-type"></div>
+          <input type="text" id="au-search" placeholder="Search building or area…">
+        </div>
+      </div>
+      <div class="au-list" id="au-list"></div>
+    </div>
+
+    <div class="ov-section">
+      <div class="hist-hdr">
+        <div><span class="sec-eyebrow">Performance</span><h3><svg data-lucide="award" width="18" height="18"></svg> Quality of Work</h3></div>
+        <span class="ov-updated">All quarters</span>
+      </div>
+      <div class="au-perf" id="au-perf"></div>
+      <div class="ov-grid2">
+        <div class="ov-panel">
+          <div class="ov-panel-hd">By quarter <small>Average score · assigned vs completed</small></div>
+          <div class="ov-chart" style="height:280px"><canvas id="au-q-chart"></canvas></div>
+        </div>
+        <div class="ov-panel">
+          <div class="ov-panel-hd">Average by section <small>out of 10 · strongest first</small></div>
+          <div class="ov-chart" style="height:280px"><canvas id="au-sec-chart"></canvas><div class="ov-empty" id="au-sec-empty" hidden>No completed inspections yet.</div></div>
+        </div>
+      </div>
+      <div class="ov-panel">
+        <div class="ov-panel-hd">Most frequent findings <small>Checklist items marked non-compliant in this auditor's latest submissions</small></div>
+        <div class="ov-scroll"><table class="ov-table">
+          <thead><tr><th>Item</th><th>Section</th><th>Times</th></tr></thead>
+          <tbody id="au-findings"></tbody>
+        </table></div>
+      </div>
+    </div>
   </div>
 
   <!-- TEAM OVERVIEW (Quality Leader) -->
@@ -1382,6 +1508,7 @@ let editingRecordId = null;
 // the initial deep-link routing, which runs before the end of the script.
 let currentUser = null;
 let ovData = null, ovChart = null, ovReady = false; // Team Overview state
+let auData = null, auReady = false, auReq = 0, auId = null, auCharts = {}, auFilter = {status:'todo', type:'all'}; // Auditor profile state
 let adUsers = [], adReady = false, lastSection = 'pg-s0'; // Admin Control state; last opened inspection section
 let ofData = null, ofReady = false, ofReq = 0, ofPrevDone = null, ofPrevKey = '', ofSelected = new Set(), ofRowsStale = false; // Assign & Track state
 let rpData = null, rpReady = false, rpCharts = {}, rpShown = 100, rpGroup = 'division', rpMetric = 'avg', rpTrend = 'quarter'; // Reports state
@@ -1615,16 +1742,19 @@ function updateCommentHint(si,ii){
 // so a page can be bookmarked, shared, or restored with the browser's
 // back/forward buttons.
 // ═══════════════════════════════════════════════════════════
-const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-assignments','pg-overview','pg-reports','pg-officer','pg-admin']);
+const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-auditor','pg-overview','pg-reports','pg-officer','pg-admin']);
 function hashToPage(hash){
-  const id=(hash||'').replace(/^#/,'');
+  const id=(hash||'').replace(/^#/,'').split('/')[0];
+  if(id==='pg-assignments') return 'pg-auditor';   // older notification links
   return VALID_PAGES.has(id)?id:'pg-home';
 }
+/** "#pg-auditor/<id>" → "<id>" (which auditor's profile is open). */
+function hashParam(hash){ return (hash||'').replace(/^#/,'').split('/')[1]||null; }
 /** Pages this account may not open, so a hand-typed hash can't reach them either. */
 function pageAllowed(pageId){
   if(!currentUser) return true;              // permissions not loaded yet
   if(pageId==='pg-new'||pageId.startsWith('pg-s')) return !!currentUser.canEdit;
-  if(pageId==='pg-assignments') return currentUser.role==='quality_auditor';
+  if(pageId==='pg-auditor') return currentUser.role==='quality_auditor'?!auId||auId===currentUser.id:['quality_officer','quality_leader','quality_admin'].includes(currentUser.role);
   if(pageId==='pg-overview') return currentUser.role==='quality_leader'||currentUser.role==='quality_admin';
   if(pageId==='pg-officer') return currentUser.role==='quality_officer'||currentUser.role==='quality_admin';
   if(pageId==='pg-admin') return currentUser.role==='quality_admin';
@@ -1640,26 +1770,35 @@ function nav(pageId){
   const group=navGroupOf(pageId);
   if(group) document.getElementById(group+'-link').dataset.page=pageId;
   if(isSection) lastSection=pageId;
-  document.querySelectorAll('#sb-nav .ni').forEach(n=>n.classList.toggle('active',n.dataset.page===pageId));
+  highlightNav(pageId);
   document.querySelectorAll('.ss-item').forEach(b=>b.classList.toggle('active','pg-s'+b.dataset.sec===pageId));
   document.getElementById('insp-layout').classList.toggle('on',isSection);
   document.getElementById('sb-score').hidden=!pageId.startsWith('pg-s');
   if(pageId==='pg-scorecard') updateScoreCard();
   if(pageId==='pg-home'){renderHistory();}
   if(pageId==='pg-new'){renderSpellBanner();}
-  if(pageId==='pg-assignments') loadMyAssignments();
+  if(pageId==='pg-auditor') loadAuditorProfile();
   if(pageId==='pg-overview') loadOverview();
   if(pageId==='pg-reports') loadReports();
   if(pageId==='pg-officer') loadOfficer();
   if(pageId==='pg-admin') loadAdmin();
   updateTopBar(pageId);
   if(pageId.startsWith('pg-s')) syncFormToState();
-  // Setting the hash makes the browser jump to the element with that id, so reset the scroll after it.
-  if(location.hash!=='#'+pageId) location.hash=pageId;
+  // pushState rather than location.hash: pages carry the same id as their hash, and assigning the
+  // hash would make the browser jump to that element (under the sticky top bar).
+  const wanted=pageId==='pg-auditor'&&auId?`pg-auditor/${auId}`:pageId;
+  if(location.hash!=='#'+wanted) window.history.pushState(null,'','#'+wanted);
   document.getElementById('main').scrollTo(0,0);
 }
+// On first load the browser still scrolls to the element named in the URL; undo that jump.
+window.addEventListener('load',()=>{
+  const page=document.querySelector('.page.active'), main=document.getElementById('main');
+  if(page&&main.scrollTop&&Math.abs(page.getBoundingClientRect().top)<2) main.scrollTo(0,0);
+});
+window.addEventListener('popstate',()=>window.dispatchEvent(new HashChangeEvent('hashchange')));
 window.addEventListener('hashchange',()=>{
   const pid=hashToPage(location.hash);
+  if(pid==='pg-auditor'&&hashParam(location.hash)!==auId){ auId=hashParam(location.hash); nav(pid); return; }
   if(!document.getElementById(pid).classList.contains('active')) nav(pid);
 });
 
@@ -1735,6 +1874,15 @@ function refreshNav(){
     g.hidden=![...g.querySelectorAll('.ni')].some(n=>getComputedStyle(n).display!=='none');
   });
 }
+/** Sidebar entry for a page. A manager looking at an auditor's profile is still in Team. */
+function navLinkFor(pageId){
+  if(pageId==='pg-auditor'&&currentUser&&currentUser.role!=='quality_auditor') return document.getElementById('team-link');
+  return [...document.querySelectorAll('#sb-nav .ni')].find(n=>n.dataset.page===pageId)||null;
+}
+function highlightNav(pageId){
+  const link=navLinkFor(pageId);
+  document.querySelectorAll('#sb-nav .ni').forEach(n=>n.classList.toggle('active',n===link));
+}
 /** Pages that share one sidebar entry. */
 function navGroupOf(pageId){
   if(pageId==='pg-new'||pageId==='pg-scorecard'||/^pg-s\d$/.test(pageId)) return 'inspection';
@@ -1744,12 +1892,13 @@ function navGroupOf(pageId){
 /** Top bar: where you are (icon, page, sub-page) plus, while inspecting, the three steps. */
 function updateTopBar(pageId){
   const group=navGroupOf(pageId);
-  const link=[...document.querySelectorAll('#sb-nav .ni')].find(n=>n.dataset.page===pageId);
+  const link=navLinkFor(pageId);
   document.getElementById('pb-ic').innerHTML=link?.querySelector('svg')?.outerHTML||'';
   document.getElementById('pb-name').textContent=link?link.querySelector('.ni-txt').textContent:'';
   const sec=/^pg-s(\d)$/.exec(pageId);
   document.getElementById('pb-sub').textContent=
-    pageId==='pg-overview'?'Overview':pageId==='pg-officer'?'Assign & Track':sec?SECTIONS[+sec[1]].title:'';
+    pageId==='pg-overview'?'Overview':pageId==='pg-officer'?'Assign & Track':sec?SECTIONS[+sec[1]].title:
+    pageId==='pg-auditor'&&auData&&!auData.isSelf?auData.auditor.name:'';
   const inspecting=group==='inspection';
   document.getElementById('pb-steps').hidden=!inspecting;
   document.getElementById('pb-progress').hidden=!inspecting;
@@ -2103,6 +2252,7 @@ async function saveInspection(updateExisting){
     }
     currentReportSaved=true;updatePDFButton();
     populateHistoryFilters();renderHistory();
+    if(record.assignmentId&&currentUser?.role==='quality_auditor') loadAuditorProfile({quiet:true});
     setSyncChip('ok','Saved');
     const btn=document.getElementById('btn-save');
     if(btn){btn.textContent='Saved ✓';btn.style.background='var(--good)';setTimeout(()=>{btn.textContent='Save to History';btn.style.background='';},3000);}
@@ -2440,12 +2590,7 @@ function editInspection(e,id){
 
 function cancelEdit(){
   editingRecordId=null;currentAssignmentId=null;currentReportSaved=false;
-  allState[activeInspector]={
-    scores:SECTIONS.map(s=>s.items.map(()=>null)),
-    comments:SECTIONS.map(s=>s.items.map(()=>'')),
-    photos:SECTIONS.map(s=>s.items.map(()=>[])),
-    notes:SECTIONS.map(()=>''),
-  };
+  clearInspectionState();
   document.getElementById('edit-banner').classList.remove('show');
   updateScoreCardActionBar();syncFormToState();nav('pg-home');
 }
@@ -2576,12 +2721,7 @@ function exportPDF(){
 
 function resetForm(){
   if(!confirm('Start a new inspection for '+activeInspector+'? All unsaved data will be cleared.'))return;
-  allState[activeInspector]={
-    scores:SECTIONS.map(s=>s.items.map(()=>null)),
-    comments:SECTIONS.map(s=>s.items.map(()=>'')),
-    photos:SECTIONS.map(s=>s.items.map(()=>[])),
-    notes:SECTIONS.map(()=>''),
-  };
+  clearInspectionState();currentAssignmentId=null;
   currentReportSaved=false;updatePDFButton();syncFormToState();nav('pg-home');
 }
 
@@ -2611,6 +2751,7 @@ updateScoreCardActionBar();
 // Deep-link support: land directly on the section named in the URL hash.
 {
   const initialPageId=hashToPage(location.hash);
+  if(initialPageId==='pg-auditor') auId=hashParam(location.hash);
   if(initialPageId!=='pg-home') nav(initialPageId);
   else updateTopBar('pg-home');
 }
@@ -2635,70 +2776,362 @@ updateScoreCardActionBar();
 })();
 
 // ═══════════════════════════════════════════════════════════
-// MY ASSIGNMENTS (Quality Auditor)
+// AUDITOR PROFILE — an auditor's own "My Assignments", and the profile
+// officers, leaders and admins open for any auditor from Team. One page,
+// one API call (/api/auditor/profile); actions only appear for the auditor.
 // ═══════════════════════════════════════════════════════════
-function quarterOptions(){
-  const now=new Date();
-  const y=now.getFullYear();
-  const q=Math.floor(now.getMonth()/3)+1;
-  const opts=[];
-  for(let i=-1;i<3;i++){
-    let qq=q+i,yy=y;
-    while(qq<1){qq+=4;yy--;}
-    while(qq>4){qq-=4;yy++;}
-    opts.push(`${yy}-Q${qq}`);
-  }
-  return [...new Set(opts)];
+function auVal(id){ return document.getElementById(id).value; }
+function auIsManagerView(){ return !!(auData&&!auData.isSelf); }
+function openAuditorProfile(id){
+  auId=currentUser&&id===currentUser.id?null:id;
+  auData=null;
+  nav('pg-auditor');
 }
-function initMyAssignments(){
-  const sel=document.getElementById('assign-quarter');
-  const cur=`${new Date().getFullYear()}-Q${Math.floor(new Date().getMonth()/3)+1}`;
-  sel.innerHTML=quarterOptions().map(q=>`<option value="${q}" ${q===cur?'selected':''}>${q}</option>`).join('');
-  sel.addEventListener('change',loadMyAssignments);
-  document.getElementById('assign-type').addEventListener('change',loadMyAssignments);
+function auNextQuarter(q){ let y=+q.slice(0,4), n=+q.slice(-1)+1; if(n>4){n=1;y++;} return `${y}-Q${n}`; }
+function auFmt(d){ return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+function auDays(a,b){ return Math.round((b-a)/86400000); }
+
+function initAuditorProfile(){
+  if(auReady) return;
+  auReady=true;
+  const sel=document.getElementById('assign-quarter'), cur=ofCurrentQuarter();
+  sel.innerHTML=ofQuarterOptions().map(q=>`<option value="${q}">${q}</option>`).join('');
+  sel.value=cur;
+  sel.addEventListener('change',()=>loadAuditorProfile());
+  document.getElementById('au-switch').addEventListener('change',e=>openAuditorProfile(e.target.value));
+  document.getElementById('au-refresh').addEventListener('click',()=>loadAuditorProfile());
+  document.getElementById('au-back').addEventListener('click',()=>nav(document.getElementById('team-link').dataset.page));
+  document.getElementById('au-reports').addEventListener('click',()=>auData&&openReportsForInspector(auData.auditor.name));
+  document.getElementById('au-manage').addEventListener('click',()=>{
+    if(!auData) return;
+    const q=document.getElementById('of-quarter'), f=document.getElementById('of-auditor-filter');
+    if(![...q.options].some(o=>o.value===auData.quarter)) q.add(new Option(auData.quarter,auData.quarter));
+    if(q.value!==auData.quarter){ q.value=auData.quarter; ofData=null; ofPrevDone=null; ofSelected.clear(); }
+    if(![...f.options].some(o=>o.value===auData.auditor.id)) f.add(new Option(auData.auditor.name,auData.auditor.id));
+    f.value=auData.auditor.id;
+    nav('pg-officer');
+  });
+  document.getElementById('au-mark-all').addEventListener('click',async()=>{
+    try{ await fetch('/api/notifications/read-all',{method:'POST'}); }catch{}
+    loadNotifications(); auLoadNotifications();
+  });
+  const chips=(id,key)=>document.getElementById(id).addEventListener('click',e=>{
+    const c=e.target.closest('.rp-chip');
+    if(!c) return;
+    auFilter[key]=c.dataset.v;
+    auRenderBuildings();
+  });
+  chips('au-status','status'); chips('au-type','type');
+  document.getElementById('au-search').addEventListener('input',auRenderBuildings);
+  document.getElementById('pg-auditor').addEventListener('click',e=>{
+    const t=e.target.closest('[data-start],[data-view],[data-notif],[data-jump]');
+    if(!t) return;
+    if(t.dataset.start) startAssignedInspection(Number(t.dataset.start));
+    else if(t.dataset.view) auViewReport(Number(t.dataset.view));
+    else if(t.dataset.notif) auReadNotification(Number(t.dataset.notif));
+    else if(t.dataset.jump==='todo'){ auFilter.status='todo'; auRenderBuildings(); document.getElementById('au-buildings').scrollIntoView({behavior:'smooth'}); }
+    else if(t.dataset.jump==='next'){ const s=document.getElementById('assign-quarter'); s.value=auNextQuarter(auData.quarter); loadAuditorProfile(); }
+  });
+  setInterval(()=>{
+    if(document.getElementById('pg-auditor').classList.contains('active')&&document.visibilityState==='visible') loadAuditorProfile({quiet:true});
+  },60000);
 }
-async function loadMyAssignments(){
-  const list=document.getElementById('assign-list');
-  const quarter=document.getElementById('assign-quarter').value;
-  const type=document.getElementById('assign-type').value;
-  list.innerHTML='<div class="no-hist">Loading…</div>';
+
+async function loadAuditorProfile({quiet=false}={}){
+  initAuditorProfile();
+  const req=++auReq, params=new URLSearchParams({quarter:auVal('assign-quarter')});
+  if(auId) params.set('auditorId',auId);
+  const updated=document.getElementById('au-updated');
+  if(!quiet) updated.textContent='Loading…';
   try{
-    const res=await fetch(`/api/assignments/mine?quarter=${encodeURIComponent(quarter)}&type=${encodeURIComponent(type)}`);
-    if(!res.ok) throw new Error((await res.json()).error||'Could not load assignments.');
-    const {assignments}=await res.json();
-    document.getElementById('ns-assign').textContent=assignments.length;
-    if(!assignments.length){ list.innerHTML='<div class="no-hist">No buildings assigned to you for this quarter yet.</div>'; return; }
-    list.innerHTML='';
-    assignments.forEach(a=>{
-      const card=document.createElement('div');card.className='hist-card';
-      card.innerHTML=`
-        <div class="hc-score" style="background:${a.completed?'var(--good)':'var(--warn)'}">
-          <svg data-lucide="${a.completed?'check':'clock'}" width="16" height="16"></svg>
-        </div>
-        <div class="hc-info">
-          <div class="hc-title">${a.buildingName}</div>
-          <div class="hc-meta">${a.division}${a.area?' · '+a.area:''}${a.location?' · '+a.location:''}</div>
-        </div>
-        <span class="hc-grade gp" style="background:${a.completed?'#00843D':'#D48000'};color:#fff">${a.completed?'Completed':'Pending'}</span>
-        ${a.completed?'':`<button class="btn bt" style="padding:8px 14px;font-size:.76rem" onclick="startAssignedInspection(${a.id},'${escapeAttr(a.buildingName)}','${escapeAttr(a.division)}')">Start Inspection</button>`}`;
-      list.appendChild(card);
-    });
-    lucide.createIcons();
+    const res=await fetch('/api/auditor/profile?'+params);
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error||'Could not load this profile.');
+    if(req!==auReq) return;
+    // A manager who opens the page without choosing someone sees the first auditor.
+    if(data.isSelf&&data.auditors.length){ auId=data.auditors[0].id; return loadAuditorProfile({quiet}); }
+    const switched=!auData||auData.auditor.id!==data.auditor.id;
+    auData=data;
+    if(switched){ auFilter.status=data.isSelf?'todo':'all'; auFilter.type='all'; document.getElementById('au-search').value=''; }
+    renderAuditorProfile();
+    updateTopBar('pg-auditor');
+    if(location.hash.slice(1).split('/')[0]==='pg-auditor'){
+      const wanted=auId?`pg-auditor/${auId}`:'pg-auditor';
+      if(location.hash!=='#'+wanted) history_replaceHash(wanted);
+    }
+    updated.textContent='Updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
   }catch(err){
-    list.innerHTML=`<div class="no-hist">Could not load assignments: ${err.message}</div>`;
+    if(req!==auReq) return;
+    updated.textContent=err.message;
   }
 }
-function escapeAttr(s){ return String(s||'').replace(/'/g,"\\'"); }
-function startAssignedInspection(assignmentId,buildingName,division){
+function history_replaceHash(h){ window.history.replaceState(null,'','#'+h); }
+
+function renderAuditorProfile(){
+  const d=auData, q=d.quarter, list=d.assignments, a=d.auditor, self=d.isSelf;
+  const cur=ofCurrentQuarter(), nxt=auNextQuarter(cur);
+  const qSel=document.getElementById('assign-quarter');
+  qSel.innerHTML=ofQuarterOptions([...d.quarters,q]).map(v=>`<option value="${v}">${v}${v===cur?' (current)':v===nxt?' (next)':''}</option>`).join('');
+  qSel.value=q;
+
+  // Header
+  const first=a.name.split(/\s+/)[0];
+  document.getElementById('au-avatar').textContent=ofInitials(a.name);
+  document.getElementById('au-eyebrow').textContent=self?'My assignments':'Auditor profile';
+  document.getElementById('au-title').innerHTML=self?'My <span>Assignments</span>':`${ovEsc(first)} <span>${ovEsc(a.name.split(/\s+/).slice(1).join(' '))}</span>`;
+  document.getElementById('au-sub').textContent=self
+    ?'Your buildings for the quarter, the inspection schedule and your results.'
+    :`@${a.username}${a.status!=='active'?' · Suspended':''} · Quality Auditor — assignments, completion and quality of work.`;
+  document.getElementById('au-back').hidden=self;
+  const sw=document.getElementById('au-switch');
+  sw.hidden=self||!d.auditors.length;
+  sw.innerHTML=d.auditors.map(x=>`<option value="${ovEsc(x.id)}">${ovEsc(x.name)}${x.status!=='active'?' (suspended)':''}</option>`).join('');
+  sw.value=a.id;
+  document.getElementById('au-reports').hidden=self;
+  document.getElementById('au-manage').hidden=self||!d.canManage;
+  document.getElementById('au-mark-all').hidden=!self;
+  document.getElementById('au-feed-ic-inbox').hidden=!self;
+  document.getElementById('au-feed-ic-activity').hidden=self;
+
+  // Quarter tiles
+  const done=list.filter(x=>x.status==='completed'), pending=list.filter(x=>x.status==='pending');
+  const pct=list.length?Math.round(done.length/list.length*100):0;
+  const scores=done.map(x=>x.score).filter(n=>typeof n==='number');
+  const avg=scores.length?Math.round(scores.reduce((t,n)=>t+n,0)/scores.length):null;
+  if(self&&q===cur) document.getElementById('ns-assign').textContent=pending.length+d.carriedOver.length;
+  const bar=p=>`<div class="ov-bar" style="margin-top:10px"><i style="width:${p}%"></i></div>`;
+  const note=t=>`<small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px">${t}</small>`;
+  const tile=(icon,value,label,extra,{jump,color}={})=>`<div class="hs-card${jump?' clickable':''}"${jump?` data-jump="${jump}"`:''}><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b${color?` style="color:${color}"`:''}>${value}</b><span>${label}</span>${extra}</div>`;
+  document.getElementById('au-stats').innerHTML=
+    tile('circle-check',`${pct}%`,`Completed · ${q}`,note(`${done.length} of ${list.length} buildings`)+bar(pct))+
+    tile('hourglass',pending.length,'Still to inspect',note(d.carriedOver.length?`+ ${d.carriedOver.length} carried over`:'This quarter'),{jump:'todo'})+
+    tile('trending-up',avg??'–','Quarter average',note(avg!=null?grade(avg).label:'No results yet'),{color:avg!=null?grade(avg).color:''})+
+    tile('calendar-plus',d.upcoming.total,`Assigned for ${d.upcoming.quarter}`,note(d.upcoming.total?'Open the next quarter':'Nothing yet'),{jump:'next'});
+
+  // Carried over
+  document.getElementById('au-carried').hidden=!d.carriedOver.length;
+  document.getElementById('au-carried-list').innerHTML=d.carriedOver.map(x=>auCard(x,{carried:true})).join('');
+
+  auRenderSchedule();
+  if(self) auLoadNotifications(); else auRenderActivity();
+  auRenderBuildings();
+  auRenderPerformance();
+  lucide.createIcons();
+}
+
+function auRenderSchedule(){
+  const q=auData.quarter, list=auData.assignments;
+  const y=+q.slice(0,4), m0=(+q.slice(-1)-1)*3;
+  const start=new Date(y,m0,1), end=new Date(y,m0+3,0), today=new Date(); today.setHours(12,0,0,0);
+  const span=auDays(start,end)+1;
+  const pos=today<start?0:today>end?100:Math.min(100,Math.round((auDays(start,today)+.5)/span*100));
+  const left=auDays(today,end);
+  const status=today<start?`Starts in ${auDays(today,start)} days`:today>end?'Quarter ended':left===0?'Last day of the quarter':`${left} days left in the quarter`;
+  const phases=[['BOQI','Beginning of quarter',start,new Date(y,m0+1,0)],['EOQI','End of quarter',new Date(y,m0+2,1),end]];
+  document.getElementById('au-schedule').innerHTML=`<div class="au-sched">
+    <div class="au-months">${[0,1,2].map(i=>{
+      const tag=i===0?'<em class="BOQI">BOQI</em>':i===2?'<em class="EOQI">EOQI</em>':'';
+      return `<span>${new Date(y,m0+i,1).toLocaleDateString('en-GB',{month:'long'})}${tag}</span>`;}).join('')}</div>
+    <div class="au-track"><i style="width:${pos}%"></i>${today>=start&&today<=end?`<b style="left:${pos}%">Today</b>`:''}</div>
+    <div class="au-track-note"><span>${auFmt(start)}</span><strong>${status}</strong><span>${auFmt(end)}</span></div>
+    <div class="au-phases">${phases.map(([type,label,ws,we])=>{
+      const st=today<ws?['soon',`Opens in ${auDays(today,ws)} days`]:today>we?['closed','Window passed']:['open',auDays(today,we)?`Open · ${auDays(today,we)} days left`:'Open · last day'];
+      const ofType=list.filter(x=>x.type===type), doneN=ofType.filter(x=>x.status==='completed').length;
+      return `<div class="au-phase ${st[0]}">
+        <div class="au-phase-hd"><span class="au-type ${type}">${type}</span><span class="au-state ${st[0]}">${st[1]}</span></div>
+        <b>${label}</b><small>${auFmt(ws)} – ${auFmt(we)}</small>
+        ${ofType.length?ovPct(doneN,ofType.length)+`<small>${doneN} of ${ofType.length} done</small>`:'<small>No buildings of this type</small>'}
+      </div>`;}).join('')}</div>
+  </div>`;
+}
+
+async function auLoadNotifications(){
+  document.getElementById('au-feed-eyebrow').textContent='Inbox';
+  document.getElementById('au-feed-title').textContent='Assignment Notifications';
+  try{
+    const res=await fetch('/api/notifications');
+    if(!res.ok) return;
+    const {notifications}=await res.json();
+    const items=notifications.filter(n=>n.type==='assignment').slice(0,8);
+    document.getElementById('au-feed').innerHTML=items.length?items.map(n=>`
+      <li class="${n.read?'':'unread '}clickable" data-notif="${n.id}" title="${n.read?'':'Mark as read'}">
+        <span class="dot" style="background:${n.read?'#9fb3c8':'var(--teal)'}"><svg data-lucide="bell" width="14" height="14"></svg></span>
+        <div><b>${ovEsc(n.title)}</b><div>${ovEsc(n.body||'')}</div><small>${timeAgo(n.createdAt)}${n.read?'':' · New'}</small></div>
+      </li>`).join(''):'<li class="ov-empty" style="display:block">No assignment notifications yet.</li>';
+    lucide.createIcons();
+  }catch{}
+}
+async function auReadNotification(id){
+  try{ await fetch(`/api/notifications/${id}/read`,{method:'POST'}); }catch{}
+  loadNotifications(); auLoadNotifications();
+}
+function auRenderActivity(){
+  document.getElementById('au-feed-eyebrow').textContent='Activity';
+  document.getElementById('au-feed-title').textContent='Recent Activity';
+  const ev=auData.events;
+  document.getElementById('au-feed').innerHTML=ev.length?ev.map(e=>e.kind==='completed'
+    ?`<li><span class="dot" style="background:${e.score!=null?grade(e.score).color:'var(--teal)'}"><svg data-lucide="check" width="14" height="14"></svg></span>
+       <div>Completed <b>${ovEsc(e.building)}</b>${e.score!=null?` — ${e.score}/100`:''}<small>${e.quarter} ${e.type} · ${timeAgo(e.at)}</small></div></li>`
+    :`<li><span class="dot" style="background:var(--royal)"><svg data-lucide="clipboard-list" width="14" height="14"></svg></span>
+       <div>Assigned <b>${ovEsc(e.building)}</b>${e.actor?` by ${ovEsc(e.actor)}`:''}<small>${e.quarter} ${e.type} · ${timeAgo(e.at)}</small></div></li>`
+  ).join(''):'<li class="ov-empty" style="display:block">No activity yet.</li>';
+}
+
+function auAnsweredPct(){
+  const st=curState();
+  const all=st.scores.flat();
+  return all.length?Math.round(all.filter(v=>v!==null).length/all.length*100):0;
+}
+function auCard(x,{carried=false}={}){
+  const self=auData.isSelf;
+  const meta=[x.division,x.area,x.location].filter(Boolean).join(' · ');
+  if(x.status==='completed'){
+    const g=typeof x.score==='number'?grade(x.score):null;
+    return `<div class="au-card done">
+      <span class="au-type ${x.type}">${x.type}</span>
+      <div class="au-main"><b>${ovEsc(x.buildingName)}</b><small>${ovEsc(meta)}</small>
+        <small>Completed ${x.inspectionDate?ovEsc(x.inspectionDate):''}${x.completedAt?` · ${timeAgo(x.completedAt)}`:''}</small></div>
+      ${g?`<span class="ov-pill" style="background:${g.color}1a;color:${g.color}">${x.score} · ${g.label}</span>`:''}
+      ${x.inspectionId?`<button class="ad-btn" data-view="${x.inspectionId}">View report</button>`:''}
+    </div>`;
+  }
+  const resuming=self&&currentAssignmentId===x.id&&auAnsweredPct()>0&&!currentReportSaved;
+  return `<div class="au-card${carried?' carried':''}${resuming?' current':''}">
+    <span class="au-type ${x.type}">${x.type}</span>
+    <div class="au-main"><b>${ovEsc(x.buildingName)}</b><small>${ovEsc(meta)}</small>
+      <small>${carried?`${x.quarter} · `:''}${x.assignedBy?`Assigned by ${ovEsc(x.assignedBy)} · `:''}${x.assignedAt?timeAgo(x.assignedAt):''}</small></div>
+    ${resuming?`<span class="au-progress">${auAnsweredPct()}% answered</span>`:''}
+    ${self?`<button class="btn bt" data-start="${x.id}">${resuming?'Continue':'Start inspection'} <svg data-lucide="arrow-right" width="14" height="14"></svg></button>`
+      :'<span class="ov-pill pending">Pending</span>'}
+  </div>`;
+}
+function auRenderBuildings(){
+  if(!auData) return;
+  const list=auData.assignments, term=auVal('au-search').trim().toLowerCase();
+  const counts={todo:list.filter(x=>x.status==='pending').length,done:list.filter(x=>x.status==='completed').length,all:list.length};
+  const labels={todo:'To inspect',done:'Completed',all:'All'};
+  document.getElementById('au-status').innerHTML=Object.keys(labels).map(k=>`<button class="rp-chip${auFilter.status===k?' active':''}" data-v="${k}">${labels[k]} ${counts[k]}</button>`).join('');
+  document.getElementById('au-type').innerHTML=['all','BOQI','EOQI'].map(k=>`<button class="rp-chip${auFilter.type===k?' active':''}" data-v="${k}">${k==='all'?'Both types':k}</button>`).join('');
+  const rows=list.filter(x=>
+    (auFilter.status==='all'||(auFilter.status==='todo'?x.status==='pending':x.status==='completed')) &&
+    (auFilter.type==='all'||x.type===auFilter.type) &&
+    (!term||x.buildingName.toLowerCase().includes(term)||(x.area||'').toLowerCase().includes(term)||(x.location||'').toLowerCase().includes(term)));
+  const box=document.getElementById('au-list');
+  if(!list.length){
+    box.innerHTML=`<div class="au-empty">${auData.isSelf?`No buildings are assigned to you for ${auData.quarter} yet — you'll get a notification when your officer assigns some.`:`No buildings assigned to ${ovEsc(auData.auditor.name)} for ${auData.quarter}.`}</div>`;
+    return;
+  }
+  if(!rows.length){
+    box.innerHTML=`<div class="au-empty">${auFilter.status==='todo'&&!term?'All caught up — every building for this quarter has been inspected.':'Nothing matches these filters.'}</div>`;
+    return;
+  }
+  const html=[];
+  ['BOQI','EOQI'].forEach(type=>{
+    const group=rows.filter(x=>x.type===type);
+    if(!group.length) return;
+    html.push(`<div class="au-group"><span class="au-type ${type}">${type}</span>${type==='BOQI'?'Beginning of quarter':'End of quarter'} <small>${group.length} building${group.length===1?'':'s'}</small></div>`);
+    group.forEach(x=>html.push(auCard(x)));
+  });
+  box.innerHTML=html.join('');
+  lucide.createIcons();
+}
+
+function auRenderPerformance(){
+  const p=auData.performance;
+  const tile=(icon,value,label,extra='',color='')=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b${color?` style="color:${color}"`:''}>${value}</b><span>${label}</span>${extra}</div>`;
+  const note=t=>`<small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px">${t}</small>`;
+  const typeNote=['BOQI','EOQI'].map(t=>`${t} ${p.byType[t].avgScore??'–'}`).join(' · ');
+  document.getElementById('au-perf').innerHTML=
+    tile('clipboard-check',`${p.completed}/${p.assigned}`,'Inspections completed',note('All quarters'))+
+    tile('award',p.avgScore??'–','All-time average',note(p.avgScore!=null?`${grade(p.avgScore).label} · ${typeNote}`:'No results yet'),p.avgScore!=null?grade(p.avgScore).color:'')+
+    tile('timer',p.avgTurnaroundDays!=null?`${p.avgTurnaroundDays}d`:'–','Average turnaround',note('From assignment to submission'));
+
+  const ctx=document.getElementById('au-q-chart');
+  if(auCharts.q) auCharts.q.destroy();
+  auCharts.q=new Chart(ctx,{
+    type:'bar',
+    data:{labels:p.byQuarter.map(x=>x.quarter),datasets:[
+      {type:'line',label:'Average score',data:p.byQuarter.map(x=>x.avgScore),borderColor:'#0033A0',backgroundColor:'#0033A0',tension:.3,spanGaps:true,yAxisID:'y'},
+      {type:'bar',label:'Assigned',data:p.byQuarter.map(x=>x.assigned),backgroundColor:'rgba(38,168,171,.25)',borderRadius:5,yAxisID:'y1'},
+      {type:'bar',label:'Completed',data:p.byQuarter.map(x=>x.completed),backgroundColor:'#26A8AB',borderRadius:5,yAxisID:'y1'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true,max:100,ticks:{font:{family:'Cairo'}}},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},ticks:{precision:0,font:{family:'Cairo'}}},x:{ticks:{font:{family:'Cairo',weight:'700'}}}},
+      plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo',weight:'700'}}}}},
+  });
+
+  const secs=[...p.sections].sort((a,b)=>b.avg-a.avg);
+  if(auCharts.sec) auCharts.sec.destroy();
+  document.getElementById('au-sec-empty').hidden=!!secs.length;
+  document.getElementById('au-sec-chart').hidden=!secs.length;
+  if(secs.length){
+    auCharts.sec=new Chart(document.getElementById('au-sec-chart'),{
+      type:'bar',
+      data:{labels:secs.map(s=>s.title),datasets:[{label:'Average /10',data:secs.map(s=>s.avg),backgroundColor:secs.map(s=>grade(s.avg*10).color),borderRadius:5}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        scales:{x:{beginAtZero:true,max:10,ticks:{font:{family:'Cairo'}}},y:{ticks:{font:{family:'Cairo',weight:'700',size:11}}}},
+        plugins:{legend:{display:false}}},
+    });
+  }
+
+  document.getElementById('au-findings').innerHTML=p.findings.length?p.findings.map(f=>`<tr>
+      <td><b style="white-space:normal">${ovEsc(f.item)}</b></td><td>${ovEsc(f.section)}</td>
+      <td><span class="ov-pill pending">${f.count}×</span><small>of ${p.completed} inspection${p.completed===1?'':'s'}</small></td>
+    </tr>`).join(''):`<tr><td colspan="3" class="ov-empty">${p.completed?'No items marked non-compliant — nothing to follow up.':'No completed inspections yet.'}</td></tr>`;
+}
+
+function auViewReport(id){
+  const r=history.find(x=>x.id===id);
+  if(r) showHistDetail(r);
+  else showToast('That report is still loading — try again in a moment.',true);
+}
+/** Opens Reports filtered to one inspector (everything else cleared). */
+function openReportsForInspector(name){
+  try{ localStorage.setItem('rp-state',JSON.stringify({filters:{'rp-inspector':name},group:'quarter',sort:'newest'})); }catch{}
+  if(rpData){
+    RP_FILTER_IDS.forEach(id=>document.getElementById(id).value='');
+    const sel=document.getElementById('rp-inspector');
+    if(![...sel.options].some(o=>o.value===name)) sel.add(new Option(name,name));
+    sel.value=name; rpGroup='quarter'; rpCascade(); rpSave();
+  }
+  nav('pg-reports');
+}
+
+function clearInspectionState(){
+  allState[activeInspector]={
+    scores:SECTIONS.map(s=>s.items.map(()=>null)),
+    comments:SECTIONS.map(s=>s.items.map(()=>'')),
+    photos:SECTIONS.map(s=>s.items.map(()=>[])),
+    notes:SECTIONS.map(()=>''),
+  };
+}
+function startAssignedInspection(id){
+  const x=[...(auData?.assignments||[]),...(auData?.carriedOver||[])].find(a=>a.id===id);
+  if(!x) return;
   if(editingRecordId!==null){
     if(!confirm('You are editing a saved record. Start this assignment instead? Unsaved edits will be lost.'))return;
     cancelEdit();
   }
-  currentAssignmentId=assignmentId;
-  document.getElementById('meta-facility').value=buildingName;
-  document.getElementById('meta-division').value=division;
-  document.getElementById('meta-type').value=document.getElementById('assign-type').value;
-  nav('pg-s0');
+  // What an auditor submits carries their own account name.
+  const me=currentUser?.name;
+  if(me&&activeInspector!==me){
+    if(!inspectors.includes(me)){ inspectors.push(me); saveInspectorList(); rebuildInspectorDropdown(); }
+    activeInspector=me;
+    document.getElementById('meta-inspector').value=me;
+    renderInspectorChips();
+  }
+  const answered=auAnsweredPct()>0&&!currentReportSaved;
+  const resuming=currentAssignmentId===id&&answered;
+  if(answered&&!resuming&&!confirm(`You have unsaved answers from another inspection. Start ${x.buildingName} with a clean form? Those answers will be cleared.`)) return;
+  if(!resuming) clearInspectionState();
+  currentAssignmentId=id;
+  document.getElementById('meta-facility').value=x.buildingName;
+  document.getElementById('meta-division').value=x.division;
+  document.getElementById('meta-type').value=x.type;
+  if(!resuming) document.getElementById('meta-date').valueAsDate=new Date();
+  currentReportSaved=false; updatePDFButton();
+  syncFormToState(); updateProgress();
+  nav(resuming?lastSection:'pg-s0');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2784,6 +3217,10 @@ function initOverview(){
   ['ov-quarter','ov-type','ov-division'].forEach(id=>document.getElementById(id).addEventListener('change',loadOverview));
   document.getElementById('ov-b-search').addEventListener('input',renderOvBuildings);
   document.getElementById('ov-b-status').addEventListener('change',renderOvBuildings);
+  document.getElementById('ov-aud-rows').addEventListener('click',e=>{
+    const tr=e.target.closest('tr[data-auditor]');
+    if(tr) openAuditorProfile(tr.dataset.auditor);
+  });
   document.getElementById('ov-div-rows').addEventListener('click',e=>{
     const tr=e.target.closest('tr[data-division]');
     if(!tr) return;
@@ -2850,7 +3287,7 @@ function renderOverview(){
   });
 
   document.getElementById('ov-aud-rows').innerHTML=d.auditors.length?d.auditors.map(x=>`
-    <tr>
+    <tr class="clickable" data-auditor="${ovEsc(x.id)}" title="Open ${ovEsc(x.name)}'s profile">
       <td><b>${ovEsc(x.name)}</b>${x.status!=='active'?'<small>Suspended</small>':''}</td>
       <td>${x.assigned}</td>
       <td>${ovPct(x.completed,x.assigned)}<small>${x.completed} done · ${x.assigned-x.completed} pending</small></td>
@@ -2973,10 +3410,7 @@ function initOfficer(){
   });
   document.getElementById('of-cards').addEventListener('click',e=>{
     const card=e.target.closest('[data-auditor]');
-    if(!card) return;
-    const sel=document.getElementById('of-auditor-filter');
-    sel.value=sel.value===card.dataset.auditor?'':card.dataset.auditor;
-    renderOfficer(); if(sel.value) toTable();
+    if(card) openAuditorProfile(card.dataset.auditor);
   });
   document.getElementById('of-area-rows').addEventListener('click',e=>{
     const tr=e.target.closest('tr[data-area]');
@@ -3088,20 +3522,19 @@ function renderOfficer(fresh=[]){
     if(!x.last||b.completedAt>x.last) x.last=b.completedAt;
   });
   const freshAud=new Set(fresh.map(id=>d.buildings.find(b=>b.buildingId===id)?.auditorId));
-  const selAud=ofVal('of-auditor-filter');
   const cards=[...byAud.values()].sort((a,b)=>b.assigned-a.assigned||a.name.localeCompare(b.name));
   document.getElementById('of-team-note').textContent=div?'Whole quarter, all divisions':'';
   document.getElementById('of-cards').innerHTML=cards.length?cards.map(a=>{
     const p=pct(a.completed,a.assigned), av=a.scores.length?Math.round(a.scores.reduce((s,v)=>s+v,0)/a.scores.length):null;
     const sub=[a.status!=='active'?'Suspended':'',a.openElsewhere?`${a.openElsewhere} open in other periods`:''].filter(Boolean).join(' · ')||(a.assigned?'':'No buildings yet');
-    return `<div class="of-card${selAud===a.id?' active':''}${freshAud.has(a.id)?' flash':''}" data-auditor="${ovEsc(a.id)}" title="Show ${ovEsc(a.name)}'s buildings">
+    return `<div class="of-card${freshAud.has(a.id)?' flash':''}" data-auditor="${ovEsc(a.id)}" title="Open ${ovEsc(a.name)}'s profile">
       <div class="of-card-hd"><i class="of-av">${ovEsc(ofInitials(a.name))}</i><div><b>${ovEsc(a.name)}</b><small>${ovEsc(sub)}</small></div><span class="of-pct">${a.assigned?p+'%':'–'}</span></div>
       <div class="ov-bar"><i style="width:${p}%"></i></div>
       <div class="of-nums">
         <span><b>${a.assigned}</b>Assigned</span><span><b>${a.completed}</b>Done</span>
         <span><b>${a.assigned-a.completed}</b>Pending</span><span><b${av!=null?` style="color:${grade(av).color}"`:''}>${av??'–'}</b>Avg</span>
       </div>
-      <div class="of-card-ft">${a.last?`Last submission ${timeAgo(a.last)}`:a.assigned?'No submissions yet':'Nothing assigned this period'}</div>
+      <div class="of-card-ft"><span>${a.last?`Last submission ${timeAgo(a.last)}`:a.assigned?'No submissions yet':'Nothing assigned this period'}</span><b>Profile <svg data-lucide="chevron-right" width="13" height="13"></svg></b></div>
     </div>`;
   }).join(''):'<div class="ov-empty">No active auditors yet — an admin can create them in Admin Control.</div>';
 
@@ -3699,7 +4132,7 @@ function renderTeamTabs(pages){
 }
 function renderHomeActions(user,teamPages){
   const actions=[];
-  if(user.role==='quality_auditor') actions.push(['pg-assignments','calendar-check','My Assignments','Buildings assigned to you this quarter']);
+  if(user.role==='quality_auditor') actions.push(['pg-auditor','calendar-check','My Assignments','Your buildings, schedule and results']);
   if(user.canEdit) actions.push(['pg-new','clipboard-check','Start an Inspection','Details → sections → score card']);
   if(teamPages.length) actions.push([teamPages[0],'users','Team',
     teamPages.length>1?'Team overview and building assignments':teamPages[0]==='pg-officer'?'Assign buildings and track auditors live':'Progress of officers and auditors']);
@@ -3874,7 +4307,7 @@ async function adCreate(e){
     const isOfficer=user.role==='quality_officer';
     document.getElementById('home-name').textContent=displayName.split(/\s+/)[0];
     if(isAdmin) document.getElementById('admin-link').hidden=false;
-    if(user.role==='quality_auditor'){ document.getElementById('my-assignments-link').hidden=false; initMyAssignments(); }
+    if(user.role==='quality_auditor'){ document.getElementById('my-assignments-link').hidden=false; if(!document.getElementById('pg-auditor').classList.contains('active')) loadAuditorProfile({quiet:true}); }
     if(user.canEdit) document.getElementById('inspection-link').hidden=false;
     // Team: Overview for leaders, Assign & Track for officers, both (as tabs) for admins.
     const teamPages=[
@@ -3899,7 +4332,7 @@ async function adCreate(e){
     else if(user.role==='quality_leader'&&!location.hash) nav('pg-overview');
     else if(user.role==='data_analyst'&&!location.hash) nav('pg-reports');
     else if(user.role==='quality_officer'&&!location.hash) nav('pg-officer');
-    else updateTopBar(document.querySelector('.page.active')?.id||landed);
+    else { highlightNav(document.querySelector('.page.active')?.id||landed); updateTopBar(document.querySelector('.page.active')?.id||landed); }
   }catch{
     document.getElementById('acct-name').textContent='';
   }
