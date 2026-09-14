@@ -87,7 +87,7 @@ async function insertInspection(env, rec) {
 /** Tells every active Quality Leader (and whoever made the assignment) that it was completed. */
 async function notifyAssignmentCompleted(env, assignmentId, overall) {
   const a = await env.DB.prepare(
-    `SELECT a.quarter, a.type, a.assigned_by, b.name AS building, u.name AS auditor, o.role AS assigner_role
+    `SELECT a.quarter, a.type, a.assigned_by, a.auditor_id, b.name AS building, u.name AS auditor, o.role AS assigner_role
      FROM assignments a
      JOIN buildings b ON b.id = a.building_id
      JOIN qa_users u ON u.id = a.auditor_id
@@ -105,7 +105,8 @@ async function notifyAssignmentCompleted(env, assignmentId, overall) {
     "SELECT id FROM qa_users WHERE role = 'quality_leader' AND status = 'active'",
   ).all();
   for (const l of leaders || []) recipients.set(l.id, '#pg-overview');
-  if (a.assigned_by && !recipients.has(a.assigned_by)) {
+  recipients.delete(a.auditor_id);
+  if (a.assigned_by && a.assigned_by !== a.auditor_id && !recipients.has(a.assigned_by)) {
     recipients.set(a.assigned_by, a.assigner_role === 'quality_officer' || a.assigner_role === 'quality_admin' ? '#pg-officer' : null);
   }
   for (const [userId, link] of recipients) await notify(env, userId, 'completion', title, body, link);
@@ -220,11 +221,13 @@ async function isAssignmentCompleted(env, assignmentId) {
   return !!row;
 }
 
-async function listAuditors(env) {
+async function listAuditors(env, actor) {
   const { results } = await env.DB.prepare(
-    `SELECT id, name, username FROM qa_users WHERE role = 'quality_auditor' AND status = 'active' ORDER BY name`,
+    "SELECT * FROM qa_users WHERE status = 'active' ORDER BY name",
   ).all();
-  return json({ auditors: results || [] });
+  const auditors = (results || []).filter((u) => !assigneeProblem(actor, u))
+    .map((u) => ({ id: u.id, name: u.name, username: u.username, role: u.role }));
+  return json({ auditors });
 }
 
 async function listAssignmentBoard(env, quarter, type) {
@@ -273,10 +276,9 @@ async function upsertAssignment(env, officer, body) {
   if (!buildingId || !auditorId || !quarter || !ASSIGNMENT_TYPES.has(type)) {
     return fail('buildingId, auditorId, quarter, and a valid type (BOQI/EOQI) are required', 400);
   }
-  const auditor = await env.DB.prepare(
-    "SELECT id FROM qa_users WHERE id = ?1 AND role = 'quality_auditor'",
-  ).bind(auditorId).first();
-  if (!auditor) return fail('auditor not found', 404);
+  const assignee = await env.DB.prepare('SELECT * FROM qa_users WHERE id = ?1').bind(auditorId).first();
+  const problem = assigneeProblem(officer, assignee);
+  if (problem) return fail(problem[1], problem[0]);
   const building = await env.DB.prepare('SELECT id, name FROM buildings WHERE id = ?1').bind(buildingId).first();
   if (!building) return fail('building not found', 404);
 
@@ -294,7 +296,7 @@ async function upsertAssignment(env, officer, body) {
      DO UPDATE SET auditor_id = excluded.auditor_id, assigned_by = excluded.assigned_by, updated_at = datetime('now')`,
   ).bind(buildingId, auditorId, quarter, type, officer.id).run();
 
-  if (!existing || existing.auditor_id !== auditorId) {
+  if ((!existing || existing.auditor_id !== auditorId) && auditorId !== officer.id) {
     await notify(
       env, auditorId, 'assignment',
       `New assignment: ${building.name}`,
@@ -322,7 +324,7 @@ async function deleteAssignment(env, id) {
 
 const QUARTER_RE = /^\d{4}-Q[1-4]$/;
 
-async function officerBoard(env, url) {
+async function officerBoard(env, viewer, url) {
   const quarter = url.searchParams.get('quarter') || '';
   const type = url.searchParams.get('type') || '';
   if (!QUARTER_RE.test(quarter) || !ASSIGNMENT_TYPES.has(type)) {
@@ -331,7 +333,7 @@ async function officerBoard(env, url) {
   const [b, a, u, i] = await Promise.all([
     env.DB.prepare('SELECT id, location, division, area, name FROM buildings ORDER BY division, area, name').all(),
     env.DB.prepare('SELECT id, building_id, auditor_id, quarter, type, assigned_by, created_at, updated_at FROM assignments').all(),
-    env.DB.prepare('SELECT id, name, role, status FROM qa_users').all(),
+    env.DB.prepare('SELECT id, name, role, status, can_edit, can_delete, can_export, permissions FROM qa_users').all(),
     env.DB.prepare(
       `SELECT id, inspector, date, overall, created_at, CAST(json_extract(data, '$.assignmentId') AS INTEGER) AS assignment_id
        FROM inspections WHERE json_extract(data, '$.assignmentId') IS NOT NULL ORDER BY id`,
@@ -377,11 +379,15 @@ async function officerBoard(env, url) {
     if ((x.quarter === quarter && x.type === type) || results.has(x.id)) continue;
     openElsewhere.set(x.auditor_id, (openElsewhere.get(x.auditor_id) || 0) + 1);
   }
+  // Everyone this viewer may give buildings to, plus anyone already holding some this period.
   const holding = new Set(inPeriod.map((x) => x.auditor_id));
   const auditors = [...users.values()]
-    .filter((x) => x.role === 'quality_auditor' && (x.status === 'active' || holding.has(x.id)))
-    .map((x) => ({ id: x.id, name: x.name, status: x.status, openElsewhere: openElsewhere.get(x.id) || 0 }))
-    .sort((x, y) => x.name.localeCompare(y.name));
+    .filter((x) => ASSIGNEE_ROLES.has(x.role) && ((x.status === 'active' && canAssignTo(viewer, x)) || holding.has(x.id)))
+    .map((x) => ({
+      id: x.id, name: x.name, status: x.status, role: x.role, openElsewhere: openElsewhere.get(x.id) || 0,
+      assignable: !assigneeProblem(viewer, x),
+    }))
+    .sort((x, y) => (x.role === 'quality_auditor' ? 0 : 1) - (y.role === 'quality_auditor' ? 0 : 1) || x.name.localeCompare(y.name));
 
   const events = [
     ...inPeriod.map((x) => ({
@@ -414,11 +420,9 @@ async function bulkAssign(env, officer, body) {
 
   let auditor = null;
   if (auditorId) {
-    auditor = await env.DB.prepare(
-      "SELECT id, name, status FROM qa_users WHERE id = ?1 AND role = 'quality_auditor'",
-    ).bind(auditorId).first();
-    if (!auditor) return fail('auditor not found', 404);
-    if (auditor.status !== 'active') return fail('that auditor is suspended', 400);
+    auditor = await env.DB.prepare('SELECT * FROM qa_users WHERE id = ?1').bind(auditorId).first();
+    const problem = assigneeProblem(officer, auditor);
+    if (problem) return fail(problem[1], problem[0]);
   }
 
   const [{ results: buildingRows }, { results: existingRows }, completedIds] = await Promise.all([
@@ -448,7 +452,7 @@ async function bulkAssign(env, officer, body) {
     ).bind(JSON.stringify(change), auditor.id, quarter, type, officer.id).run();
     const names = change.map((id) => buildingName.get(id));
     const list = names.slice(0, 3).join(', ') + (names.length > 3 ? ` and ${names.length - 3} more` : '');
-    await notify(
+    if (auditor.id !== officer.id) await notify(
       env, auditor.id, 'assignment',
       change.length === 1 ? `New assignment: ${names[0]}` : `${change.length} new assignments`,
       `${officer.name} assigned you ${list} for ${quarter} ${type}.`,
@@ -488,7 +492,7 @@ async function auditorProfile(env, viewer, url) {
   const auditor = await env.DB.prepare(
     "SELECT id, name, username, status, role FROM qa_users WHERE id = ?1",
   ).bind(requested).first();
-  if (!auditor || (!isSelf && auditor.role !== 'quality_auditor')) return fail('auditor not found', 404);
+  if (!auditor || (!isSelf && !ASSIGNEE_ROLES.has(auditor.role))) return fail('person not found', 404);
 
   const [a, i, team] = await Promise.all([
     env.DB.prepare(
@@ -503,8 +507,9 @@ async function auditorProfile(env, viewer, url) {
     ).bind(auditor.id).all(),
     can(viewer, 'profiles')
       ? env.DB.prepare(
-        `SELECT u.id, u.name, u.status FROM qa_users u WHERE u.role = 'quality_auditor'
-         AND (u.status = 'active' OR EXISTS (SELECT 1 FROM assignments x WHERE x.auditor_id = u.id)) ORDER BY u.name`,
+        `SELECT u.id, u.name, u.status, u.role FROM qa_users u
+         WHERE u.role = 'quality_auditor' OR EXISTS (SELECT 1 FROM assignments x WHERE x.auditor_id = u.id)
+         ORDER BY CASE WHEN u.role = 'quality_auditor' THEN 0 ELSE 1 END, u.name`,
       ).all()
       : Promise.resolve({ results: [] }),
   ]);
@@ -568,7 +573,8 @@ async function auditorProfile(env, viewer, url) {
 
   const next = nextQuarterOf(quarter);
   return json({
-    auditor: { id: auditor.id, name: auditor.name, username: auditor.username, status: auditor.status },
+    auditor: { id: auditor.id, name: auditor.name, username: auditor.username, status: auditor.status, role: auditor.role },
+    assignable: ASSIGNEE_ROLES.has(auditor.role),
     isSelf, canManage: can(viewer, 'assign'),
     auditors: team.results || [],
     quarter, quarters: [...quarters].reverse(),
@@ -684,11 +690,11 @@ async function leaderOverview(env, url) {
     .sort((x, y) => x.division.localeCompare(y.division) || x.area.localeCompare(y.area));
 
   // Team.
-  const auditors = users.filter((x) => x.role === 'quality_auditor').map((x) => {
+  const auditors = users.filter((x) => x.role === 'quality_auditor' || scopedAssignments.some((y) => y.auditor_id === x.id)).map((x) => {
     const mine = scopedAssignments.filter((y) => y.auditor_id === x.id);
     const done = mine.filter(isDone);
     const scores = done.map((y) => scoreByAssignment.get(y.id)).filter((n) => typeof n === 'number');
-    return { id: x.id, name: x.name, status: x.status, assigned: mine.length, completed: done.length, avgScore: average(scores) };
+    return { id: x.id, name: x.name, status: x.status, role: x.role, assigned: mine.length, completed: done.length, avgScore: average(scores) };
   }).sort((x, y) => y.assigned - x.assigned || x.name.localeCompare(y.name));
 
   const madeBy = new Map();
@@ -823,7 +829,7 @@ async function handleAssignments(request, env, url, path, user) {
 
   if (path === 'assignments/auditors' && method === 'GET') {
     if (!canManage) return fail('you do not have permission to view this', 403);
-    return listAuditors(env);
+    return listAuditors(env, user);
   }
   if (path === 'assignments' && method === 'GET') {
     if (!canView) return fail('you do not have permission to view assignments', 403);
@@ -952,7 +958,7 @@ const PERMISSIONS = ['inspect', 'delete', 'export', 'assign', 'team', 'profiles'
 const ROLE_PERMISSIONS = {
   quality_admin: PERMISSIONS,
   quality_leader: ['team', 'profiles', 'reports', 'export'],
-  quality_officer: ['assign', 'profiles', 'reports', 'export'],
+  quality_officer: ['inspect', 'assign', 'profiles', 'reports', 'export'],
   quality_auditor: ['inspect', 'reports', 'export'],
   data_analyst: ['reports', 'export'],
 };
@@ -972,6 +978,30 @@ function effectivePermissions(user) {
   return PERMISSIONS.filter((k) => set.has(k));
 }
 const can = (user, key) => effectivePermissions(user).includes(key);
+
+/* Who can be given buildings, and by whom:
+ *  - Quality Admin: themselves, other admins, officers and auditors (never leaders or analysts)
+ *  - Quality Officer: admins, themselves and auditors
+ *  - anyone else granted "assign": auditors, and themselves if their role can hold buildings
+ * The person must also be active and allowed to create inspections. */
+const ASSIGNEE_ROLES = new Set(['quality_auditor', 'quality_officer', 'quality_admin']);
+const ROLE_NAMES = {
+  quality_admin: 'Quality Admin', quality_leader: 'Quality Leader', quality_officer: 'Quality Officer',
+  quality_auditor: 'Quality Auditor', data_analyst: 'Data Analyst',
+};
+function canAssignTo(actor, target) {
+  if (!target || !ASSIGNEE_ROLES.has(target.role)) return false;
+  if (actor.role === 'quality_admin') return true;
+  if (actor.role === 'quality_officer') return target.role !== 'quality_officer' || target.id === actor.id;
+  return target.role === 'quality_auditor' || target.id === actor.id;
+}
+function assigneeProblem(actor, target) {
+  if (!target) return [404, 'that person was not found'];
+  if (!canAssignTo(actor, target)) return [403, `you cannot assign buildings to a ${ROLE_NAMES[target.role] || target.role}`];
+  if (target.status !== 'active') return [400, `${target.name}'s account is suspended`];
+  if (!can(target, 'inspect')) return [400, `${target.name} does not have permission to create inspections — an admin can grant it in Admin Control`];
+  return null;
+}
 const sameSet = (a, b) => a.length === b.length && a.every((k) => b.includes(k));
 
 async function audit(env, actor, action, targetId, target, details) {
@@ -1417,7 +1447,7 @@ async function handleApi(request, env, url) {
     if (!can(user, 'assign')) {
       return fail('you do not have permission to view the assignment board', 403);
     }
-    return officerBoard(env, url);
+    return officerBoard(env, user, url);
   }
 
   const assignmentResponse = await handleAssignments(request, env, url, path, user);
