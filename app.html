@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2326A8AB'/%3E%3Cstop offset='1' stop-color='%230033A0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M16 6.5l7 2.6v5.3c0 4.7-3 8.3-7 9.9-4-1.6-7-5.2-7-9.9V9.1z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M12.6 15.2l2.4 2.4 4.4-4.6' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2326A8AB'/%3E%3Cstop offset='1' stop-color='%230033A0'/%3E%3C/linearGradient%3E%3Cmask id='m' maskUnits='userSpaceOnUse' x='0' y='0' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23fff'/%3E%3Cpath transform='translate(8.5 9)' d='M26 29L32 35L45 22' stroke='%23000' fill='none' stroke-width='15' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath transform='translate(8.5 9)' d='M20 3.75A16.25 16.25 0 1 1 19.99 3.75' fill='none' stroke='%23fff' stroke-width='8.5' mask='url(%23m)'/%3E%3Cpath transform='translate(8.5 9)' d='M26 29L32 35L45 22' fill='none' stroke='%238CFEE3' stroke-width='8.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <title>Facility Experience QA Check List</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <!-- Chart.js -->
@@ -51,9 +51,8 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ni .ns:empty{display:none}
 .ni .ns-alert{background:#fab219;color:#1a1300}
 .sb-brand{display:flex;align-items:center;gap:11px}
-.sb-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(160deg,var(--teal) 0%,var(--royal) 100%);border:1px solid rgba(140,254,227,.35);
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
-.sb-logo svg{width:19px;height:19px}
+.sb-logo{width:40px;height:40px;display:block;flex-shrink:0;border-radius:10px;box-shadow:0 0 0 1px rgba(140,254,227,.35)}
+.sb-logo svg{width:100%;height:100%;display:block}
 #nav-btn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--border);border-radius:10px;
   background:#fff;color:var(--royal);cursor:pointer;transition:border-color .14s,background .14s}
 #nav-btn:hover{border-color:var(--teal);background:rgba(38,168,171,.07)}
@@ -1002,7 +1001,7 @@ body.nav-rail #acct-row{justify-content:center}
 <aside id="sidebar">
   <div id="sb-head">
     <div class="sb-brand">
-      <span class="sb-logo"><svg data-lucide="shield-check" width="19" height="19"></svg></span>
+      <span class="sb-logo"><svg class="osqa-mark" viewBox="0 0 64 64" role="img" aria-label="OSQA"><defs><linearGradient id="osqa-sbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26A8AB"/><stop offset="1" stop-color="#0033A0"/></linearGradient><mask id="osqa-sbm" maskUnits="userSpaceOnUse" x="-20" y="-20" width="140" height="140"><rect x="-20" y="-20" width="140" height="140" fill="#fff"/><path transform="translate(0 48)" d="M26 29L32 35L45 22" stroke="#000" fill="none" stroke-width="13.5" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect width="64" height="64" rx="15" fill="url(#osqa-sbg)"/><g transform="translate(11.84 13.52) scale(0.42)"><g stroke="#fff" fill="none" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"><path transform="translate(0 0)" d="M20 3.75A16.25 16.25 0 1 1 19.99 3.75"/><path transform="translate(59 0)" d="M23.76 7.21A11 8.125 0 1 0 14.75 20A11.6 8.125 0 1 1 5.74 32.79"/><path transform="translate(0 48)" d="M20 3.75A16.25 16.25 0 1 1 19.99 3.75" mask="url(#osqa-sbm)"/><path transform="translate(56 48)" d="M3.75 36.25L20 3.75L36.25 36.25M10.3 25H29.7"/></g><path transform="translate(0 48)" d="M26 29L32 35L45 22" fill="none" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" stroke="#8CFEE3"/></g></svg></span>
       <div>
         <div class="eyebrow"><span id="conn-dot"></span>OSD · Facility Experience</div>
         <h1>Quality Assurance</h1>
