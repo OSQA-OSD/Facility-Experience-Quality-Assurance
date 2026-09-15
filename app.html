@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2326A8AB'/%3E%3Cstop offset='1' stop-color='%230033A0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M16 6.5l7 2.6v5.3c0 4.7-3 8.3-7 9.9-4-1.6-7-5.2-7-9.9V9.1z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M12.6 15.2l2.4 2.4 4.4-4.6' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="/osqa-icon.svg">
 <title>Facility Experience QA Check List</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <!-- Chart.js -->
@@ -51,9 +51,8 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ni .ns:empty{display:none}
 .ni .ns-alert{background:#fab219;color:#1a1300}
 .sb-brand{display:flex;align-items:center;gap:11px}
-.sb-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(160deg,var(--teal) 0%,var(--royal) 100%);border:1px solid rgba(140,254,227,.35);
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
-.sb-logo svg{width:19px;height:19px}
+.sb-logo{height:28px;width:auto;display:block;flex-shrink:0}
+.sb-brand>div{padding-left:11px;border-left:1px solid rgba(255,255,255,.22)}
 #nav-btn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--border);border-radius:10px;
   background:#fff;color:var(--royal);cursor:pointer;transition:border-color .14s,background .14s}
 #nav-btn:hover{border-color:var(--teal);background:rgba(38,168,171,.07)}
@@ -834,6 +833,7 @@ body.no-export #btn-pdf,body.no-export #btn-pdf-edit,body.no-export #save-notice
    The choice on larger screens is remembered per browser. */
 body.nav-rail #sidebar{width:var(--rail);min-width:var(--rail)}
 body.nav-rail #sb-head{padding:16px 0;justify-content:center}
+body.nav-rail .sb-logo{height:auto;width:54px}
 body.nav-rail .sb-brand>div,
 body.nav-rail .nav-label,
 body.nav-rail .ni-txt,
@@ -858,6 +858,7 @@ body.nav-rail #acct-row{justify-content:center}
   #nav-close{display:inline-flex}
   #sb-head{justify-content:space-between}
   body.nav-rail #sb-head{padding:18px 16px 14px;justify-content:space-between}
+  body.nav-rail .sb-logo{height:28px;width:auto}
   body.nav-rail .sb-brand>div,body.nav-rail .nav-label,body.nav-rail .ni-txt,body.nav-rail .acct-meta,body.nav-rail #acct-logout,body.nav-rail #acct-settings{display:revert}
   body.nav-rail .ni-txt{display:inline}
   body.nav-rail .ni .ns{display:inline-block}
@@ -1002,9 +1003,9 @@ body.nav-rail #acct-row{justify-content:center}
 <aside id="sidebar">
   <div id="sb-head">
     <div class="sb-brand">
-      <span class="sb-logo"><svg data-lucide="shield-check" width="19" height="19"></svg></span>
+      <img class="sb-logo" src="/osqa-logo-white.svg" alt="OSQA" width="80" height="28">
       <div>
-        <div class="eyebrow"><span id="conn-dot"></span>OSD · Facility Experience</div>
+        <div class="eyebrow"><span id="conn-dot"></span>Facility Experience</div>
         <h1>Quality Assurance</h1>
       </div>
     </div>
@@ -3317,7 +3318,7 @@ function printInspectionReport(report){
       .cover{page-break-after:always;display:flex;flex-direction:column;overflow:hidden}
       .cover-accent{width:100%;height:7px;background:linear-gradient(90deg,var(--teal),var(--aqua),var(--mist));border-radius:12px;margin-bottom:27mm}
       .brand{display:flex;align-items:center;gap:10px;color:var(--teal);font-weight:900;font-size:10px;letter-spacing:.17em;text-transform:uppercase}
-      .brand-mark{display:block;width:11px;height:11px;border-radius:50%;background:var(--aqua);box-shadow:17px 0 0 var(--mist)}
+      .brand-logo{display:block;height:30px;width:auto}.brand-sep{width:1px;height:22px;background:var(--line)}
       .cover h1{font-size:31px;line-height:1.13;letter-spacing:-.04em;color:var(--ink);margin:15mm 0 7px;max-width:430px}
       .cover h1 span{color:var(--teal)}
       .cover-lead{margin:0;max-width:400px;font-size:13px;color:var(--muted)}
@@ -3337,7 +3338,7 @@ function printInspectionReport(report){
       @media print{.page{min-height:auto}.cover{min-height:297mm}.content-page{padding-bottom:14mm}.journey-page{min-height:297mm}.report-section{break-inside:avoid}.page-number:after{content:counter(page)}}
     </style></head><body>
     <section class="page cover">
-      <div class="cover-accent"></div><div class="brand"><i class="brand-mark"></i>OSD Facility Experience</div>
+      <div class="cover-accent"></div><div class="brand"><img class="brand-logo" src="${reportPrintEsc(new URL('/osqa-logo.svg',location.origin).href)}" alt="OSQA"><i class="brand-sep"></i>OSD Facility Experience</div>
       <h1>Quality assurance<br><span>inspection report.</span></h1>
       <p class="cover-lead">A clear record of the facility experience, touchpoints and actions observed during this inspection.</p>
       <div class="cover-content"><div class="cover-facts">${coverFacts}</div><div class="score-orb" style="--tone:${overallTone.color};--soft:${overallTone.soft}"><b>${overall}</b><small>/100</small><span>${overallTone.label}</span></div></div>
@@ -6114,7 +6115,12 @@ async function exPng(m,blocks){
   g.textAlign='left'; g.textBaseline='alphabetic';
   g.font=`800 ${11*S}px Cairo, sans-serif`; g.fillText('OSD FACILITY EXPERIENCE · QUALITY ASSURANCE',pad,36*S);
   g.fillStyle='#172C67'; g.font=`800 ${24*S}px Cairo, sans-serif`; g.fillText(m.title,pad,68*S);
-  g.fillStyle='#69727E'; g.font=`600 ${12.5*S}px Cairo, sans-serif`; g.fillText(m.context.map(([k,v])=>`${k}: ${v}`).join('   ·   '),pad,94*S,W-2*pad);
+  g.fillStyle='#69727E'; g.font=`600 ${12.5*S}px Cairo, sans-serif`; g.fillText(m.context.map(([k,v])=>`${k}: ${v}`).join('   ·   '),pad,94*S,W-2*pad-150*S);
+  try{ // the OSQA logo, top right; the image is still created if it cannot load
+    const logo=new Image(); logo.src='/osqa-logo.svg'; await logo.decode();
+    const lh=38*S, lw=lh*(logo.naturalWidth/logo.naturalHeight||2.84);
+    g.drawImage(logo,W-pad-lw,24*S,lw,lh);
+  }catch{}
   let y=headH;
   parts.forEach(p=>{
     g.fillStyle='#172C67'; g.font=`800 ${15*S}px Cairo, sans-serif`; g.fillText(p.b.label,pad,y+26*S,W-2*pad);
@@ -6159,7 +6165,9 @@ html,body{margin:0;background:#fff;color:var(--deep);font-family:Cairo,Arial,san
 .bar button.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)}
 .doc{max-width:273mm;margin:0 auto;padding:18px 16px 30px}
 .head{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;border-top:6px solid var(--teal);padding-top:10px;margin-bottom:16px}
-.kicker{color:var(--teal);font-size:8pt;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+.kicker{display:flex;align-items:center;gap:10px;color:var(--teal);font-size:8pt;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+.kicker img{height:26px;width:auto;display:block}
+.kicker i{width:1px;height:18px;background:var(--line)}
 h1{margin:2px 0 7px;color:var(--ink);font-size:21pt;letter-spacing:-.02em;line-height:1.15}
 .chips{display:flex;flex-wrap:wrap;gap:5px}.chip{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:8.5pt;background:var(--paper)}.chip b{color:var(--muted);font-weight:700;margin-right:5px}
 .lead{margin:7px 0 0;color:var(--muted);font-size:8.5pt}
@@ -6187,7 +6195,7 @@ table.heat td.hm{text-align:center;font-weight:800;border:2px solid #fff}
 </style></head><body>
 <div class="bar"><span>In the print window, choose <b>Save as PDF</b> as the destination.</span><span><button type="button" onclick="window.print()">Save as PDF</button> <button type="button" class="ghost" onclick="window.close()">Close</button></span></div>
 <main class="doc">
-  <header class="head"><div><div class="kicker">OSD Facility Experience · Quality Assurance</div><h1>${ovEsc(m.title)}</h1>
+  <header class="head"><div><div class="kicker"><img src="${ovEsc(new URL('/osqa-logo.svg',location.origin).href)}" alt="OSQA"><i></i>OSD Facility Experience · Quality Assurance</div><h1>${ovEsc(m.title)}</h1>
     <div class="chips">${m.context.map(([k,v])=>`<span class="chip"><b>${ovEsc(k)}</b>${ovEsc(v)}</span>`).join('')}</div>${m.note?`<p class="lead">${ovEsc(m.note)}</p>`:''}</div>
     <div class="meta">Generated ${ovEsc(generated)}${currentUser?.name?`<br>by ${ovEsc(currentUser.name)}`:''}</div></header>
   ${html}
