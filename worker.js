@@ -798,6 +798,8 @@ async function reportInspections(env) {
         title: String(sec?.title || ''),
         score: typeof sec?.score === 'number' ? sec.score : null,
         max: typeof sec?.max === 'number' && sec.max > 0 ? sec.max : 10,
+        // Item scores only (0 / 1 / 2 or null) so analysts can see which checklist items fail most.
+        items: Array.isArray(sec?.items) ? sec.items.map((it) => (typeof it?.score === 'number' ? it.score : null)) : [],
       }))
       : [];
     return {
@@ -818,6 +820,56 @@ async function reportInspections(env) {
   });
 
   return json({ inspections, buildings });
+}
+
+/* ── Saved reports ─────────────────────────────────────────
+ * A named Report Builder setup (filters, grouping, sort, chart choices).
+ * Private to its owner unless shared with everyone who can view reports. */
+
+async function listSavedReports(env, user) {
+  const { results } = await env.DB.prepare(
+    `SELECT r.id, r.owner_id, r.name, r.config, r.shared, r.updated_at, u.name AS owner_name
+     FROM saved_reports r LEFT JOIN qa_users u ON u.id = r.owner_id
+     WHERE r.owner_id = ?1 OR r.shared = 1 ORDER BY lower(r.name)`,
+  ).bind(user.id).all();
+  const reports = (results || []).map((r) => {
+    let config = {};
+    try { config = JSON.parse(r.config); } catch { config = {}; }
+    return {
+      id: r.id, name: r.name, config, shared: !!r.shared, updatedAt: r.updated_at,
+      owner: r.owner_name || 'Former member', mine: r.owner_id === user.id,
+      canDelete: r.owner_id === user.id || user.role === ADMIN_ROLE,
+    };
+  });
+  return json({ reports });
+}
+
+async function saveReport(env, user, body) {
+  const name = String(body?.name || '').trim().replace(/\s+/g, ' ');
+  if (!name || name.length > 80) return fail('give the report a name of up to 80 characters', 400);
+  if (!body?.config || typeof body.config !== 'object' || Array.isArray(body.config)) return fail('config is required', 400);
+  const config = JSON.stringify(body.config);
+  if (config.length > 8000) return fail('that report setup is too large to save', 400);
+  const shared = body.shared ? 1 : 0;
+  // Saving under a name you already use updates that report instead of creating a copy.
+  const existing = await env.DB.prepare('SELECT id FROM saved_reports WHERE owner_id = ?1 AND lower(name) = lower(?2)')
+    .bind(user.id, name).first();
+  if (existing) {
+    await env.DB.prepare("UPDATE saved_reports SET config = ?2, shared = ?3, updated_at = datetime('now') WHERE id = ?1")
+      .bind(existing.id, config, shared).run();
+    return json({ ok: true, id: existing.id, updated: true });
+  }
+  const res = await env.DB.prepare('INSERT INTO saved_reports (owner_id, name, config, shared) VALUES (?1, ?2, ?3, ?4)')
+    .bind(user.id, name, config, shared).run();
+  return json({ ok: true, id: res.meta.last_row_id }, 201);
+}
+
+async function deleteSavedReport(env, user, id) {
+  const row = await env.DB.prepare('SELECT owner_id FROM saved_reports WHERE id = ?1').bind(id).first();
+  if (!row) return fail('saved report not found', 404);
+  if (row.owner_id !== user.id && user.role !== ADMIN_ROLE) return fail('only the person who saved it can delete this report', 403);
+  await env.DB.prepare('DELETE FROM saved_reports WHERE id = ?1').bind(id).run();
+  return json({ ok: true });
 }
 
 async function handleAssignments(request, env, url, path, user) {
@@ -1432,6 +1484,14 @@ async function handleApi(request, env, url) {
   if (path === 'reports/inspections' && method === 'GET') {
     if (!can(user, 'reports')) return fail('you do not have permission to view reports', 403);
     return reportInspections(env);
+  }
+  if (path.startsWith('reports/saved')) {
+    if (!can(user, 'reports')) return fail('you do not have permission to view reports', 403);
+    if (path === 'reports/saved' && method === 'GET') return listSavedReports(env, user);
+    if (path === 'reports/saved' && method === 'POST') return saveReport(env, user, await request.json());
+    const savedMatch = path.match(/^reports\/saved\/(\d+)$/);
+    if (savedMatch && method === 'DELETE') return deleteSavedReport(env, user, Number(savedMatch[1]));
+    return fail('not found', 404);
   }
 
   if (path === 'leader/overview' && method === 'GET') {
