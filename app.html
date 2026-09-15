@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2326A8AB'/%3E%3Cstop offset='1' stop-color='%230033A0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M16 6.5l7 2.6v5.3c0 4.7-3 8.3-7 9.9-4-1.6-7-5.2-7-9.9V9.1z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M12.6 15.2l2.4 2.4 4.4-4.6' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <title>Facility Experience QA Check List</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <!-- Chart.js -->
@@ -782,6 +783,28 @@ body.no-export #btn-pdf,body.no-export #btn-pdf-edit,body.no-export #save-notice
 .sc-callout.warn{background:#fffbeb;border-color:#f0c040;color:#6b4200}
 .sc-callout.info{background:#eaf6fb;border-color:rgba(38,168,171,.5);color:#0b3a5c}
 .sc-callout.info strong{color:var(--royal)}
+.sc-callout.ok{background:#ecf8f1;border-color:rgba(0,132,61,.45);color:#0d4a2a}
+.sc-callout.ok strong{color:var(--good)}
+.sm-box{width:470px}
+.sm-facts{display:grid;grid-template-columns:auto 1fr;gap:7px 16px;margin:0 0 16px;padding:14px 16px;background:var(--bg);border-radius:10px;font-size:.84rem}
+.sm-facts dt{color:var(--muted);font-weight:700}
+.sm-facts dd{margin:0;font-weight:800;color:var(--text);min-width:0;overflow-wrap:anywhere}
+.notif-toast{position:fixed;top:66px;right:18px;z-index:1200;width:370px;max-width:calc(100vw - 24px);display:flex;gap:11px;align-items:flex-start;background:#fff;border:1px solid var(--border);border-left:4px solid var(--teal);border-radius:12px;padding:12px 10px 12px 13px;box-shadow:0 18px 40px -14px rgba(0,32,112,.35);animation:ntIn .25s ease}
+.notif-toast[hidden]{display:none}
+.nt-ic{width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(160deg,var(--royal),var(--teal))}
+.nt-body{flex:1;min-width:0}
+.nt-body b{display:block;font-size:.84rem;font-weight:800;color:var(--text);line-height:1.35}
+.nt-body span{display:block;font-size:.76rem;color:var(--muted);line-height:1.4;margin-top:2px}
+.nt-actions{display:flex;align-items:center;gap:2px}
+.nt-open{border:none;background:var(--royal);color:#fff;font-family:var(--font);font-weight:800;font-size:.74rem;border-radius:999px;padding:5px 12px;cursor:pointer}
+.nt-close{border:none;background:none;color:var(--muted);font-size:1.2rem;line-height:1;cursor:pointer;padding:2px 6px}
+#notif-bell.ring svg{animation:bellRing .9s ease 2;transform-origin:50% 0}
+#notif-alerts{background:none;border:none;color:var(--royal);font-size:.72rem;font-weight:700;cursor:pointer;font-family:var(--font)}
+#notif-alerts[hidden]{display:none}
+@keyframes ntIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes bellRing{0%,100%{transform:rotate(0)}20%{transform:rotate(14deg)}40%{transform:rotate(-12deg)}60%{transform:rotate(8deg)}80%{transform:rotate(-4deg)}}
+@media(max-width:600px){.notif-toast{top:60px;left:12px;right:12px;width:auto}}
+@media(prefers-reduced-motion:reduce){.notif-toast,#notif-bell.ring svg{animation:none}}
 .sc-actions{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
 .sc-actions .abar{margin-top:0}
 @media(max-width:780px){.sc-ring{width:116px;height:116px}.sc-ring>div{width:94px;height:94px}.sc-ring b{font-size:1.9rem}}
@@ -1043,7 +1066,7 @@ body.nav-rail #acct-row{justify-content:center}
       <div id="notif-panel" hidden>
         <div class="notif-panel-head">
           <span>Notifications</span>
-          <button id="notif-mark-all">Mark all read</button>
+          <span><button id="notif-alerts" hidden title="Show a desktop alert when something new arrives while this tab is in the background">Turn on alerts</button> <button id="notif-mark-all">Mark all read</button></span>
         </div>
         <div id="notif-list"><div class="notif-empty">No notifications yet.</div></div>
       </div>
@@ -1052,6 +1075,11 @@ body.nav-rail #acct-row{justify-content:center}
   </div>
 
   <div class="app-toast" id="app-toast" hidden role="status"></div>
+  <div class="notif-toast" id="notif-toast" hidden role="status" aria-live="polite">
+    <span class="nt-ic"><svg data-lucide="bell-ring" width="18" height="18"></svg></span>
+    <div class="nt-body"><b id="nt-title"></b><span id="nt-text"></span></div>
+    <div class="nt-actions"><button type="button" class="nt-open" id="nt-open">View</button><button type="button" class="nt-close" id="nt-close" aria-label="Dismiss">×</button></div>
+  </div>
 
   <!-- Edit mode banner -->
   <div id="edit-banner">
@@ -1882,7 +1910,7 @@ body.nav-rail #acct-row{justify-content:center}
       <div class="sc-head-main">
         <div class="ey">Step 3 of 3 · Facility Experience Journey Map</div>
         <h2>Score <span>Card</span></h2>
-        <p class="sub" id="sc-meta-sub">Review the results, save the inspection, then export the PDF.</p>
+        <p class="sub" id="sc-meta-sub">Review the results, submit the report, then download the PDF.</p>
         <div class="sc-header-grid" id="sc-header-grid"></div>
       </div>
       <div class="sc-ring" id="sc-ring"><div><b id="sc-total">–</b><small>/100</small><span id="sc-grade">–</span></div></div>
@@ -1916,14 +1944,19 @@ body.nav-rail #acct-row{justify-content:center}
     </div>
     <div class="sc-callout info" id="save-notice">
       <svg data-lucide="info" width="17" height="17"></svg>
-      <div><strong>Save required to complete this report</strong>
-      You must save this inspection to history before exporting the PDF. This ensures all records are stored and traceable.</div>
+      <div><strong id="save-notice-title">Submit to complete this report</strong>
+      <span id="save-notice-text">Submitting sends the report for review and notifies the reviewers. A report is submitted once — later changes update the same report.</span></div>
+    </div>
+    <div class="sc-callout ok" id="submitted-notice" style="display:none">
+      <svg data-lucide="circle-check" width="17" height="17"></svg>
+      <div><strong id="submitted-title">Report submitted</strong>
+      <span id="submitted-text"></span> <button type="button" class="rp-link" id="submitted-open" style="padding:0">Open report</button></div>
     </div>
     <div class="sc-actions">
     <!-- Normal mode actions -->
     <div class="abar" id="abar-normal">
-      <button class="btn bt" onclick="saveInspection()" id="btn-save">Save to History</button>
-      <button class="btn br" onclick="exportPDF()" id="btn-pdf" disabled title="Save to history first">Export PDF</button>
+      <button class="btn bt" onclick="submitReport()" id="btn-save">Submit report</button>
+      <button class="btn br" onclick="exportPDF()" id="btn-pdf" disabled title="Submit first">Export PDF</button>
       <button class="btn bo" onclick="resetForm()">New Inspection</button>
     </div>
     <!-- Edit mode actions — shown instead when editing a saved record -->
@@ -2044,6 +2077,20 @@ body.nav-rail #acct-row{justify-content:center}
 
 
 
+<!-- Submit: confirm once, or explain that the report is already on file -->
+<div class="modal-bg" id="modal-submit">
+  <div class="modal-box sm-box" role="dialog" aria-modal="true" aria-labelledby="sm-title">
+    <h3 id="sm-title">Submit report</h3>
+    <p class="msub" id="sm-sub"></p>
+    <dl class="sm-facts" id="sm-facts"></dl>
+    <div class="sc-callout warn" id="sm-warn" style="display:none"><svg data-lucide="triangle-alert" width="17" height="17"></svg><div id="sm-warn-text"></div></div>
+    <div class="mbtns">
+      <button class="btn bt" type="button" id="sm-go">Submit report</button>
+      <button class="btn bo" type="button" onclick="closeModal('modal-submit')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Save choice modal (edit mode) -->
 <div class="modal-bg" id="modal-save-choice">
   <div class="modal-box" style="width:480px">
@@ -2087,9 +2134,12 @@ async function apiFetch(method, path, body){
   if(body) opts.body = JSON.stringify(body);
   const res = await fetch(API_BASE + path, opts);
   if(!res.ok){
-    let msg = await res.text();
-    try{ msg = JSON.parse(msg).error || msg; }catch(_){}
-    throw new Error(msg || ('HTTP ' + res.status));
+    const raw = await res.text();
+    let data = null;
+    try{ data = JSON.parse(raw); }catch(_){}
+    const err = new Error((data && data.error) || raw || ('HTTP ' + res.status));
+    err.status = res.status; err.data = data;
+    throw err;
   }
   const txt = await res.text();
   return txt ? JSON.parse(txt) : null;
@@ -2132,6 +2182,8 @@ let activeInspector = '';
 let history = []; // loaded from the database
 let allState = {};
 let currentReportSaved = false;
+let lastSubmitted = null, saveBusy = false; // the report this form was submitted as (later saves update it); a save in progress
+let notifCursor = null, notifTimer = null, notifBusy = false; // live notifications
 let editingRecordId = null;
 // Declared up here (not next to the /api/auth/me call) because pageAllowed() reads it during
 // the initial deep-link routing, which runs before the end of the script.
@@ -2200,7 +2252,7 @@ function setSyncChip(state, msg){
 // DATABASE CRUD
 // ═══════════════════════════════════════════════════════════
 async function dbInsert(record){
-  await apiFetch('POST', '/inspections', record);
+  return apiFetch('POST', '/inspections', record);
 }
 
 async function dbUpdate(record){
@@ -2665,7 +2717,7 @@ function updateScoreCard(){
   document.getElementById('sc-header-grid').innerHTML=fields
     .map(([l,v])=>`<div class="sc-hf"><span class="sc-hl">${l}</span><span class="sc-hv">${ovEsc(v||'—')}</span></div>`).join('');
   document.getElementById('sc-meta-sub').textContent=complete===SECTIONS.length
-    ?'All sections scored — save the inspection, then export the PDF.'
+    ?'All sections scored — submit the report, then download the PDF.'
     :`${SECTIONS.length-complete} of ${SECTIONS.length} sections still have unanswered items.`;
 
   // Tiles
@@ -2706,10 +2758,9 @@ function updatePDFButton(){
   const enabled=currentReportSaved;
   ['btn-pdf','btn-pdf-edit'].forEach(id=>{
     const btn=document.getElementById(id);
-    if(btn){btn.disabled=!enabled;btn.title=enabled?'':'Save first';}
+    if(btn){btn.disabled=!enabled;btn.title=enabled?'':(editingRecordId!==null?'Save your changes first':'Submit the report first');}
   });
-  const notice=document.getElementById('save-notice');
-  if(notice) notice.style.display=enabled?'none':'flex';
+  updateSubmitState();
 }
 function updateScoreCardActionBar(){
   const isEdit=editingRecordId!==null;
@@ -3019,58 +3070,145 @@ function tooLargeMessage(record){
     `It currently holds ${countPhotos(record)} photos. Remove a few of the largest ones and save again.`;
 }
 
+// ── Submit once ──
+// A report is submitted a single time. Saving again from the same form updates that report, and the
+// server refuses a second report for the same assignment or the same building, type and quarter.
+function submitKeyOf(facility,type,assignmentId,date){ return [String(facility||'').trim().toLowerCase(),type||'',assignmentId||'',inQuarterOf(date)||''].join('|'); }
+function submitKey(){ return submitKeyOf(inVal('meta-facility'),document.getElementById('meta-type').value,currentAssignmentId,document.getElementById('meta-date').value); }
+function submittedReport(){ return lastSubmitted&&lastSubmitted.key===submitKey()?lastSubmitted:null; }
+function updateSubmitState(){
+  const editing=editingRecordId!==null, sub=editing?null:submittedReport();
+  const btn=document.getElementById('btn-save');
+  if(btn){
+    btn.disabled=saveBusy||!!(sub&&currentReportSaved);
+    btn.textContent=saveBusy?(sub?'Saving…':'Submitting…'):sub?(currentReportSaved?'Submitted ✓':'Save changes'):'Submit report';
+  }
+  const editBtn=document.getElementById('btn-save-edit');
+  if(editBtn) editBtn.disabled=saveBusy;
+  const notice=document.getElementById('save-notice'), done=document.getElementById('submitted-notice');
+  if(notice){
+    notice.style.display=!currentReportSaved&&!sub?'flex':'none';
+    document.getElementById('save-notice-title').textContent=editing?'Save your changes':'Submit to complete this report';
+    document.getElementById('save-notice-text').textContent=editing
+      ?'You are editing a report that is already on file. Saving updates it — it is not submitted again.'
+      :'Submitting sends the report for review and notifies the reviewers. A report is submitted once — later changes update the same report.';
+  }
+  if(done){
+    done.style.display=sub?'flex':'none';
+    if(sub){
+      document.getElementById('submitted-title').textContent=currentReportSaved?'Report submitted':'Changes not saved yet';
+      const what=[document.getElementById('meta-type').value,inVal('meta-facility')].filter(Boolean).join(' report for ');
+      document.getElementById('submitted-text').textContent=currentReportSaved
+        ?`The ${what} was sent for review and the reviewers were notified.`
+        :`Saving updates the report you already submitted; it will not be submitted a second time.`;
+    }
+  }
+}
+function submitDialog({title,sub,facts,warn,go,onGo}){
+  document.getElementById('sm-title').textContent=title;
+  document.getElementById('sm-sub').textContent=sub;
+  document.getElementById('sm-facts').innerHTML=facts.map(([k,v])=>`<dt>${ovEsc(k)}</dt><dd>${ovEsc(v)}</dd>`).join('');
+  const w=document.getElementById('sm-warn');
+  w.style.display=warn?'flex':'none';
+  document.getElementById('sm-warn-text').textContent=warn||'';
+  const btn=document.getElementById('sm-go');
+  btn.textContent=go; btn.onclick=()=>{ closeModal('modal-submit'); onGo(); };
+  document.getElementById('modal-submit').classList.add('open');
+  lucide.createIcons({nodes:[document.getElementById('modal-submit')]});
+  setTimeout(()=>btn.focus(),50);
+}
+function submitReport(){
+  if(saveBusy) return;
+  if(!inVal('meta-facility')||!document.getElementById('meta-type').value){
+    showToast('Add the building and inspection type in Details before submitting.',true); nav('pg-new'); return;
+  }
+  const sub=submittedReport();
+  if(sub){ if(!currentReportSaved) saveInspection(); return; }
+  const all=curState().scores.flat(), answered=all.filter(v=>v!==null).length, missing=all.length-answered;
+  let grand=0; SECTIONS.forEach((_,si)=>grand+=getSecScore(si).total);
+  const overall=Math.round(grand), date=document.getElementById('meta-date').value, type=document.getElementById('meta-type').value;
+  submitDialog({
+    title:'Submit report',
+    sub:'Check the details. The reviewers are notified as soon as the report is submitted.',
+    facts:[['Building',inVal('meta-facility')],['Inspection',[type,inQuarterOf(date)].filter(Boolean).join(' · ')],['Date',date||'—'],['Auditor',activeInspector||'—'],
+      ['Score',`${overall}/100 · ${grade(overall).label}`],['Answered',`${answered} of ${all.length} items`]],
+    warn:missing?`${missing} item${missing===1?' has':'s have'} no answer yet. Go back to complete ${missing===1?'it':'them'}, or submit the report as it is.`:'',
+    go:'Submit report', onGo:()=>saveInspection(),
+  });
+}
+function showAlreadySubmitted(err){
+  const x=err?.data?.existing;
+  if(!x) return false;
+  submitDialog({
+    title:'Already submitted', sub:err.message,
+    facts:[['Building',x.building||'—'],['Inspection',[x.type,x.quarter].filter(Boolean).join(' · ')],['Submitted by',x.auditor||'—'],['Date',x.date||'—']],
+    warn:'', go:'Open that report', onGo:()=>openReport(x.id),
+  });
+  return true;
+}
+document.getElementById('submitted-open').addEventListener('click',()=>{ const sub=submittedReport(); if(sub) openReport(sub.id); });
+
 async function saveInspection(updateExisting){
+  if(saveBusy) return;
   if(!inVal('meta-facility')||!document.getElementById('meta-type').value){
     showToast('Add the building and inspection type in Details before saving.',true); nav('pg-new'); return;
   }
-  setSyncChip('sync','Saving…');showOverlay('Saving inspection…');
+  const record=buildRecord(null);
+  if(recordSize(record)>RECORD_SIZE_LIMIT){ setSyncChip('err','Report too large'); alert(tooLargeMessage(record)); return; }
+  const editing=editingRecordId!==null&&updateExisting, sub=editing?null:submittedReport();
+  saveBusy=true; updateSubmitState();
+  setSyncChip('sync','Saving…'); showOverlay(editing||sub?'Saving changes…':'Submitting report…');
   try{
-    const record=buildRecord(null);
-    if(recordSize(record)>RECORD_SIZE_LIMIT){ hideOverlay();setSyncChip('err','Report too large');alert(tooLargeMessage(record));return; }
-    if(editingRecordId!==null && updateExisting){
-      record.id=editingRecordId;
+    if(editing||sub){
+      record.id=editing?editingRecordId:sub.id;
       await dbUpdate(record);
-      const idx=history.findIndex(r=>r.id===editingRecordId);
+      const idx=history.findIndex(r=>r.id===record.id);
       if(idx>=0) history[idx]=record; else history.unshift(record);
-      editingRecordId=null;
-      document.getElementById('edit-banner').classList.remove('show');
-      updateScoreCardActionBar();
+      if(editing){
+        editingRecordId=null;
+        document.getElementById('edit-banner').classList.remove('show');
+        updateScoreCardActionBar();
+      }
+      showToast('Changes saved to the submitted report');
     } else {
-      await dbInsert(record);
+      const res=await dbInsert(record);
       history.unshift(record);
+      showToast(res?.alreadySaved?'This report was already submitted — nothing was sent twice.':'Report submitted — the reviewers have been notified.');
     }
-    currentReportSaved=true;updatePDFButton();
+    lastSubmitted={id:record.id,key:submitKeyOf(record.facility,record.type,record.assignmentId,record.date)};
+    currentReportSaved=true;
     loadHome();
     if(record.assignmentId){ inAssignCache={}; loadAuditorProfile({quiet:true}); }
     setSyncChip('ok','Saved');
-    const btn=document.getElementById('btn-save');
-    if(btn){btn.textContent='Saved ✓';btn.style.background='var(--good)';setTimeout(()=>{btn.textContent='Save to History';btn.style.background='';},3000);}
   }catch(e){
-    setSyncChip('err','Save failed');
-    alert('Could not save to cloud: '+e.message+'\n\nCheck your internet connection and try again.');
-  }finally{hideOverlay();}
+    if(e.status===409&&showAlreadySubmitted(e)) setSyncChip('err','Already submitted');
+    else{ setSyncChip('err','Save failed'); alert('Could not save the report: '+e.message+(e.status?'':'\n\nCheck your internet connection and try again.')); }
+  }finally{ saveBusy=false; hideOverlay(); updatePDFButton(); }
 }
 
 async function saveAsEOQI(){
-  setSyncChip('sync','Saving as EOQI…');showOverlay('Saving as new EOQI report…');
+  if(saveBusy) return;
+  const record=buildRecord('EOQI');
+  if(recordSize(record)>RECORD_SIZE_LIMIT){ setSyncChip('err','Report too large'); alert(tooLargeMessage(record)); return; }
+  saveBusy=true; updateSubmitState();
+  setSyncChip('sync','Submitting EOQI…'); showOverlay('Submitting the EOQI report…');
   try{
-    const record=buildRecord('EOQI');
-    if(recordSize(record)>RECORD_SIZE_LIMIT){ hideOverlay();setSyncChip('err','Report too large');alert(tooLargeMessage(record));return; }
+    const res=await dbInsert(record);
     document.getElementById('meta-type').value='EOQI';
-    await dbInsert(record);
+    document.getElementById('meta-date').value=record.date;
     history.unshift(record);
     editingRecordId=null;
     document.getElementById('edit-banner').classList.remove('show');
     updateScoreCardActionBar();
-    currentReportSaved=true;updatePDFButton();
+    lastSubmitted={id:record.id,key:submitKeyOf(record.facility,record.type,record.assignmentId,record.date)};
+    currentReportSaved=true;
     loadHome();
     setSyncChip('ok','Saved as EOQI');
-    const btn=document.getElementById('btn-save-edit');
-    if(btn){btn.textContent='Saved ✓';btn.style.background='var(--good)';setTimeout(()=>{btn.textContent='Save Changes';btn.style.background='';},3000);}
+    showToast(res?.alreadySaved?'This EOQI was already submitted — nothing was sent twice.':'EOQI submitted — the reviewers have been notified.');
   }catch(e){
-    setSyncChip('err','Save failed');
-    alert('Could not save to cloud: '+e.message);
-  }finally{hideOverlay();}
+    if(e.status===409&&showAlreadySubmitted(e)) setSyncChip('err','Already submitted');
+    else{ setSyncChip('err','Save failed'); alert('Could not save the report: '+e.message); }
+  }finally{ saveBusy=false; hideOverlay(); updatePDFButton(); }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3255,7 +3393,7 @@ function editInspection(e,id,fallback){
     });
     st.notes[si]=sec.notes||'';
   });
-  editingRecordId=id;currentReportSaved=false;updatePDFButton();syncFormToState();
+  editingRecordId=id;lastSubmitted=null;currentReportSaved=false;updatePDFButton();syncFormToState();
   document.getElementById('edit-banner').classList.add('show');
   lucide.createIcons({nodes:[document.getElementById('edit-banner')]});
   updateScoreCardActionBar();
@@ -3273,7 +3411,7 @@ function cancelEdit(){
 // PDF EXPORT
 // ═══════════════════════════════════════════════════════════
 function exportPDF(){
-  if(!currentReportSaved){alert('Please save the inspection before exporting the PDF.');return;}
+  if(!currentReportSaved){alert(editingRecordId!==null?'Save your changes before downloading the PDF.':'Submit the report before downloading the PDF.');return;}
   const reportType=document.getElementById('meta-type').value;
   const reportState=curState();
   const reportSections=SECTIONS.map((section,sectionIndex)=>{
@@ -3656,6 +3794,7 @@ function openReportsForInspector(name){
 }
 
 function clearInspectionState(){
+  lastSubmitted=null;
   allState[activeInspector]={
     scores:SECTIONS.map(s=>s.items.map(()=>null)),
     comments:SECTIONS.map(s=>s.items.map(()=>'')),
@@ -3710,9 +3849,7 @@ async function loadNotifications(){
     const res=await fetch('/api/notifications');
     if(!res.ok)return;
     const {notifications,unreadCount}=await res.json();
-    const badge=document.getElementById('notif-badge');
-    if(unreadCount>0){ badge.hidden=false; badge.textContent=unreadCount>9?'9+':unreadCount; }
-    else badge.hidden=true;
+    setNotifBadge(unreadCount);
     const list=document.getElementById('notif-list');
     if(!notifications.length){ list.innerHTML='<div class="notif-empty">No notifications yet.</div>'; return; }
     list.innerHTML=notifications.map(n=>`
@@ -3748,8 +3885,84 @@ document.addEventListener('click',(e)=>{
   const wrap=document.getElementById('notif-bell-wrap');
   if(!wrap.contains(e.target)) document.getElementById('notif-panel').hidden=true;
 });
-setInterval(()=>{ loadNotifications(); refreshReviewBadge(); },60000);
+// ── Live notifications ──
+// A light check every 15 seconds while the app is on screen (every minute in a background tab), and at
+// once when the tab comes back into view. Anything new shows as a card, rings the bell, refreshes the
+// lists it affects and — when allowed — raises a desktop alert while the tab is in the background.
+function setNotifBadge(n){
+  const badge=document.getElementById('notif-badge');
+  badge.hidden=!(n>0); badge.textContent=n>9?'9+':String(n||0);
+  document.title=(n>0?`(${n>9?'9+':n}) `:'')+document.title.replace(/^\(\d+\+?\) /,'');
+}
+function scheduleNotifPoll(){
+  clearTimeout(notifTimer);
+  notifTimer=setTimeout(pollNotifications,document.visibilityState==='visible'?15000:60000);
+}
+async function pollNotifications(){
+  if(notifBusy) return;
+  notifBusy=true;
+  let stopped=false;
+  try{
+    const res=await fetch('/api/notifications/poll'+(notifCursor!=null?'?after='+notifCursor:''),{cache:'no-store'});
+    if(res.status===401){ stopped=true; return; } // signed out elsewhere: stop asking
+    if(!res.ok) return;
+    const d=await res.json();
+    setNotifBadge(d.unreadCount);
+    if(notifCursor!=null&&d.fresh.length) announceNotifications(d.fresh);
+    notifCursor=Math.max(notifCursor||0,d.latestId||0);
+  }catch{ /* offline: try again on the next tick */ }
+  finally{ notifBusy=false; if(stopped) clearTimeout(notifTimer); else scheduleNotifPoll(); }
+}
+function announceNotifications(list){
+  const last=list[list.length-1];
+  document.getElementById('nt-title').textContent=list.length>1?`${list.length} new notifications`:last.title;
+  document.getElementById('nt-text').textContent=list.length>1?last.title:(last.body||'');
+  const toast=document.getElementById('notif-toast');
+  toast.dataset.id=last.id; toast.dataset.link=last.link||'';
+  toast.hidden=false;
+  clearTimeout(toast._timer); toast._timer=setTimeout(()=>{ toast.hidden=true; },10000);
+  const bell=document.getElementById('notif-bell');
+  bell.classList.remove('ring'); void bell.offsetWidth; bell.classList.add('ring');
+  lucide.createIcons({nodes:[toast]});
+  loadNotifications();
+  const types=new Set(list.map(n=>n.type));
+  if(types.has('submission')||types.has('resubmission')||types.has('review')){
+    refreshReviewBadge();
+    if(document.getElementById('pg-library').classList.contains('active')) loadLibrary();
+  }
+  if(types.has('assignment')&&document.getElementById('pg-auditor').classList.contains('active')){ loadAuditorProfile({quiet:true}); auLoadNotifications(); }
+  if(types.has('submission')&&document.getElementById('pg-officer').classList.contains('active')) loadOfficer({quiet:true});
+  if(document.visibilityState!=='visible'&&'Notification' in window&&Notification.permission==='granted'){
+    list.slice(-3).forEach(n=>{
+      try{
+        const alert=new Notification(n.title,{body:n.body||'',tag:'qa-'+n.id});
+        alert.onclick=()=>{ window.focus(); openNotification(n.id,n.link); alert.close(); };
+      }catch{ /* some browsers only allow alerts from a service worker */ }
+    });
+  }
+}
+document.getElementById('nt-open').addEventListener('click',()=>{
+  const t=document.getElementById('notif-toast'); t.hidden=true;
+  openNotification(Number(t.dataset.id),t.dataset.link);
+});
+document.getElementById('nt-close').addEventListener('click',()=>{ document.getElementById('notif-toast').hidden=true; });
+function syncAlertsButton(){
+  const b=document.getElementById('notif-alerts');
+  b.hidden=!('Notification' in window)||Notification.permission!=='default';
+}
+document.getElementById('notif-alerts').addEventListener('click',async e=>{
+  e.stopPropagation();
+  try{ await Notification.requestPermission(); }catch{}
+  syncAlertsButton();
+  if(Notification.permission==='granted') showToast('Desktop alerts are on for this browser');
+});
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ pollNotifications(); } else scheduleNotifPoll(); });
+window.addEventListener('focus',()=>pollNotifications());
+window.addEventListener('online',()=>pollNotifications());
+setInterval(()=>{ if(document.visibilityState==='visible') refreshReviewBadge(); },60000);
+syncAlertsButton();
 loadNotifications();
+pollNotifications();
 
 // ═══════════════════════════════════════════════════════════
 // TEAM OVERVIEW (Quality Leader)
