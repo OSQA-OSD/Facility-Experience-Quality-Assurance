@@ -48,6 +48,8 @@ body.view-only .hc-edit{display:none}
 .ni.active svg{opacity:1;color:var(--teal-lt)}
 .ni .ns{margin-left:auto;font-size:.68rem;font-weight:800;background:rgba(255,255,255,.1);border-radius:20px;padding:2px 7px;min-width:30px;text-align:center}
 .ni.active .ns{background:var(--teal);color:#fff}
+.ni .ns:empty{display:none}
+.ni .ns-alert{background:#fab219;color:#1a1300}
 .sb-brand{display:flex;align-items:center;gap:11px}
 .sb-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(160deg,var(--teal) 0%,var(--royal) 100%);border:1px solid rgba(140,254,227,.35);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
@@ -426,6 +428,85 @@ body.view-only .hc-edit{display:none}
 .app-toast.err{background:var(--danger)}
 @media(max-width:780px){#pg-officer .ov-filters{padding-left:14px;padding-right:14px}.of-live{margin-left:0}.of-bulk b{margin-right:0;width:100%}}
 
+/* Inspection Reports (search · open · review) */
+#pg-library{background:var(--bg);padding-bottom:40px}
+#pg-library [hidden]{display:none!important}
+.lib-search{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;box-shadow:0 1px 2px rgba(16,32,64,.04)}
+.lib-search>svg{width:20px;height:20px;color:var(--muted);flex-shrink:0}
+.lib-search input[type=search]{flex:1;min-width:180px;border:none;outline:none;font-family:var(--font);font-size:1rem;font-weight:600;color:var(--text);background:transparent;padding:8px 0}
+.lib-check{display:inline-flex;align-items:center;gap:7px;font-size:.76rem;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap}
+.lib-check input{width:16px;height:16px;accent-color:var(--teal)}
+.lib-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 12px}
+.lib-bar .rp-chip b{font-weight:900;margin-left:3px}
+.lib-bar .rp-chips{flex-wrap:wrap}
+#lib-toggle{display:none}
+.lib-filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.lib-filters label{display:grid;gap:4px;font-size:.6rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.lib-filters select,.lib-filters input{border:1.5px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.8rem;font-family:var(--font);color:var(--text);background:#fff;font-weight:600;min-width:0;text-transform:none;letter-spacing:0}
+#lib-panel{transition:opacity .15s}
+#lib-panel.loading{opacity:.55}
+.lib-table td{vertical-align:top}
+.lib-table td small{white-space:normal}
+.lib-date{white-space:nowrap}
+.lib-snip{display:flex!important;gap:5px;align-items:flex-start;margin-top:4px;color:#0b3a5c!important;background:rgba(38,168,171,.08);border-radius:6px;padding:3px 7px;max-width:420px}
+.lib-snip svg{flex-shrink:0;margin-top:2px}
+.lib-table mark{background:rgba(250,178,25,.35);color:inherit;border-radius:3px;padding:0 1px}
+.lib-score{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:28px;border-radius:8px;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c);font-weight:900}
+.lib-open{color:var(--muted);text-align:right;width:28px}
+.rv-drawer{width:760px}
+.rv-head-ring{margin-left:auto;width:64px;height:64px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  background:conic-gradient(var(--c,#9fb3c8) calc(var(--p,0) * 1%),rgba(255,255,255,.18) 0)}
+.rv-head-ring>div{width:52px;height:52px;border-radius:50%;background:#02205f;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.rv-head-ring b{font-size:1.15rem;color:#fff}
+.rv-head-ring small{font-size:.5rem;color:var(--teal-lt);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.ad-d-head .rv-head-close{margin-left:10px}
+.rv-status-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rv-status .ad-note{flex-wrap:nowrap;align-items:flex-start;margin-top:10px}
+.rv-status .ad-note svg{flex-shrink:0;margin-top:2px}
+.rv-auditor{font-size:.8rem;color:var(--muted)}
+.rv-last{font-size:.8rem;color:var(--text);margin:10px 0 0;line-height:1.5}
+.rv-form{margin-top:12px;background:var(--bg);border-radius:10px;padding:12px}
+.rv-form label{display:block;font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.rv-form label small{text-transform:none;letter-spacing:0;font-weight:600}
+.rv-form textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-family:var(--font);font-size:.86rem;color:var(--text);background:#fff;resize:vertical;outline:none}
+.rv-form textarea:focus{border-color:var(--teal)}
+.rv-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.rv-btns .btn{padding:8px 14px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px}
+.rv-warn{color:#8a4b00!important;border-color:rgba(212,128,0,.45)!important}
+.rv-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0;border-bottom:1px solid var(--bg)}
+.rv-actions .btn{padding:8px 14px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px}
+.rv-sec{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.rv-sec summary{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;list-style:none;background:#fff}
+.rv-sec summary::-webkit-details-marker{display:none}
+.rv-sec summary::before{content:'›';color:var(--muted);font-weight:900;transition:transform .15s}
+.rv-sec[open] summary::before{transform:rotate(90deg)}
+.rv-sec-t{font-weight:800;font-size:.84rem;color:var(--royal);flex:1}
+.rv-fails{font-size:.66rem;font-weight:800;color:#b42318;background:rgba(192,57,43,.08);border-radius:999px;padding:1px 8px}
+.rv-sec-s{font-size:.78rem;color:var(--muted)}
+.rv-sec ul{list-style:none;margin:0;padding:0 12px 8px}
+.rv-item{display:grid;grid-template-columns:22px 1fr auto;gap:10px;padding:8px 0;border-top:1px solid var(--bg);font-size:.8rem;align-items:start}
+.rv-mark{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.72rem;color:#fff;background:#9fb3c8}
+.rv-item.yes .rv-mark{background:var(--good)}.rv-item.no .rv-mark{background:var(--danger)}
+.rv-item b{font-weight:700}
+.rv-item p{margin:3px 0 0;color:#344a66;background:var(--bg);border-radius:6px;padding:5px 8px;font-size:.78rem}
+.rv-item em{font-style:normal;font-size:.66rem;font-weight:800;color:var(--muted);white-space:nowrap}
+.rv-item.no em{color:#b42318}
+.rv-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.rv-photos img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid var(--teal);cursor:zoom-in}
+.rv-notes{margin:0 12px 10px;background:#eaf6fb;border-radius:8px;padding:8px 10px;font-size:.78rem;color:#0b3a5c}
+.rv-notes b{display:block;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+@media(max-width:780px){
+  #lib-toggle{display:inline-flex}
+  .lib-filters{display:none;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lib-filters.open{display:grid}
+  .lib-table thead{display:none}
+  .lib-table tr{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 14px;border-bottom:1px solid var(--bg)}
+  .lib-table td{padding:0;border:none}
+  .lib-table td:nth-child(2){grid-column:1/-1;order:-1}
+  .lib-table td.lib-open{display:none}
+  .rv-item{grid-template-columns:22px 1fr}.rv-item em{grid-column:2}
+}
+
 /* Reports & Analytics (all roles) */
 #pg-reports [hidden]{display:none!important}
 .rp-ins-filters{padding:20px 44px 0;margin:0;gap:10px}
@@ -518,6 +599,7 @@ body.view-only .hc-edit{display:none}
 .hc-del{width:30px;height:30px;border-radius:50%;border:none;background:rgba(192,57,43,.1);color:var(--danger);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
 .hc-del:hover{background:rgba(192,57,43,.22)}
 body.no-delete .hc-del{display:none}
+body.no-export .hc-pdf,body.no-export #btn-pdf,body.no-export #btn-pdf-edit,body.no-export #save-notice{display:none!important}
 .hc-pdf{width:30px;height:30px;border-radius:50%;border:none;background:rgba(38,168,171,.12);color:var(--teal);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
 .hc-pdf:hover{background:rgba(38,168,171,.28)}
 .no-hist{text-align:center;padding:32px;color:var(--muted);font-size:.85rem;background:#fff;border-radius:var(--r);border:1px dashed var(--border)}
@@ -874,11 +956,12 @@ body.nav-rail #acct-row{justify-content:center}
       <div class="ni active" data-page="pg-home"><svg data-lucide="layout-dashboard" width="18" height="18"></svg><span class="ni-txt">Home</span></div>
       <div class="ni" id="my-assignments-link" data-page="pg-auditor" hidden><svg data-lucide="calendar-check" width="18" height="18"></svg><span class="ni-txt">My Assignments</span><span class="ns" id="ns-assign">–</span></div>
       <div class="ni" id="inspection-link" data-page="pg-new" hidden><svg data-lucide="clipboard-check" width="18" height="18"></svg><span class="ni-txt">Inspection</span><span class="ns" id="ns-progress">0%</span></div>
+      <div class="ni" id="library-link" data-page="pg-library"><svg data-lucide="file-search" width="18" height="18"></svg><span class="ni-txt">Inspection Reports</span><span class="ns ns-alert" id="ns-review"></span></div>
     </div>
     <div class="nav-group">
       <span class="nav-label">Team &amp; Insights</span>
       <div class="ni" id="team-link" data-page="pg-overview" hidden><svg data-lucide="users" width="18" height="18"></svg><span class="ni-txt">Team</span></div>
-      <div class="ni" id="reports-link" data-page="pg-reports" hidden><svg data-lucide="bar-chart-3" width="18" height="18"></svg><span class="ni-txt">Reports</span></div>
+      <div class="ni" id="reports-link" data-page="pg-reports" hidden><svg data-lucide="bar-chart-3" width="18" height="18"></svg><span class="ni-txt">Analytics</span></div>
     </div>
     <div class="nav-group">
       <span class="nav-label">Administration</span>
@@ -974,6 +1057,7 @@ body.nav-rail #acct-row{justify-content:center}
           <span class="sec-eyebrow">Archive</span>
           <h3><svg data-lucide="clock" width="18" height="18"></svg> Inspection History</h3>
         </div>
+        <button class="rp-link" onclick="nav('pg-library')"><svg data-lucide="file-search" width="14" height="14" style="vertical-align:-3px"></svg> Search &amp; review all reports</button>
         <div style="display:flex;align-items:center;gap:12px">
           <div id="hist-summary" style="font-size:.78rem;color:var(--muted);font-weight:600"></div>
           <button class="btn br" id="export-csv-btn" style="padding:6px 14px;font-size:.76rem" onclick="exportAllCSV()" title="Download all inspections as a CSV file (opens in Excel)">
@@ -1418,6 +1502,48 @@ body.nav-rail #acct-row{justify-content:center}
     </div>
   </div>
 
+  <!-- INSPECTION REPORTS (search · open · review) -->
+  <div class="page" id="pg-library">
+    <div class="home-hero">
+      <h2>Inspection <span>Reports</span></h2>
+      <p class="sub">Find any saved report — by building, auditor, division, area or even words in a comment — then open it to review or download.</p>
+    </div>
+    <div class="ov-section">
+      <div class="lib-search">
+        <svg data-lucide="search" width="20" height="20"></svg>
+        <input type="search" id="lib-q" placeholder="Search building, auditor, division, area or report number…" autocomplete="off" aria-label="Search reports">
+        <label class="lib-check"><input type="checkbox" id="lib-comments"> Also search comments &amp; notes</label>
+      </div>
+      <div class="lib-bar">
+        <div class="rp-chips" id="lib-status" role="tablist" aria-label="Review status"></div>
+        <button class="rp-link" id="lib-toggle"><svg data-lucide="sliders-horizontal" width="14" height="14" style="vertical-align:-3px"></svg> Filters <span id="lib-toggle-n"></span></button>
+        <button class="rp-link" id="lib-clear" hidden>Clear search &amp; filters</button>
+        <span class="rp-count" id="lib-count"></span>
+      </div>
+      <div class="lib-filters" id="lib-filters">
+        <label>Quarter<select id="lib-quarter"><option value="">All quarters</option></select></label>
+        <label>Type<select id="lib-type"><option value="">All types</option><option value="BOQI">BOQI</option><option value="EOQI">EOQI</option><option value="Follow-up">Follow-up</option></select></label>
+        <label>Division<select id="lib-division"><option value="">All divisions</option></select></label>
+        <label>Area<select id="lib-area"><option value="">All areas</option></select></label>
+        <label>Auditor<select id="lib-auditor"><option value="">All auditors</option></select></label>
+        <label>Rating<select id="lib-rating"><option value="">All ratings</option><option>Excellent</option><option>Good</option><option>Acceptable</option><option>Poor</option><option>Critical</option></select></label>
+        <label>From<input type="date" id="lib-from"></label>
+        <label>To<input type="date" id="lib-to"></label>
+        <label>Sort<select id="lib-sort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="low">Lowest score</option><option value="high">Highest score</option><option value="building">Building A–Z</option></select></label>
+      </div>
+      <div class="ov-panel" id="lib-panel">
+        <div class="ov-scroll"><table class="ov-table lib-table">
+          <thead><tr><th>Date</th><th>Building</th><th>Type</th><th>Auditor</th><th>Score</th><th>Review</th><th></th></tr></thead>
+          <tbody id="lib-rows"><tr><td colspan="7" class="ov-empty">Loading…</td></tr></tbody>
+        </table></div>
+        <div class="of-foot" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button class="btn bo" id="lib-more" hidden style="padding:7px 14px;font-size:.78rem">Show more</button>
+          <button class="rp-link rp-export" id="lib-csv" style="margin-left:auto"><svg data-lucide="download" width="14" height="14" style="vertical-align:-3px"></svg> Export results (CSV)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- REPORTS & ANALYTICS (all roles) -->
   <div class="page" id="pg-reports">
     <div class="home-hero">
@@ -1783,6 +1909,18 @@ body.nav-rail #acct-row{justify-content:center}
   </div>
 </main>
 
+<!-- Inspection report panel -->
+<div class="ad-drawer-bg" id="rv-drawer" hidden>
+  <aside class="ad-drawer rv-drawer" role="dialog" aria-modal="true" aria-labelledby="rv-title">
+    <div class="ad-d-head">
+      <div style="min-width:0"><b id="rv-title">Inspection report</b><small id="rv-meta"></small></div>
+      <div class="rv-head-ring" id="rv-ring"><div><b id="rv-score">–</b><small id="rv-grade">—</small></div></div>
+      <button id="rv-close" class="rv-head-close" title="Close" aria-label="Close"><svg data-lucide="x" width="16" height="16"></svg></button>
+    </div>
+    <div class="ad-d-body" id="rv-body"></div>
+  </aside>
+</div>
+
 <!-- Admin: account panel -->
 <div class="ad-drawer-bg" id="ad-drawer" hidden>
   <aside class="ad-drawer" role="dialog" aria-modal="true" aria-labelledby="ad-d-name">
@@ -1957,6 +2095,7 @@ let auData = null, auReady = false, auReq = 0, auId = null, auCharts = {}, auFil
 let inBuildings = null, inReady = false, inAssignCache = {}; // Inspection details state
 let adUsers = [], adReady = false, adTab = 'users', adRoleDefaults = null, adBuildings = null, adEditingBuilding = null, adAudit = [], adAuditMore = false, adOpenUserId = null, adUserFilter = 'all', adAuditFilter = 'all', lastSection = 'pg-s0'; // Admin Control state; last opened inspection section
 let ofData = null, ofReady = false, ofReq = 0, ofPrevDone = null, ofPrevKey = '', ofSelected = new Set(), ofRowsStale = false; // Assign & Track state
+let libReady = false, libReq = 0, libRows = [], libData = null, libStatus = '', libPending = {}, libTimer = null, rvId = null, rvData = null; // Inspection Reports
 let rpTab = 'insights', insReady = false, insSavedQuarter = null, insSavedDivision = '', insHeatData = null, cmpReady = false, cmpDim = 'division', cmpRows = null, dqReady = false, dqIssues = null, rpSavedList = [], rpSavedReady = false; // Reports tabs
 let rpData = null, rpReady = false, rpCharts = {}, rpShown = 100, rpGroup = 'division', rpMetric = 'avg', rpTrend = 'quarter'; // Reports state
 const RP_FILTER_IDS = ['rp-year','rp-month','rp-quarter','rp-type','rp-division','rp-area','rp-building','rp-inspector','rp-rating','rp-from','rp-to','rp-search'];
@@ -2188,7 +2327,7 @@ function updateCommentHint(si,ii){
 // so a page can be bookmarked, shared, or restored with the browser's
 // back/forward buttons.
 // ═══════════════════════════════════════════════════════════
-const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-auditor','pg-overview','pg-reports','pg-officer','pg-admin']);
+const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-auditor','pg-overview','pg-reports','pg-officer','pg-admin','pg-library']);
 function hashToPage(hash){
   const id=(hash||'').replace(/^#/,'').split('/')[0];
   if(id==='pg-assignments') return 'pg-auditor';   // older notification links
@@ -2226,13 +2365,14 @@ function nav(pageId){
   if(pageId==='pg-auditor') loadAuditorProfile();
   if(pageId==='pg-overview') loadOverview();
   if(pageId==='pg-reports') loadReports();
+  if(pageId==='pg-library'){ loadLibrary(); const rid=Number(hashParam(location.hash)); if(rid&&rid!==rvId) openReport(rid,{fromHash:true}); }
   if(pageId==='pg-officer') loadOfficer();
   if(pageId==='pg-admin') loadAdmin();
   updateTopBar(pageId);
   if(pageId.startsWith('pg-s')) syncFormToState();
   // pushState rather than location.hash: pages carry the same id as their hash, and assigning the
   // hash would make the browser jump to that element (under the sticky top bar).
-  const wanted=pageId==='pg-auditor'&&auId?`pg-auditor/${auId}`:pageId==='pg-admin'&&adTab!=='users'?`pg-admin/${adTab}`:pageId==='pg-reports'&&rpTab!=='insights'?`pg-reports/${rpTab}`:pageId;
+  const wanted=pageId==='pg-auditor'&&auId?`pg-auditor/${auId}`:pageId==='pg-admin'&&adTab!=='users'?`pg-admin/${adTab}`:pageId==='pg-reports'&&rpTab!=='insights'?`pg-reports/${rpTab}`:pageId==='pg-library'&&rvId?`pg-library/${rvId}`:pageId;
   if(location.hash!=='#'+wanted) window.history.pushState(null,'','#'+wanted);
   document.getElementById('main').scrollTo(0,0);
 }
@@ -2246,6 +2386,11 @@ window.addEventListener('hashchange',()=>{
   const pid=hashToPage(location.hash);
   if(pid==='pg-auditor'&&hashParam(location.hash)!==auId){ auId=hashParam(location.hash); nav(pid); return; }
   if(pid==='pg-admin'&&(hashParam(location.hash)||'users')!==adTab){ adTab=hashParam(location.hash)||'users'; nav(pid); return; }
+  if(pid==='pg-library'&&document.getElementById(pid).classList.contains('active')){
+    const rid=Number(hashParam(location.hash));
+    if(rid&&rid!==rvId) openReport(rid,{fromHash:true}); else if(!rid&&rvId){ document.getElementById('rv-drawer').hidden=true; rvId=null; rvData=null; }
+    return;
+  }
   if(pid==='pg-reports'&&(hashParam(location.hash)||'insights')!==rpTab){ rpTab=rpTabValid(hashParam(location.hash))?hashParam(location.hash):'insights'; if(document.getElementById(pid).classList.contains('active')){ rpShowTab(); return; } nav(pid); return; }
   if(!document.getElementById(pid).classList.contains('active')) nav(pid);
 });
@@ -2976,7 +3121,7 @@ function renderHistory(){
       <button class="hc-del" title="Delete record" onclick="delHistory(event,${r.id})">
         <svg data-lucide="trash-2" width="14" height="14"></svg>
       </button>`;
-    card.onclick=(e)=>{if(e.target.closest('.hc-edit,.hc-pdf,.hc-del'))return;showHistDetail(r);};
+    card.onclick=(e)=>{if(e.target.closest('.hc-edit,.hc-pdf,.hc-del'))return;openReport(r.id);};
     list.appendChild(card);
     lucide.createIcons({nodes:[card]});
   });
@@ -3274,9 +3419,9 @@ function startNewInspection(){
   nav(lastSection);
 }
 
-function editInspection(e,id){
+function editInspection(e,id,fallback){
   e.stopPropagation();
-  const record=history.find(r=>r.id===id);
+  const record=history.find(r=>r.id===id)||fallback;
   if(!record){alert('Record not found.');return;}
   if(!confirm(`Load "${record.facility}${record.division?' — '+record.division:''}" (${record.date}) for editing?\n\nUnsaved current data for ${record.inspector} will be replaced.`))return;
   currentAssignmentId=record.assignmentId||null;
@@ -3819,11 +3964,7 @@ function auRenderPerformance(){
     </tr>`).join(''):`<tr><td colspan="3" class="ov-empty">${p.completed?'No items marked non-compliant — nothing to follow up.':'No completed inspections yet.'}</td></tr>`;
 }
 
-function auViewReport(id){
-  const r=history.find(x=>x.id===id);
-  if(r) showHistDetail(r);
-  else showToast('That report is still loading — try again in a moment.',true);
-}
+function auViewReport(id){ openReport(id); }
 /** Opens Reports filtered to one auditor (everything else cleared). */
 function openReportsForInspector(name){
   try{ localStorage.setItem('rp-state',JSON.stringify({filters:{'rp-inspector':name},group:'quarter',sort:'newest'})); }catch{}
@@ -3930,7 +4071,7 @@ document.addEventListener('click',(e)=>{
   const wrap=document.getElementById('notif-bell-wrap');
   if(!wrap.contains(e.target)) document.getElementById('notif-panel').hidden=true;
 });
-setInterval(loadNotifications,60000);
+setInterval(()=>{ loadNotifications(); refreshReviewBadge(); },60000);
 loadNotifications();
 
 // ═══════════════════════════════════════════════════════════
@@ -4802,6 +4943,251 @@ function renderRpDetail(list=rpFilter()){
 }
 
 // ═══════════════════════════════════════════════════════════
+// INSPECTION REPORTS — search, open, review
+// ═══════════════════════════════════════════════════════════
+// The list comes from /api/reports/library (no photos); opening a report loads the full
+// record and its review history. Reviewing needs the "review" permission and is never
+// allowed on your own report; downloading needs "export".
+const LIB_STATUS={pending:['Needs review','setup'],resubmitted:['Updated — review again','setup'],changes:['Changes requested','suspended'],approved:['Approved','active']};
+function libStatusPill(s){ const [l,c]=LIB_STATUS[s]||LIB_STATUS.pending; return `<span class="ov-pill ${c}">${l}</span>`; }
+function libFilterIds(){ return ['lib-quarter','lib-type','lib-division','lib-area','lib-auditor','lib-rating','lib-from','lib-to','lib-sort']; }
+function libSave(){ stateSave('lib-state',{q:ofVal('lib-q'),comments:document.getElementById('lib-comments').checked,status:libStatus,...Object.fromEntries(libFilterIds().map(id=>[id,ofVal(id)]))}); }
+function initLibrary(){
+  if(libReady) return;
+  libReady=true;
+  const saved=stateLoad('lib-state');
+  document.getElementById('lib-q').value=saved.q||'';
+  document.getElementById('lib-comments').checked=!!saved.comments;
+  libStatus=typeof saved.status==='string'?saved.status:null;   // null: pick a default once we know whether this account reviews
+  libPending=Object.fromEntries(libFilterIds().map(id=>[id,saved[id]||'']));
+  const reload=()=>{ libSave(); loadLibrary(); };
+  document.getElementById('lib-q').addEventListener('input',()=>{ clearTimeout(libTimer); libTimer=setTimeout(reload,280); });
+  document.getElementById('lib-comments').addEventListener('change',reload);
+  libFilterIds().forEach(id=>document.getElementById(id).addEventListener('change',()=>{ if(id==='lib-division') document.getElementById('lib-area').value=''; reload(); }));
+  document.getElementById('lib-status').addEventListener('click',e=>{ const c=e.target.closest('[data-status]'); if(!c) return; libStatus=c.dataset.status; reload(); });
+  document.getElementById('lib-clear').addEventListener('click',()=>{
+    document.getElementById('lib-q').value=''; document.getElementById('lib-comments').checked=false;
+    libFilterIds().forEach(id=>{ document.getElementById(id).value=id==='lib-sort'?'newest':''; });
+    reload();
+  });
+  document.getElementById('lib-toggle').addEventListener('click',()=>document.getElementById('lib-filters').classList.toggle('open'));
+  document.getElementById('lib-rows').addEventListener('click',e=>{ const tr=e.target.closest('[data-report]'); if(tr) openReport(Number(tr.dataset.report)); });
+  document.getElementById('lib-rows').addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-report]')){ e.preventDefault(); openReport(Number(e.target.dataset.report)); } });
+  document.getElementById('lib-more').addEventListener('click',()=>loadLibrary({more:true}));
+  document.getElementById('lib-csv').addEventListener('click',libExportCsv);
+  // Report panel
+  document.getElementById('rv-drawer').addEventListener('click',e=>{ if(e.target.id==='rv-drawer') closeReport(); });
+  document.getElementById('rv-close').addEventListener('click',()=>closeReport());
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!document.getElementById('rv-drawer').hidden&&!document.getElementById('lb').classList.contains('open')) closeReport(); });
+  document.getElementById('rv-body').addEventListener('click',e=>{
+    const b=e.target.closest('[data-rv]');
+    if(b) rvAction(b.dataset.rv);
+    const img=e.target.closest('img[data-photo]');
+    if(img) openLB(img.src);
+  });
+}
+function libParams(){
+  const p=new URLSearchParams();
+  const q=ofVal('lib-q').trim();
+  if(q) p.set('q',q);
+  if(q&&document.getElementById('lib-comments').checked) p.set('comments','1');
+  libFilterIds().forEach(id=>{ const v=ofVal(id); if(v) p.set(id.replace('lib-',''),v); });
+  if(libStatus==='mine') p.set('mine','1'); else if(libStatus) p.set('status',libStatus);
+  return p;
+}
+async function loadLibrary({more=false}={}){
+  initLibrary();
+  const req=++libReq, p=libParams();
+  p.set('limit','50'); p.set('offset',more?String(libRows.length):'0');
+  const panel=document.getElementById('lib-panel');
+  panel.classList.add('loading');
+  try{
+    const res=await fetch('/api/reports/library?'+p);
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'Could not load reports.');
+    if(req!==libReq) return;
+    if(libStatus===null){ libStatus=d.canReview&&(d.counts.pending+d.counts.resubmitted)?'review':''; if(libStatus) return loadLibrary(); }
+    libRows=more?libRows.concat(d.rows):d.rows;
+    libData=d;
+    renderLibrary();
+    // Counts ignore the status tab but respect search and filters, so only an unfiltered view can refresh the menu badge.
+    const unfiltered=!ofVal('lib-q').trim()&&libFilterIds().every(id=>id==='lib-sort'||!ofVal(id))&&libStatus!=='mine';
+    if(d.canReview&&unfiltered) libSetBadge(d.counts.pending+d.counts.resubmitted);
+  }catch(err){
+    if(req!==libReq) return;
+    document.getElementById('lib-rows').innerHTML=`<tr><td colspan="7" class="ov-empty">${ovEsc(err.message)}</td></tr>`;
+  }finally{ if(req===libReq) panel.classList.remove('loading'); }
+}
+function libSelectValues(id,values,allLabel,{keep=true}={}){
+  const el=document.getElementById(id), want=el.value||libPending[id]||'';
+  el.innerHTML=`<option value="">${allLabel}</option>`+values.map(v=>`<option value="${ovEsc(v)}">${ovEsc(v)}</option>`).join('');
+  el.value=values.includes(want)?want:'';
+  if(keep) delete libPending[id];
+}
+function renderLibrary(){
+  const d=libData, c=d.counts;
+  ['lib-type','lib-rating','lib-from','lib-to','lib-sort'].forEach(id=>{ if(libPending[id]){ document.getElementById(id).value=libPending[id]; delete libPending[id]; } });
+  libSelectValues('lib-quarter',d.facets.quarters,'All quarters');
+  libSelectValues('lib-division',d.facets.divisions,'All divisions');
+  libSelectValues('lib-area',d.facets.areas,'All areas');
+  libSelectValues('lib-auditor',d.facets.auditors,'All auditors');
+  const chips=[['','All',c.all],...(d.canReview?[['review','Needs review',c.pending+c.resubmitted]]:[]),['changes','Changes requested',c.changes],['approved','Approved',c.approved],
+    ...(hasPerm('inspect')?[['mine','My reports',null]]:[])];
+  if(!d.canReview&&libStatus==='review') libStatus='';
+  document.getElementById('lib-status').innerHTML=chips.map(([k,l,n])=>`<button class="rp-chip${libStatus===k?' active':''}" data-status="${k}">${l}${n!=null?` <b>${n}</b>`:''}</button>`).join('');
+  const active=libFilterIds().filter(id=>id!=='lib-sort'&&ofVal(id)).length+(ofVal('lib-q')?1:0);
+  document.getElementById('lib-toggle-n').textContent=active?`(${active})`:'';
+  document.getElementById('lib-clear').hidden=!active;
+  const q=ofVal('lib-q').trim();
+  const mark=t=>{ const safe=ovEsc(t||''); if(!q) return safe; const i=String(t||'').toLowerCase().indexOf(q.toLowerCase()); return i<0?safe:ovEsc(t.slice(0,i))+'<mark>'+ovEsc(t.slice(i,i+q.length))+'</mark>'+ovEsc(t.slice(i+q.length)); };
+  document.getElementById('lib-rows').innerHTML=libRows.length?libRows.map(r=>{
+    const g=r.overall!=null?grade(r.overall):null;
+    return `<tr class="clickable" data-report="${r.id}" tabindex="0" title="Open this report">
+      <td class="lib-date">${ovEsc(r.date||'—')}<small>${ovEsc(r.quarter||'')}</small></td>
+      <td><b>${mark(r.building)}</b><small>${mark([r.division,r.area].filter(Boolean).join(' · ')||'Not linked to a building')}</small>
+        ${r.snippet?`<small class="lib-snip"><svg data-lucide="message-square-quote" width="12" height="12"></svg> ${ovEsc(r.snippet.section||'')}: “${mark(String(r.snippet.text||'').slice(0,140))}”</small>`:''}</td>
+      <td>${ovEsc(r.type||'—')}</td>
+      <td>${mark(r.auditor||'—')}${r.own?'<small>You</small>':''}</td>
+      <td>${g?`<span class="lib-score" style="--c:${g.color}">${r.overall}</span><small>${g.label}</small>`:'–'}</td>
+      <td>${libStatusPill(r.status)}${r.lastDecision?`<small>${ovEsc(r.lastDecision.by)} · ${timeAgo(r.lastDecision.at)}</small>`:''}</td>
+      <td class="lib-open"><svg data-lucide="chevron-right" width="16" height="16"></svg></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="7" class="ov-empty">${active||libStatus?'No reports match — try fewer filters or a shorter search.':'No saved reports yet.'}</td></tr>`;
+  document.getElementById('lib-count').textContent=`${d.total} report${d.total===1?'':'s'}${q?` for “${q}”`:''}`;
+  document.getElementById('lib-more').hidden=libRows.length>=d.total;
+  document.getElementById('lib-more').textContent=`Show more (${d.total-libRows.length} more)`;
+  lucide.createIcons();
+}
+function libSetBadge(n){
+  if(n==null) return;
+  const el=document.getElementById('ns-review');
+  el.textContent=n?String(n):'';
+}
+async function refreshReviewBadge(){
+  if(!hasPerm('review')) return;
+  try{ const res=await fetch('/api/reports/library?limit=0'); if(res.ok){ const d=await res.json(); libSetBadge(d.counts.pending+d.counts.resubmitted); } }catch{}
+}
+async function libExportCsv(){
+  if(!hasPerm('export')){ showToast('Your account cannot export data.',true); return; }
+  const p=libParams(); p.set('limit','200'); const rows=[]; let offset=0, total=1;
+  while(offset<total&&offset<5000){ p.set('offset',String(offset)); const res=await fetch('/api/reports/library?'+p); if(!res.ok) break; const d=await res.json(); total=d.total; rows.push(...d.rows); offset+=200; }
+  rpDownload(`inspection-reports-${new Date().toISOString().slice(0,10)}.csv`,[['Report ID','Date','Quarter','Type','Building','Division','Area','Location','Auditor','Score','Rating','Review status','Last decision by','Last decision at','Last comment'],
+    ...rows.map(r=>[r.id,r.date,r.quarter,r.type,r.building,r.division,r.area,r.location,r.auditor,r.overall,r.overall!=null?grade(r.overall).label:'',(LIB_STATUS[r.status]||[])[0],r.lastDecision?.by,r.lastDecision?.at,r.lastDecision?.comment])]);
+}
+
+// ── Report panel ──
+async function openReport(id,{fromHash=false}={}){
+  initLibrary();
+  rvId=id;
+  const dr=document.getElementById('rv-drawer');
+  dr.hidden=false;
+  document.getElementById('rv-title').textContent='Loading report…';
+  document.getElementById('rv-meta').textContent='';
+  document.getElementById('rv-body').innerHTML='<div class="ov-empty">Loading…</div>';
+  if(!fromHash&&document.getElementById('pg-library').classList.contains('active')) window.history.pushState(null,'','#pg-library/'+id);
+  try{
+    const res=await fetch('/api/inspections/'+id);
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'Could not open the report.');
+    if(rvId!==id) return;
+    rvData=d; renderReportPanel();
+  }catch(err){
+    document.getElementById('rv-title').textContent='Report unavailable';
+    document.getElementById('rv-body').innerHTML=`<div class="ov-empty">${ovEsc(err.message)}</div>`;
+  }
+}
+function closeReport(){
+  document.getElementById('rv-drawer').hidden=true;
+  rvId=null; rvData=null;
+  if(document.getElementById('pg-library').classList.contains('active')&&hashParam(location.hash)) window.history.pushState(null,'','#pg-library');
+}
+function renderReportPanel(){
+  const {record:r,summary:s,reviews,canReview,reviewBlockedReason}=rvData;
+  const g=s.overall!=null?grade(s.overall):null;
+  document.getElementById('rv-title').textContent=s.building||r.facility||'Inspection report';
+  document.getElementById('rv-meta').textContent=[s.date,s.typeLabel||s.type,[s.division,s.area].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
+  const ring=document.getElementById('rv-ring');
+  ring.style.setProperty('--p',s.overall??0); ring.style.setProperty('--c',g?g.color:'#9fb3c8');
+  document.getElementById('rv-score').textContent=s.overall??'–';
+  document.getElementById('rv-grade').textContent=g?g.label:'—';
+  const canEdit=hasPerm('inspect')&&(s.own||currentUser?.role==='quality_admin');
+  const last=s.lastDecision;
+  const reviewBox=canReview?`
+    <div class="rv-form">
+      <label for="rv-comment">Review note <small>required when requesting changes</small></label>
+      <textarea id="rv-comment" rows="3" maxlength="2000" placeholder="What looks good, what needs to change…"></textarea>
+      <div class="rv-btns">
+        <button class="btn bt" data-rv="approved"><svg data-lucide="circle-check" width="15" height="15"></svg> Approve</button>
+        <button class="btn bo rv-warn" data-rv="changes_requested"><svg data-lucide="undo-2" width="15" height="15"></svg> Request changes</button>
+        <button class="rp-link" data-rv="comment">Comment only</button>
+      </div>
+    </div>`
+    :`<p class="ad-note"><svg data-lucide="info" width="14" height="14"></svg>${reviewBlockedReason==='own'?'This is your report, so someone else reviews it.':'Your account can read reports but not review them — an admin can grant “Review reports” in Admin Control.'}</p>`;
+  const sections=(r.sections||[]).map((sec,si)=>{
+    const pct=sec.max?Math.round((sec.score||0)/sec.max*100):0, sg=grade(pct);
+    const items=(sec.items||[]).map((it,ii)=>{
+      const v=it.score, cls=v==null?'na':v===0?'no':'yes';
+      const label=it.label||SECTIONS[si]?.items?.[ii]||`Item ${ii+1}`;
+      return `<li class="rv-item ${cls}">
+        <span class="rv-mark">${v==null?'–':v===0?'✗':'✓'}</span>
+        <div><b>${ovEsc(label)}</b>${it.comment?`<p>${ovEsc(it.comment)}</p>`:''}
+          ${(it.photos||[]).length?`<div class="rv-photos">${it.photos.map(src=>`<img src="${ovEsc(src)}" data-photo alt="Photo for ${ovEsc(label)}" loading="lazy">`).join('')}</div>`:''}</div>
+        <em>${v==null?'Not scored':v===0?'Not compliant':'Compliant'}</em>
+      </li>`;
+    }).join('');
+    const fails=(sec.items||[]).filter(it=>it.score===0).length;
+    return `<details class="rv-sec"${fails?' open':''}>
+      <summary><span class="rv-sec-t">${ovEsc(sec.title)}</span>${fails?`<span class="rv-fails">${fails} not compliant</span>`:''}
+        <span class="rv-sec-s"><b style="color:${sg.color}">${sec.score??'–'}</b>/${sec.max}</span></summary>
+      <ul>${items}</ul>${sec.notes?`<div class="rv-notes"><b>Section notes</b>${ovEsc(sec.notes)}</div>`:''}
+    </details>`;
+  }).join('');
+  const history=reviews.length?reviews.map(v=>`<li><span class="dot" style="background:${v.decision==='approved'?'var(--good)':v.decision==='changes_requested'?'var(--warn)':'var(--royal)'}"><svg data-lucide="${v.decision==='approved'?'check':v.decision==='changes_requested'?'undo-2':'message-square'}" width="14" height="14"></svg></span>
+      <div><b>${ovEsc(v.by)}</b> ${v.decision==='approved'?'approved the report':v.decision==='changes_requested'?'requested changes':'commented'}${v.comment?`<div class="ad-log-details">${ovEsc(v.comment)}</div>`:''}<small>${timeAgo(v.at)}</small></div></li>`).join('')
+    :'<li class="ov-empty" style="display:block">No reviews yet.</li>';
+  document.getElementById('rv-body').innerHTML=`
+    <section class="rv-status">
+      <div class="rv-status-top">${libStatusPill(s.status)}<span class="rv-auditor">Auditor: <b>${ovEsc(s.auditor||'—')}</b>${s.assigned?' · assigned':''}</span></div>
+      ${last&&s.status!=='pending'?`<p class="rv-last">${last.decision==='approved'?'Approved':'Changes requested'} by <b>${ovEsc(last.by)}</b> ${timeAgo(last.at)}${last.comment?`: “${ovEsc(last.comment)}”`:''}${s.status==='resubmitted'?' — the report has been edited since.':''}</p>`:''}
+      ${reviewBox}
+    </section>
+    <div class="rv-actions">
+      ${hasPerm('export')?'<button class="btn br" data-rv="pdf"><svg data-lucide="file-down" width="15" height="15"></svg> Download PDF</button>':''}
+      ${canEdit?'<button class="btn bo" data-rv="edit"><svg data-lucide="pencil" width="15" height="15"></svg> Edit report</button>':''}
+      <button class="rp-link" data-rv="link"><svg data-lucide="link" width="14" height="14" style="vertical-align:-3px"></svg> Copy link</button>
+    </div>
+    <section><h4>Checklist</h4>${sections||'<p class="ad-note">This report has no section scores (for example, imported trial data).</p>'}</section>
+    <section><h4>Review history</h4><ul class="ov-feed ad-log">${history}</ul></section>`;
+  lucide.createIcons();
+}
+async function rvAction(act){
+  const {record:r,summary:s}=rvData||{};
+  if(!r) return;
+  if(act==='pdf'){
+    return printInspectionReport({inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,typeLabel:r.typeLabel||r.type,overall:r.overall,
+      filename:r.filename||`${r.date||'inspection'}_${r.type||'Inspection'}_${r.facility||'facility'}.pdf`,sections:r.sections||[]});
+  }
+  if(act==='edit'){ closeReport(); return editInspection({stopPropagation(){}},r.id,r); }
+  if(act==='link'){
+    const url=`${location.origin}/app#pg-library/${r.id}`;
+    try{ await navigator.clipboard.writeText(url); showToast('Link copied'); }catch{ prompt('Copy this link:',url); }
+    return;
+  }
+  const comment=(document.getElementById('rv-comment')?.value||'').trim();
+  if(act!=='approved'&&!comment){ document.getElementById('rv-comment').focus(); showToast(act==='comment'?'Write a comment first.':'Explain what needs to change.',true); return; }
+  const btns=[...document.querySelectorAll('#rv-body [data-rv]')]; btns.forEach(b=>b.disabled=true);
+  try{
+    const res=await fetch(`/api/inspections/${r.id}/reviews`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({decision:act,comment})});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'Could not save the review.');
+    showToast(act==='approved'?'Report approved':act==='changes_requested'?'Changes requested — the auditor has been notified':'Comment added');
+    await openReport(r.id,{fromHash:true});
+    if(document.getElementById('pg-library').classList.contains('active')) loadLibrary();
+    refreshReviewBadge();
+  }catch(err){ showToast(err.message,true); btns.forEach(b=>b.disabled=false); }
+}
+
+// ═══════════════════════════════════════════════════════════
 // REPORTS: INSIGHTS · COMPARE · DATA QUALITY · SAVED REPORTS
 // ═══════════════════════════════════════════════════════════
 // Everything is computed in the browser from /api/reports/inspections, so switching
@@ -5438,7 +5824,8 @@ function renderHomeActions(user,teamPages){
   if(hasPerm('inspect')) actions.push(['pg-new','clipboard-check','Start an Inspection','Details → sections → score card']);
   if(teamPages.length) actions.push([teamPages[0],'users','Team',
     teamPages.length>1?'Team overview and building assignments':teamPages[0]==='pg-officer'?'Assign buildings and track auditors live':'Progress of officers and auditors']);
-  if(hasPerm('reports')) actions.push(['pg-reports','bar-chart-3','Reports & Analytics','Filters, charts, statistics and exports']);
+  actions.push(['pg-library','file-search',hasPerm('review')?'Review Reports':'Inspection Reports',hasPerm('review')?'Search reports and approve or return them':'Search and open any saved report']);
+  if(hasPerm('reports')) actions.push(['pg-reports','bar-chart-3','Analytics','Insights, report builder, comparisons and data quality']);
   if(user.role==='quality_admin') actions.push(['pg-admin','shield-check','Admin Control','Accounts, permissions, buildings and audit log']);
   const box=document.getElementById('home-actions');
   box.innerHTML=actions.map(([pid,icon,title,sub])=>`<button class="qa-card" data-page="${pid}">
@@ -5461,7 +5848,8 @@ function adPermCatalog(){
     ['Inspections',[
       ['inspect','Create & edit inspections','Start inspections, score sections and save reports'],
       ['delete','Delete inspections','Remove saved reports from the history'],
-      ['export','Export data','Download CSV exports from Home and Reports'],
+      ['export','Export data','Download PDF reports and CSV exports'],
+      ['review','Review reports','Approve reports or send them back to the auditor with comments'],
     ]],
     ['Team',[
       ['assign','Assign buildings','Use Assign & Track to assign and move buildings between auditors'],
@@ -5886,12 +6274,13 @@ function adRenderAudit(){
       renderTeamTabs(teamPages);
     }
     renderHomeActions(user,teamPages);
-    if(!user.canExport){ document.getElementById('export-csv-btn')?.remove(); document.querySelectorAll('.rp-export').forEach(b=>b.remove()); }
+    if(!user.canExport){ document.getElementById('export-csv-btn')?.remove(); document.querySelectorAll('.rp-export').forEach(b=>b.remove()); document.body.classList.add('no-export'); }
     if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
     document.body.classList.toggle('no-delete',!user.canDelete);
     document.body.classList.toggle('view-only',!user.canEdit);
     refreshNav();
     useAccountInspector();
+    refreshReviewBadge();
     // Views drawn before the account loaded can now label "you" and apply permissions.
     if(ofData) renderOfficer();
     if(auData) renderAuditorProfile();

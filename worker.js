@@ -130,6 +130,7 @@ async function deleteInspection(env, user, id) {
   const row = await env.DB.prepare('SELECT facility, date, inspector FROM inspections WHERE id = ?1').bind(id).first();
   const res = await env.DB.prepare('DELETE FROM inspections WHERE id = ?1').bind(id).run();
   if (!res.meta.changes) return fail('record not found', 404);
+  await env.DB.prepare('DELETE FROM inspection_reviews WHERE inspection_id = ?1').bind(id).run();
   await audit(env, user, 'inspection.delete', String(id), row ? `${row.facility} · ${row.date}` : `#${id}`,
     row ? `Inspection by ${row.inspector}` : null);
   return json({ ok: true, id });
@@ -822,6 +823,197 @@ async function reportInspections(env) {
   return json({ inspections, buildings });
 }
 
+/* ── Inspection reports: search, open and review ────────────
+ * The library lists every saved inspection without loading photos: the row
+ * columns plus the assignment link, resolved to its building the same way as
+ * Reports. Free text matches building, auditor, division, area and location;
+ * with comments=1 it also looks inside item comments and section notes using
+ * SQLite's JSON functions (so photo data is never scanned as text).
+ * Review status comes from the latest decision: approved / changes requested,
+ * and "resubmitted" when the report was edited after that decision. */
+
+const REVIEW_DECISIONS = new Set(['approved', 'changes_requested', 'comment']);
+
+function reviewStatus(updatedAt, decision) {
+  if (!decision) return 'pending';
+  if ((updatedAt || '') > decision.created_at) return 'resubmitted';
+  return decision.decision === 'approved' ? 'approved' : 'changes';
+}
+
+async function libraryContext(env) {
+  const [b, a, u, d] = await Promise.all([
+    env.DB.prepare('SELECT id, location, division, area, name FROM buildings').all(),
+    env.DB.prepare('SELECT id, building_id, auditor_id FROM assignments').all(),
+    env.DB.prepare("SELECT id, name FROM qa_users WHERE status = 'active'").all(),
+    env.DB.prepare(
+      `SELECT r.inspection_id, r.decision, r.comment, r.reviewer_name, r.created_at FROM inspection_reviews r
+       WHERE r.id = (SELECT MAX(x.id) FROM inspection_reviews x WHERE x.inspection_id = r.inspection_id AND x.decision != 'comment')`,
+    ).all(),
+  ]);
+  const buildings = b.results || [];
+  return {
+    buildingById: new Map(buildings.map((x) => [x.id, x])),
+    buildingByName: new Map(buildings.map((x) => [normName(x.name), x])),
+    assignment: new Map((a.results || []).map((x) => [x.id, x])),
+    users: u.results || [],
+    decision: new Map((d.results || []).map((x) => [x.inspection_id, x])),
+  };
+}
+
+function libraryRow(row, ctx) {
+  const asg = row.aid != null ? ctx.assignment.get(Number(row.aid)) : null;
+  const bld = (asg && ctx.buildingById.get(asg.building_id)) || ctx.buildingByName.get(normName(row.facility)) || null;
+  const decision = ctx.decision.get(row.id) || null;
+  return {
+    id: row.id, date: row.date || '', quarter: quarterOf(row.date), type: row.type || '', typeLabel: row.type_label || '',
+    building: bld ? bld.name : (row.facility || ''), buildingId: bld ? bld.id : null,
+    division: bld ? bld.division : String(row.division || '').trim(), area: bld ? bld.area : null, location: bld ? bld.location : null,
+    auditor: row.inspector || '', auditorId: asg ? asg.auditor_id : null,
+    overall: typeof row.overall === 'number' ? Math.round(row.overall) : null,
+    assigned: !!asg, updatedAt: row.updated_at, createdAt: row.created_at,
+    status: reviewStatus(row.updated_at, decision),
+    lastDecision: decision ? { decision: decision.decision, by: decision.reviewer_name, at: decision.created_at, comment: decision.comment } : null,
+  };
+}
+
+/** The report belongs to this person: they were assigned it, or it is saved under their name. */
+const isOwnReport = (user, r) => (r.auditorId ? r.auditorId === user.id : normName(r.auditor) === normName(user.name));
+const bandOf = (v) => (v == null ? null : v >= 91 ? 'Excellent' : v >= 81 ? 'Good' : v >= 71 ? 'Acceptable' : v >= 51 ? 'Poor' : 'Critical');
+
+async function reportLibrary(env, user, url) {
+  const p = url.searchParams;
+  const q = (p.get('q') || '').trim().slice(0, 100);
+  const inComments = p.get('comments') === '1' && q.length >= 2;
+  const f = (k) => (p.get(k) || '').trim();
+  const limit = Math.min(Math.max(Number(p.get('limit') ?? 50) || 0, 0), 200);
+  const offset = Math.max(Number(p.get('offset')) || 0, 0);
+
+  const [ctx, ins] = await Promise.all([
+    libraryContext(env),
+    env.DB.prepare(
+      `SELECT id, inspector, facility, division, date, type, type_label, overall, created_at, updated_at,
+              CAST(json_extract(data, '$.assignmentId') AS INTEGER) AS aid
+       FROM inspections WHERE json_valid(data) ORDER BY date DESC, id DESC`,
+    ).all(),
+  ]);
+  const all = (ins.results || []).map((row) => libraryRow(row, ctx));
+
+  // Words in comments / notes (only when asked, and only as plain text via LIKE with escaping).
+  const snippets = new Map();
+  if (inComments) {
+    const like = `%${q.replace(/[\\%_]/g, (c) => '\\' + c)}%`;
+    const { results } = await env.DB.prepare(
+      `SELECT i.id AS id, json_extract(s.value, '$.title') AS section, json_extract(it.value, '$.label') AS item, json_extract(it.value, '$.comment') AS text
+       FROM inspections i, json_each(i.data, '$.sections') s, json_each(s.value, '$.items') it
+       WHERE json_valid(i.data) AND json_extract(it.value, '$.comment') LIKE ?1 ESCAPE '\\'
+       UNION ALL
+       SELECT i.id, json_extract(s.value, '$.title'), 'Section notes', json_extract(s.value, '$.notes')
+       FROM inspections i, json_each(i.data, '$.sections') s
+       WHERE json_valid(i.data) AND json_extract(s.value, '$.notes') LIKE ?1 ESCAPE '\\'`,
+    ).bind(like).all();
+    for (const r of results || []) if (!snippets.has(r.id)) snippets.set(r.id, { section: r.section, item: r.item, text: r.text });
+  }
+
+  const needle = q.toLowerCase();
+  const textHit = (r) => !needle || [r.building, r.auditor, r.division, r.area, r.location, r.typeLabel, r.type, String(r.id)]
+    .some((v) => String(v || '').toLowerCase().includes(needle)) || snippets.has(r.id);
+  const base = all.filter((r) => textHit(r)
+    && (!f('quarter') || r.quarter === f('quarter'))
+    && (!f('year') || (r.quarter || '').startsWith(f('year') + '-'))
+    && (!f('type') || r.type === f('type'))
+    && (!f('division') || r.division === f('division'))
+    && (!f('area') || r.area === f('area'))
+    && (!f('auditor') || r.auditor === f('auditor'))
+    && (!f('rating') || bandOf(r.overall) === f('rating'))
+    && (!f('from') || r.date >= f('from'))
+    && (!f('to') || r.date <= f('to'))
+    && (f('mine') !== '1' || isOwnReport(user, r)));
+
+  const counts = { all: base.length, pending: 0, resubmitted: 0, changes: 0, approved: 0 };
+  base.forEach((r) => { counts[r.status] += 1; });
+  const status = f('status');
+  let list = status === 'review' ? base.filter((r) => r.status === 'pending' || r.status === 'resubmitted')
+    : status ? base.filter((r) => r.status === status) : base;
+
+  const sort = f('sort') || 'newest';
+  const byDate = (a, b) => a.date.localeCompare(b.date) || a.id - b.id;
+  list = [...list].sort(
+    sort === 'oldest' ? byDate
+      : sort === 'high' ? (a, b) => (b.overall ?? -1) - (a.overall ?? -1) || byDate(b, a)
+        : sort === 'low' ? (a, b) => (a.overall ?? 101) - (b.overall ?? 101) || byDate(b, a)
+          : sort === 'building' ? (a, b) => a.building.localeCompare(b.building) || byDate(b, a)
+            : (a, b) => byDate(b, a),
+  );
+
+  const uniq = (xs) => [...new Set(xs.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  return json({
+    total: list.length, offset, limit,
+    rows: list.slice(offset, offset + limit).map((r) => ({ ...r, own: isOwnReport(user, r), snippet: snippets.get(r.id) || null })),
+    counts,
+    facets: {
+      quarters: uniq(all.map((r) => r.quarter)).reverse(),
+      divisions: uniq(all.map((r) => r.division)),
+      areas: uniq(all.filter((r) => !f('division') || r.division === f('division')).map((r) => r.area)),
+      auditors: uniq(all.map((r) => r.auditor)),
+    },
+    canReview: can(user, 'review'),
+  });
+}
+
+async function getInspectionForReview(env, user, id) {
+  const row = await env.DB.prepare('SELECT * FROM inspections WHERE id = ?1').bind(id).first();
+  if (!row) return fail('record not found', 404);
+  const ctx = await libraryContext(env);
+  let aid = null;
+  try { aid = JSON.parse(row.data || '{}').assignmentId ?? null; } catch { aid = null; }
+  const summary = libraryRow({ ...row, aid }, ctx);
+  const { results } = await env.DB.prepare(
+    'SELECT id, reviewer_id, reviewer_name, decision, comment, created_at FROM inspection_reviews WHERE inspection_id = ?1 ORDER BY id DESC',
+  ).bind(id).all();
+  const own = isOwnReport(user, summary);
+  return json({
+    record: rowToRecord(row), summary: { ...summary, own },
+    reviews: (results || []).map((r) => ({ id: r.id, by: r.reviewer_name, byId: r.reviewer_id, decision: r.decision, comment: r.comment, at: r.created_at })),
+    canReview: can(user, 'review') && !own,
+    reviewBlockedReason: own ? 'own' : !can(user, 'review') ? 'permission' : null,
+  });
+}
+
+async function reviewInspection(env, user, id, body) {
+  if (!can(user, 'review')) return fail('you do not have permission to review reports', 403);
+  const decision = body?.decision;
+  const comment = String(body?.comment || '').trim();
+  if (!REVIEW_DECISIONS.has(decision)) return fail('choose approve, request changes or comment', 400);
+  if (decision !== 'approved' && !comment) return fail(decision === 'comment' ? 'write a comment first' : 'explain what needs to change', 400);
+  if (comment.length > 2000) return fail('keep the comment under 2000 characters', 400);
+  const row = await env.DB.prepare('SELECT * FROM inspections WHERE id = ?1').bind(id).first();
+  if (!row) return fail('record not found', 404);
+  const ctx = await libraryContext(env);
+  let aid = null;
+  try { aid = JSON.parse(row.data || '{}').assignmentId ?? null; } catch { aid = null; }
+  const summary = libraryRow({ ...row, aid }, ctx);
+  if (isOwnReport(user, summary)) return fail('you cannot review your own report', 403);
+
+  await env.DB.prepare('INSERT INTO inspection_reviews (inspection_id, reviewer_id, reviewer_name, decision, comment) VALUES (?1, ?2, ?3, ?4, ?5)')
+    .bind(id, user.id, user.name, decision, comment || null).run();
+  const label = `${summary.building} · ${summary.date}${summary.type ? ' ' + summary.type : ''}`;
+  await audit(env, user, 'inspection.review', String(id), label,
+    `${decision === 'approved' ? 'Approved' : decision === 'changes_requested' ? 'Changes requested' : 'Comment'}${comment ? ': ' + comment.slice(0, 200) : ''}`);
+
+  // Tell the auditor: the assigned account, or the single active account with the report's name.
+  const byName = ctx.users.filter((x) => normName(x.name) === normName(summary.auditor));
+  const recipient = summary.auditorId || (byName.length === 1 ? byName[0].id : null);
+  if (recipient && recipient !== user.id) {
+    const title = decision === 'approved' ? `Report approved: ${summary.building}`
+      : decision === 'changes_requested' ? `Changes requested: ${summary.building}` : `New comment: ${summary.building}`;
+    await notify(env, recipient, 'review', title,
+      `${user.name}${comment ? ': ' + comment.slice(0, 180) : ' approved your report'}`, `#pg-library/${id}`);
+  }
+  const fresh = await env.DB.prepare('SELECT updated_at FROM inspections WHERE id = ?1').bind(id).first();
+  const latest = decision === 'comment' ? ctx.decision.get(id) : { decision, created_at: new Date().toISOString().replace('T', ' ').slice(0, 19) };
+  return json({ ok: true, status: reviewStatus(fresh?.updated_at, latest) }, 201);
+}
+
 /* ── Saved reports ─────────────────────────────────────────
  * A named Report Builder setup (filters, grouping, sort, chart choices).
  * Private to its owner unless shared with everyone who can view reports. */
@@ -1006,12 +1198,13 @@ const ALL_ROLES = new Set([ADMIN_ROLE, ...ASSIGNABLE_ROLES]);
  * and the audit log stays with that role so access can't be escalated.
  * can_edit / can_delete / can_export are kept in step for older code paths. */
 
-const PERMISSIONS = ['inspect', 'delete', 'export', 'assign', 'team', 'profiles', 'reports'];
+const PERMISSIONS = ['inspect', 'delete', 'export', 'review', 'assign', 'team', 'profiles', 'reports'];
 const ROLE_PERMISSIONS = {
   quality_admin: PERMISSIONS,
-  quality_leader: ['team', 'profiles', 'reports', 'export'],
-  quality_officer: ['inspect', 'assign', 'profiles', 'reports', 'export'],
-  quality_auditor: ['inspect', 'reports', 'export'],
+  quality_leader: ['review', 'team', 'profiles', 'reports', 'export'],
+  quality_officer: ['inspect', 'review', 'assign', 'profiles', 'reports', 'export'],
+  // Reviewing and exporting are opt-in for auditors (an admin can switch them on per person).
+  quality_auditor: ['inspect', 'reports'],
   data_analyst: ['reports', 'export'],
 };
 const LEGACY_FLAGS = { inspect: 'can_edit', delete: 'can_delete', export: 'can_export' };
@@ -1481,6 +1674,8 @@ async function handleApi(request, env, url) {
       : deleteBuilding(env, user, Number(buildingMatch[1]));
   }
 
+  if (path === 'reports/library' && method === 'GET') return reportLibrary(env, user, url);
+
   if (path === 'reports/inspections' && method === 'GET') {
     if (!can(user, 'reports')) return fail('you do not have permission to view reports', 403);
     return reportInspections(env);
@@ -1527,9 +1722,13 @@ async function handleApi(request, env, url) {
     return fail('method not allowed', 405);
   }
 
+  const reviewMatch = path.match(/^inspections\/(\d+)\/reviews$/);
+  if (reviewMatch && method === 'POST') return reviewInspection(env, user, Number(reviewMatch[1]), await request.json());
+
   const match = path.match(/^inspections\/(\d+)$/);
   if (match) {
     const id = Number(match[1]);
+    if (method === 'GET') return getInspectionForReview(env, user, id);
     if (method === 'PATCH' || method === 'PUT') {
       if (!can(user, 'inspect')) return fail('you do not have permission to edit inspections', 403);
       return updateInspection(env, id, await request.json());
