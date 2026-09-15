@@ -41,7 +41,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 /* An account without edit rights has nothing to do on the scoring pages. */
 body.view-only .ni[data-page^="pg-s"]{display:none}
 /* ...and nothing that opens a record for editing */
-body.view-only .hc-edit{display:none}
 .ni:hover{background:rgba(255,255,255,.08);color:#fff}
 .ni:hover svg{opacity:1}
 .ni.active{background:rgba(255,255,255,.15);box-shadow:inset 3px 0 var(--teal-lt);color:#fff;font-weight:800}
@@ -428,6 +427,27 @@ body.view-only .hc-edit{display:none}
 .app-toast.err{background:var(--danger)}
 @media(max-width:780px){#pg-officer .ov-filters{padding-left:14px;padding-right:14px}.of-live{margin-left:0}.of-bulk b{margin-right:0;width:100%}}
 
+/* ⓘ explanations: hidden until asked for */
+.info-tip{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-family:Georgia,'Times New Roman',serif;
+  font-style:italic;font-weight:700;font-size:.72rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0;
+  margin-left:4px;vertical-align:middle;text-transform:none;letter-spacing:0;transition:background .13s,color .13s,border-color .13s}
+.info-tip:hover,.info-tip.on{border-color:var(--teal);background:var(--teal);color:#fff}
+.tip-box{display:flex;gap:10px;align-items:flex-start;background:#eaf6fb;border:1px solid rgba(38,168,171,.45);border-radius:var(--r);padding:10px 12px;margin:0 0 12px;
+  font-size:.8rem;color:#0b3a5c;line-height:1.55;font-weight:600;text-transform:none;letter-spacing:0;animation:tipIn .15s ease-out;width:100%}
+.tip-box[hidden]{display:none!important}
+.tip-box>i{font-family:Georgia,'Times New Roman',serif;font-weight:700;width:20px;height:20px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.72rem;margin-top:1px}
+.tip-box b{display:block;color:var(--royal);font-weight:800;margin-bottom:2px}
+.tip-box p{margin:0 0 3px}
+.tip-box ul{margin:2px 0 3px;padding-left:18px}
+.tip-box li b{display:inline;margin:0}
+@media(max-width:480px){.ov-stats,#home-stats,#rp-stats,#of-stats,#sc-stats,#ins-stats,#cmp-stats,#dq-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}.hs-card{padding:13px 14px}.hs-card b{font-size:1.3rem}.hs-ic{width:32px;height:32px;margin-bottom:8px}}
+.tip-close{margin-left:auto;background:none;border:none;font-size:1.15rem;color:var(--muted);cursor:pointer;line-height:1;padding:0 2px}
+.ov-panel>.tip-box{margin:10px 14px;width:auto}
+.hist-filters+.tip-box{margin:12px 44px 0;width:auto}
+@keyframes tipIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+@media(pointer:coarse){.info-tip{width:26px;height:26px;font-size:.8rem}}
+@media(max-width:780px){.hist-filters+.tip-box{margin:12px 14px 0}}
+
 /* Inspection Reports (search · open · review) */
 #pg-library{background:var(--bg);padding-bottom:40px}
 #pg-library [hidden]{display:none!important}
@@ -596,12 +616,7 @@ body.view-only .hc-edit{display:none}
 .hc-title{font-size:.9rem;font-weight:800;color:var(--royal)}
 .hc-meta{font-size:.74rem;color:var(--muted);margin-top:2px}
 .hc-grade{font-size:.7rem;font-weight:800;padding:3px 10px;border-radius:20px}
-.hc-del{width:30px;height:30px;border-radius:50%;border:none;background:rgba(192,57,43,.1);color:var(--danger);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
-.hc-del:hover{background:rgba(192,57,43,.22)}
-body.no-delete .hc-del{display:none}
-body.no-export .hc-pdf,body.no-export #btn-pdf,body.no-export #btn-pdf-edit,body.no-export #save-notice{display:none!important}
-.hc-pdf{width:30px;height:30px;border-radius:50%;border:none;background:rgba(38,168,171,.12);color:var(--teal);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
-.hc-pdf:hover{background:rgba(38,168,171,.28)}
+body.no-export #btn-pdf,body.no-export #btn-pdf-edit,body.no-export #save-notice{display:none!important}
 .no-hist{text-align:center;padding:32px;color:var(--muted);font-size:.85rem;background:#fff;border-radius:var(--r);border:1px dashed var(--border)}
 
 /* SECTION PAGE */
@@ -749,19 +764,6 @@ body.no-export .hc-pdf,body.no-export #btn-pdf,body.no-export #btn-pdf-edit,body
 #lb-x{position:absolute;top:18px;right:22px;width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
 
 /* History detail */
-#hd-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;overflow-y:auto;padding:24px}
-#hd-modal.open{display:block}
-#hd-inner{background:#fff;border-radius:12px;max-width:740px;margin:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-#hd-inner h2{font-size:1.1rem;font-weight:900;color:var(--royal);margin-bottom:4px}
-.hd-meta-line{font-size:.78rem;color:var(--muted);margin-bottom:18px}
-.hd-sec{margin-bottom:13px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.hd-sec-head{background:var(--royal);color:#fff;padding:8px 14px;display:flex;justify-content:flex-start;align-items:center;font-size:.82rem;font-weight:800}
-.hd-items{padding:8px 14px;display:flex;flex-direction:column;gap:6px}
-.hd-item{display:flex;gap:10px;align-items:flex-start;font-size:.8rem;padding:4px 0;border-bottom:1px solid #f0f4f7}
-.hd-item:last-child{border-bottom:none}
-.hd-dot{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:900;color:#fff;margin-top:1px}
-.hd-photos{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
-.hd-photos img{width:50px;height:50px;object-fit:cover;border-radius:5px;border:1.5px solid var(--teal);cursor:pointer}
 
 /* ── Navigation modes ─────────────────────────────────────
    Laptop/desktop (≥1200px): full menu by default, can shrink to an icon rail.
@@ -850,7 +852,6 @@ body.nav-rail #acct-row{justify-content:center}
   .ov-section{padding-left:12px;padding-right:12px}
   .hist-filters select,.hist-filters input{width:100%;min-width:0}
   .app-toast{right:12px;bottom:12px;left:12px;max-width:none}
-  #hd-modal{padding:10px}#hd-inner{padding:18px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 @media(pointer:coarse){
@@ -869,9 +870,6 @@ body.nav-rail #acct-row{justify-content:center}
 #edit-banner.show{display:flex}
 #edit-banner .eb-text{font-size:.82rem;font-weight:700;color:#6b4200;flex:1}
 #edit-banner .eb-id{font-size:.75rem;color:#8a5500;font-style:italic}
-/* Edit / View buttons on history cards */
-.hc-edit{width:30px;height:30px;border-radius:50%;border:none;background:rgba(0,51,160,.1);color:var(--royal);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
-.hc-edit:hover{background:rgba(0,51,160,.2)}
 /* History section header row */
 .hist-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
 .hist-hdr h3{margin:0;font-size:1rem;font-weight:800;color:var(--royal);display:flex;align-items:center;gap:8px}
@@ -1027,7 +1025,7 @@ body.nav-rail #acct-row{justify-content:center}
     <div class="home-hero">
       <div class="ey">OSD · Facility Experience Quality Assurance</div>
       <h2>Welcome, <span id="home-name">…</span></h2>
-      <p class="sub">Pick up where you left off, or browse the inspection history below.</p>
+      <p class="sub">Pick up where you left off, or open one of the latest reports below.</p>
     </div>
 
     <div id="home-stats">
@@ -1054,33 +1052,12 @@ body.nav-rail #acct-row{justify-content:center}
     <div id="history-section">
       <div class="hist-hdr">
         <div>
-          <span class="sec-eyebrow">Archive</span>
-          <h3><svg data-lucide="clock" width="18" height="18"></svg> Inspection History</h3>
+          <span class="sec-eyebrow">Latest</span>
+          <h3><svg data-lucide="clock" width="18" height="18"></svg> Recent Reports <button type="button" class="info-tip" data-tip="home-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3>
         </div>
-        <button class="rp-link" onclick="nav('pg-library')"><svg data-lucide="file-search" width="14" height="14" style="vertical-align:-3px"></svg> Search &amp; review all reports</button>
-        <div style="display:flex;align-items:center;gap:12px">
-          <div id="hist-summary" style="font-size:.78rem;color:var(--muted);font-weight:600"></div>
-          <button class="btn br" id="export-csv-btn" style="padding:6px 14px;font-size:.76rem" onclick="exportAllCSV()" title="Download all inspections as a CSV file (opens in Excel)">
-            <svg data-lucide="download" width="14" height="14"></svg> Export CSV
-          </button>
-        </div>
+        <button class="btn br" style="padding:7px 14px;font-size:.78rem" onclick="nav('pg-library')"><svg data-lucide="file-search" width="14" height="14"></svg> Search &amp; review all reports</button>
       </div>
-      <div class="hist-filters">
-        <select id="hf-insp" onchange="renderHistory()"><option value="">All Auditors</option></select>
-        <select id="hf-month" onchange="renderHistory()"><option value="">All Months</option></select>
-        <select id="hf-div" onchange="renderHistory()"><option value="">All Divisions</option>
-          <option>CAOSD</option><option>NPOSD</option><option>OOSD</option>
-          <option>SAOSD</option><option>NAOSD</option><option>RYOSD</option>
-        </select>
-        <select id="hf-building" onchange="renderHistory()"><option value="">All Buildings</option></select>
-        <select id="hf-type" onchange="renderHistory()"><option value="">All Types</option>
-          <option value="BOQI">BOQI</option>
-          <option value="Follow-up">Follow-up</option>
-          <option value="EOQI">EOQI</option>
-        </select>
-        <input type="text" id="hf-search" placeholder="Search…" oninput="renderHistory()" style="min-width:120px">
-      </div>
-      <div id="hist-list"><div class="no-hist">No inspections saved yet. Complete an inspection and save it from the Score Card page.</div></div>
+      <div id="hist-list"><div class="no-hist">Loading…</div></div>
     </div>
 
   </div>
@@ -1179,7 +1156,7 @@ body.nav-rail #acct-row{justify-content:center}
       <select id="au-switch" hidden aria-label="Auditor"></select>
       <select id="assign-quarter" aria-label="Quarter"></select>
       <span class="ov-updated" id="au-updated"></span>
-      <button class="rp-link" id="au-reports" hidden><svg data-lucide="bar-chart-3" width="13" height="13" style="vertical-align:-2px"></svg> Reports</button>
+      <button class="rp-link" id="au-reports" hidden><svg data-lucide="bar-chart-3" width="13" height="13" style="vertical-align:-2px"></svg> Analytics</button>
       <button class="rp-link" id="au-manage" hidden><svg data-lucide="clipboard-list" width="13" height="13" style="vertical-align:-2px"></svg> Manage assignments</button>
       <button class="rp-link" id="au-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
     </div>
@@ -1187,14 +1164,14 @@ body.nav-rail #acct-row{justify-content:center}
     <div class="ov-stats" id="au-stats"></div>
 
     <div class="ov-section" id="au-carried" hidden>
-      <div class="hist-hdr"><div><span class="sec-eyebrow">Carried over</span><h3><svg data-lucide="triangle-alert" width="18" height="18"></svg> Still Open From Earlier Quarters</h3></div></div>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Carried over</span><h3><svg data-lucide="triangle-alert" width="18" height="18"></svg> Still Open From Earlier Quarters <button type="button" class="info-tip" data-tip="au-carried" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
       <div class="au-list" id="au-carried-list"></div>
     </div>
 
     <div class="ov-section">
       <div class="ov-grid2">
         <div>
-          <div class="hist-hdr"><div><span class="sec-eyebrow">Schedule</span><h3><svg data-lucide="calendar-range" width="18" height="18"></svg> Quarter Schedule</h3></div></div>
+          <div class="hist-hdr"><div><span class="sec-eyebrow">Schedule</span><h3><svg data-lucide="calendar-range" width="18" height="18"></svg> Quarter Schedule <button type="button" class="info-tip" data-tip="au-schedule" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
           <div class="ov-panel" id="au-schedule"></div>
         </div>
         <div>
@@ -1221,13 +1198,13 @@ body.nav-rail #acct-row{justify-content:center}
 
     <div class="ov-section">
       <div class="hist-hdr">
-        <div><span class="sec-eyebrow">Performance</span><h3><svg data-lucide="award" width="18" height="18"></svg> Quality of Work</h3></div>
+        <div><span class="sec-eyebrow">Performance</span><h3><svg data-lucide="award" width="18" height="18"></svg> Quality of Work <button type="button" class="info-tip" data-tip="au-quality" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         <span class="ov-updated">All quarters</span>
       </div>
       <div class="au-perf" id="au-perf"></div>
       <div class="ov-grid2">
         <div class="ov-panel">
-          <div class="ov-panel-hd">By quarter <small>Average score · assigned vs completed</small></div>
+          <div class="ov-panel-hd">By quarter <small>Average score · hover for completed work</small></div>
           <div class="ov-chart" style="height:280px"><canvas id="au-q-chart"></canvas></div>
         </div>
         <div class="ov-panel">
@@ -1261,13 +1238,13 @@ body.nav-rail #acct-row{justify-content:center}
         <option value="EOQI">EOQI — End of Quarter</option>
       </select>
       <select id="ov-division"><option value="all">All divisions</option></select>
-      <span class="ov-updated" id="ov-updated"></span>
+      <span class="ov-updated" id="ov-updated"></span><button type="button" class="info-tip" data-tip="ov-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
     </div>
 
     <div class="ov-stats" id="ov-stats"></div>
 
     <div class="ov-section">
-      <div class="hist-hdr"><div><span class="sec-eyebrow">Performance</span><h3><svg data-lucide="bar-chart-3" width="18" height="18"></svg> By Division</h3></div></div>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Performance</span><h3><svg data-lucide="bar-chart-3" width="18" height="18"></svg> By Division <button type="button" class="info-tip" data-tip="ov-division" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
       <div class="ov-grid2">
         <div class="ov-panel">
           <div class="ov-panel-hd">Average score &amp; completion <small>Click a division to focus on it</small></div>
@@ -1281,7 +1258,7 @@ body.nav-rail #acct-row{justify-content:center}
     </div>
 
     <div class="ov-section">
-      <div class="hist-hdr"><div><span class="sec-eyebrow">Team</span><h3><svg data-lucide="users" width="18" height="18"></svg> Officers &amp; Auditors</h3></div></div>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Team</span><h3><svg data-lucide="users" width="18" height="18"></svg> Officers &amp; Auditors <button type="button" class="info-tip" data-tip="ov-team" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
       <div class="ov-grid2">
         <div>
           <div class="ov-panel">
@@ -1301,14 +1278,14 @@ body.nav-rail #acct-row{justify-content:center}
     </div>
 
     <div class="ov-section">
-      <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3><svg data-lucide="map-pin" width="18" height="18"></svg> By Area</h3></div></div>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3><svg data-lucide="map-pin" width="18" height="18"></svg> By Area <button type="button" class="info-tip" data-tip="ov-area" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
       <div class="ov-panel">
         <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Area</th><th>Buildings</th><th>Assignments</th><th>Completion</th><th>Inspections</th><th>Avg</th></tr></thead><tbody id="ov-area-rows"></tbody></table></div>
       </div>
     </div>
 
     <div class="ov-section">
-      <div class="hist-hdr"><div><span class="sec-eyebrow">Detail</span><h3><svg data-lucide="building-2" width="18" height="18"></svg> By Building</h3></div></div>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Detail</span><h3><svg data-lucide="building-2" width="18" height="18"></svg> By Building <button type="button" class="info-tip" data-tip="ov-building" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
       <div class="ov-panel">
         <div class="ov-panel-hd">
           <span id="ov-b-count">Buildings</span>
@@ -1342,7 +1319,7 @@ body.nav-rail #acct-row{justify-content:center}
         <option value="EOQI">EOQI — End of Quarter</option>
       </select>
       <select id="of-division"><option value="">All divisions</option></select>
-      <span class="of-live" id="of-live"><i></i><span id="of-updated">Connecting…</span></span>
+      <span class="of-live" id="of-live"><i></i><span id="of-updated">Connecting…</span></span><button type="button" class="info-tip" data-tip="of-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
       <button class="rp-link" id="of-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
     </div>
 
@@ -1350,7 +1327,7 @@ body.nav-rail #acct-row{justify-content:center}
 
     <div class="ov-section">
       <div class="hist-hdr">
-        <div><span class="sec-eyebrow">Team</span><h3><svg data-lucide="users" width="18" height="18"></svg> Team Progress</h3></div>
+        <div><span class="sec-eyebrow">Team</span><h3><svg data-lucide="users" width="18" height="18"></svg> Team Progress <button type="button" class="info-tip" data-tip="of-team" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         <span class="ov-updated" id="of-team-note"></span>
       </div>
       <div class="of-cards" id="of-cards"></div>
@@ -1359,14 +1336,14 @@ body.nav-rail #acct-row{justify-content:center}
     <div class="ov-section">
       <div class="ov-grid2">
         <div>
-          <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3><svg data-lucide="map-pin" width="18" height="18"></svg> Progress by Area</h3></div></div>
+          <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3><svg data-lucide="map-pin" width="18" height="18"></svg> Progress by Area <button type="button" class="info-tip" data-tip="of-area" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
           <div class="ov-panel"><div class="ov-scroll" style="max-height:420px;overflow-y:auto"><table class="ov-table">
             <thead><tr><th>Area</th><th>Buildings</th><th>Assigned</th><th>Completed</th></tr></thead>
             <tbody id="of-area-rows"></tbody>
           </table></div></div>
         </div>
         <div>
-          <div class="hist-hdr"><div><span class="sec-eyebrow">Live</span><h3><svg data-lucide="activity" width="18" height="18"></svg> Recent Activity</h3></div></div>
+          <div class="hist-hdr"><div><span class="sec-eyebrow">Live</span><h3><svg data-lucide="activity" width="18" height="18"></svg> Recent Activity <button type="button" class="info-tip" data-tip="of-activity" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
           <div class="ov-panel"><ul class="ov-feed" id="of-feed"></ul></div>
         </div>
       </div>
@@ -1374,7 +1351,7 @@ body.nav-rail #acct-row{justify-content:center}
 
     <div class="ov-section" id="of-table-section">
       <div class="hist-hdr">
-        <div><span class="sec-eyebrow">Buildings</span><h3><svg data-lucide="building-2" width="18" height="18"></svg> Assign Buildings</h3></div>
+        <div><span class="sec-eyebrow">Buildings</span><h3><svg data-lucide="building-2" width="18" height="18"></svg> Assign Buildings <button type="button" class="info-tip" data-tip="of-buildings" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         <div class="ov-tools">
           <input type="text" id="of-search" placeholder="Search building or auditor…">
           <select id="of-area"><option value="">All areas</option></select>
@@ -1518,7 +1495,7 @@ body.nav-rail #acct-row{justify-content:center}
         <div class="rp-chips" id="lib-status" role="tablist" aria-label="Review status"></div>
         <button class="rp-link" id="lib-toggle"><svg data-lucide="sliders-horizontal" width="14" height="14" style="vertical-align:-3px"></svg> Filters <span id="lib-toggle-n"></span></button>
         <button class="rp-link" id="lib-clear" hidden>Clear search &amp; filters</button>
-        <span class="rp-count" id="lib-count"></span>
+        <span class="rp-count" id="lib-count"></span><button type="button" class="info-tip" data-tip="lib-status" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
       </div>
       <div class="lib-filters" id="lib-filters">
         <label>Quarter<select id="lib-quarter"><option value="">All quarters</option></select></label>
@@ -1538,7 +1515,8 @@ body.nav-rail #acct-row{justify-content:center}
         </table></div>
         <div class="of-foot" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <button class="btn bo" id="lib-more" hidden style="padding:7px 14px;font-size:.78rem">Show more</button>
-          <button class="rp-link rp-export" id="lib-csv" style="margin-left:auto"><svg data-lucide="download" width="14" height="14" style="vertical-align:-3px"></svg> Export results (CSV)</button>
+          <button class="rp-link rp-export" id="lib-csv" style="margin-left:auto" title="One row per report, for the current search and filters"><svg data-lucide="download" width="14" height="14" style="vertical-align:-3px"></svg> Export results (CSV)</button>
+          <button class="rp-link rp-export" onclick="exportAllCSV()" title="Every item of every report, one row per checklist item"><svg data-lucide="file-spreadsheet" width="14" height="14" style="vertical-align:-3px"></svg> Full export (all items)</button>
         </div>
       </div>
     </div>
@@ -1547,7 +1525,7 @@ body.nav-rail #acct-row{justify-content:center}
   <!-- REPORTS & ANALYTICS (all roles) -->
   <div class="page" id="pg-reports">
     <div class="home-hero">
-      <h2>Reports &amp; <span>Analytics</span></h2>
+      <h2><span>Analytics</span></h2>
       <p class="sub">See how divisions, areas and buildings are performing, build the report you need, compare periods and keep the data clean.</p>
       <div class="page-tabs" id="rp-tabs">
         <button class="page-tab active" data-tab="insights"><svg data-lucide="gauge" width="14" height="14"></svg>Insights</button>
@@ -1563,13 +1541,13 @@ body.nav-rail #acct-row{justify-content:center}
         <label>Period<select id="ins-quarter"></select></label>
         <select id="ins-type" aria-label="Inspection type"><option value="">All types</option><option value="BOQI">BOQI</option><option value="EOQI">EOQI</option><option value="Follow-up">Follow-up</option></select>
         <select id="ins-division" aria-label="Division"><option value="">All divisions</option></select>
-        <span class="ov-updated" id="ins-compare-note"></span>
+        <span class="ov-updated" id="ins-compare-note"></span><button type="button" class="info-tip" data-tip="ins-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
       </div>
       <div class="ov-stats" id="ins-stats"></div>
 
       <div class="ov-section">
         <div class="hist-hdr">
-          <div><span class="sec-eyebrow">Trend</span><h3><svg data-lucide="line-chart" width="18" height="18"></svg> Average Score by Quarter · <span id="ins-dim">Division</span></h3></div>
+          <div><span class="sec-eyebrow">Trend</span><h3><svg data-lucide="line-chart" width="18" height="18"></svg> Average Score by Quarter · <span id="ins-dim">Division</span> <button type="button" class="info-tip" data-tip="ins-trend" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
           <div class="ov-tools"><span class="ov-updated" id="ins-trend-note"></span><button class="rp-link" data-png="insTrend"><svg data-lucide="image-down" width="14" height="14" style="vertical-align:-3px"></svg> PNG</button></div>
         </div>
         <div class="ov-panel">
@@ -1580,7 +1558,7 @@ body.nav-rail #acct-row{justify-content:center}
 
       <div class="ov-section">
         <div class="hist-hdr">
-          <div><span class="sec-eyebrow">Heatmap</span><h3><svg data-lucide="grid-3x3" width="18" height="18"></svg> Section Scores by <span id="ins-heat-dim">Division</span></h3></div>
+          <div><span class="sec-eyebrow">Heatmap</span><h3><svg data-lucide="grid-3x3" width="18" height="18"></svg> Section Scores by <span id="ins-heat-dim">Division</span> <button type="button" class="info-tip" data-tip="ins-heat" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
           <div class="ov-tools"><div class="ins-legend" id="ins-heat-legend"></div><button class="rp-link rp-export" id="ins-heat-csv"><svg data-lucide="download" width="14" height="14" style="vertical-align:-3px"></svg> CSV</button></div>
         </div>
         <div class="ov-panel"><div class="ov-scroll"><table class="ins-heat" id="ins-heat"></table></div>
@@ -1590,14 +1568,14 @@ body.nav-rail #acct-row{justify-content:center}
       <div class="ov-section">
         <div class="ov-grid2">
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Ranking</span><h3><svg data-lucide="list-ordered" width="18" height="18"></svg> <span id="ins-board-title">Divisions</span></h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Ranking</span><h3><svg data-lucide="list-ordered" width="18" height="18"></svg> <span id="ins-board-title">Divisions</span> <button type="button" class="info-tip" data-tip="ins-board" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
               <thead><tr><th>Name</th><th>Average</th><th>Change</th><th>Coverage</th><th>Weakest section</th></tr></thead>
               <tbody id="ins-board"></tbody>
             </table></div></div>
           </div>
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Checklist</span><h3><svg data-lucide="circle-x" width="18" height="18"></svg> Most Often Not Compliant</h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Checklist</span><h3><svg data-lucide="circle-x" width="18" height="18"></svg> Most Often Not Compliant <button type="button" class="info-tip" data-tip="ins-fail" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><ul class="ins-fail" id="ins-fail"></ul></div>
           </div>
         </div>
@@ -1606,14 +1584,14 @@ body.nav-rail #acct-row{justify-content:center}
       <div class="ov-section">
         <div class="ov-grid2">
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Buildings</span><h3><svg data-lucide="triangle-alert" width="18" height="18"></svg> Need Attention</h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Buildings</span><h3><svg data-lucide="triangle-alert" width="18" height="18"></svg> Need Attention <button type="button" class="info-tip" data-tip="ins-attention" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
               <thead><tr><th>Building</th><th>Latest score</th><th>Change</th><th>Rating</th></tr></thead>
               <tbody id="ins-attention"></tbody>
             </table></div></div>
           </div>
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Within the quarter</span><h3><svg data-lucide="arrow-up-down" width="18" height="18"></svg> Biggest Movers · BOQI → EOQI</h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Within the quarter</span><h3><svg data-lucide="arrow-up-down" width="18" height="18"></svg> Biggest Movers · BOQI → EOQI <button type="button" class="info-tip" data-tip="ins-movers" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
               <thead><tr><th>Building</th><th>BOQI → EOQI</th><th>Change</th></tr></thead>
               <tbody id="ins-movers"></tbody>
@@ -1629,7 +1607,7 @@ body.nav-rail #acct-row{justify-content:center}
     <div class="rp-panel-wrap">
       <div class="ov-panel" style="margin-bottom:0">
         <div class="ov-panel-hd">
-          <span><svg data-lucide="sliders-horizontal" width="15" height="15" style="vertical-align:-3px"></svg> Filters</span>
+          <span><svg data-lucide="sliders-horizontal" width="15" height="15" style="vertical-align:-3px"></svg> Filters <button type="button" class="info-tip" data-tip="rp-filters" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></span>
           <div class="rp-saved">
             <select id="rp-saved" aria-label="Saved reports"><option value="">Saved reports…</option></select>
             <button class="rp-link" id="rp-save"><svg data-lucide="bookmark-plus" width="14" height="14" style="vertical-align:-3px"></svg> Save report</button>
@@ -1672,12 +1650,12 @@ body.nav-rail #acct-row{justify-content:center}
 
     <div class="ov-section">
       <div class="hist-hdr">
-        <div><span class="sec-eyebrow">Summary</span><h3><svg data-lucide="table-2" width="18" height="18"></svg> <span id="rp-group-title">By Division</span></h3></div>
+        <div><span class="sec-eyebrow">Summary</span><h3><svg data-lucide="table-2" width="18" height="18"></svg> <span id="rp-group-title">By Division</span> <button type="button" class="info-tip" data-tip="rp-summary" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         <button class="btn br rp-export" style="padding:6px 14px;font-size:.76rem" id="rp-export-summary"><svg data-lucide="download" width="14" height="14"></svg> Export summary</button>
       </div>
       <div class="ov-panel">
         <div class="ov-panel-hd">
-          <span>Chart <small id="rp-group-note"></small></span>
+          <span>Chart <button type="button" class="info-tip" data-tip="rp-chart" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button> <small id="rp-group-note"></small></span>
           <div class="ov-tools">
             <div class="rp-chips" id="rp-metric">
               <button class="rp-chip active" data-metric="avg">Average</button>
@@ -1697,7 +1675,7 @@ body.nav-rail #acct-row{justify-content:center}
     </div>
 
     <div class="ov-section">
-      <div class="hist-hdr"><div><span class="sec-eyebrow">Trends</span><h3><svg data-lucide="line-chart" width="18" height="18"></svg> Over Time &amp; By Section</h3></div></div>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Trends</span><h3><svg data-lucide="line-chart" width="18" height="18"></svg> Over Time &amp; By Section <button type="button" class="info-tip" data-tip="rp-trends" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
       <div class="ov-grid2">
         <div class="ov-panel">
           <div class="ov-panel-hd">
@@ -1725,7 +1703,7 @@ body.nav-rail #acct-row{justify-content:center}
 
     <div class="ov-section">
       <div class="hist-hdr">
-        <div><span class="sec-eyebrow">Detail</span><h3><svg data-lucide="list" width="18" height="18"></svg> Matching Inspections</h3></div>
+        <div><span class="sec-eyebrow">Detail</span><h3><svg data-lucide="list" width="18" height="18"></svg> Matching Inspections <button type="button" class="info-tip" data-tip="rp-detail" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         <div class="ov-tools">
           <select id="rp-sort">
             <option value="newest">Newest first</option>
@@ -1763,7 +1741,7 @@ body.nav-rail #acct-row{justify-content:center}
       <div class="ov-stats" id="cmp-stats"></div>
       <div class="ov-section">
         <div class="hist-hdr">
-          <div><span class="sec-eyebrow">Side by side</span><h3><svg data-lucide="git-compare" width="18" height="18"></svg> Compare by</h3></div>
+          <div><span class="sec-eyebrow">Side by side</span><h3><svg data-lucide="git-compare" width="18" height="18"></svg> Compare by <button type="button" class="info-tip" data-tip="cmp" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
           <div class="ov-tools">
             <div class="rp-chips" id="cmp-dim">
               <button class="rp-chip active" data-dim="division">Division</button>
@@ -1779,7 +1757,7 @@ body.nav-rail #acct-row{justify-content:center}
           <div class="ov-chart" style="height:320px"><canvas id="cmp-chart" role="img" aria-label="Average by group for period A and B"></canvas></div>
         </div>
         <div class="ov-panel">
-          <div class="ov-panel-hd"><span>Changes</span>
+          <div class="ov-panel-hd"><span>Changes <button type="button" class="info-tip" data-tip="cmp-table" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></span>
             <div class="ov-tools">
               <select id="cmp-sort" aria-label="Sort"><option value="drop">Biggest drop first</option><option value="gain">Biggest gain first</option><option value="name">Name</option></select>
               <button class="rp-link rp-export" id="cmp-csv"><svg data-lucide="download" width="14" height="14" style="vertical-align:-3px"></svg> CSV</button>
@@ -1799,7 +1777,7 @@ body.nav-rail #acct-row{justify-content:center}
       <div class="ov-section">
         <div class="sc-callout info" id="dq-ok" hidden><svg data-lucide="circle-check" width="17" height="17"></svg><div><strong>No data problems found</strong>Every inspection is linked, complete and unique.</div></div>
         <div class="hist-hdr">
-          <div><span class="sec-eyebrow">Linking</span><h3 id="dq-unlinked"><svg data-lucide="unlink" width="18" height="18"></svg> Not Linked to a Building</h3></div>
+          <div><span class="sec-eyebrow">Linking</span><h3 id="dq-unlinked"><svg data-lucide="unlink" width="18" height="18"></svg> Not Linked to a Building <button type="button" class="info-tip" data-tip="dq-unlinked" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
           <button class="btn br rp-export" style="padding:6px 14px;font-size:.76rem" id="dq-csv"><svg data-lucide="download" width="14" height="14"></svg> Export all issues</button>
         </div>
         <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
@@ -1810,13 +1788,13 @@ body.nav-rail #acct-row{justify-content:center}
       <div class="ov-section">
         <div class="ov-grid2">
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Duplicates</span><h3 id="dq-dups"><svg data-lucide="copy" width="18" height="18"></svg> Possible Duplicates</h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Duplicates</span><h3 id="dq-dups"><svg data-lucide="copy" width="18" height="18"></svg> Possible Duplicates <button type="button" class="info-tip" data-tip="dq-dups" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
               <thead><tr><th>Building</th><th>Period</th><th>Count</th><th>Inspections</th></tr></thead>
               <tbody id="dq-dups-rows"></tbody></table></div></div>
           </div>
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Completeness</span><h3 id="dq-incomplete"><svg data-lucide="list-checks" width="18" height="18"></svg> Incomplete Scoring</h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Completeness</span><h3 id="dq-incomplete"><svg data-lucide="list-checks" width="18" height="18"></svg> Incomplete Scoring <button type="button" class="info-tip" data-tip="dq-incomplete" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
               <thead><tr><th>Date</th><th>Building</th><th>Auditor</th><th>Answered</th></tr></thead>
               <tbody id="dq-incomplete-rows"></tbody></table></div></div>
@@ -1826,13 +1804,13 @@ body.nav-rail #acct-row{justify-content:center}
       <div class="ov-section">
         <div class="ov-grid2">
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Details</span><h3 id="dq-missing"><svg data-lucide="file-question" width="18" height="18"></svg> Missing Details</h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Details</span><h3 id="dq-missing"><svg data-lucide="file-question" width="18" height="18"></svg> Missing Details <button type="button" class="info-tip" data-tip="dq-missing" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
               <thead><tr><th>Date</th><th>Building</th><th>Auditor</th><th>Missing</th></tr></thead>
               <tbody id="dq-missing-rows"></tbody></table></div></div>
           </div>
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3 id="dq-coverage"><svg data-lucide="building-2" width="18" height="18"></svg> <span id="dq-coverage-title">Buildings without an inspection</span></h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3 id="dq-coverage"><svg data-lucide="building-2" width="18" height="18"></svg> <span id="dq-coverage-title">Buildings without an inspection</span> <button type="button" class="info-tip" data-tip="dq-coverage" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
               <thead><tr><th>Division</th><th>Inspected</th><th>Not inspected</th></tr></thead>
               <tbody id="dq-coverage-rows"></tbody></table></div></div>
@@ -1857,14 +1835,14 @@ body.nav-rail #acct-row{justify-content:center}
     <div class="ov-stats" id="sc-stats"></div>
 
     <div class="ov-section">
-      <div class="hist-hdr"><div><span class="sec-eyebrow">Rating scale</span><h3><svg data-lucide="gauge" width="18" height="18"></svg> Where This Inspection Lands</h3></div></div>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Rating scale</span><h3><svg data-lucide="gauge" width="18" height="18"></svg> Where This Inspection Lands <button type="button" class="info-tip" data-tip="sc-scale" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
       <div class="sc-scale" id="sc-scale"></div>
       <p class="sc-scale-note" id="sc-scale-note"></p>
     </div>
 
     <div class="ov-section">
       <div class="hist-hdr">
-        <div><span class="sec-eyebrow">Breakdown</span><h3><svg data-lucide="list-checks" width="18" height="18"></svg> Results by Section</h3></div>
+        <div><span class="sec-eyebrow">Breakdown</span><h3><svg data-lucide="list-checks" width="18" height="18"></svg> Results by Section <button type="button" class="info-tip" data-tip="sc-sections" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         <span class="ov-updated">Click a section to review it</span>
       </div>
       <div class="ov-panel">
@@ -2019,15 +1997,6 @@ body.nav-rail #acct-row{justify-content:center}
 </div>
 
 <!-- History detail modal -->
-<div id="hd-modal">
-  <div id="hd-inner">
-    <div style="display:flex;justify-content:flex-start;align-items:flex-start;margin-bottom:8px;gap:12px">
-      <div><h2 id="hd-title">–</h2><div class="hd-meta-line" id="hd-meta">–</div></div>
-      <button class="btn bo" style="flex-shrink:0" onclick="closeHistDetail()">Close</button>
-    </div>
-    <div id="hd-body"></div>
-  </div>
-</div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -2151,10 +2120,6 @@ function setSyncChip(state, msg){
 // ═══════════════════════════════════════════════════════════
 // DATABASE CRUD
 // ═══════════════════════════════════════════════════════════
-async function dbLoadHistory(){
-  return await apiFetch('GET', '/inspections', null) || [];
-}
-
 async function dbInsert(record){
   await apiFetch('POST', '/inspections', record);
 }
@@ -2360,7 +2325,7 @@ function nav(pageId){
   document.querySelectorAll('.ss-item').forEach(b=>b.classList.toggle('active','pg-s'+b.dataset.sec===pageId));
   document.getElementById('insp-layout').classList.toggle('on',isSection);
   if(pageId==='pg-scorecard') updateScoreCard();
-  if(pageId==='pg-home'){renderHistory();}
+  if(pageId==='pg-home'){loadHome();}
   if(pageId==='pg-new'){renderSpellBanner();inRenderDetails();}
   if(pageId==='pg-auditor') loadAuditorProfile();
   if(pageId==='pg-overview') loadOverview();
@@ -2774,16 +2739,12 @@ function rebuildInspectorDropdown(){
   sel.innerHTML=`<option value="${ovEsc(activeInspector)}">${ovEsc(activeInspector)}</option>`;
   sel.value=activeInspector;
 }
-/** Shows who the inspection is recorded under, and lists auditors found in the history filter. */
+/** Shows who the inspection is recorded under. */
 function renderInspectorChips(){
   const el=document.getElementById('in-inspector');
   if(el) el.innerHTML=activeInspector
     ?`<i>${ovEsc(ofInitials(activeInspector))}</i>${ovEsc(activeInspector)}${currentUser&&activeInspector===currentUser.name?' <small>you</small>':''}`
     :'Signing in…';
-  const hfI=document.getElementById('hf-insp'), cur=hfI.value;
-  const names=[...new Set(history.map(r=>r.inspector).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  hfI.innerHTML='<option value="">All Auditors</option>'+names.map(n=>`<option value="${ovEsc(n)}">${ovEsc(n)}</option>`).join('');
-  hfI.value=names.includes(cur)?cur:'';
 }
 function useAccountInspector(){
   if(editingRecordId!==null||!currentUser?.name) return;
@@ -3003,7 +2964,7 @@ async function saveInspection(updateExisting){
       history.unshift(record);
     }
     currentReportSaved=true;updatePDFButton();
-    populateHistoryFilters();renderHistory();
+    loadHome();
     if(record.assignmentId){ inAssignCache={}; loadAuditorProfile({quiet:true}); }
     setSyncChip('ok','Saved');
     const btn=document.getElementById('btn-save');
@@ -3026,7 +2987,7 @@ async function saveAsEOQI(){
     document.getElementById('edit-banner').classList.remove('show');
     updateScoreCardActionBar();
     currentReportSaved=true;updatePDFButton();
-    populateHistoryFilters();renderHistory();
+    loadHome();
     setSyncChip('ok','Saved as EOQI');
     const btn=document.getElementById('btn-save-edit');
     if(btn){btn.textContent='Saved ✓';btn.style.background='var(--good)';setTimeout(()=>{btn.textContent='Save Changes';btn.style.background='';},3000);}
@@ -3039,94 +3000,41 @@ async function saveAsEOQI(){
 // ═══════════════════════════════════════════════════════════
 // HISTORY — filters & render
 // ═══════════════════════════════════════════════════════════
-function populateHistoryFilters(){
-  const months=new Set(),buildings=new Set();
-  history.forEach(r=>{if(r.date)months.add(r.date.slice(0,7));if(r.facility)buildings.add(r.facility);});
-  const hfM=document.getElementById('hf-month');const curM=hfM.value;
-  hfM.innerHTML='<option value="">All Months</option>';
-  [...months].sort().reverse().forEach(m=>{
-    const o=document.createElement('option');o.value=m;
-    o.textContent=new Date(m+'-01').toLocaleDateString('en-GB',{month:'long',year:'numeric'});hfM.appendChild(o);
-  });
-  hfM.value=curM;
-  renderInspectorChips();
-  const hfB=document.getElementById('hf-building');const curB=hfB.value;
-  hfB.innerHTML='<option value="">All Buildings</option>';
-  [...buildings].sort().forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;hfB.appendChild(o);});
-  hfB.value=curB;
-}
 // Home overview cards — derived from the same history the archive renders,
 // so the numbers can never disagree with the list below them.
-function renderHomeStats(){
-  const now=new Date();
-  const q=Math.floor(now.getMonth()/3)+1;
-  const label=`${now.getFullYear()}-Q${q}`;
-  const qStart=new Date(now.getFullYear(),(q-1)*3,1);
-  const scores=history.map(r=>Number(r.overall)).filter(n=>!isNaN(n));
-  const thisQuarter=history.filter(r=>{
-    if(!r.date) return false;
-    const d=new Date(r.date+'T12:00:00');
-    return d>=qStart && d<=now;
-  }).length;
-  document.getElementById('hs-total').textContent=history.length;
-  document.getElementById('hs-avg').textContent=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):'–';
-  document.getElementById('hs-best').textContent=scores.length?Math.max(...scores):'–';
-  document.getElementById('hs-quarter').textContent=thisQuarter;
-  document.getElementById('hs-quarter-label').textContent=label;
-}
 
-function renderHistory(){
-  renderHomeStats();
-  const fI=document.getElementById('hf-insp').value;
-  const fM=document.getElementById('hf-month').value;
-  const fD=document.getElementById('hf-div').value;
-  const fB=document.getElementById('hf-building').value;
-  const fT=document.getElementById('hf-type').value;
-  const fS=document.getElementById('hf-search').value.toLowerCase();
-  const filtered=history.filter(r=>{
-    if(fI&&r.inspector!==fI)return false;
-    if(fM&&!r.date.startsWith(fM))return false;
-    if(fD&&r.division!==fD)return false;
-    if(fB&&r.facility!==fB)return false;
-    if(fT&&r.type!==fT)return false;
-    if(fS&&![r.inspector,r.facility,r.division,r.type,r.typeLabel].join(' ').toLowerCase().includes(fS))return false;
-    return true;
-  });
-  const sumEl=document.getElementById('hist-summary');
-  if(sumEl){
-    if(!filtered.length){sumEl.textContent='';}
-    else{const avg=Math.round(filtered.reduce((a,r)=>a+r.overall,0)/filtered.length);sumEl.textContent=`${filtered.length} record${filtered.length!==1?'s':''} · Avg score: ${avg}/100`;}
+/** Home: whole-archive figures and the latest reports, from the same source as Inspection Reports. */
+async function loadHome(){
+  try{
+    const res=await fetch('/api/reports/library?limit=6&sort=newest');
+    if(!res.ok) throw new Error('Could not load reports');
+    const d=await res.json(), o=d.overview;
+    setSyncChip('ok','Online · '+o.count+' reports');
+    document.getElementById('hs-total').textContent=o.count;
+    document.getElementById('hs-avg').textContent=o.avg??'–';
+    document.getElementById('hs-best').textContent=o.max??'–';
+    document.getElementById('hs-quarter').textContent=o.currentQuarterCount;
+    document.getElementById('hs-quarter-label').textContent=`Reports in ${o.currentQuarter}`;
+    const list=document.getElementById('hist-list');
+    list.innerHTML=d.rows.length?d.rows.map(r=>{
+      const g=r.overall!=null?grade(r.overall):null;
+      const ds=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'–';
+      return `<div class="hist-card" data-report="${r.id}" tabindex="0" role="button" title="Open this report">
+        <div class="hc-score" style="background:${g?g.color:'#9fb3c8'}">${r.overall??'–'}</div>
+        <div class="hc-info"><div class="hc-title">${ovEsc(r.building)}${r.division?' — '+ovEsc(r.division):''}</div>
+          <div class="hc-meta">${ovEsc(r.auditor||'—')} · ${ds}${r.type?' · '+ovEsc(r.type):''}</div></div>
+        ${libStatusPill(r.status)}
+        <svg data-lucide="chevron-right" width="16" height="16" style="color:var(--muted);flex-shrink:0"></svg>
+      </div>`;
+    }).join(''):'<div class="no-hist">No reports saved yet. Complete an inspection and save it from the Score Card.</div>';
+    list.onclick=e=>{ const c=e.target.closest('[data-report]'); if(c) openReport(Number(c.dataset.report)); };
+    list.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-report]')){ e.preventDefault(); openReport(Number(e.target.dataset.report)); } };
+    lucide.createIcons();
+  }catch(err){
+    setSyncChip('err','Offline — check connection');
+    document.getElementById('hist-list').innerHTML=`<div class="no-hist">${ovEsc(err.message)} — check your connection and reload.</div>`;
   }
-  const list=document.getElementById('hist-list');
-  if(!filtered.length){list.innerHTML='<div class="no-hist">No inspections match the selected filters.</div>';return;}
-  list.innerHTML='';
-  filtered.forEach(r=>{
-    const g=grade(r.overall);
-    const ds=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'–';
-    const card=document.createElement('div');card.className='hist-card';
-    card.innerHTML=`
-      <div class="hc-score" style="background:${g.color}">${r.overall}</div>
-      <div class="hc-info">
-        <div class="hc-title">${r.facility}${r.division?' — '+r.division:''}</div>
-        <div class="hc-meta">${r.inspector} · ${ds}${r.typeLabel?' · '+r.typeLabel:''}</div>
-        ${r.filename?`<div style="font-size:.68rem;color:var(--muted);margin-top:2px">${r.filename}</div>`:''}
-      </div>
-      <span class="hc-grade gp ${g.cls}">${g.label}</span>
-      <button class="hc-edit" title="Edit this inspection" onclick="editInspection(event,${r.id})">
-        <svg data-lucide="pencil" width="14" height="14"></svg>
-      </button>
-      <button class="hc-pdf" title="Export PDF for this inspection" onclick="exportHistoryPDF(event,${r.id})">
-        <svg data-lucide="file-down" width="14" height="14"></svg>
-      </button>
-      <button class="hc-del" title="Delete record" onclick="delHistory(event,${r.id})">
-        <svg data-lucide="trash-2" width="14" height="14"></svg>
-      </button>`;
-    card.onclick=(e)=>{if(e.target.closest('.hc-edit,.hc-pdf,.hc-del'))return;openReport(r.id);};
-    list.appendChild(card);
-    lucide.createIcons({nodes:[card]});
-  });
 }
-
 function reportPrintEsc(value){
   return String(value??'—').replace(/[&<>"']/g,char=>({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -3228,181 +3136,8 @@ function printInspectionReport(report){
   pw.document.close();
 }
 
-function exportHistoryPDF(e,id){
-  e.stopPropagation();
-  const r=history.find(rec=>rec.id===id);
-  if(!r){alert('Record not found.');return;}
-  return printInspectionReport({
-    inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,
-    typeLabel:r.typeLabel||r.type,overall:r.overall,
-    filename:r.filename||`${r.date||'inspection'}_${r.type||'Inspection'}_${r.facility||'facility'}.pdf`,
-    sections:r.sections||[]
-  });
 
-  const inspector=r.inspector||'—';
-  const facility=r.facility||'—';
-  const division=r.division||'—';
-  const date=r.date||'—';
-  const typeLabel=r.typeLabel||r.type||'—';
-  const overall=r.overall;
-  const og=grade(overall);
-  const fname=r.filename||`${date}_${r.type||'Inspection'}_${facility.replace(/\s+/g,'-')}.pdf`;
 
-  let grand=0,sectHtml='';
-  (r.sections||[]).forEach(sec=>{
-    grand+=sec.score;
-    const pct=Math.round(sec.score/sec.max*100);
-    const g=grade(pct);
-    let rows='';
-    (sec.items||[]).forEach((item,ii)=>{
-      const v=item.score;
-      const color=v===null?'#999':v===0?'#C0392B':v===1?'#26A8AB':'#00843D';
-      const comment=item.comment||'';
-      const photos=item.photos||[];
-      let phHtml='';
-      if(photos.length)phHtml=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${photos.map(s=>`<img src="${s}" style="width:56px;height:56px;object-fit:cover;border-radius:5px;border:2px solid #26A8AB">`).join('')}</div>`;
-      rows+=`<tr><td style="padding:6px 10px;font-size:11.5px;border-bottom:1px solid #eee;color:#102040">${ii+1}. ${item.label}</td>
-        <td style="padding:6px 10px;text-align:center;font-size:15px;font-weight:900;color:${color};border-bottom:1px solid #eee">${v!==null?v:'—'}</td>
-        <td style="padding:6px 10px;font-size:11px;color:#456080;border-bottom:1px solid #eee">${comment}${phHtml}</td></tr>`;
-    });
-    const noteRow=sec.notes?`<tr><td colspan="3" style="background:#e6f7f7;padding:8px 10px;font-size:11px;color:#26A8AB;font-style:italic">${sec.notes}</td></tr>`:'';
-    sectHtml+=`<div style="page-break-inside:avoid;margin-bottom:20px">
-      <table style="width:100%;border-collapse:collapse;border:1px solid #C8D8E4">
-        <thead><tr style="background:#0033A0;color:#fff">
-          <th colspan="2" style="padding:9px 14px;text-align:left;font-size:12.5px">${sec.title}</th>
-          <th style="padding:9px 14px;text-align:right;font-size:12px">Score: <strong style="color:#8CFEE3">${sec.score}/${sec.max}</strong> | <span style="color:#FFC846">${g.label}</span></th>
-        </tr><tr style="background:#f0f6fb">
-          <th style="padding:5px 10px;text-align:left;font-size:10px;color:#456080;font-weight:700">Item</th>
-          <th style="padding:5px 10px;text-align:center;font-size:10px;color:#456080;font-weight:700">Score</th>
-          <th style="padding:5px 10px;text-align:left;font-size:10px;color:#456080;font-weight:700">Comments / Photos</th>
-        </tr></thead><tbody>${rows}${noteRow}</tbody>
-      </table></div>`;
-  });
-
-  let scRows='';
-  (r.sections||[]).forEach(sec=>{
-    const g=grade(Math.round(sec.score/sec.max*100));
-    scRows+=`<tr style="${(r.sections.indexOf(sec))%2===0?'':'background:#f4f8fb'}">
-      <td style="padding:8px 12px;font-size:12px;font-weight:700;color:#0033A0">${sec.title}</td>
-      <td style="padding:8px 12px;text-align:center;font-size:13px;font-weight:900;color:#0033A0">${sec.score}/${sec.max}</td>
-      <td style="padding:8px 12px;text-align:center"><span style="background:${g.color}22;color:${g.color};padding:3px 11px;border-radius:20px;font-weight:800;font-size:11px">${g.label}</span></td></tr>`;
-  });
-
-  const pw=window.open('','_blank');
-  if(!pw){alert('Please allow pop-ups to export the PDF.');return;}
-  pw.document.write(`<!DOCTYPE html><html><head>
-  <meta charset="UTF-8"><title>${fname}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
-    /* Zero out @page margins to completely eliminate browser header/footer zone */
-    @page{size:A4;margin:0mm}
-    html,body{margin:0;padding:0;font-family:Cairo,sans-serif;color:#102040;direction:ltr;unicode-bidi:bidi-override;-webkit-locale:"en";language:en}
-    /* We control our own page padding instead */
-    .pdf-body-wrap{padding:15mm 13mm 16mm 13mm}
-    a,a:visited{color:inherit!important;text-decoration:none!important;pointer-events:none}
-    @media print{
-      .pdf-body-wrap{padding-bottom:10mm}
-    }
-  </style>
-  </head><body>
-  <script>
-    function fmtDate(str){if(!str)return '—';var months=['January','February','March','April','May','June','July','August','September','October','November','December'];var d=new Date(str+'T12:00:00');return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();}
-    function fmtNow(){var months=['January','February','March','April','May','June','July','August','September','October','November','December'];var d=new Date();return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();}
-  <\/script>
-  <div class="pdf-body-wrap">
-  <div style="background:linear-gradient(145deg,#001540 0%,#0033A0 55%,#0a5f60 100%);color:#fff;padding:34px 42px;border-bottom:4px solid #26A8AB;margin-bottom:24px">
-    <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#8CFEE3;font-weight:700;margin-bottom:4px">OSD · Facility Experience</div>
-    <h1 style="font-size:19px;font-weight:900;margin:0 0 4px">Quality Assurance Check List</h1>
-    <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0 0 20px">Quality assurance inspection of end-to-end facility user experience.</p>
-    <table style="width:100%;border-collapse:collapse"><tr>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Auditor</div><div style="font-size:12px;font-weight:800">${inspector}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Facility</div><div style="font-size:12px;font-weight:800">${facility}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Division</div><div style="font-size:12px;font-weight:800">${division}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Date</div><div style="font-size:12px;font-weight:800">${date}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Type</div><div style="font-size:11px;font-weight:800">${typeLabel}</div></td>
-      <td style="text-align:right"><div style="background:rgba(140,254,227,.15);border:3px solid #8CFEE3;border-radius:50%;width:76px;height:76px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center">
-        <div style="font-size:24px;font-weight:900;color:#8CFEE3;line-height:1">${overall}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.45)">/100</div>
-        <div style="font-size:8px;font-weight:800;color:#FFC846">${og.label}</div>
-      </div></td></tr></table></div>
-  <h2 style="font-size:14px;font-weight:900;color:#0033A0;margin-bottom:10px">Journey Map Score Card</h2>
-  <table style="width:100%;border:1px solid #C8D8E4;margin-bottom:20px;border-collapse:collapse">
-    <thead><tr style="background:#0033A0;color:#fff">
-      <th style="padding:8px 12px;text-align:left;font-size:10.5px">Section</th>
-      <th style="padding:8px 12px;text-align:center;font-size:10.5px">Score /10</th>
-      <th style="padding:8px 12px;text-align:center;font-size:10.5px">Grade</th>
-    </tr></thead>
-    <tbody>${scRows}</tbody>
-    <tfoot><tr style="background:#0033A0;color:#fff">
-      <td style="padding:10px 12px;font-weight:900;font-size:12px">Overall Total</td>
-      <td style="padding:10px 12px;text-align:center;font-weight:900;font-size:15px;color:#8CFEE3">${overall}/100</td>
-      <td style="padding:10px 12px;text-align:center;font-weight:800;font-size:12px;color:#FFC846">${og.label}</td>
-    </tr></tfoot>
-  </table>
-  <div style="background:#fffbeb;border:1px solid #f0c040;border-left:4px solid #D48000;border-radius:6px;padding:10px 14px;font-size:10.5px;color:#6b4200;margin-bottom:20px">
-    Areas requiring attention and improvement must be rectified and documented before the next inspection.
-  </div>
-  <h2 style="font-size:14px;font-weight:900;color:#0033A0;margin-bottom:14px">Detailed Inspection Report</h2>
-  ${sectHtml}
-  <div style="margin-top:36px;border-top:2px solid #0033A0;padding-top:14px;display:flex;justify-content:flex-start">
-    <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.1em">Auditor Signature</div>
-      <div style="width:180px;border-bottom:1.5px solid #0033A0;margin-top:28px"></div>
-      <div style="font-size:10px;color:#456080;margin-top:4px">${inspector}</div></div>
-
-  </div>
-  <script>
-  document.title="${fname}";
-  document.documentElement.lang="en";
-  document.documentElement.setAttribute("lang","en");
-  window.onload=function(){ window.print(); };
-<\/script>
-</div><!-- end pdf-body-wrap -->
-</body></html>`);
-  pw.document.close();
-}
-
-async function delHistory(e,id){
-  e.stopPropagation();
-  if(!confirm('Delete this inspection record? This cannot be undone.'))return;
-  setSyncChip('sync','Deleting…');showOverlay('Deleting record…');
-  try{
-    await dbDelete(id);
-    history=history.filter(r=>r.id!==id);
-    populateHistoryFilters();renderHistory();
-    setSyncChip('ok','Deleted');
-  }catch(err){
-    setSyncChip('err','Delete failed');
-    alert('Could not delete from cloud: '+err.message);
-  }finally{hideOverlay();}
-}
-
-function showHistDetail(r){
-  const g=grade(r.overall);
-  const ds=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'–';
-  document.getElementById('hd-title').textContent=`${r.facility}${r.division?' — '+r.division:''} · ${r.overall}/100 (${g.label})`;
-  document.getElementById('hd-meta').textContent=`Auditor: ${r.inspector} · ${ds} · ${r.typeLabel||r.type||'–'}`;
-  const body=document.getElementById('hd-body');body.innerHTML='';
-  (r.sections||[]).forEach(sec=>{
-    const pct=Math.round(sec.score/sec.max*100);const sg=grade(pct);
-    const div2=document.createElement('div');div2.className='hd-sec';
-    let iHtml='';
-    (sec.items||[]).forEach(item=>{
-      const v=item.score;
-      const dc=v===null?'#ccc':v===0?'#C0392B':v===1?'#26A8AB':'#00843D';
-      const dt2=v===null?'–':String(v);
-      let pH='';
-      if(item.photos&&item.photos.length) pH=`<div class="hd-photos">${item.photos.map(src=>`<img src="${src}" onclick="openLB('${src}')">`).join('')}</div>`;
-      iHtml+=`<div class="hd-item"><div class="hd-dot" style="background:${dc}">${dt2}</div>
-        <div style="flex:1"><div>${item.label}</div>${item.comment?`<div style="color:var(--muted);font-size:.75rem;margin-top:2px">${item.comment}</div>`:''}${pH}</div></div>`;
-    });
-    div2.innerHTML=`<div class="hd-sec-head"><span>${sec.title}</span><span>${sec.score}/${sec.max} — ${sg.label}</span></div>
-      <div class="hd-items">${iHtml}${sec.notes?`<div style="background:#e6f7f7;padding:8px;border-radius:6px;font-size:.78rem;color:var(--teal);margin-top:4px">${sec.notes}</div>`:''}</div>`;
-    body.appendChild(div2);
-  });
-  document.getElementById('hd-modal').classList.add('open');
-}
-function closeHistDetail(){document.getElementById('hd-modal').classList.remove('open');}
 
 // ═══════════════════════════════════════════════════════════
 // EDIT FROM HISTORY
@@ -3482,123 +3217,6 @@ function exportPDF(){
     filename:buildFilenameFrom(reportType,document.getElementById('meta-date').value,document.getElementById('meta-facility').value,document.getElementById('meta-division').value,activeInspector),
     sections:reportSections
   });
-  const inspector=activeInspector;
-  const facility=document.getElementById('meta-facility').value||'—';
-  const division=document.getElementById('meta-division').value||'—';
-  const date=document.getElementById('meta-date').value||'—';
-  const tv=document.getElementById('meta-type').value;
-  const typeLabel=tv==='BOQI'?'Beginning of Quarter Inspection (BOQI)':tv==='EOQI'?'End of Quarter Inspection (EOQI)':tv==='Follow-up'?'Follow-up and Edit':'—';
-  const fname=buildFilenameFrom(tv,date,facility,division,inspector);
-  let grand=0,sectHtml='';
-  SECTIONS.forEach((sec,si)=>{
-    const{total,max}=getSecScore(si);grand+=total;
-    const pct=Math.round(total/max*100);const g=grade(pct);
-    let rows='';
-    sec.items.forEach((item,ii)=>{
-      const v=curState().scores[si][ii];
-      const color=v===null?'#999':v===0?'#C0392B':v===1?'#26A8AB':'#00843D';
-      const comment=curState().comments[si][ii];
-      const photos=curState().photos[si][ii];
-      let phHtml='';
-      if(photos.length)phHtml=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${photos.map(s=>`<img src="${s}" style="width:56px;height:56px;object-fit:cover;border-radius:5px;border:2px solid #26A8AB">`).join('')}</div>`;
-      rows+=`<tr><td style="padding:6px 10px;font-size:11.5px;border-bottom:1px solid #eee;color:#102040">${ii+1}. ${item}</td>
-        <td style="padding:6px 10px;text-align:center;font-size:15px;font-weight:900;color:${color};border-bottom:1px solid #eee">${v!==null?v:'—'}</td>
-        <td style="padding:6px 10px;font-size:11px;color:#456080;border-bottom:1px solid #eee">${comment||''}${phHtml}</td></tr>`;
-    });
-    const noteRow=curState().notes[si]?`<tr><td colspan="3" style="background:#e6f7f7;padding:8px 10px;font-size:11px;color:#26A8AB;font-style:italic">${curState().notes[si]}</td></tr>`:'';
-    sectHtml+=`<div style="page-break-inside:avoid;margin-bottom:20px">
-      <table style="width:100%;border-collapse:collapse;border:1px solid #C8D8E4">
-        <thead><tr style="background:#0033A0;color:#fff">
-          <th colspan="2" style="padding:9px 14px;text-align:left;font-size:12.5px">${sec.title}</th>
-          <th style="padding:9px 14px;text-align:right;font-size:12px">Score: <strong style="color:#8CFEE3">${total}/${max}</strong> | <span style="color:#FFC846">${g.label}</span></th>
-        </tr><tr style="background:#f0f6fb">
-          <th style="padding:5px 10px;text-align:left;font-size:10px;color:#456080;font-weight:700">Item</th>
-          <th style="padding:5px 10px;text-align:center;font-size:10px;color:#456080;font-weight:700">Score</th>
-          <th style="padding:5px 10px;text-align:left;font-size:10px;color:#456080;font-weight:700">Comments / Photos</th>
-        </tr></thead><tbody>${rows}${noteRow}</tbody>
-      </table></div>`;
-  });
-  const overall=Math.round(grand);const og=grade(overall);
-  let scRows='';
-  SECTIONS.forEach((sec,si)=>{
-    const{total,max}=getSecScore(si);const g=grade(Math.round(total/max*100));
-    scRows+=`<tr style="${si%2===0?'':'background:#f4f8fb'}">
-      <td style="padding:8px 12px;font-size:12px;font-weight:700;color:#0033A0">${sec.title}</td>
-      <td style="padding:8px 12px;text-align:center;font-size:13px;font-weight:900;color:#0033A0">${total}/${max}</td>
-      <td style="padding:8px 12px;text-align:center"><span style="background:${g.color}22;color:${g.color};padding:3px 11px;border-radius:20px;font-weight:800;font-size:11px">${g.label}</span></td></tr>`;
-  });
-  const pw=window.open('','_blank');
-  if(!pw){alert('Please allow pop-ups to export the PDF.');return;}
-  pw.document.write(`<!DOCTYPE html><html><head>
-  <meta charset="UTF-8"><title>${fname}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
-    /* Zero out @page margins to completely eliminate browser header/footer zone */
-    @page{size:A4;margin:0mm}
-    html,body{margin:0;padding:0;font-family:Cairo,sans-serif;color:#102040;direction:ltr;unicode-bidi:bidi-override;-webkit-locale:"en";language:en}
-    /* We control our own page padding instead */
-    .pdf-body-wrap{padding:15mm 13mm 16mm 13mm}
-    a,a:visited{color:inherit!important;text-decoration:none!important;pointer-events:none}
-    @media print{
-      .pdf-body-wrap{padding-bottom:10mm}
-    }
-  </style>
-  </head><body>
-  <script>
-    function fmtDate(str){if(!str)return '—';var months=['January','February','March','April','May','June','July','August','September','October','November','December'];var d=new Date(str+'T12:00:00');return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();}
-    function fmtNow(){var months=['January','February','March','April','May','June','July','August','September','October','November','December'];var d=new Date();return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();}
-  <\/script>
-  <div class="pdf-body-wrap">
-  <div style="background:linear-gradient(145deg,#001540 0%,#0033A0 55%,#0a5f60 100%);color:#fff;padding:34px 42px;border-bottom:4px solid #26A8AB;margin-bottom:24px">
-    <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#8CFEE3;font-weight:700;margin-bottom:4px">OSD · Facility Experience</div>
-    <h1 style="font-size:19px;font-weight:900;margin:0 0 4px">Quality Assurance Check List</h1>
-    <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0 0 20px">Quality assurance inspection of end-to-end facility user experience.</p>
-    <table style="width:100%;border-collapse:collapse"><tr>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Auditor</div><div style="font-size:12px;font-weight:800">${inspector}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Facility</div><div style="font-size:12px;font-weight:800">${facility}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Division</div><div style="font-size:12px;font-weight:800">${division}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Date</div><div style="font-size:12px;font-weight:800">${date}</div></td>
-      <td style="padding-right:14px"><div style="font-size:8px;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.12em">Type</div><div style="font-size:11px;font-weight:800">${typeLabel}</div></td>
-      <td style="text-align:right"><div style="background:rgba(140,254,227,.15);border:3px solid #8CFEE3;border-radius:50%;width:76px;height:76px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center">
-        <div style="font-size:24px;font-weight:900;color:#8CFEE3;line-height:1">${overall}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.45)">/100</div>
-        <div style="font-size:8px;font-weight:800;color:#FFC846">${og.label}</div>
-      </div></td></tr></table></div>
-  <h2 style="font-size:14px;font-weight:900;color:#0033A0;margin-bottom:10px">Journey Map Score Card</h2>
-  <table style="width:100%;border:1px solid #C8D8E4;margin-bottom:20px;border-collapse:collapse">
-    <thead><tr style="background:#0033A0;color:#fff">
-      <th style="padding:8px 12px;text-align:left;font-size:10.5px">Section</th>
-      <th style="padding:8px 12px;text-align:center;font-size:10.5px">Score /10</th>
-      <th style="padding:8px 12px;text-align:center;font-size:10.5px">Grade</th>
-    </tr></thead>
-    <tbody>${scRows}</tbody>
-    <tfoot><tr style="background:#0033A0;color:#fff">
-      <td style="padding:10px 12px;font-weight:900;font-size:12px">Overall Total</td>
-      <td style="padding:10px 12px;text-align:center;font-weight:900;font-size:15px;color:#8CFEE3">${overall}/100</td>
-      <td style="padding:10px 12px;text-align:center;font-weight:800;font-size:12px;color:#FFC846">${og.label}</td>
-    </tr></tfoot>
-  </table>
-  <div style="background:#fffbeb;border:1px solid #f0c040;border-left:4px solid #D48000;border-radius:6px;padding:10px 14px;font-size:10.5px;color:#6b4200;margin-bottom:20px">
-    Areas requiring attention and improvement must be rectified and documented before the next inspection.
-  </div>
-  <h2 style="font-size:14px;font-weight:900;color:#0033A0;margin-bottom:14px">Detailed Inspection Report</h2>
-  ${sectHtml}
-  <div style="margin-top:36px;border-top:2px solid #0033A0;padding-top:14px;display:flex;justify-content:flex-start">
-    <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.1em">Auditor Signature</div>
-      <div style="width:180px;border-bottom:1.5px solid #0033A0;margin-top:28px"></div>
-      <div style="font-size:10px;color:#456080;margin-top:4px">${inspector}</div></div>
-
-  </div>
-  <script>
-  document.title="${fname}";
-  document.documentElement.lang="en";
-  document.documentElement.setAttribute("lang","en");
-  window.onload=function(){ window.print(); };
-<\/script>
-</div><!-- end pdf-body-wrap -->
-</body></html>`);
-  pw.document.close();
 }
 
 function resetForm(){
@@ -3617,7 +3235,6 @@ document.getElementById('pb-steps').addEventListener('click',e=>{
   if(step) nav(step.dataset.step==='sections'?lastSection:step.dataset.step); // Sections reopens the last one you had open
 });
 document.getElementById('lb').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLB();});
-document.getElementById('hd-modal').addEventListener('click',e=>{if(e.target===document.getElementById('hd-modal'))closeHistDetail();});
 document.getElementById('meta-date').valueAsDate=new Date();
 
 buildSections();
@@ -3639,23 +3256,10 @@ updateScoreCardActionBar();
   else updateTopBar('pg-home');
 }
 
-// ── Boot: connect to the database and load history ──
+// ── Boot: Home figures and latest reports (full records load only when a report is opened) ──
 (async()=>{
   showOverlay('Connecting to database…');
-  try{
-    history = await dbLoadHistory();
-    setSyncChip('ok','Online · '+history.length+' records');
-    populateHistoryFilters();
-    renderHistory();
-  }catch(e){
-    setSyncChip('err','Offline — check connection');
-    // Fall back to empty
-    history=[];
-    renderHistory();
-    alert('Could not connect to the database.\n\nPlease check your internet connection and reload the page.\n\nError: '+e.message);
-  }finally{
-    hideOverlay();
-  }
+  try{ await loadHome(); }finally{ hideOverlay(); }
 })();
 
 // ═══════════════════════════════════════════════════════════
@@ -3933,15 +3537,12 @@ function auRenderPerformance(){
   const ctx=document.getElementById('au-q-chart');
   if(auCharts.q) auCharts.q.destroy();
   auCharts.q=new Chart(ctx,{
-    type:'bar',
+    type:'line',
     data:{labels:p.byQuarter.map(x=>x.quarter),datasets:[
-      {type:'line',label:'Average score',data:p.byQuarter.map(x=>x.avgScore),borderColor:'#0033A0',backgroundColor:'#0033A0',tension:.3,spanGaps:true,yAxisID:'y'},
-      {type:'bar',label:'Assigned',data:p.byQuarter.map(x=>x.assigned),backgroundColor:'rgba(38,168,171,.25)',borderRadius:5,yAxisID:'y1'},
-      {type:'bar',label:'Completed',data:p.byQuarter.map(x=>x.completed),backgroundColor:'#26A8AB',borderRadius:5,yAxisID:'y1'},
+      {label:'Average score',data:p.byQuarter.map(x=>x.avgScore),borderColor:'#2a78d6',backgroundColor:'#2a78d6',borderWidth:2,pointRadius:4,pointBorderColor:'#fff',pointBorderWidth:2,tension:.25,spanGaps:true},
     ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      scales:{y:{beginAtZero:true,max:100,ticks:{font:{family:'Cairo'}}},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},ticks:{precision:0,font:{family:'Cairo'}}},x:{ticks:{font:{family:'Cairo',weight:'700'}}}},
-      plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo',weight:'700'}}}}},
+    options:vizOptions({scales:{y:{beginAtZero:true,max:100}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{ const x=p.byQuarter[c.dataIndex]; return `${c.raw??'–'} average · ${x.completed} of ${x.assigned} completed`; }}}}}),
   });
 
   const secs=[...p.sections].sort((a,b)=>b.avg-a.avg);
@@ -4497,7 +4098,7 @@ function renderOfRows(fresh=[]){
       <td>${ovEsc(b.division)}<small>${ovEsc(b.area)}</small></td>
       <td>${auditorCell}</td>
       <td><span class="ov-pill ${b.status}">${label[b.status]}</span></td>
-      <td>${done?`${ovScore(b.score)}<small>${ovEsc(b.inspectionDate||'')}${b.inspector?' · '+ovEsc(b.inspector):''}</small>`:'<span style="color:var(--muted)">–</span>'}</td>
+      <td>${done?`${b.inspectionId?`<button class="rp-link" style="padding:0" onclick="openReport(${b.inspectionId})" title="Open the report">${ovScore(b.score)}</button>`:ovScore(b.score)}<small>${ovEsc(b.inspectionDate||'')}${b.inspector?' · '+ovEsc(b.inspector):''}</small>`:'<span style="color:var(--muted)">–</span>'}</td>
     </tr>`;
   }).join(''):'<tr><td colspan="6" class="ov-empty">No buildings match these filters.</td></tr>';
   const scopedTotal=ofData.buildings.filter(b=>!ofVal('of-division')||b.division===ofVal('of-division')).length;
@@ -4752,6 +4353,7 @@ function initReports(){
     onChange();
   });
   document.getElementById('rp-sort').addEventListener('change',()=>{ rpShown=100; rpSave(); renderRpDetail(); });
+  document.getElementById('rp-detail-rows').addEventListener('click',e=>{ const tr=e.target.closest('tr[data-report]'); if(tr) openReport(Number(tr.dataset.report)); });
   document.getElementById('rp-more').addEventListener('click',()=>{ rpShown+=100; renderRpDetail(); });
   document.getElementById('rp-export-summary').addEventListener('click',exportRpSummary);
   document.getElementById('rp-export-detail').addEventListener('click',exportRpDetail);
@@ -4927,7 +4529,7 @@ function renderRpDetail(list=rpFilter()){
   const rows=rpSorted(list), shown=rows.slice(0,rpShown);
   document.getElementById('rp-detail-rows').innerHTML=shown.length?shown.map(x=>{
     const g=typeof x.overall==='number'?grade(x.overall):null;
-    return `<tr>
+    return `<tr class="clickable" data-report="${x.id}" title="Open this report">
       <td style="white-space:nowrap">${ovEsc(x.date)}<small>${ovEsc(x.quarter||'')}</small></td>
       <td><b>${ovEsc(x.building)}</b>${x.location?`<small>${ovEsc(x.location)}</small>`:''}</td>
       <td>${ovEsc(x.division||'—')}<small>${ovEsc(x.area||'')}</small></td>
@@ -4941,6 +4543,75 @@ function renderRpDetail(list=rpFilter()){
   more.hidden=rows.length<=rpShown;
   more.textContent=`Show more (${rows.length-shown.length} remaining)`;
 }
+
+// ═══════════════════════════════════════════════════════════
+// ⓘ EXPLANATIONS — a short, plain description for each analysis tool, shown on demand
+// ═══════════════════════════════════════════════════════════
+const TIPS={
+  'home-kpis':['What these numbers are',['Reports on file, average and highest score count every saved report in the system (not just the list below).','“Reports in” counts reports dated in the current quarter. The list shows the six newest reports — open one to review it, or search them all in Inspection Reports.']],
+  'lib-status':['Review status and search',['<b>Needs review</b>: saved and not yet reviewed. <b>Updated — review again</b>: edited after a decision. <b>Changes requested</b>: sent back to the auditor. <b>Approved</b>: accepted.','Search looks at the building, auditor, division, area and report number. Tick “Also search comments & notes” to look inside what auditors wrote.']],
+  'ins-kpis':['Summary cards',['For the chosen quarter, type and division:','<ul><li><b>Inspections</b> — reports saved.</li><li><b>Average score</b> — mean overall score out of 100.</li><li><b>Buildings covered</b> — buildings in the list with at least one inspection ÷ all buildings.</li><li><b>Good or excellent</b> — share scoring 81 or more.</li><li><b>Below acceptable</b> — reports scoring 70 or less.</li></ul>','Arrows compare with the previous quarter: green is better, red is worse.']],
+  'ins-trend':['Average score by quarter',['The average overall score for each of the last 8 quarters — one line per division, or the selected division next to all divisions.','Hover a point to see how many inspections it is based on. “View as table” shows the same numbers.']],
+  'ins-heat':['Section heatmap',['Each cell is the average score (out of 10) of one checklist section, for a division — or for an area once you pick a division — in the chosen quarter.','Colours follow the rating scale: red = poor or critical, grey = acceptable, blue = good or excellent. “All” is every division together; “Overall” is the full score ÷ 10.','Click a cell to open those inspections in Report Builder.']],
+  'ins-board':['Ranking',['Divisions (or areas) sorted by this quarter’s average score.','<b>Change</b> — difference from last quarter’s average. <b>Coverage</b> — buildings inspected ÷ buildings in the list. <b>Weakest section</b> — the section with the lowest average.','Click a division to see its areas.']],
+  'ins-fail':['Most often not compliant',['Checklist items marked “not compliant” most often this quarter. The % is not-compliant answers ÷ all answers for that item.','Only reports scored item by item count here — imported overall scores are left out.']],
+  'ins-attention':['Buildings that need attention',['Buildings with the lowest latest score this quarter. <b>Change</b> compares with the same building’s latest score last quarter.','Click a building to see all its inspections.']],
+  'ins-movers':['Biggest movers',['Buildings with both a BOQI and an EOQI this quarter, ranked by how much the score changed between the beginning and the end of the quarter.']],
+  'rp-filters':['Filters, grouping and saved reports',['Every filter you set must match (for example CAOSD + EOQI + Q3). <b>Group by</b> decides how the summary, chart and table below are split.','<b>Save report</b> keeps this exact setup to reopen later; tick “share” to make it visible to everyone who can use Analytics.']],
+  'rp-summary':['Summary table',['Each row is one group of the matching inspections.','<ul><li><b>Average / Min / Max</b> — of the overall score.</li><li><b>Std dev</b> — how spread out the scores are: small = consistent, large = uneven.</li><li><b>Rating mix</b> — share of each rating.</li><li><b>BOQI → EOQI</b> — the two averages inside the group and the change.</li></ul>','Click a row to drill down (division → area → building).']],
+  'rp-chart':['Group chart',['<b>Average</b>: the average score of each group, coloured by rating. <b>Std deviation</b>: how uneven scores are inside each group — taller bars mean less consistent results.','Up to 25 groups are drawn; the table lists all of them.']],
+  'rp-trends':['Over time and by section',['Left: the average score over time — per quarter, per month, or every single inspection. Right: the average of each checklist section, out of 10, for the matching inspections.']],
+  'rp-detail':['Matching inspections',['Every inspection that matches the filters above. Click a row to open the full report.']],
+  'cmp':['Compare two periods',['Pick period A and period B (each with its own inspection type). The cards show A → B and the change.','The chart and table split the comparison by division, area, section (out of 10) or auditor. <b>Change = B − A</b>.']],
+  'cmp-table':['Changes table',['Sorted by the biggest drop first so declines stand out. The small number under each average is how many inspections (or scored sections) it is based on.']],
+  'dq-unlinked':['Not linked to a building',['The building name on these reports doesn’t match any name in the buildings list, so Analytics can’t place them in a division or area. The suggestion is the closest name in the list.']],
+  'dq-dups':['Possible duplicates',['The same building has more than one BOQI (or more than one EOQI) in the same quarter. Keep the right one, or confirm both are intended.']],
+  'dq-incomplete':['Incomplete scoring',['Reports saved with unanswered checklist items. Imported overall scores (with no item detail) also appear here.']],
+  'dq-missing':['Missing details',['Reports without a type, date, division or auditor — they drop out of any filter that uses the missing field.']],
+  'dq-coverage':['Coverage',['For each division, how many buildings in the list have at least one inspection in the most recent quarter that has data.']],
+  'ov-kpis':['Team overview cards',['For the chosen quarter, type and division:','<ul><li><b>Assignments completed</b> — assignments with a saved inspection ÷ all assignments.</li><li><b>Buildings assigned</b> — buildings that have an assignment ÷ buildings in the list.</li><li><b>Average score</b> — mean overall score of the inspections.</li><li><b>Inspections</b> — reports saved. <b>Active auditors</b> — auditor accounts in use.</li></ul>']],
+  'ov-division':['By division',['Completion of assignments and the average score for each division. Click a division to focus the whole page on it.']],
+  'ov-team':['Officers and auditors',['Auditors (and anyone holding buildings): buildings assigned, how many are done and their average score on completed work. Officers: assignments they made and how many are complete.','Click a person to open their profile.']],
+  'ov-area':['By area',['Buildings, assignments, completion and average score for each area.']],
+  'ov-building':['By building',['Every building with its status for the filters: <b>Unassigned</b>, <b>Pending</b> (assigned, not inspected yet) or <b>Completed</b>, plus its number of inspections and latest score.']],
+  'of-kpis':['Assign & Track cards',['For the chosen quarter and type: <b>Assigned</b> = buildings with someone assigned; <b>Completion</b> = completed ÷ assigned; <b>Pending</b> = assigned but not inspected; <b>Unassigned</b> = still need someone.','Click a card to filter the buildings table. The page refreshes itself every 30 seconds.']],
+  'of-team':['Team progress',['One card per person holding buildings this quarter: completion %, assigned / done / pending, average score of completed buildings and when they last submitted. Click a card to show only their buildings.']],
+  'of-area':['Progress by area',['How many buildings in each area are assigned, and how many of those are completed.']],
+  'of-activity':['Recent activity',['The latest assignments and completed inspections for this quarter.']],
+  'of-buildings':['Assigning buildings',['Choose a person for each building, or tick several and use <b>Assign</b> or <b>Distribute evenly</b> (spreads them across auditors, lightest workload first, keeping each area together).','Buildings that were already inspected are locked. Click a score to open that report.']],
+  'au-carried':['Still open from earlier quarters',['Buildings assigned in a previous quarter that were never inspected. They still count as open work.']],
+  'au-schedule':['Quarter schedule',['Key dates for the quarter and how much of this person’s work is done against them.']],
+  'au-quality':['Quality of work',['Across all quarters: inspections completed out of those assigned, the average score of completed work, and the average time from assignment to submission.','The chart shows the average score per quarter (hover for assigned and completed counts); the section chart shows their average per section out of 10.']],
+  'sc-scale':['Rating scale',['The five rating bands used everywhere in the system. The highlighted band is where this inspection’s overall score falls.']],
+  'sc-sections':['Results by section',['Each section’s score out of 10, how many of its items are answered, and its grade. Click a section to go back and change it.']],
+};
+function toggleTip(btn){
+  const key=btn.dataset.tip, tip=TIPS[key];
+  if(!tip) return;
+  const host=btn.closest('.hist-hdr,.ov-panel-hd,.hist-filters,.lib-bar')||btn.parentElement;
+  let box=host.nextElementSibling;
+  if(!box||!box.classList.contains('tip-box')||box.dataset.tip!==key){
+    box=document.createElement('div');
+    box.className='tip-box'; box.dataset.tip=key; box.hidden=true; box.setAttribute('role','note');
+    box.innerHTML=`<i aria-hidden="true">i</i><div><b>${tip[0]}</b>${tip[1].map(t=>t.startsWith('<ul>')?t:`<p>${t}</p>`).join('')}</div><button type="button" class="tip-close" aria-label="Hide explanation">×</button>`;
+    host.after(box);
+  }
+  const open=box.hidden;
+  box.hidden=!open;
+  btn.classList.toggle('on',open);
+  btn.setAttribute('aria-expanded',String(open));
+}
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('.info-tip');
+  if(btn){ e.preventDefault(); e.stopPropagation(); toggleTip(btn); return; }
+  const close=e.target.closest('.tip-close');
+  if(close){
+    const box=close.closest('.tip-box');
+    box.hidden=true;
+    const b=box.previousElementSibling?.querySelector?.(`.info-tip[data-tip="${box.dataset.tip}"]`)||document.querySelector(`.info-tip[data-tip="${box.dataset.tip}"]`);
+    if(b){ b.classList.remove('on'); b.setAttribute('aria-expanded','false'); b.focus(); }
+  }
+},true);
 
 // ═══════════════════════════════════════════════════════════
 // INSPECTION REPORTS — search, open, review
@@ -5155,6 +4826,7 @@ function renderReportPanel(){
       ${hasPerm('export')?'<button class="btn br" data-rv="pdf"><svg data-lucide="file-down" width="15" height="15"></svg> Download PDF</button>':''}
       ${canEdit?'<button class="btn bo" data-rv="edit"><svg data-lucide="pencil" width="15" height="15"></svg> Edit report</button>':''}
       <button class="rp-link" data-rv="link"><svg data-lucide="link" width="14" height="14" style="vertical-align:-3px"></svg> Copy link</button>
+      ${hasPerm('delete')?'<button class="rp-link" data-rv="delete" style="color:var(--danger);margin-left:auto"><svg data-lucide="trash-2" width="14" height="14" style="vertical-align:-3px"></svg> Delete report</button>':''}
     </div>
     <section><h4>Checklist</h4>${sections||'<p class="ad-note">This report has no section scores (for example, imported trial data).</p>'}</section>
     <section><h4>Review history</h4><ul class="ov-feed ad-log">${history}</ul></section>`;
@@ -5168,6 +4840,17 @@ async function rvAction(act){
       filename:r.filename||`${r.date||'inspection'}_${r.type||'Inspection'}_${r.facility||'facility'}.pdf`,sections:r.sections||[]});
   }
   if(act==='edit'){ closeReport(); return editInspection({stopPropagation(){}},r.id,r); }
+  if(act==='delete'){
+    if(!confirm(`Delete the report for ${s.building} (${s.date})? This cannot be undone.`)) return;
+    try{
+      await dbDelete(r.id);
+      showToast('Report deleted'); closeReport();
+      if(document.getElementById('pg-library').classList.contains('active')) loadLibrary();
+      if(document.getElementById('pg-home').classList.contains('active')) loadHome();
+      refreshReviewBadge(); rpData=null;
+    }catch(err){ showToast('Could not delete: '+err.message,true); }
+    return;
+  }
   if(act==='link'){
     const url=`${location.origin}/app#pg-library/${r.id}`;
     try{ await navigator.clipboard.writeText(url); showToast('Link copied'); }catch{ prompt('Copy this link:',url); }
@@ -6274,7 +5957,7 @@ function adRenderAudit(){
       renderTeamTabs(teamPages);
     }
     renderHomeActions(user,teamPages);
-    if(!user.canExport){ document.getElementById('export-csv-btn')?.remove(); document.querySelectorAll('.rp-export').forEach(b=>b.remove()); document.body.classList.add('no-export'); }
+    if(!user.canExport){ document.querySelectorAll('.rp-export').forEach(b=>b.remove()); document.body.classList.add('no-export'); }
     if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
     document.body.classList.toggle('no-delete',!user.canDelete);
     document.body.classList.toggle('view-only',!user.canEdit);

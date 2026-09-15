@@ -350,7 +350,7 @@ async function officerBoard(env, viewer, url) {
     results.set(row.assignment_id, {
       completedAt: prev ? prev.completedAt : row.created_at,
       score: typeof row.overall === 'number' ? Math.round(row.overall) : (prev ? prev.score : null),
-      inspector: row.inspector, date: row.date, submissions: (prev ? prev.submissions : 0) + 1,
+      inspector: row.inspector, date: row.date, submissions: (prev ? prev.submissions : 0) + 1, inspectionId: row.id,
     });
   }
 
@@ -371,6 +371,7 @@ async function officerBoard(env, viewer, url) {
       completedAt: res ? res.completedAt : null,
       inspectionDate: res ? res.date : null,
       inspector: res ? res.inspector : null,
+      inspectionId: res ? res.inspectionId : null,
     };
   });
 
@@ -607,7 +608,8 @@ function quarterOf(date) {
   return m ? `${m[1]}-Q${Math.floor((Number(m[2]) - 1) / 3) + 1}` : null;
 }
 const normName = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
-const average = (xs) => (xs.length ? Math.round(xs.reduce((sum, x) => sum + x, 0) / xs.length) : null);
+// One decimal everywhere, so the same average reads the same on Home, Team Overview, profiles and Analytics.
+const average = (xs) => (xs.length ? Math.round((xs.reduce((sum, x) => sum + x, 0) / xs.length) * 10) / 10 : null);
 
 async function leaderOverview(env, url) {
   const quarter = url.searchParams.get('quarter') || 'all';
@@ -946,7 +948,15 @@ async function reportLibrary(env, user, url) {
   );
 
   const uniq = (xs) => [...new Set(xs.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  // Whole-archive figures for Home (independent of search and filters).
+  const scored = all.map((r) => r.overall).filter((v) => typeof v === 'number');
+  const currentQuarter = quarterOf(new Date().toISOString().slice(0, 10));
+  const overview = {
+    count: all.length, avg: average(scored), max: scored.length ? Math.max(...scored) : null,
+    currentQuarter, currentQuarterCount: all.filter((r) => r.quarter === currentQuarter).length,
+  };
   return json({
+    overview,
     total: list.length, offset, limit,
     rows: list.slice(offset, offset + limit).map((r) => ({ ...r, own: isOwnReport(user, r), snippet: snippets.get(r.id) || null })),
     counts,
