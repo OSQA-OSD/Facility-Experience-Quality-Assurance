@@ -1156,41 +1156,26 @@ async function handleNotifications(request, env, path, user) {
   return fail('not found', 404);
 }
 
-/* ── CSV export ─────────────────────────────────────────── */
+/* ── Item-level export ─────────────────────────────────── */
 
-const csvCell = (v) => {
-  const s = v == null ? '' : String(v);
-  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-};
-
-async function exportCsv(env) {
-  const records = await listInspections(env, 10000);
-  const head = ['ID', 'Auditor', 'Facility', 'Division', 'Date',
-                'Type', 'Type Label', 'Overall Score', 'Section', 'Item', 'Score', 'Comment'];
-  const lines = [head.join(',')];
-
-  for (const rec of records) {
-    const base = [rec.id, rec.inspector, rec.facility, rec.division,
-                  rec.date, rec.type, rec.typeLabel, rec.overall];
-    const sections = Array.isArray(rec.sections) ? rec.sections : [];
-    if (!sections.length) { lines.push([...base, '', '', '', ''].map(csvCell).join(',')); continue; }
-    for (const sec of sections) {
-      const items = Array.isArray(sec?.items) ? sec.items : [];
-      if (!items.length) { lines.push([...base, sec?.title ?? '', '', '', ''].map(csvCell).join(',')); continue; }
-      for (const it of items) {
-        lines.push([...base, sec?.title ?? '', it?.label ?? it?.text ?? '',
-                    it?.score ?? '', it?.comment ?? ''].map(csvCell).join(','));
-      }
-    }
-  }
-
-  const stamp = new Date().toISOString().slice(0, 10);
-  return new Response('﻿' + lines.join('\r\n'), {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="facility-qa-${stamp}.csv"`,
-    },
-  });
+// Every checklist item (label, score, comment, photo count) for the given reports, read straight
+// from the JSON so photos are never loaded. The page joins these rows to the report list it has.
+async function exportItems(env, request) {
+  const body = await request.json().catch(() => ({}));
+  const ids = Array.isArray(body?.ids) ? [...new Set(body.ids.map(Number).filter(Number.isInteger))].slice(0, 5000) : [];
+  if (!ids.length) return json({ items: [] });
+  const { results } = await env.DB.prepare(
+    `SELECT i.id AS id, CAST(s.key AS INTEGER) AS si, CAST(it.key AS INTEGER) AS ii,
+            json_extract(s.value, '$.title') AS section,
+            CASE WHEN it.type = 'object' THEN COALESCE(json_extract(it.value, '$.label'), json_extract(it.value, '$.text')) ELSE it.value END AS item,
+            CASE WHEN it.type = 'object' THEN json_extract(it.value, '$.score') END AS score,
+            CASE WHEN it.type = 'object' THEN json_extract(it.value, '$.comment') END AS comment,
+            CASE WHEN it.type = 'object' AND json_type(it.value, '$.photos') = 'array' THEN json_array_length(it.value, '$.photos') ELSE 0 END AS photos
+     FROM inspections i, json_each(i.data, '$.sections') s, json_each(s.value, '$.items') it
+     WHERE i.id IN (SELECT value FROM json_each(?1)) AND json_valid(i.data) AND s.type = 'object'
+     ORDER BY i.id, si, ii`,
+  ).bind(JSON.stringify(ids)).all();
+  return json({ items: results || [] });
 }
 
 /* ── Auth ───────────────────────────────────────────────── */
@@ -1666,9 +1651,9 @@ async function handleApi(request, env, url) {
   if (adminResponse) return adminResponse;
   if (path.startsWith('admin/')) return fail('not found', 404);
 
-  if (path === 'export.csv' && method === 'GET') {
+  if (path === 'export/items' && method === 'POST') {
     if (!can(user, 'export')) return fail('you do not have permission to export data', 403);
-    return exportCsv(env);
+    return exportItems(env, request);
   }
 
   if (path === 'buildings' && method === 'GET') return listBuildings(env, url, user);
