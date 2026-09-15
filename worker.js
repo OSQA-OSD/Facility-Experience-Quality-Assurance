@@ -60,60 +60,113 @@ async function listInspections(env, limit = 500) {
   return (results || []).map(rowToRecord);
 }
 
-async function insertInspection(env, rec) {
-  const r = recordToRow(rec);
-  if (r.id == null) return fail('id is required', 400);
+// Selecting a record's assignment without breaking on a row whose JSON is invalid.
+const AID_SQL = "CASE WHEN json_valid(data) THEN CAST(json_extract(data, '$.assignmentId') AS INTEGER) END";
 
-  const assignmentId = rec?.assignmentId != null ? Number(rec.assignmentId) : null;
-  let firstCompletion = false;
-  if (assignmentId) {
-    const prior = await env.DB.prepare(
-      "SELECT 1 AS x FROM inspections WHERE json_extract(data, '$.assignmentId') = ?1 LIMIT 1",
-    ).bind(assignmentId).first();
-    firstCompletion = !prior;
+async function insertInspection(env, user, rec) {
+  const r = recordToRow(rec);
+  if (r.id == null || !Number.isSafeInteger(Number(r.id))) return fail('id is required', 400);
+  const assignmentId = Number(rec?.assignmentId) > 0 ? Number(rec.assignmentId) : null;
+
+  // The same submission arriving twice (a double tap, a retried request) is kept once.
+  const same = await env.DB.prepare('SELECT id FROM inspections WHERE id = ?1').bind(r.id).first();
+  if (same) return json({ ok: true, id: r.id, alreadySaved: true });
+
+  const existing = await findExistingSubmission(env, r, assignmentId, null);
+  if (existing) return json({ error: duplicateMessage(existing), existing }, 409);
+
+  try {
+    await env.DB.prepare(
+      `INSERT INTO inspections
+         (id, inspector, facility, division, date, type, type_label, overall, filename, data)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`
+    ).bind(r.id, r.inspector, r.facility, r.division, r.date,
+           r.type, r.type_label, r.overall, r.filename, r.data).run();
+  } catch (err) {
+    if (/UNIQUE|PRIMARY KEY/i.test(String(err?.message))) return json({ ok: true, id: r.id, alreadySaved: true });
+    throw err;
   }
 
-  await env.DB.prepare(
-    `INSERT INTO inspections
-       (id, inspector, facility, division, date, type, type_label, overall, filename, data)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`
-  ).bind(r.id, r.inspector, r.facility, r.division, r.date,
-         r.type, r.type_label, r.overall, r.filename, r.data).run();
-
-  if (firstCompletion) await notifyAssignmentCompleted(env, assignmentId, r.overall);
+  await notifySubmission(env, user, r, assignmentId);
   return json({ ok: true, id: r.id }, 201);
 }
 
-/** Tells every active Quality Leader (and whoever made the assignment) that it was completed. */
-async function notifyAssignmentCompleted(env, assignmentId, overall) {
-  const a = await env.DB.prepare(
-    `SELECT a.quarter, a.type, a.assigned_by, a.auditor_id, b.name AS building, u.name AS auditor, o.role AS assigner_role
-     FROM assignments a
-     JOIN buildings b ON b.id = a.building_id
-     JOIN qa_users u ON u.id = a.auditor_id
-     LEFT JOIN qa_users o ON o.id = a.assigned_by
-     WHERE a.id = ?1`,
-  ).bind(assignmentId).first();
-  if (!a) return;
-
-  const title = `Completed: ${a.building}`;
-  const score = overall != null ? ` — score ${Math.round(overall)}/100` : '';
-  const body = `${a.auditor} completed ${a.building} for ${a.quarter} ${a.type}${score}.`;
-
-  const recipients = new Map();
-  const { results: leaders } = await env.DB.prepare(
-    "SELECT id FROM qa_users WHERE role = 'quality_leader' AND status = 'active'",
-  ).all();
-  for (const l of leaders || []) recipients.set(l.id, '#pg-overview');
-  recipients.delete(a.auditor_id);
-  if (a.assigned_by && a.assigned_by !== a.auditor_id && !recipients.has(a.assigned_by)) {
-    recipients.set(a.assigned_by, a.assigner_role === 'quality_officer' || a.assigner_role === 'quality_admin' ? '#pg-officer' : null);
+/** A report already on file for the same assignment, or for the same building, type and quarter
+ *  (one BOQI and one EOQI per building each quarter). Imported trial scores never block a real report. */
+async function findExistingSubmission(env, r, assignmentId, excludeId) {
+  const quarter = quarterOf(r.date);
+  const perQuarter = (r.type === 'BOQI' || r.type === 'EOQI') && quarter;
+  if (!assignmentId && !perQuarter) return null;
+  const asg = assignmentId
+    ? await env.DB.prepare('SELECT a.building_id, b.name FROM assignments a JOIN buildings b ON b.id = a.building_id WHERE a.id = ?1').bind(assignmentId).first()
+    : null;
+  const { results } = await env.DB.prepare(
+    `SELECT i.id, i.inspector, i.facility, i.date, i.type, i.aid, a.building_id AS bid
+     FROM (SELECT id, inspector, facility, date, type, ${AID_SQL} AS aid,
+                  CASE WHEN json_valid(data) THEN json_extract(data, '$.trialImport') END AS trial
+           FROM inspections WHERE id != ?4) i
+     LEFT JOIN assignments a ON a.id = i.aid
+     WHERE i.trial IS NULL AND ((?1 > 0 AND i.aid = ?1) OR (i.type = ?2 AND substr(i.date, 1, 4) = ?3))`,
+  ).bind(assignmentId || 0, r.type, (quarter || '').slice(0, 4), excludeId ?? -1).all();
+  const name = normName(asg ? asg.name : r.facility);
+  for (const x of results || []) {
+    const sameAssignment = assignmentId && Number(x.aid) === assignmentId;
+    const sameSlot = perQuarter && x.type === r.type && quarterOf(x.date) === quarter
+      && ((asg && x.bid === asg.building_id) || normName(x.facility) === name);
+    if (sameAssignment || sameSlot) {
+      return { id: x.id, auditor: x.inspector, date: x.date, type: x.type, quarter: quarterOf(x.date), building: asg ? asg.name : x.facility, sameAssignment: !!sameAssignment };
+    }
   }
-  for (const [userId, link] of recipients) await notify(env, userId, 'completion', title, body, link);
+  return null;
+}
+const duplicateMessage = (x) => (x.sameAssignment
+  ? `This assignment was already submitted by ${x.auditor || 'an auditor'} on ${x.date}. Open that report to make changes.`
+  : `${x.building} already has a ${x.type} report for ${x.quarter}, submitted by ${x.auditor || 'an auditor'} on ${x.date}. Open that report to make changes.`);
+
+/** Active accounts, with what is needed to work out their permissions. */
+async function activeAccounts(env) {
+  const { results } = await env.DB.prepare(
+    "SELECT id, name, role, permissions, can_edit, can_delete, can_export FROM qa_users WHERE status = 'active'",
+  ).all();
+  return results || [];
 }
 
-async function updateInspection(env, id, rec) {
+/** A new report: Quality Leaders, everyone who reviews reports and whoever assigned it hear about it at once.
+ *  The auditor gets a receipt (already marked read) so the submission is on record in their list. */
+async function notifySubmission(env, user, r, assignmentId) {
+  const a = assignmentId
+    ? await env.DB.prepare('SELECT a.assigned_by, b.name AS building FROM assignments a JOIN buildings b ON b.id = a.building_id WHERE a.id = ?1').bind(assignmentId).first()
+    : null;
+  const building = a?.building || r.facility || 'a building';
+  const what = [r.type, quarterOf(r.date)].filter(Boolean).join(' ');
+  const score = r.overall != null ? ` · score ${Math.round(r.overall)}/100` : '';
+  const link = `#pg-library/${r.id}`;
+  const accounts = await activeAccounts(env);
+  const recipients = new Set(accounts.filter((u) => u.role === 'quality_leader' || can(u, 'review')).map((u) => u.id));
+  if (a?.assigned_by && accounts.some((u) => u.id === a.assigned_by)) recipients.add(a.assigned_by);
+  recipients.delete(user.id);
+  const insert = 'INSERT INTO notifications (user_id, type, title, body, link, read_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)';
+  const statements = [...recipients].map((id) => env.DB.prepare(insert)
+    .bind(id, 'submission', `New report to review: ${building}`, `${user.name} submitted ${what}${score}.`, link, null));
+  statements.push(env.DB.prepare(insert).bind(user.id, 'receipt', `Report submitted: ${building}`,
+    `${what}${score} — sent for review.`, link, new Date().toISOString().replace('T', ' ').slice(0, 19)));
+  await env.DB.batch(statements);
+}
+
+async function updateInspection(env, user, id, rec) {
+  const row = await env.DB.prepare(
+    `SELECT id, inspector, facility, division, date, type, type_label, overall, created_at, updated_at, ${AID_SQL} AS aid FROM inspections WHERE id = ?1`,
+  ).bind(id).first();
+  if (!row) return fail('record not found', 404);
+  const ctx = await libraryContext(env);
+  const before = libraryRow(row, ctx);
+  if (user.role !== ADMIN_ROLE && !isOwnReport(user, before)) return fail('you can only edit your own reports', 403);
+
   const r = recordToRow(rec);
+  const assignmentId = Number(rec?.assignmentId) > 0 ? Number(rec.assignmentId) : null;
+  const existing = await findExistingSubmission(env, r, assignmentId, id);
+  if (existing) return json({ error: duplicateMessage(existing), existing }, 409);
+
   const res = await env.DB.prepare(
     `UPDATE inspections SET
        inspector = ?2, facility = ?3, division = ?4, date = ?5,
@@ -123,6 +176,14 @@ async function updateInspection(env, id, rec) {
   ).bind(id, r.inspector, r.facility, r.division, r.date,
          r.type, r.type_label, r.overall, r.filename, r.data).run();
   if (!res.meta.changes) return fail('record not found', 404);
+
+  // The first save after "changes requested" tells that reviewer the report is ready again.
+  const decision = ctx.decision.get(id);
+  if (before.status === 'changes' && decision?.reviewer_id && decision.reviewer_id !== user.id
+      && ctx.users.some((u) => u.id === decision.reviewer_id)) {
+    await notify(env, decision.reviewer_id, 'resubmission', `Updated for review: ${before.building}`,
+      `${user.name} made the requested changes${before.type ? ` to the ${before.type}` : ''}. Ready to review again.`, `#pg-library/${id}`);
+  }
   return json({ ok: true, id });
 }
 
@@ -848,7 +909,7 @@ async function libraryContext(env) {
     env.DB.prepare('SELECT id, building_id, auditor_id FROM assignments').all(),
     env.DB.prepare("SELECT id, name FROM qa_users WHERE status = 'active'").all(),
     env.DB.prepare(
-      `SELECT r.inspection_id, r.decision, r.comment, r.reviewer_name, r.created_at FROM inspection_reviews r
+      `SELECT r.inspection_id, r.decision, r.comment, r.reviewer_id, r.reviewer_name, r.created_at FROM inspection_reviews r
        WHERE r.id = (SELECT MAX(x.id) FROM inspection_reviews x WHERE x.inspection_id = r.inspection_id AND x.decision != 'comment')`,
     ).all(),
   ]);
@@ -1120,14 +1181,31 @@ async function notify(env, userId, type, title, body, link) {
 async function listNotifications(env, userId) {
   const { results } = await env.DB.prepare(
     `SELECT id, type, title, body, link, read_at, created_at FROM notifications
-     WHERE user_id = ?1 ORDER BY created_at DESC LIMIT 50`,
+     WHERE user_id = ?1 ORDER BY created_at DESC, id DESC LIMIT 50`,
   ).bind(userId).all();
   const notifications = (results || []).map((n) => ({
     id: n.id, type: n.type, title: n.title, body: n.body, link: n.link,
     read: !!n.read_at, createdAt: n.created_at,
   }));
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  return json({ notifications, unreadCount });
+  const unread = await env.DB.prepare('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ?1 AND read_at IS NULL').bind(userId).first();
+  return json({ notifications, unreadCount: unread?.n || 0 });
+}
+
+/** The quick check the app makes every few seconds: unread count, newest id, and anything unread since `after`. */
+async function pollNotifications(env, userId, url) {
+  const after = Math.max(Number(url.searchParams.get('after')) || 0, 0);
+  const [counts, fresh] = await env.DB.batch([
+    env.DB.prepare('SELECT SUM(read_at IS NULL) AS unread, MAX(id) AS latest FROM notifications WHERE user_id = ?1').bind(userId),
+    env.DB.prepare(
+      `SELECT id, type, title, body, link, created_at FROM notifications
+       WHERE user_id = ?1 AND id > ?2 AND read_at IS NULL ORDER BY id LIMIT 10`,
+    ).bind(userId, after),
+  ]);
+  const c = counts.results?.[0] || {};
+  return json({
+    unreadCount: c.unread || 0, latestId: c.latest || 0,
+    fresh: (fresh.results || []).map((n) => ({ id: n.id, type: n.type, title: n.title, body: n.body, link: n.link, createdAt: n.created_at })),
+  }, 200, { 'Cache-Control': 'no-store' });
 }
 
 async function markNotificationRead(env, userId, id) {
@@ -1144,11 +1222,12 @@ async function markAllNotificationsRead(env, userId) {
   return json({ ok: true });
 }
 
-async function handleNotifications(request, env, path, user) {
+async function handleNotifications(request, env, path, user, url) {
   const method = request.method.toUpperCase();
   if (!path.startsWith('notifications')) return null;
 
   if (path === 'notifications' && method === 'GET') return listNotifications(env, user.id);
+  if (path === 'notifications/poll' && method === 'GET') return pollNotifications(env, user.id, url);
   if (path === 'notifications/read-all' && method === 'POST') return markAllNotificationsRead(env, user.id);
   const idMatch = path.match(/^notifications\/(\d+)\/read$/);
   if (idMatch && method === 'POST') return markNotificationRead(env, user.id, Number(idMatch[1]));
@@ -1704,7 +1783,7 @@ async function handleApi(request, env, url) {
   if (assignmentResponse) return assignmentResponse;
   if (path.startsWith('assignments')) return fail('not found', 404);
 
-  const notificationResponse = await handleNotifications(request, env, path, user);
+  const notificationResponse = await handleNotifications(request, env, path, user, url);
   if (notificationResponse) return notificationResponse;
   if (path.startsWith('notifications')) return fail('not found', 404);
 
@@ -1712,7 +1791,7 @@ async function handleApi(request, env, url) {
     if (method === 'GET') return json(await listInspections(env));
     if (method === 'POST') {
       if (!can(user, 'inspect')) return fail('you do not have permission to create inspections', 403);
-      return insertInspection(env, await request.json());
+      return insertInspection(env, user, await request.json());
     }
     return fail('method not allowed', 405);
   }
@@ -1726,7 +1805,7 @@ async function handleApi(request, env, url) {
     if (method === 'GET') return getInspectionForReview(env, user, id);
     if (method === 'PATCH' || method === 'PUT') {
       if (!can(user, 'inspect')) return fail('you do not have permission to edit inspections', 403);
-      return updateInspection(env, id, await request.json());
+      return updateInspection(env, user, id, await request.json());
     }
     if (method === 'DELETE') {
       if (!can(user, 'delete')) return fail('you do not have permission to delete inspections', 403);

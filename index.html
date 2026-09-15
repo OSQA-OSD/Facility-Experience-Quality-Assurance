@@ -3,326 +3,237 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Facility Experience QA — Facility Quality Assurance</title>
+<title>Facility Experience Quality Assurance</title>
+<meta name="description" content="The official system for facility inspections and quality reports. For authorised personnel only.">
+<meta name="theme-color" content="#002070">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2326A8AB'/%3E%3Cstop offset='1' stop-color='%230033A0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M16 6.5l7 2.6v5.3c0 4.7-3 8.3-7 9.9-4-1.6-7-5.2-7-9.9V9.1z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M12.6 15.2l2.4 2.4 4.4-4.6' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
 <style>
-/* Same tokens and building blocks as the app (app.html): royal/teal gradient heroes,
-   white cards with gradient icon tiles, pill buttons, the five-band rating scale. */
+/* Same identity as the app: Cairo, royal blue and teal, the navy-to-teal header gradient. */
 :root{
-  --teal:#26A8AB;--teal-lt:#8CFEE3;--royal:#0033A0;--royal-dk:#002070;
-  --bg:#EEF3F7;--border:#C8D8E4;--text:#102040;--muted:#456080;
-  --good:#00843D;--r:12px;--font:'Cairo',system-ui,sans-serif;
-  --hero:linear-gradient(145deg,#001540 0%,#002280 50%,#0a5f60 100%);
+  --royal:#0033A0;--royal-dk:#002070;--navy:#001540;--teal:#26A8AB;--teal-lt:#8CFEE3;
+  --ink:#102040;--muted:#51647d;--line:#dbe4ec;--paper:#f5f8fb;
+  --hero:linear-gradient(150deg,#001540 0%,#002280 55%,#0a5f60 100%);
+  --font:'Cairo',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6}
+body{font-family:var(--font);color:var(--ink);background:#fff;line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+main{flex:1}
 [hidden]{display:none!important}
+a{color:inherit}
+.i{width:20px;height:20px;flex-shrink:0}
+.wrap{width:min(1120px,100% - 48px);margin-inline:auto}
+.skip{position:absolute;left:-9999px;top:8px;z-index:50;background:#fff;color:var(--royal);padding:8px 14px;border-radius:8px;font-weight:700}
+.skip:focus{left:12px}
+:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
 
-/* Header — matches the app's top bar */
-header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.97);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(38,168,171,.35);
-  padding:10px 6%;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.brand{display:flex;align-items:center;gap:11px;text-decoration:none}
-.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(160deg,var(--teal) 0%,var(--royal) 100%);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
-.logo svg{width:20px;height:20px}
-.brand b{display:block;font-weight:900;font-size:.98rem;color:var(--royal-dk);line-height:1.2}
-.brand small{display:block;font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
-header nav{display:flex;gap:26px}
-header nav a{color:var(--muted);text-decoration:none;font-weight:700;font-size:.86rem}
-header nav a:hover{color:var(--royal)}
-.hd-right{display:flex;align-items:center;gap:10px}
-.hd-user{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:700;color:var(--text)}
-.hd-user i{width:30px;height:30px;border-radius:50%;background:linear-gradient(160deg,var(--royal),var(--teal));color:#fff;font-style:normal;font-size:.68rem;font-weight:900;display:flex;align-items:center;justify-content:center}
-.hd-link{background:none;border:none;color:var(--muted);font-family:var(--font);font-weight:700;font-size:.8rem;cursor:pointer}
-.hd-link:hover{color:var(--royal)}
+/* Header */
+.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:66px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;min-width:0}
+.mark{width:40px;height:40px;border-radius:11px;background:linear-gradient(160deg,var(--teal),var(--royal));color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand small{display:block;font-size:.62rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#0c8a8d;line-height:1.3}
+.brand b{display:block;font-size:1rem;font-weight:900;color:var(--royal-dk);line-height:1.25;white-space:nowrap}
+.top nav{display:flex;align-items:center;gap:28px;margin-left:auto;margin-right:12px}
+.top nav a{text-decoration:none;font-weight:700;font-size:.86rem;color:var(--muted)}
+.top nav a:hover{color:var(--royal)}
+.who{display:flex;align-items:center;gap:10px;font-size:.84rem;font-weight:700}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(160deg,var(--royal),var(--teal));color:#fff;font-size:.7rem;font-weight:900;display:flex;align-items:center;justify-content:center}
+.link-btn{background:none;border:none;font:inherit;font-weight:700;font-size:.84rem;color:var(--muted);cursor:pointer;padding:6px 4px}
+.link-btn:hover{color:var(--royal)}
 
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:999px;font-family:var(--font);font-weight:800;font-size:.86rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s}
-.btn svg{width:15px;height:15px}
-.btn-primary{background:var(--royal);color:#fff;box-shadow:0 8px 20px -6px rgba(0,51,160,.5)}
-.btn-primary:hover{transform:translateY(-2px)}
-.btn-teal{background:var(--teal);color:#fff;box-shadow:0 8px 20px -8px rgba(38,168,171,.7)}
-.btn-teal:hover{transform:translateY(-2px)}
-.btn-light{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.3)}
-.btn-light:hover{background:rgba(255,255,255,.18)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border-radius:10px;padding:11px 22px;font-family:var(--font);font-weight:800;font-size:.9rem;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:background .15s,box-shadow .15s,transform .15s;white-space:nowrap}
+.btn .i{width:17px;height:17px}
+.btn-primary{background:var(--royal);color:#fff;box-shadow:0 10px 24px -12px rgba(0,51,160,.7)}
+.btn-primary:hover{background:var(--royal-dk)}
+.btn-teal{background:var(--teal);color:#fff;box-shadow:0 12px 26px -14px rgba(38,168,171,.9)}
+.btn-teal:hover{background:#1f9194}
+.btn-sm{padding:8px 16px;font-size:.84rem}
 
-/* Hero — the app's page header, full size */
-.hero{background:var(--hero);color:#fff;border-bottom:4px solid var(--teal);position:relative;overflow:hidden;
-  padding:72px 6% 64px;display:flex;align-items:center;gap:56px;flex-wrap:wrap}
-.hero::before{content:'';position:absolute;top:-120px;right:-80px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(38,168,171,.25) 0%,transparent 70%);pointer-events:none}
-.hero-copy{flex:1 1 460px;max-width:600px;position:relative}
-.ey{display:inline-flex;align-items:center;gap:7px;background:rgba(140,254,227,.12);border:1px solid rgba(140,254,227,.3);color:var(--teal-lt);font-weight:800;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;padding:5px 13px;border-radius:999px;margin-bottom:18px}
-.ey svg{width:13px;height:13px}
-.hero h1{font-size:clamp(1.9rem,3.6vw,2.7rem);font-weight:900;line-height:1.25;margin-bottom:16px}
+/* Hero */
+.hero{position:relative;overflow:hidden;background:var(--hero);color:#fff;border-bottom:4px solid var(--teal)}
+.hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:48px 48px;-webkit-mask-image:radial-gradient(circle at 75% 45%,#000 0,transparent 62%);mask-image:radial-gradient(circle at 75% 45%,#000 0,transparent 62%);pointer-events:none}
+.hero .wrap{position:relative;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);align-items:center;gap:48px;min-height:min(640px,calc(100vh - 70px));padding-block:72px}
+.kicker{display:flex;align-items:center;gap:12px;font-size:.72rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:20px}
+.kicker::before{content:'';width:34px;height:2px;background:var(--teal)}
+.hero h1{font-size:clamp(2.1rem,4.4vw,3.35rem);font-weight:900;line-height:1.14;letter-spacing:-.01em;margin-bottom:20px}
 .hero h1 span{color:var(--teal)}
-.hero p{color:rgba(255,255,255,.7);font-size:1rem;margin-bottom:30px;max-width:540px}
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:34px}
-.hero-stats{display:flex;gap:12px;flex-wrap:wrap}
-.hero-stats div{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:8px 16px}
-.hero-stats b{display:block;font-size:1.25rem;font-weight:900;color:#fff;line-height:1.2}
-.hero-stats span{font-size:.64rem;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
-
-/* App preview */
-.hero-visual{flex:1 1 420px;max-width:520px;position:relative}
-.mock{display:grid;grid-template-columns:150px 1fr;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 30px 70px -24px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.2)}
-.mock-side{background:linear-gradient(180deg,var(--royal-dk) 0%,var(--royal) 45%,var(--teal) 100%);padding:14px 8px;display:grid;gap:4px;align-content:start}
-.mock-side .ms-brand{display:flex;align-items:center;gap:7px;padding:0 6px 12px;color:#fff;font-size:.62rem;font-weight:900;line-height:1.2}
-.mock-side .ms-brand span{width:22px;height:22px;border-radius:6px;background:linear-gradient(160deg,var(--teal),var(--royal));border:1px solid rgba(140,254,227,.35);display:flex;align-items:center;justify-content:center}
-.mock-side .ms-brand svg{width:12px;height:12px}
-.ms-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:7px;font-size:.64rem;font-weight:700;color:rgba(255,255,255,.75)}
-.ms-item svg{width:13px;height:13px;opacity:.8}
-.ms-item.on{background:rgba(255,255,255,.15);color:#fff;box-shadow:inset 2px 0 var(--teal-lt)}
-.ms-item.on svg{color:var(--teal-lt);opacity:1}
-.mock-main{padding:16px;background:var(--bg);color:var(--text)}
-.mm-head{background:var(--hero);border-radius:10px;padding:14px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-.mm-head small{display:block;font-size:.52rem;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-lt);font-weight:800}
-.mm-head b{font-size:.92rem;font-weight:900}
-.mm-head b span{color:var(--teal)}
-.ring{width:62px;height:62px;border-radius:50%;background:conic-gradient(#00843D 92%,rgba(255,255,255,.15) 0);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ring div{width:50px;height:50px;border-radius:50%;background:#02205f;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
-.ring b{font-size:1rem}
-.ring small{font-size:.44rem;color:var(--teal-lt);letter-spacing:.06em;margin-top:2px}
-.mm-row{background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 10px;margin-bottom:7px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
-.mm-row b{font-size:.66rem;font-weight:800}
-.mm-row em{font-style:normal;font-size:.62rem;font-weight:900;color:var(--royal)}
-.mm-bar{grid-column:1/-1;height:5px;background:var(--bg);border-radius:9px;overflow:hidden}
-.mm-bar i{display:block;height:100%;border-radius:9px}
+.lead{font-size:clamp(1rem,1.5vw,1.12rem);color:rgba(255,255,255,.78);max-width:520px;margin-bottom:34px}
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:28px}
+.notice{display:inline-flex;align-items:center;gap:9px;font-size:.84rem;font-weight:600;color:rgba(255,255,255,.7);border-top:1px solid rgba(255,255,255,.14);padding-top:18px}
+.notice .i{width:16px;height:16px;color:var(--teal-lt)}
+.emblem{justify-self:center;width:min(100%,400px);aspect-ratio:1}
+.emblem svg{width:100%;height:100%;display:block}
 
 /* Sections */
-section{padding:68px 6%;scroll-margin-top:58px}
-.section-head{text-align:center;max-width:640px;margin:0 auto 40px}
-.eyebrow{display:inline-flex;align-items:center;gap:6px;background:rgba(38,168,171,.14);color:#0c7b7d;font-weight:800;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:999px;margin-bottom:12px}
-.section-head h2{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:900;color:var(--royal-dk);margin-bottom:8px;line-height:1.3}
-.section-head h2 span{color:var(--teal)}
-.section-head p{color:var(--muted)}
-.alt{background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.section{padding-block:84px}
+.head{max-width:620px;margin-bottom:44px}
+.head h2{font-size:clamp(1.55rem,2.6vw,2.05rem);font-weight:900;color:var(--royal-dk);line-height:1.25;margin-bottom:10px}
+.head p{color:var(--muted);font-size:1rem}
+.pillars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.pillar{border:1px solid var(--line);border-radius:14px;padding:28px 26px;background:#fff;position:relative}
+.pillar::before{content:'';position:absolute;left:26px;right:26px;top:-1px;height:3px;border-radius:0 0 3px 3px;background:linear-gradient(90deg,var(--royal),var(--teal))}
+.pillar .ico{width:46px;height:46px;border-radius:12px;background:var(--paper);border:1px solid var(--line);color:var(--royal);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.pillar h3{font-size:1.06rem;font-weight:800;color:var(--royal-dk);margin-bottom:6px}
+.pillar p{font-size:.92rem;color:var(--muted)}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;max-width:1120px;margin:0 auto}
-.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:22px;transition:transform .15s,box-shadow .15s,border-color .15s}
-.card:hover{transform:translateY(-3px);box-shadow:0 16px 32px -18px rgba(0,32,112,.3);border-color:var(--teal)}
-.ic{width:40px;height:40px;border-radius:10px;background:linear-gradient(160deg,var(--royal) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:14px}
-.ic svg{width:20px;height:20px}
-.card h3{font-size:.98rem;font-weight:800;color:var(--royal);margin-bottom:6px}
-.card p{font-size:.84rem;color:var(--muted)}
+.access{background:var(--paper);border-top:1px solid var(--line)}
+.access-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:28px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:34px 36px;box-shadow:0 24px 50px -40px rgba(0,32,112,.5)}
+.access-card .ico{width:56px;height:56px;border-radius:14px;background:linear-gradient(160deg,var(--teal),var(--royal));color:#fff;display:flex;align-items:center;justify-content:center}
+.access-card .ico .i{width:26px;height:26px}
+.access-card h2{font-size:1.35rem;font-weight:900;color:var(--royal-dk);margin-bottom:4px}
+.access-card p{color:var(--muted);font-size:.95rem;max-width:620px}
 
-.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:1120px;margin:0 auto}
-.role{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:18px}
-.role .ic{width:34px;height:34px;border-radius:9px;margin-bottom:10px}
-.role .ic svg{width:17px;height:17px}
-.role b{display:block;font-size:.9rem;color:var(--royal-dk);margin-bottom:4px}
-.role span{font-size:.8rem;color:var(--muted)}
+footer{background:var(--navy);color:rgba(255,255,255,.66);font-size:.82rem}
+footer .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-block:26px}
+footer .brand b{color:#fff;font-size:.9rem}
+footer .brand small{color:var(--teal-lt)}
+footer .mark{width:32px;height:32px;border-radius:9px}
+footer .mark .i{width:17px;height:17px}
 
-/* Steps — the app's inspection stepper */
-.steps{max-width:980px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:18px;position:relative}
-.step{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative}
-.step-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--royal);background:rgba(0,51,160,.05);color:var(--royal);border-radius:999px;padding:3px 13px 3px 3px;font-weight:800;font-size:.78rem;margin-bottom:12px}
-.step-pill i{width:24px;height:24px;border-radius:50%;background:var(--royal);color:#fff;font-style:normal;font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center}
-.step p{font-size:.84rem;color:var(--muted)}
-
-.scale{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:980px;margin:34px auto 0}
-.band{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:7px 15px 7px 9px;font-size:.8rem;font-weight:800}
-.band i{width:12px;height:12px;border-radius:50%}
-.band small{color:var(--muted);font-weight:700}
-
-.cta{background:var(--hero);border-bottom:4px solid var(--teal);border-radius:20px;max-width:1120px;margin:0 auto;padding:48px 6%;text-align:center;color:#fff;position:relative;overflow:hidden}
-.cta h2{font-size:clamp(1.4rem,2.4vw,1.9rem);font-weight:900;margin-bottom:10px}
-.cta h2 span{color:var(--teal)}
-.cta p{color:rgba(255,255,255,.72);margin:0 auto 24px;max-width:480px}
-
-footer{padding:26px 6%;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);background:#fff}
-footer .brand b{font-size:.86rem}
-
-@media (max-width:900px){.steps{grid-template-columns:1fr}}
-@media (max-width:720px){
-  header nav,.hd-user span{display:none}
-  .hero{padding:48px 6% 44px;gap:36px}
-  .mock{grid-template-columns:1fr}
-  .mock-side{display:none}
-  section{padding:52px 6%}
+@media (max-width:980px){
+  .hero .wrap{grid-template-columns:1fr;min-height:0;padding-block:64px 56px;gap:8px}
+  .emblem{display:none}
+  .pillars{grid-template-columns:1fr}
+  .access-card{grid-template-columns:auto 1fr}
+  .access-card .btn{grid-column:1/-1;justify-self:start}
 }
+@media (max-width:640px){
+  .wrap{width:calc(100% - 32px)}
+  .top nav,.who span{display:none}
+  .brand small{letter-spacing:.1em}
+  .section{padding-block:60px}
+  .access-card{grid-template-columns:1fr;padding:26px 22px}
+  .access-card .btn{width:100%}
+  .actions .btn{flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 
-<header>
-  <a class="brand" href="/">
-    <span class="logo"><svg data-lucide="shield-check" width="20" height="20"></svg></span>
-    <div><small>OSD · Facility Experience</small><b>Quality Assurance</b></div>
-  </a>
-  <nav>
-    <a href="#features">Features</a>
-    <a href="#roles">Roles</a>
-    <a href="#how">How it works</a>
-  </nav>
-  <div class="hd-right">
-    <div class="hd-user" id="hd-user" hidden><i id="hd-avatar"></i><span id="hd-name"></span></div>
-    <button class="hd-link" id="hd-signout" hidden>Sign out</button>
-    <a class="btn btn-primary js-enter" href="login.html"><span class="js-enter-label">Sign In</span><svg data-lucide="arrow-right" width="15" height="15"></svg></a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="Facility Experience Quality Assurance — home">
+      <span class="mark"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+      <span><small>OSD · Facility Experience</small><b>Quality Assurance</b></span>
+    </a>
+    <nav aria-label="Page sections">
+      <a href="#about">About</a>
+      <a href="#access">Access</a>
+    </nav>
+    <div class="who" id="who" hidden><span class="avatar" id="who-initials" aria-hidden="true"></span><span id="who-name"></span></div>
+    <button class="link-btn" id="sign-out" type="button" hidden>Sign out</button>
+    <a class="btn btn-primary btn-sm js-enter" href="/login.html"><span class="js-enter-label">Sign in</span></a>
   </div>
 </header>
 
-<section class="hero">
-  <div class="hero-copy">
-    <span class="ey"><svg data-lucide="sparkles" width="13" height="13"></svg> Facility Experience Quality Assurance</span>
-    <h1 id="hero-title">Sharper facility inspections, <span>real-time data</span> you can act on</h1>
-    <p>One workspace for the whole quality team — assign buildings, score inspections section by section, follow progress live and turn the results into reports.</p>
-    <div class="hero-actions">
-      <a class="btn btn-teal js-enter" href="login.html"><span class="js-enter-label">Sign In</span><svg data-lucide="arrow-right" width="15" height="15"></svg></a>
-      <a class="btn btn-light" href="#features">Explore features</a>
-    </div>
-    <div class="hero-stats">
-      <div><b>10</b><span>Inspection sections</span></div>
-      <div><b>5</b><span>Team roles</span></div>
-      <div><b>PDF · Excel · Image</b><span>Exports</span></div>
-    </div>
-  </div>
-
-  <div class="hero-visual" aria-hidden="true">
-    <div class="mock">
-      <div class="mock-side">
-        <div class="ms-brand"><span><svg data-lucide="shield-check"></svg></span>Quality<br>Assurance</div>
-        <div class="ms-item"><svg data-lucide="layout-dashboard"></svg>Home</div>
-        <div class="ms-item on"><svg data-lucide="clipboard-check"></svg>Inspection</div>
-        <div class="ms-item"><svg data-lucide="users"></svg>Team</div>
-        <div class="ms-item"><svg data-lucide="bar-chart-3"></svg>Reports</div>
-      </div>
-      <div class="mock-main">
-        <div class="mm-head">
-          <div><small>Step 3 of 3</small><b>Score <span>Card</span></b></div>
-          <div class="ring"><div><b>92</b><small>EXCELLENT</small></div></div>
+<main id="main">
+  <section class="hero" aria-labelledby="title">
+    <div class="wrap">
+      <div>
+        <p class="kicker">Official platform</p>
+        <h1 id="title">Facility Experience <span>Quality Assurance</span></h1>
+        <p class="lead">The official system for recording facility inspections and managing quality reports.</p>
+        <div class="actions">
+          <a class="btn btn-teal js-enter" href="/login.html"><span class="js-enter-label">Sign in</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
         </div>
-        <div class="mm-row"><b>Arrival &amp; Parking</b><em>9.5/10</em><div class="mm-bar"><i style="width:95%;background:#00843D"></i></div></div>
-        <div class="mm-row"><b>Entrance &amp; Lobby</b><em>9/10</em><div class="mm-bar"><i style="width:90%;background:#26A8AB"></i></div></div>
-        <div class="mm-row"><b>Washrooms / Bathrooms</b><em>8/10</em><div class="mm-bar"><i style="width:80%;background:#D48000"></i></div></div>
-        <div class="mm-row" style="margin-bottom:0"><b>Health, Safety &amp; Emergency</b><em>10/10</em><div class="mm-bar"><i style="width:100%;background:#00843D"></i></div></div>
+        <p class="notice"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>For authorised personnel only</p>
+      </div>
+      <div class="emblem" aria-hidden="true">
+        <svg viewBox="0 0 400 400">
+          <defs>
+            <linearGradient id="em-line" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8CFEE3"/><stop offset="1" stop-color="#26A8AB"/></linearGradient>
+            <radialGradient id="em-glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#26A8AB" stop-opacity=".32"/><stop offset="1" stop-color="#26A8AB" stop-opacity="0"/></radialGradient>
+          </defs>
+          <circle cx="200" cy="200" r="198" fill="url(#em-glow)"/>
+          <circle cx="200" cy="200" r="186" fill="none" stroke="#ffffff" stroke-opacity=".1"/>
+          <circle cx="200" cy="200" r="168" fill="none" stroke="#8CFEE3" stroke-opacity=".35" stroke-width="7" stroke-dasharray="1.2 9.3"/>
+          <circle cx="200" cy="200" r="148" fill="none" stroke="#ffffff" stroke-opacity=".14"/>
+          <circle cx="200" cy="200" r="124" fill="#ffffff" fill-opacity=".05" stroke="url(#em-line)" stroke-opacity=".55" stroke-width="1.5"/>
+          <path d="M200 118l66 24v50c0 46-28 81-66 97-38-16-66-51-66-97v-50z" fill="#001a55" fill-opacity=".55" stroke="url(#em-line)" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M172 204l20 20 38-40" fill="none" stroke="#8CFEE3" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section id="features">
-  <div class="section-head">
-    <span class="eyebrow">Features</span>
-    <h2>Everything quality teams need, <span>in one place</span></h2>
-    <p>From the first assignment to the final report, every step happens in the same workspace.</p>
-  </div>
-  <div class="grid">
-    <div class="card">
-      <div class="ic"><svg data-lucide="clipboard-check"></svg></div>
-      <h3>Structured inspections</h3>
-      <p>Ten sections from Arrival &amp; Parking to Washrooms, scored item by item with comments and photos.</p>
+  <section class="section" id="about" aria-labelledby="about-title">
+    <div class="wrap">
+      <div class="head">
+        <h2 id="about-title">About the platform</h2>
+        <p>A single, secure system used by the Facility Experience Quality Assurance team.</p>
+      </div>
+      <div class="pillars">
+        <article class="pillar">
+          <span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg></span>
+          <h3>Inspections</h3>
+          <p>Facility inspections are recorded in one consistent, standard format.</p>
+        </article>
+        <article class="pillar">
+          <span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span>
+          <h3>Reports</h3>
+          <p>Results are kept as official reports for review and follow-up.</p>
+        </article>
+        <article class="pillar">
+          <span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+          <h3>Controlled access</h3>
+          <p>Accounts are issued by the system administrator, and each person sees only what their work requires.</p>
+        </article>
+      </div>
     </div>
-    <div class="card">
-      <div class="ic"><svg data-lucide="calendar-check"></svg></div>
-      <h3>Assign &amp; track</h3>
-      <p>Officers assign buildings for each quarter and watch every auditor's completion rate update live.</p>
-    </div>
-    <div class="card">
-      <div class="ic"><svg data-lucide="users"></svg></div>
-      <h3>Team overview</h3>
-      <p>Leaders follow assignments, results and progress by division, area and building.</p>
-    </div>
-    <div class="card">
-      <div class="ic"><svg data-lucide="bar-chart-3"></svg></div>
-      <h3>Reports &amp; analytics</h3>
-      <p>Filter every inspection, then break results down by division, area, building, quarter or auditor.</p>
-    </div>
-    <div class="card">
-      <div class="ic"><svg data-lucide="bell"></svg></div>
-      <h3>Notifications</h3>
-      <p>Auditors hear about new assignments; officers and leaders hear the moment a building is completed.</p>
-    </div>
-    <div class="card">
-      <div class="ic"><svg data-lucide="download"></svg></div>
-      <h3>Exports</h3>
-      <p>One Export button: a PDF report, an Excel workbook or a chart image — for any analysis or report list.</p>
-    </div>
-  </div>
-</section>
+  </section>
 
-<section id="roles" class="alt">
-  <div class="section-head">
-    <span class="eyebrow">Roles</span>
-    <h2>Built for <span>every role</span> on the team</h2>
-    <p>Accounts are issued by an administrator, and each person sees only what their role needs.</p>
-  </div>
-  <div class="roles">
-    <div class="role"><div class="ic"><svg data-lucide="shield-check"></svg></div><b>Quality Admin</b><span>Creates accounts and sets each person's permissions.</span></div>
-    <div class="role"><div class="ic"><svg data-lucide="users"></svg></div><b>Quality Leader</b><span>Oversees officers, auditors and results across divisions.</span></div>
-    <div class="role"><div class="ic"><svg data-lucide="clipboard-list"></svg></div><b>Quality Officer</b><span>Assigns buildings and tracks auditor progress live.</span></div>
-    <div class="role"><div class="ic"><svg data-lucide="calendar-check"></svg></div><b>Quality Auditor</b><span>Receives assignments and completes the inspections.</span></div>
-    <div class="role"><div class="ic"><svg data-lucide="bar-chart-3"></svg></div><b>Data Analyst</b><span>Builds filtered reports by division, area and building.</span></div>
-  </div>
-</section>
-
-<section id="how">
-  <div class="section-head">
-    <span class="eyebrow">How it works</span>
-    <h2>Three steps to a <span>complete report</span></h2>
-    <p>The same three steps you'll see at the top of every inspection.</p>
-  </div>
-  <div class="steps">
-    <div class="step">
-      <span class="step-pill"><i>1</i>Details</span>
-      <p>Choose the building, date, inspection type (BOQI, EOQI or follow-up) and division.</p>
+  <section class="section access" id="access" aria-labelledby="access-title">
+    <div class="wrap">
+      <div class="access-card">
+        <span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg></span>
+        <div>
+          <h2 id="access-title">Access</h2>
+          <p id="access-text">Sign in with the account issued to you. For a new account or help signing in, contact the system administrator.</p>
+        </div>
+        <a class="btn btn-primary js-enter" href="/login.html"><span class="js-enter-label">Sign in</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+      </div>
     </div>
-    <div class="step">
-      <span class="step-pill"><i>2</i>Sections</span>
-      <p>Score each of the ten sections, adding comments and photos wherever they help.</p>
-    </div>
-    <div class="step">
-      <span class="step-pill"><i>3</i>Score Card</span>
-      <p>Review the overall score and each section, save the inspection and export the PDF.</p>
-    </div>
-  </div>
-  <div class="scale">
-    <div class="band"><i style="background:#00843D"></i>Excellent <small>91–100</small></div>
-    <div class="band"><i style="background:#26A8AB"></i>Good <small>81–90</small></div>
-    <div class="band"><i style="background:#D48000"></i>Acceptable <small>71–80</small></div>
-    <div class="band"><i style="background:#C0392B"></i>Poor <small>51–70</small></div>
-    <div class="band"><i style="background:#6B0000"></i>Critical <small>0–50</small></div>
-  </div>
-</section>
-
-<section style="padding-top:0">
-  <div class="cta">
-    <h2 id="cta-title">Ready to run your <span>next inspection?</span></h2>
-    <p id="cta-text">Sign in with the account issued by your administrator.</p>
-    <a class="btn btn-teal js-enter" href="login.html"><span class="js-enter-label">Sign In</span><svg data-lucide="arrow-right" width="15" height="15"></svg></a>
-  </div>
-</section>
+  </section>
+</main>
 
 <footer>
-  <a class="brand" href="/">
-    <span class="logo" style="width:30px;height:30px;border-radius:8px"><svg data-lucide="shield-check" width="16" height="16"></svg></span>
-    <div><b>Facility Experience QA</b></div>
-  </a>
-  <span>Facility Experience Quality Assurance — © <span id="yr"></span></span>
+  <div class="wrap">
+    <a class="brand" href="/">
+      <span class="mark"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+      <span><small>OSD · Facility Experience</small><b>Quality Assurance</b></span>
+    </a>
+    <span>© <span id="year"></span> Facility Experience Quality Assurance · Authorised use only</span>
+  </div>
 </footer>
 
 <script>
-document.getElementById('yr').textContent = new Date().getFullYear();
-lucide.createIcons();
+document.getElementById('year').textContent = new Date().getFullYear();
 
-// Signed in? Every "Sign In" button becomes "Open Workspace" and the header shows who you are.
+// Signed in: the sign-in buttons open the workspace and the header shows who is signed in.
 (async () => {
   try {
-    const res = await fetch('/api/auth/me');
+    const res = await fetch('/api/auth/me', { cache: 'no-store' });
     if (!res.ok) return;
     const { user } = await res.json();
-    const name = user.name || user.username;
+    if (!user) return;
+    const name = String(user.name || user.username || '').trim();
     document.querySelectorAll('.js-enter').forEach((a) => { a.href = '/app'; });
-    document.querySelectorAll('.js-enter-label').forEach((el) => { el.textContent = 'Open Workspace'; });
-    document.getElementById('hd-avatar').textContent = name.split(/\s+/).filter(Boolean).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
-    document.getElementById('hd-name').textContent = name;
-    document.getElementById('hd-user').hidden = false;
-    document.getElementById('hd-signout').hidden = false;
-    document.getElementById('cta-title').innerHTML = 'Welcome back, <span></span>';
-    document.querySelector('#cta-title span').textContent = name.split(/\s+/)[0];
-    document.getElementById('cta-text').textContent = 'Your workspace is ready — pick up where you left off.';
-  } catch { /* stay in signed-out mode */ }
+    document.querySelectorAll('.js-enter-label').forEach((el) => { el.textContent = 'Open workspace'; });
+    document.getElementById('who-initials').textContent = name.split(/\s+/).filter(Boolean).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+    document.getElementById('who-name').textContent = name;
+    document.getElementById('who').hidden = false;
+    document.getElementById('sign-out').hidden = false;
+    document.getElementById('access-text').textContent = `You are signed in as ${name}.`;
+  } catch { /* stay signed out */ }
 })();
-document.getElementById('hd-signout').addEventListener('click', async () => {
+
+document.getElementById('sign-out').addEventListener('click', async () => {
   try { await fetch('/api/auth/logout', { method: 'POST' }); } finally { window.location.reload(); }
 });
 </script>
