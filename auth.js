@@ -73,13 +73,13 @@ function randomToken() {
   return bytesToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-export async function createSession(env, userId) {
+export async function createSession(env, userId, device = null) {
   const token = randomToken();
   const tokenHash = await sha256Hex(token);
   const expiresAt = Date.now() + SESSION_TTL_MS;
   await env.DB.prepare(
-    'INSERT INTO qa_sessions (token_hash, user_id, expires_at) VALUES (?1, ?2, ?3)',
-  ).bind(tokenHash, userId, expiresAt).run();
+    'INSERT INTO qa_sessions (token_hash, user_id, expires_at, device) VALUES (?1, ?2, ?3, ?4)',
+  ).bind(tokenHash, userId, expiresAt, device).run();
   return { token, expiresAt };
 }
 

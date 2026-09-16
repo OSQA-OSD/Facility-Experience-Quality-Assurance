@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="apple-touch-icon" href="/osqa-icon-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="OSQA">
+<meta name="theme-color" content="#0033A0">
 <link rel="icon" type="image/svg+xml" href="/osqa-icon.svg">
 <title>Facility Experience QA Check List</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -916,6 +922,41 @@ body.nav-rail #acct-row{justify-content:center}
   .hist-filters select,.hist-filters input{width:100%;min-width:0}
   .app-toast{right:12px;bottom:12px;left:12px;max-width:none}
 }
+
+/* ── Device awareness ──────────────────────────────────────
+   Phones, tablets and desktops get the same app: safe areas on notched iPhones,
+   touch-sized controls, and 16px form text so iOS never zooms in on a field. */
+@media(pointer:coarse){
+  /* 16px keeps iOS from zooming the page in when a field is tapped; page styles set smaller sizes, hence !important */
+  input,select,textarea{font-size:16px!important}
+  .rp-link,.info-tip,.ex-btn,.page-export{min-height:38px;display:inline-flex;align-items:center;justify-content:center}
+  .ph-btn{min-height:40px}
+  .hs-card.clickable,.ov-table .clickable td{padding-top:12px;padding-bottom:12px}
+}
+@supports(padding:env(safe-area-inset-left)){
+  #sidebar{padding-left:env(safe-area-inset-left)}
+  #main{padding-bottom:env(safe-area-inset-bottom)}
+  .app-toast{right:calc(24px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom))}
+  .notif-toast{top:calc(66px + env(safe-area-inset-top));right:calc(18px + env(safe-area-inset-right))}
+  @media(orientation:landscape) and (pointer:coarse){
+    #main{padding-right:env(safe-area-inset-right)}
+    #pbar{padding-right:calc(12px + env(safe-area-inset-right))}
+  }
+  @media(max-width:600px){.notif-toast{left:calc(12px + env(safe-area-inset-left));right:calc(12px + env(safe-area-inset-right))}}
+  @media(display-mode:standalone){#pbar{padding-top:calc(8px + env(safe-area-inset-top))}}
+}
+/* Added to the Home Screen on an iPhone or iPad: the top bar clears the status bar. */
+html[data-display=standalone] #sidebar{padding-top:env(safe-area-inset-top)}
+/* Hover effects belong to devices with a pointer; on touch they stick after a tap. */
+@media(hover:none){
+  .hs-card:hover,.ov-panel:hover,.au-card:hover{transform:none;box-shadow:none}
+}
+.dev-tip{display:none;align-items:center;gap:10px;margin:12px 28px 0;padding:10px 14px;background:#eef6ff;border:1px solid #bcd8f5;border-left:4px solid var(--royal);border-radius:var(--r);font-size:.82rem;font-weight:600;color:#123a6b}
+html[data-os=ios][data-display=browser]:not([data-a2hs=dismissed]) .dev-tip{display:flex}
+.dev-tip b{font-weight:800}
+html[data-pointer=mouse] .ph-cam{display:none}
+.dev-tip button{margin-left:auto;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:0 4px}
+@media(max-width:780px){.dev-tip{margin:10px 14px 0}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 @media(pointer:coarse){
   #nav-btn{width:42px;height:42px}
@@ -1080,6 +1121,13 @@ body.nav-rail #acct-row{justify-content:center}
     <span class="nt-ic"><svg data-lucide="bell-ring" width="18" height="18"></svg></span>
     <div class="nt-body"><b id="nt-title"></b><span id="nt-text"></span></div>
     <div class="nt-actions"><button type="button" class="nt-open" id="nt-open">View</button><button type="button" class="nt-close" id="nt-close" aria-label="Dismiss">×</button></div>
+  </div>
+
+  <!-- iPhone / iPad in Safari: offer the Home Screen shortcut once -->
+  <div class="dev-tip" id="dev-tip">
+    <svg data-lucide="share" width="16" height="16" style="color:var(--royal);flex-shrink:0"></svg>
+    <div>Add <b>OSQA</b> to your Home Screen: tap Share, then “Add to Home Screen”.</div>
+    <button type="button" id="dev-tip-x" aria-label="Dismiss">×</button>
   </div>
 
   <!-- Edit mode banner -->
@@ -2359,7 +2407,7 @@ function buildSections(){
               <svg data-lucide="image-plus" width="14" height="14"></svg> Photo
               <input type="file" accept="image/*,.heic,.heif" multiple onchange="addPhotos(event,${si},${ii})">
             </label>
-            <label class="ph-btn" title="Take a photo with the camera">
+            <label class="ph-btn ph-cam" title="Take a photo with the camera">
               <svg data-lucide="camera" width="14" height="14"></svg> Camera
               <input type="file" accept="image/*,.heic,.heif" capture="environment" onchange="addPhotos(event,${si},${ii})">
             </label>
@@ -2492,6 +2540,32 @@ window.addEventListener('hashchange',()=>{
 // ── Responsive navigation ─────────────────────────────────
 // ≥1200px: full menu (or the icon rail if the person collapsed it). 901–1199px: icon rail unless expanded.
 // ≤900px: slide-in panel. The larger-screen choice is remembered in this browser only.
+// ═══ Device awareness ═══
+// The same app on a phone, a tablet and a desktop: the layout, the menu and the
+// controls follow the device in use, and are re-checked when it rotates or resizes.
+function deviceProfile(){
+  const ua=navigator.userAgent||'';
+  const touch=window.matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>1;
+  const ios=/iPad|iPhone|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1); // an iPad calls itself a Mac
+  const shortest=Math.min(screen.width||innerWidth,screen.height||innerHeight);
+  return {
+    kind:!touch?'desktop':shortest<600?'phone':'tablet',
+    touch, ios, android:/Android/i.test(ua),
+    standalone:window.matchMedia('(display-mode:standalone)').matches||navigator.standalone===true,
+  };
+}
+let device=deviceProfile();
+function applyDevice(){
+  device=deviceProfile();
+  const r=document.documentElement;
+  r.dataset.device=device.kind;
+  r.dataset.pointer=device.touch?'touch':'mouse';
+  r.dataset.os=device.ios?'ios':device.android?'android':'other';
+  r.dataset.display=device.standalone?'standalone':'browser';
+  r.dataset.orientation=innerWidth>=innerHeight?'landscape':'portrait';
+}
+applyDevice();
+try{ if(localStorage.getItem('qa-a2hs')==='off') document.documentElement.dataset.a2hs='dismissed'; }catch{}
 const drawerQuery=window.matchMedia('(max-width:900px)');
 const railQuery=window.matchMedia('(max-width:1199px)');
 let navPref=null;
@@ -2515,7 +2589,7 @@ function applyNavMode(){
   }
   document.body.classList.remove('nav-open');
   sidebar.inert=false;
-  const rail=navPref?navPref==='rail':railQuery.matches;
+  const rail=navPref?navPref==='rail':(railQuery.matches||device.kind==='tablet');
   document.body.classList.toggle('nav-rail',rail);
   btn.setAttribute('aria-expanded',String(!rail));
   btn.setAttribute('aria-label',rail?'Expand menu':'Collapse menu'); btn.title=btn.getAttribute('aria-label');
@@ -2545,6 +2619,12 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&document.body.classList.contains('nav-open')){ setDrawer(false); document.getElementById('nav-btn').focus(); }
 });
 [drawerQuery,railQuery].forEach(q=>q.addEventListener?q.addEventListener('change',applyNavMode):q.addListener(applyNavMode));
+window.addEventListener('orientationchange',()=>{ applyDevice(); applyNavMode(); });
+window.addEventListener('resize',()=>{ clearTimeout(window.__devTimer); window.__devTimer=setTimeout(()=>{ applyDevice(); applyNavMode(); },200); });
+document.getElementById('dev-tip-x').addEventListener('click',()=>{
+  document.documentElement.dataset.a2hs='dismissed';
+  try{ localStorage.setItem('qa-a2hs','off'); }catch{}
+});
 applyNavMode();
 
 // ═══════════════════════════════════════════════════════════
@@ -6582,7 +6662,7 @@ async function adRenderDrawer(){
     </section>
     <section><h4>Sign-in &amp; security</h4>
       ${row('Last sign-in',u.lastLoginAt?`${timeAgo(u.lastLoginAt)} <small>${new Date(u.lastLoginAt.replace(' ','T')+'Z').toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</small>`:'Never')}
-      ${row('Active sessions',u.activeSessions?`<span class="ad-online">${u.activeSessions} active</span>`:'None',u.activeSessions&&!self?btn('signout','Sign out everywhere'):'')}
+      ${row('Active sessions',u.activeSessions?`<span class="ad-online">${u.activeSessions} active</span>${u.sessionDevices?.length?`<small style="display:block">${ovEsc(u.sessionDevices.join(' · '))}</small>`:''}`:'None',u.activeSessions&&!self?btn('signout','Sign out everywhere'):'')}
       ${row('Failed sign-ins',u.lockedUntil?`<span class="ov-pill suspended">Locked</span> until ${new Date(u.lockedUntil).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:`${u.failedAttempts} since last success`,u.lockedUntil||u.failedAttempts?btn('unlock','Unlock'):'')}
       ${row('Password',u.mustChangePassword?'Temporary — must be changed at next sign-in':'Set by the user',self?'':btn('reset','Reset password'))}
     </section>

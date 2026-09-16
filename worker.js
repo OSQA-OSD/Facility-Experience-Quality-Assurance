@@ -1259,6 +1259,25 @@ async function exportItems(env, request) {
 
 /* ── Auth ───────────────────────────────────────────────── */
 
+/** "iPhone · Safari" — enough for an admin to recognise a sign-in, nothing more. */
+function deviceLabel(request) {
+  const ua = request.headers.get('user-agent') || '';
+  if (!ua) return null;
+  const device = /iPhone/.test(ua) ? 'iPhone'
+    : /iPad/.test(ua) || (/Macintosh/.test(ua) && /Mobile/.test(ua)) ? 'iPad'
+      : /Android/.test(ua) ? (/Mobile/.test(ua) ? 'Android phone' : 'Android tablet')
+        : /Macintosh/.test(ua) ? 'Mac'
+          : /Windows/.test(ua) ? 'Windows'
+            : /Linux/.test(ua) ? 'Linux' : 'Computer';
+  const browser = /Edg\//.test(ua) ? 'Edge'
+    : /OPR\//.test(ua) ? 'Opera'
+      : /Chrome\//.test(ua) && !/Chromium/.test(ua) ? 'Chrome'
+        : /CriOS\//.test(ua) ? 'Chrome'
+          : /FxiOS\//.test(ua) || /Firefox\//.test(ua) ? 'Firefox'
+            : /Safari\//.test(ua) ? 'Safari' : null;
+  return browser ? `${device} · ${browser}` : device;
+}
+
 const MIN_PASSWORD_LENGTH = 8;
 
 const ADMIN_ROLE = 'quality_admin';
@@ -1342,7 +1361,7 @@ async function authStatus(env) {
   return json({ hasUsers: await hasAnyUser(env) });
 }
 
-async function authBootstrap(env, body) {
+async function authBootstrap(env, body, request) {
   const name = (body?.name || '').trim();
   const username = (body?.username || '').trim().toLowerCase();
   const password = body?.password || '';
@@ -1358,7 +1377,7 @@ async function authBootstrap(env, body) {
      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
   ).bind(id, name, username, hash, salt, iterations, rounds, ADMIN_ROLE).run();
 
-  const { token, expiresAt } = await createSession(env, id);
+  const { token, expiresAt } = await createSession(env, id, deviceLabel(request));
   await touchLogin(env, id);
   await audit(env, { id, name }, 'user.create', id, `${name} (@${username})`, 'First administrator created at setup');
   return json(
@@ -1382,7 +1401,7 @@ function publicUser(user) {
   };
 }
 
-async function authLogin(env, body) {
+async function authLogin(env, body, request) {
   const username = (body?.username || '').trim().toLowerCase();
   const password = body?.password || '';
   if (!username || !password) return fail('username and password are required', 400);
@@ -1408,7 +1427,7 @@ async function authLogin(env, body) {
     return json({ ok: true, mustChangePassword: true, username: user.username });
   }
 
-  const { token, expiresAt } = await createSession(env, user.id);
+  const { token, expiresAt } = await createSession(env, user.id, deviceLabel(request));
   await touchLogin(env, user.id);
   return json(
     { ok: true, user: publicUser(user) },
@@ -1417,7 +1436,7 @@ async function authLogin(env, body) {
   );
 }
 
-async function authCompleteSetup(env, body) {
+async function authCompleteSetup(env, body, request) {
   const username = (body?.username || '').trim().toLowerCase();
   const currentPassword = body?.currentPassword || '';
   const newPassword = body?.newPassword || '';
@@ -1437,7 +1456,7 @@ async function authCompleteSetup(env, body) {
        must_change_password = 0, updated_at = datetime('now') WHERE id = ?1`,
   ).bind(user.id, hash, salt, iterations, rounds).run();
 
-  const { token, expiresAt } = await createSession(env, user.id);
+  const { token, expiresAt } = await createSession(env, user.id, deviceLabel(request));
   await touchLogin(env, user.id);
   return json(
     { ok: true, user: publicUser(user) },
@@ -1486,7 +1505,8 @@ async function adminListUsers(env) {
   const { results } = await env.DB.prepare(
     `SELECT u.id, u.name, u.username, u.role, u.status, u.can_edit, u.can_delete, u.can_export, u.permissions,
             u.must_change_password, u.failed_attempts, u.locked_until, u.last_login_at, u.created_at,
-            (SELECT COUNT(*) FROM qa_sessions s WHERE s.user_id = u.id AND s.expires_at > ?1) AS sessions
+            (SELECT COUNT(*) FROM qa_sessions s WHERE s.user_id = u.id AND s.expires_at > ?1) AS sessions,
+            (SELECT group_concat(DISTINCT s.device) FROM qa_sessions s WHERE s.user_id = u.id AND s.expires_at > ?1 AND s.device IS NOT NULL) AS devices
      FROM qa_users u ORDER BY u.created_at ASC`,
   ).bind(Date.now()).all();
   const users = (results || []).map((u) => {
@@ -1499,6 +1519,7 @@ async function adminListUsers(env) {
       failedAttempts: u.failed_attempts || 0,
       lockedUntil: u.locked_until && u.locked_until > Date.now() ? new Date(u.locked_until).toISOString() : null,
       lastLoginAt: u.last_login_at, activeSessions: u.sessions, createdAt: u.created_at,
+      sessionDevices: u.devices ? u.devices.split(',').filter(Boolean) : [],
     };
   });
   return json({ users, catalog: PERMISSIONS, roleDefaults: ROLE_PERMISSIONS });
@@ -1702,9 +1723,9 @@ async function handleAdmin(request, env, path, user) {
 async function handleAuth(request, env, path) {
   const method = request.method.toUpperCase();
   if (path === 'auth/status' && method === 'GET') return authStatus(env);
-  if (path === 'auth/bootstrap' && method === 'POST') return authBootstrap(env, await request.json());
-  if (path === 'auth/login' && method === 'POST') return authLogin(env, await request.json());
-  if (path === 'auth/complete-setup' && method === 'POST') return authCompleteSetup(env, await request.json());
+  if (path === 'auth/bootstrap' && method === 'POST') return authBootstrap(env, await request.json(), request);
+  if (path === 'auth/login' && method === 'POST') return authLogin(env, await request.json(), request);
+  if (path === 'auth/complete-setup' && method === 'POST') return authCompleteSetup(env, await request.json(), request);
   if (path === 'auth/logout' && method === 'POST') return authLogout(request, env);
   if (path === 'auth/me' && method === 'GET') return authMe(request, env);
   if (path === 'auth/change-password' && method === 'POST') return authChangePassword(request, env, await request.json());
