@@ -435,6 +435,8 @@ async function officerBoard(env, viewer, url) {
       inspectionId: res ? res.inspectionId : null,
     };
   });
+  const boardReviews = await reviewStateFor(env, buildings.map((b) => b.inspectionId));
+  for (const b of buildings) b.review = b.inspectionId ? (boardReviews.get(b.inspectionId) || { status: 'pending' }) : null;
 
   // Auditors: everyone active, plus suspended ones still holding work this period.
   const openElsewhere = new Map();
@@ -595,6 +597,8 @@ async function auditorProfile(env, viewer, url) {
       inspectionId: r ? r.inspectionId : null, inspectionDate: r ? r.date : null,
     };
   });
+  const assignmentReviews = await reviewStateFor(env, all.map((x) => x.inspectionId));
+  for (const x of all) x.review = x.inspectionId ? (assignmentReviews.get(x.inspectionId) || { status: 'pending' }) : null;
   const done = all.filter((x) => x.status === 'completed');
 
   // Performance, all quarters
@@ -901,6 +905,23 @@ function reviewStatus(updatedAt, decision) {
   if (!decision) return 'pending';
   if ((updatedAt || '') > decision.created_at) return 'resubmitted';
   return decision.decision === 'approved' ? 'approved' : 'changes';
+}
+
+/** Review state for a set of reports, so boards and profiles can show it without opening anything. */
+async function reviewStateFor(env, ids) {
+  const list = [...new Set((ids || []).filter((x) => Number.isInteger(Number(x)) && x != null).map(Number))];
+  if (!list.length) return new Map();
+  const { results } = await env.DB.prepare(
+    `SELECT r.inspection_id AS id, r.decision, r.reviewer_name, r.created_at, i.updated_at
+     FROM inspection_reviews r JOIN inspections i ON i.id = r.inspection_id
+     WHERE r.inspection_id IN (SELECT value FROM json_each(?1))
+       AND r.id = (SELECT MAX(x.id) FROM inspection_reviews x WHERE x.inspection_id = r.inspection_id AND x.decision != 'comment')`,
+  ).bind(JSON.stringify(list)).all();
+  const map = new Map();
+  for (const r of results || []) {
+    map.set(r.id, { status: reviewStatus(r.updated_at, { decision: r.decision, created_at: r.created_at }), by: r.reviewer_name, at: r.created_at });
+  }
+  return map;
 }
 
 async function libraryContext(env) {
