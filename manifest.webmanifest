@@ -1,0 +1,16 @@
+{
+  "name": "OSQA — Facility Experience Quality Assurance",
+  "short_name": "OSQA",
+  "description": "The official system for facility inspections and quality reports.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#002070",
+  "icons": [
+    { "src": "/osqa-icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/osqa-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/osqa-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
