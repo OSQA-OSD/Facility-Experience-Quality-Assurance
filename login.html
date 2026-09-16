@@ -15,8 +15,8 @@
 <script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
 <style>
 :root{
-  --teal:#26A8AB;--teal-lt:#8CFEE3;--royal:#0033A0;--royal-dk:#002070;
-  --bg:#EEF3F7;--border:#C8D8E4;--text:#102040;--muted:#456080;
+  --teal:#00A3E0;--teal-lt:#7FD4F2;--royal:#0033A0;--royal-dk:#002070;
+  --bg:#EEF3F7;--border:#C0C0C0;--text:#102040;--muted:#5F6369;
   --good:#00843D;--danger:#C0392B;--r:12px;--font:'Cairo',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -25,8 +25,8 @@ body{
   font-family:var(--font);color:var(--text);min-height:100vh;min-height:100dvh;
   padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;
-  background:radial-gradient(circle at 85% 0%,rgba(38,168,171,.28),transparent 45%),
-             linear-gradient(145deg,#001540 0%,#002280 50%,#0a5f60 100%);
+  background:radial-gradient(circle at 85% 0%,rgba(0,163,224,.28),transparent 45%),
+             linear-gradient(150deg,#001540 0%,#002A87 55%,#0A67B0 100%);
   background-attachment:fixed;
 }
 .back{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.75);text-decoration:none;font-weight:700;font-size:.8rem;width:100%;max-width:400px}
@@ -63,7 +63,7 @@ input:focus{border-color:var(--teal)}
 .msg.err{display:block;background:rgba(192,57,43,.1);color:var(--danger)}
 .msg.ok{display:block;background:rgba(0,132,61,.1);color:var(--good)}
 
-.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(38,168,171,.14);color:#0c7b7d;
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,163,224,.14);color:#0c7b7d;
   font-weight:800;font-size:.68rem;letter-spacing:.04em;padding:5px 11px;border-radius:999px;margin-bottom:16px}
 .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
   animation:spin .7s linear infinite}
