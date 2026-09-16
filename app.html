@@ -943,6 +943,41 @@ body.nav-rail #acct-row{justify-content:center}
   .app-toast{right:12px;bottom:12px;left:12px;max-width:none}
 }
 
+/* Custom Report: the setup on the left, the report itself on the right */
+.cx-wrap{display:grid;grid-template-columns:330px minmax(0,1fr);gap:20px;padding:20px 44px 0;align-items:start}
+.cx-side{display:grid;gap:12px;position:sticky;top:66px;max-height:calc(100dvh - 90px);overflow-y:auto;padding-right:2px}
+.cx-block{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px 15px}
+.cx-hd{display:flex;align-items:center;gap:8px;font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:11px}
+.cx-hd b{width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;font-size:.68rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cx-hd .rp-link{margin-left:auto;text-transform:none;letter-spacing:0}
+.cx-fields{display:grid;gap:9px}
+.cx-fields label{display:grid;gap:4px;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.cx-fields select{border:1.5px solid var(--border);border-radius:8px;padding:7px 9px;font-size:.8rem;font-family:var(--font);color:var(--text);background:#fff;font-weight:600;text-transform:none;letter-spacing:0}
+.cx-dims{flex-wrap:wrap}
+.cx-group-t{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 5px}
+.cx-group-t:first-child{margin-top:0}
+.cx-opt{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.8rem;font-weight:600;color:var(--text);cursor:pointer;text-transform:none;letter-spacing:0}
+.cx-opt input{width:15px;height:15px;accent-color:var(--royal);flex-shrink:0;margin:0}
+.cx-parts{display:grid;gap:2px;margin-bottom:10px}
+.cx-main{min-width:0}
+.cx-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.cx-doc{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:26px 28px 30px;min-height:320px}
+.cx-doc-hd{border-top:4px solid var(--royal);padding-top:14px;margin-bottom:20px}
+.cx-doc-hd h3{font-size:1.25rem;font-weight:900;color:var(--royal-dk);line-height:1.3}
+.cx-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.cx-chip{border:1px solid var(--border);border-radius:999px;padding:3px 11px;font-size:.72rem;font-weight:700;color:var(--muted);background:var(--bg)}
+.cx-chip b{color:var(--text);font-weight:800;margin-left:4px}
+.cx-part{margin-bottom:24px}
+.cx-part:last-child{margin-bottom:0}
+.cx-part h4{font-size:.76rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px}
+.cx-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.cx-card{border:1px solid var(--border);border-left:4px solid var(--teal);border-radius:10px;padding:12px 14px}
+.cx-card b{display:block;font-size:1.5rem;font-weight:900;color:var(--royal-dk);line-height:1.2}
+.cx-card span{display:block;font-size:.72rem;font-weight:700;color:var(--muted);margin-top:3px}
+.cx-empty{padding:26px;text-align:center;color:var(--muted);font-size:.85rem}
+@media(max-width:1100px){.cx-wrap{grid-template-columns:1fr}.cx-side{position:static;max-height:none}}
+@media(max-width:780px){.cx-wrap{padding-left:14px;padding-right:14px}.cx-doc{padding:18px 15px 22px}}
+
 /* Long tables keep their column headings in view while scrolling */
 .ov-scroll{max-height:none}
 .ov-scroll table thead th{position:sticky;top:0;z-index:2;background:var(--bg);box-shadow:inset 0 -1px 0 var(--border)}
@@ -1676,6 +1711,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <button class="page-tab active" data-tab="insights"><svg data-lucide="gauge" width="14" height="14"></svg>Insights</button>
         <button class="page-tab" data-tab="builder"><svg data-lucide="sliders-horizontal" width="14" height="14"></svg>Report Builder</button>
         <button class="page-tab" data-tab="compare"><svg data-lucide="git-compare" width="14" height="14"></svg>Compare</button>
+        <button class="page-tab" data-tab="custom"><svg data-lucide="wand-sparkles" width="14" height="14"></svg>Custom Report</button>
         <button class="page-tab" data-tab="quality"><svg data-lucide="shield-check" width="14" height="14"></svg>Data Quality</button>
         <button class="page-export rp-export" id="rp-export" type="button" title="Download this tab as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
       </div>
@@ -1983,6 +2019,59 @@ html[data-pointer=mouse] .ph-cam{display:none}
         </div>
       </div>
     </div>
+
+    <!-- Custom Report: pick what goes in, and the export carries exactly that -->
+    <div id="rp-custom" hidden>
+      <div class="cx-wrap">
+        <aside class="cx-side">
+          <div class="cx-block">
+            <div class="cx-hd"><b>1</b> What it covers</div>
+            <div class="cx-fields">
+              <label>Period<select id="cx-period"></select></label>
+              <label>Scores<select id="cx-scores">
+                <option value="both">Beginning and end of quarter</option>
+                <option value="BOQI">Beginning of quarter only</option>
+                <option value="EOQI">End of quarter only</option>
+                <option value="all">Every inspection</option>
+              </select></label>
+              <label>Division<select id="cx-division"><option value="">All divisions</option></select></label>
+              <label>Area<select id="cx-area"><option value="">All areas</option></select></label>
+              <label>Building<select id="cx-building"><option value="">All buildings</option></select></label>
+              <label>Auditor<select id="cx-auditor"><option value="">All auditors</option></select></label>
+            </div>
+          </div>
+          <div class="cx-block">
+            <div class="cx-hd"><b>2</b> One row per</div>
+            <div class="rp-chips cx-dims" id="cx-group"></div>
+          </div>
+          <div class="cx-block">
+            <div class="cx-hd"><b>3</b> Columns <button type="button" class="rp-link" id="cx-cols-none">Clear all</button></div>
+            <div id="cx-metrics"></div>
+          </div>
+          <div class="cx-block">
+            <div class="cx-hd"><b>4</b> Parts of the report</div>
+            <div class="cx-parts" id="cx-parts"></div>
+            <div class="cx-fields cx-chart-opts">
+              <label>Chart shows<select id="cx-chart-metric"></select></label>
+              <label>Chart type<select id="cx-chart-type"><option value="bar">Bars</option><option value="line">Line</option></select></label>
+            </div>
+          </div>
+        </aside>
+        <div class="cx-main">
+          <div class="cx-bar">
+            <div class="rp-saved">
+              <select id="cx-saved" aria-label="Saved custom reports"><option value="">Saved custom reports…</option></select>
+              <button type="button" class="rp-link" id="cx-save"><svg data-lucide="bookmark-plus" width="14" height="14" style="vertical-align:-3px"></svg> Save setup</button>
+              <button type="button" class="rp-link" id="cx-saved-del" hidden style="color:var(--danger)">Delete</button>
+              <button type="button" class="rp-link" id="cx-reset">Reset</button>
+            </div>
+            <span class="rp-count" id="cx-count"></span>
+            <button type="button" class="ex-btn rp-export" id="cx-export"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
+          </div>
+          <div class="cx-doc" id="cx-doc"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- SCORECARD (step 3 of the inspection) -->
@@ -2276,6 +2365,7 @@ let inBuildings = null, inReady = false, inAssignCache = {}; // Inspection detai
 let adUsers = [], adReady = false, adTab = 'users', adRoleDefaults = null, adBuildings = null, adEditingBuilding = null, adAudit = [], adAuditMore = false, adOpenUserId = null, adUserFilter = 'all', adAuditFilter = 'all', lastSection = 'pg-s0'; // Admin Control state; last opened inspection section
 let ofData = null, ofView = null, ofReady = false, ofReq = 0, ofPrevDone = null, ofPrevKey = '', ofSelected = new Set(), ofRowsStale = false; // Assign & Track state
 let libReady = false, libReq = 0, libRows = [], libData = null, libStatus = '', libPending = {}, libTimer = null, rvId = null, rvData = null; // Inspection Reports
+let cxReady = false, cx = null, cxView = null, cxChart = null; // Custom Report
 let rpTab = 'insights', insReady = false, insSavedQuarter = null, insSavedDivision = '', insHeatData = null, cmpReady = false, cmpDim = 'division', cmpMode = 'quarter', cmpRows = null, cmpView = null, insView = null, rpView = null, dqReady = false, dqIssues = null, dqView = null, rpSavedList = [], rpSavedReady = false; // Reports tabs
 let exCtx = null, exModel = null, exFmt = 'pdf', exPicks = {}; // Export dialog
 let rpData = null, rpReady = false, rpCharts = {}, rpShown = 100, rpGroup = 'division', rpMetric = 'avg', rpTrend = 'quarter'; // Reports state
@@ -5304,15 +5394,16 @@ async function rvAction(act){
 // tabs or filters never waits on the server. Chart colours: divisions keep a fixed,
 // colour-blind-checked hue (by alphabetical division), Compare uses blue (A) / orange (B),
 // and the heatmap diverges around "Acceptable" (red below, grey on it, blue above).
-function rpTabLabel(t){ return ({insights:'Insights',builder:'Report Builder',compare:'Compare',quality:'Data Quality'})[t]||''; }
-function rpTabValid(t){ return ['insights','builder','compare','quality'].includes(t); }
+function rpTabLabel(t){ return ({insights:'Insights',builder:'Report Builder',compare:'Compare',custom:'Custom Report',quality:'Data Quality'})[t]||''; }
+function rpTabValid(t){ return ['insights','builder','compare','custom','quality'].includes(t); }
 function rpShowTab(){
   document.querySelectorAll('#rp-tabs [data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===rpTab));
-  ['insights','builder','compare','quality'].forEach(t=>{ document.getElementById('rp-'+t).hidden=t!==rpTab; });
+  ['insights','builder','compare','custom','quality'].forEach(t=>{ document.getElementById('rp-'+t).hidden=t!==rpTab; });
   updateTopBar('pg-reports');
   if(!rpData) return;
   if(rpTab==='insights') renderInsights();
   else if(rpTab==='compare') renderCompare();
+  else if(rpTab==='custom'){ renderCustom(); rpLoadSaved(); }
   else if(rpTab==='quality') renderQuality();
   else { renderReports(); rpLoadSaved(); }
 }
@@ -5876,14 +5967,16 @@ async function rpLoadSaved(){
 }
 function rpRenderSaved(){
   const sel=document.getElementById('rp-saved'), cur=sel.value;
-  const mine=rpSavedList.filter(r=>r.mine), shared=rpSavedList.filter(r=>!r.mine);
+  const list=rpSavedList.filter(r=>r.config?.kind!=='custom');
+  const mine=list.filter(r=>r.mine), shared=list.filter(r=>!r.mine);
   const opt=r=>`<option value="${r.id}">${ovEsc(r.name)}${r.mine&&r.shared?' · shared':''}${!r.mine?' · '+ovEsc(r.owner):''}</option>`;
-  sel.innerHTML=`<option value="">${rpSavedList.length?'Saved reports…':'No saved reports yet'}</option>`+
+  sel.innerHTML=`<option value="">${list.length?'Saved reports…':'No saved reports yet'}</option>`+
     (mine.length?`<optgroup label="My reports">${mine.map(opt).join('')}</optgroup>`:'')+
     (shared.length?`<optgroup label="Shared with everyone">${shared.map(opt).join('')}</optgroup>`:'');
-  sel.value=rpSavedList.some(r=>String(r.id)===cur)?cur:'';
-  const r=rpSavedList.find(x=>String(x.id)===sel.value);
+  sel.value=list.some(r=>String(r.id)===cur)?cur:'';
+  const r=list.find(x=>String(x.id)===sel.value);
   document.getElementById('rp-saved-del').hidden=!(r&&r.canDelete);
+  if(cxReady) cxRenderSaved();
 }
 function initSavedReports(){
   if(rpSavedReady) return;
@@ -5897,6 +5990,7 @@ function initSavedReports(){
     showToast(`Loaded “${r.name}”`);
   });
   document.getElementById('rp-save').addEventListener('click',()=>{
+    document.getElementById('sr-form').dataset.kind='builder';
     const r=rpSavedList.find(x=>String(x.id)===sel.value&&x.mine);
     document.getElementById('sr-name').value=r?r.name:'';
     document.getElementById('sr-shared').checked=r?r.shared:false;
@@ -5909,13 +6003,16 @@ function initSavedReports(){
     const msg=document.getElementById('sr-msg');
     try{
       const res=await fetch('/api/reports/saved',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        name:document.getElementById('sr-name').value,shared:document.getElementById('sr-shared').checked,config:rpCurrentConfig()})});
+        name:document.getElementById('sr-name').value,shared:document.getElementById('sr-shared').checked,
+        config:document.getElementById('sr-form').dataset.kind==='custom'?{kind:'custom',...cx}:rpCurrentConfig()})});
       const d=await res.json().catch(()=>({}));
       if(!res.ok) throw new Error(d.error||'Could not save the report.');
       closeModal('modal-save-report');
       showToast(d.updated?'Saved report updated':'Report saved');
       await rpLoadSaved();
-      document.getElementById('rp-saved').value=String(d.id); rpRenderSaved();
+      const target=document.getElementById('sr-form').dataset.kind==='custom'?'cx-saved':'rp-saved';
+      document.getElementById(target).value=String(d.id);
+      rpRenderSaved(); if(cxReady) cxRenderSaved();
     }catch(err){ msg.textContent=err.message; msg.style.display='block'; }
   });
   document.getElementById('modal-save-report').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal('modal-save-report'); });
@@ -5929,6 +6026,301 @@ function initSavedReports(){
     }catch(err){ showToast(err.message,true); }
     rpLoadSaved();
   });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CUSTOM REPORT — choose what the report covers, what each row is, which columns
+// it carries and which parts appear. The preview is the report, and the export
+// (PDF, Excel or image) carries exactly what is on screen — nothing else.
+// ═══════════════════════════════════════════════════════════
+const CX_DIMS={
+  division: {label:'Division', key:x=>x.division||'Unknown', bkey:b=>b.division},
+  area:     {label:'Area', key:x=>x.area||'Not linked to a building', bkey:b=>b.area},
+  building: {label:'Building', key:x=>x.building||'Unknown', bkey:b=>b.name},
+  inspector:{label:'Auditor', key:x=>x.inspector||'Unknown'},
+  quarter:  {label:'Quarter', key:x=>x.quarter||'No date', time:true},
+  month:    {label:'Month', key:x=>(x.date||'').slice(0,7)||'No date', time:true},
+  type:     {label:'Inspection type', key:x=>x.type||'Unknown'},
+};
+const cxAvg=list=>r1(rpMean(list.filter(v=>typeof v==='number')));
+const cxTypeAvg=(g,t)=>cxAvg(g.list.filter(x=>x.type===t).map(x=>x.overall));
+const cxShare=(g,test)=>g.scores.length?Math.round(g.scores.filter(test).length/g.scores.length*100):null;
+// Every column the report can carry. `needsBuildings` marks the ones that only
+// make sense when the rows are buildings, areas or divisions.
+const CX_METRICS=[
+  ['Coverage',[
+    ['buildings','Buildings in list',g=>g.buildings?g.buildings.length:null,{needsBuildings:true}],
+    ['inspected','Buildings inspected',g=>g.covered],
+    ['coverage','Coverage (%)',g=>g.buildings&&g.buildings.length?Math.round(g.covered/g.buildings.length*100):null,{needsBuildings:true,unit:'%'}],
+    ['areas','Areas',g=>new Set(g.list.map(x=>x.area).filter(Boolean)).size],
+    ['auditors','Auditors',g=>new Set(g.list.map(x=>x.inspector).filter(Boolean)).size],
+    ['inspections','Inspections',g=>g.list.length],
+  ]],
+  ['Scores',[
+    ['avg','Average score',g=>cxAvg(g.scores)],
+    ['min','Lowest',g=>g.scores.length?Math.min(...g.scores):null],
+    ['max','Highest',g=>g.scores.length?Math.max(...g.scores):null],
+    ['sd','Std deviation',g=>g.scores.length>1?rpStats(g.list).sd:null],
+  ]],
+  ['Beginning and end of quarter',[
+    ['boqi','BOQI average',g=>cxTypeAvg(g,'BOQI')],
+    ['eoqi','EOQI average',g=>cxTypeAvg(g,'EOQI')],
+    ['change','Change (EOQI − BOQI)',g=>{ const a=cxTypeAvg(g,'BOQI'), b=cxTypeAvg(g,'EOQI'); return a!=null&&b!=null?r1(b-a):null; }],
+  ]],
+  ['Ratings',[
+    ['good','Good or excellent (%)',g=>cxShare(g,v=>v>=81),{unit:'%'}],
+    ['low','Below acceptable (%)',g=>cxShare(g,v=>v<71),{unit:'%'}],
+    ...RP_BANDS.map(b=>['band_'+b,b,g=>g.list.filter(x=>rpBandOf(x)===b).length]),
+  ]],
+  ['Sections (out of 10)',SECTIONS.map((sec,i)=>['sec_'+i,sec.title,g=>{
+    const vals=[]; g.list.forEach(x=>{ const v=sectionScores(x).get(sec.title); if(typeof v==='number') vals.push(v); });
+    return cxAvg(vals);
+  }])],
+];
+const CX_PARTS=[['cards','Summary cards'],['chart','Chart'],['table','Table'],['list','Inspection list']];
+const CX_METRIC=Object.fromEntries(CX_METRICS.flatMap(([,items])=>items.map(([id,label,calc,opt])=>[id,{label,calc,...(opt||{})}])));
+const CX_DEFAULT={period:'',scores:'both',division:'',area:'',building:'',auditor:'',group:'division',
+  metrics:['inspected','inspections','avg','boqi','eoqi','change'],parts:['cards','chart','table'],chartMetric:'avg',chartType:'bar'};
+
+function cxLoad(){
+  const saved=stateLoad('cx-state');
+  cx={...CX_DEFAULT,...saved};
+  cx.metrics=(cx.metrics||[]).filter(id=>CX_METRIC[id]);
+  cx.parts=(cx.parts||[]).filter(id=>CX_PARTS.some(([p])=>p===id));
+  if(!CX_DIMS[cx.group]) cx.group='division';
+}
+function cxSave(){ stateSave('cx-state',cx); }
+
+function initCustom(){
+  if(cxReady) return;
+  cxReady=true;
+  cxLoad();
+  document.getElementById('cx-group').innerHTML=Object.entries(CX_DIMS)
+    .map(([id,d])=>`<button type="button" class="rp-chip" data-dim="${id}">${d.label}</button>`).join('');
+  document.getElementById('cx-metrics').innerHTML=CX_METRICS.map(([title,items])=>
+    `<div class="cx-group-t">${ovEsc(title)}</div>`+items.map(([id,label])=>
+      `<label class="cx-opt"><input type="checkbox" data-metric="${id}"> ${ovEsc(label)}</label>`).join('')).join('');
+  document.getElementById('cx-parts').innerHTML=CX_PARTS.map(([id,label])=>
+    `<label class="cx-opt"><input type="checkbox" data-part="${id}"> ${ovEsc(label)}</label>`).join('');
+  const onChange=()=>{ cxRead(); cxSave(); renderCustom(); const sel=document.getElementById('cx-saved'); if(sel.value){ sel.value=''; cxRenderSaved(); } };
+  ['cx-period','cx-scores','cx-division','cx-area','cx-building','cx-auditor','cx-chart-metric','cx-chart-type']
+    .forEach(id=>document.getElementById(id).addEventListener('change',onChange));
+  document.getElementById('cx-group').addEventListener('click',e=>{
+    const chip=e.target.closest('[data-dim]');
+    if(chip){ cx.group=chip.dataset.dim; cxSave(); renderCustom(); }
+  });
+  document.getElementById('cx-metrics').addEventListener('change',onChange);
+  document.getElementById('cx-parts').addEventListener('change',onChange);
+  document.getElementById('cx-cols-none').addEventListener('click',()=>{
+    document.querySelectorAll('#cx-metrics [data-metric]').forEach(b=>{ b.checked=false; });
+    onChange();
+  });
+  document.getElementById('cx-reset').addEventListener('click',()=>{ cx={...CX_DEFAULT}; cxSave(); renderCustom(); });
+  document.getElementById('cx-export').addEventListener('click',()=>openExport('custom'));
+  document.getElementById('cx-save').addEventListener('click',()=>cxOpenSave());
+  document.getElementById('cx-saved').addEventListener('change',()=>{
+    const r=rpSavedList.find(x=>String(x.id)===document.getElementById('cx-saved').value);
+    if(!r) { cxRenderSaved(); return; }
+    cx={...CX_DEFAULT,...r.config,kind:undefined};
+    cxSave(); renderCustom(); cxRenderSaved();
+    showToast(`Loaded “${r.name}”`);
+  });
+  document.getElementById('cx-saved-del').addEventListener('click',async()=>{
+    const sel=document.getElementById('cx-saved'), r=rpSavedList.find(x=>String(x.id)===sel.value);
+    if(!r||!confirm(`Delete the saved report “${r.name}”?`)) return;
+    try{
+      const res=await fetch('/api/reports/saved/'+r.id,{method:'DELETE'});
+      if(!res.ok) throw new Error((await res.json().catch(()=>({}))).error||'Could not delete it.');
+      showToast('Saved report deleted'); sel.value='';
+    }catch(err){ showToast(err.message,true); }
+    rpLoadSaved();
+  });
+}
+/** Reads the panel back into state. */
+function cxRead(){
+  cx.period=ofVal('cx-period'); cx.scores=ofVal('cx-scores');
+  cx.division=ofVal('cx-division'); cx.area=ofVal('cx-area'); cx.building=ofVal('cx-building'); cx.auditor=ofVal('cx-auditor');
+  cx.metrics=[...document.querySelectorAll('#cx-metrics [data-metric]')].filter(b=>b.checked).map(b=>b.dataset.metric);
+  cx.parts=[...document.querySelectorAll('#cx-parts [data-part]')].filter(b=>b.checked).map(b=>b.dataset.part);
+  cx.chartMetric=ofVal('cx-chart-metric')||'avg'; cx.chartType=ofVal('cx-chart-type')||'bar';
+}
+function cxFilter(){
+  const inPeriod=cx.period?periodTest(cx.period):()=>true;
+  const keepType=cx.scores==='all'?()=>true
+    :cx.scores==='both'?(x=>x.type==='BOQI'||x.type==='EOQI')
+      :(x=>x.type===cx.scores);
+  return rpData.inspections.filter(x=>
+    inPeriod(x) && keepType(x)
+    && (!cx.division||x.division===cx.division)
+    && (!cx.area||x.area===cx.area)
+    && (!cx.building||x.building===cx.building)
+    && (!cx.auditor||x.inspector===cx.auditor));
+}
+/** The buildings each row covers, so "buildings in list" and coverage mean something. */
+function cxBuildingsFor(dim){
+  if(!dim.bkey) return null;
+  const scope=rpData.buildings.filter(b=>(!cx.division||b.division===cx.division)&&(!cx.area||b.area===cx.area)&&(!cx.building||b.name===cx.building));
+  const map=new Map();
+  scope.forEach(b=>{ const k=dim.bkey(b)||'—'; if(!map.has(k)) map.set(k,[]); map.get(k).push(b); });
+  return map;
+}
+function cxRows(){
+  const dim=CX_DIMS[cx.group], list=cxFilter(), byBuilding=cxBuildingsFor(dim);
+  const map=new Map();
+  list.forEach(x=>{ const k=dim.key(x)||'—'; if(!map.has(k)) map.set(k,[]); map.get(k).push(x); });
+  if(byBuilding) byBuilding.forEach((_,k)=>{ if(!map.has(k)) map.set(k,[]); });  // a row with no inspections still belongs in a coverage report
+  const rows=[...map.entries()].map(([key,items])=>cxGroup(key,items,byBuilding?byBuilding.get(key)||[]:null));
+  rows.sort(dim.time?(a,b)=>String(a.key).localeCompare(String(b.key))
+    :(a,b)=>(cxValue(b,'avg')??-1)-(cxValue(a,'avg')??-1)||b.list.length-a.list.length||String(a.key).localeCompare(String(b.key)));
+  return {rows,list,total:cxGroup('All',list,byBuilding?[...new Set([...byBuilding.values()].flat())]:null)};
+}
+function cxGroup(key,items,buildings){
+  return {key,list:items,buildings,scores:items.map(x=>x.overall).filter(v=>typeof v==='number'),
+    covered:new Set(items.filter(x=>x.buildingId).map(x=>x.buildingId)).size};
+}
+const cxValue=(g,id)=>{ const m=CX_METRIC[id]; return m?m.calc(g):null; };
+const cxCell=(g,id)=>{ const v=cxValue(g,id); return v==null?null:v; };
+function cxTitle(){
+  const dim=CX_DIMS[cx.group];
+  return [cx.period||'All periods',`by ${dim.label.toLowerCase()}`].join(' · ');
+}
+function cxContext(){
+  const scores={both:'BOQI and EOQI',BOQI:'Beginning of quarter (BOQI)',EOQI:'End of quarter (EOQI)',all:'Every inspection'}[cx.scores];
+  return [['Period',cx.period||'All periods'],['Scores',scores],['Rows',CX_DIMS[cx.group].label],
+    ...(cx.division?[['Division',cx.division]]:[]),...(cx.area?[['Area',cx.area]]:[]),
+    ...(cx.building?[['Building',cx.building]]:[]),...(cx.auditor?[['Auditor',cx.auditor]]:[])];
+}
+function renderCustom(){
+  initCustom();
+  if(!rpData) return;
+  // Period list: quarters and whole years, plus "all periods"
+  const qs=rpQuarters(), ys=rpYears(), per=document.getElementById('cx-period');
+  per.innerHTML='<option value="">All periods</option>'
+    +`<optgroup label="Quarter">${qs.map(q=>`<option value="${q}">${q}</option>`).join('')}</optgroup>`
+    +`<optgroup label="Whole year">${ys.map(y=>`<option value="${y}">${yearLabel(y)}</option>`).join('')}</optgroup>`;
+  per.value=[...qs,...ys].includes(cx.period)?cx.period:'';
+  cx.period=per.value;
+  document.getElementById('cx-scores').value=cx.scores;
+  rpSelect('cx-division',rpDivisionList(),'All divisions');
+  document.getElementById('cx-division').value=rpDivisionList().includes(cx.division)?cx.division:'';
+  cx.division=ofVal('cx-division');
+  const areas=[...new Set(rpData.buildings.filter(b=>!cx.division||b.division===cx.division).map(b=>b.area).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  rpSelect('cx-area',areas,'All areas');
+  document.getElementById('cx-area').value=areas.includes(cx.area)?cx.area:'';
+  cx.area=ofVal('cx-area');
+  const buildings=[...new Set(rpData.buildings.filter(b=>(!cx.division||b.division===cx.division)&&(!cx.area||b.area===cx.area)).map(b=>b.name))].sort((a,b)=>a.localeCompare(b));
+  rpSelect('cx-building',buildings,'All buildings');
+  document.getElementById('cx-building').value=buildings.includes(cx.building)?cx.building:'';
+  cx.building=ofVal('cx-building');
+  const auditors=[...new Set(rpData.inspections.map(x=>x.inspector).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  rpSelect('cx-auditor',auditors,'All auditors');
+  document.getElementById('cx-auditor').value=auditors.includes(cx.auditor)?cx.auditor:'';
+  cx.auditor=ofVal('cx-auditor');
+
+  document.querySelectorAll('#cx-group [data-dim]').forEach(c=>c.classList.toggle('active',c.dataset.dim===cx.group));
+  const rowsAreBuildings=!!CX_DIMS[cx.group].bkey;
+  document.querySelectorAll('#cx-metrics [data-metric]').forEach(b=>{
+    const m=CX_METRIC[b.dataset.metric];
+    b.checked=cx.metrics.includes(b.dataset.metric);
+    const off=m.needsBuildings&&!rowsAreBuildings;
+    b.disabled=off; b.closest('.cx-opt').style.opacity=off?.45:1;
+    b.closest('.cx-opt').title=off?'Available when each row is a division, area or building':'';
+  });
+  document.querySelectorAll('#cx-parts [data-part]').forEach(b=>{ b.checked=cx.parts.includes(b.dataset.part); });
+  const chartable=cx.metrics.filter(id=>!CX_METRIC[id].needsBuildings||rowsAreBuildings);
+  const cm=document.getElementById('cx-chart-metric');
+  cm.innerHTML=chartable.length?chartable.map(id=>`<option value="${id}">${ovEsc(CX_METRIC[id].label)}</option>`).join(''):'<option value="">Pick a column first</option>';
+  cm.value=chartable.includes(cx.chartMetric)?cx.chartMetric:(chartable[0]||'');
+  cx.chartMetric=cm.value;
+  document.getElementById('cx-chart-type').value=cx.chartType;
+
+  const {rows,list,total}=cxRows();
+  const cols=cx.metrics.filter(id=>!CX_METRIC[id].needsBuildings||rowsAreBuildings);
+  document.getElementById('cx-count').textContent=`${list.length} inspection${list.length===1?'':'s'} · ${rows.length} row${rows.length===1?'':'s'}`;
+  cxView={rows,list,total,cols,dim:CX_DIMS[cx.group]};
+
+  const doc=document.getElementById('cx-doc');
+  if(!cols.length&&cx.parts.includes('table')){
+    doc.innerHTML=cxDocHead()+'<div class="cx-empty">Pick at least one column on the left, and the report builds itself here.</div>';
+    if(cxChart){ cxChart.destroy(); cxChart=null; }
+    lucide.createIcons(); return;
+  }
+  const fmt=(g,id)=>{ const v=cxCell(g,id); return v==null?'–':`${v}${CX_METRIC[id].unit||''}`; };
+  const cards=cx.parts.includes('cards')?`<div class="cx-part"><h4>Summary</h4><div class="cx-cards">${
+    cols.map(id=>`<div class="cx-card"><b>${fmt(total,id)}</b><span>${ovEsc(CX_METRIC[id].label)}</span></div>`).join('')}</div></div>`:'';
+  const chart=cx.parts.includes('chart')&&cx.chartMetric?`<div class="cx-part"><h4>${ovEsc(CX_METRIC[cx.chartMetric].label)} by ${ovEsc(cxView.dim.label.toLowerCase())}</h4>
+    <div class="ov-chart" style="height:300px"><canvas id="cx-chart"></canvas></div></div>`:'';
+  const table=cx.parts.includes('table')?`<div class="cx-part"><h4>By ${ovEsc(cxView.dim.label.toLowerCase())}</h4>
+    <div class="ov-scroll"><table class="ov-table"><thead><tr><th>${ovEsc(cxView.dim.label)}</th>${cols.map(id=>`<th>${ovEsc(CX_METRIC[id].label)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(g=>`<tr><td><b>${ovEsc(g.key)}</b></td>${cols.map(id=>`<td>${fmt(g,id)}</td>`).join('')}</tr>`).join('')
+      ||`<tr><td colspan="${cols.length+1}" class="ov-empty">Nothing matches this setup.</td></tr>`}</tbody>
+    ${rows.length?`<tfoot><tr><td><b>All</b></td>${cols.map(id=>`<td><b>${fmt(total,id)}</b></td>`).join('')}</tr></tfoot>`:''}</table></div></div>`:'';
+  const listRows=rpSorted(list).slice(0,200);
+  const inspections=cx.parts.includes('list')?`<div class="cx-part"><h4>Inspections${list.length>listRows.length?` · first ${listRows.length} of ${list.length}`:''}</h4>
+    <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Date</th><th>Building</th><th>Type</th><th>Auditor</th><th>Score</th></tr></thead>
+    <tbody>${listRows.map(x=>`<tr><td>${ovEsc(x.date)}<small>${ovEsc(x.quarter||'')}</small></td><td><b>${ovEsc(x.building)}</b><small>${ovEsc([x.division,x.area].filter(Boolean).join(' · '))}</small></td>
+      <td>${ovEsc(x.type||'—')}</td><td>${ovEsc(x.inspector||'—')}</td><td>${ovScore(x.overall)}</td></tr>`).join('')
+      ||'<tr><td colspan="5" class="ov-empty">No inspections match.</td></tr>'}</tbody></table></div></div>`:'';
+  doc.innerHTML=cxDocHead()+cards+chart+table+inspections+(cx.parts.length?'':'<div class="cx-empty">Tick at least one part of the report on the left.</div>');
+
+  if(cxChart){ cxChart.destroy(); cxChart=null; }
+  if(cx.parts.includes('chart')&&cx.chartMetric&&rows.length){
+    const top=rows.slice(0,cxView.dim.time?24:20);
+    const metric=CX_METRIC[cx.chartMetric], scoreLike=['avg','min','max','boqi','eoqi'].includes(cx.chartMetric);
+    cxChart=new Chart(document.getElementById('cx-chart'),{
+      type:cx.chartType,
+      data:{labels:top.map(g=>g.key),datasets:[{label:metric.label,data:top.map(g=>cxValue(g,cx.chartMetric)),
+        backgroundColor:cx.chartType==='line'?'rgba(0,51,160,.08)':top.map(g=>scoreLike&&cxValue(g,cx.chartMetric)!=null?grade(cxValue(g,cx.chartMetric)).color:'#0033A0'),
+        borderColor:'#0033A0',borderWidth:cx.chartType==='line'?2:0,fill:cx.chartType==='line',tension:.25,pointRadius:4,pointBackgroundColor:'#0033A0',borderRadius:5,maxBarThickness:48}]},
+      options:vizOptions({scales:{y:{beginAtZero:true,...(scoreLike?{max:100}:{})},x:{ticks:{autoSkip:false,maxRotation:50}}},plugins:{legend:{display:false}}}),
+    });
+  }
+  lucide.createIcons();
+}
+function cxDocHead(){
+  return `<div class="cx-doc-hd"><h3>${ovEsc(cxTitle())}</h3>
+    <div class="cx-chips">${cxContext().map(([k,v])=>`<span class="cx-chip">${ovEsc(k)}<b>${ovEsc(v)}</b></span>`).join('')}</div></div>`;
+}
+function cxRenderSaved(){
+  const sel=document.getElementById('cx-saved'), cur=sel.value;
+  const list=rpSavedList.filter(r=>r.config?.kind==='custom');
+  const mine=list.filter(r=>r.mine), shared=list.filter(r=>!r.mine);
+  const opt=r=>`<option value="${r.id}">${ovEsc(r.name)}${r.mine&&r.shared?' · shared':''}${!r.mine?' · '+ovEsc(r.owner):''}</option>`;
+  sel.innerHTML=`<option value="">${list.length?'Saved custom reports…':'No saved custom reports yet'}</option>`
+    +(mine.length?`<optgroup label="Mine">${mine.map(opt).join('')}</optgroup>`:'')
+    +(shared.length?`<optgroup label="Shared with everyone">${shared.map(opt).join('')}</optgroup>`:'');
+  sel.value=list.some(r=>String(r.id)===cur)?cur:'';
+  const r=list.find(x=>String(x.id)===sel.value);
+  document.getElementById('cx-saved-del').hidden=!(r&&r.canDelete);
+}
+function cxOpenSave(){
+  const sel=document.getElementById('cx-saved');
+  const current=rpSavedList.find(x=>String(x.id)===sel.value&&x.mine);
+  document.getElementById('sr-name').value=current?current.name:cxTitle();
+  document.getElementById('sr-shared').checked=current?current.shared:false;
+  document.getElementById('sr-msg').style.display='none';
+  document.getElementById('sr-form').dataset.kind='custom';
+  document.getElementById('modal-save-report').classList.add('open');
+  setTimeout(()=>document.getElementById('sr-name').focus(),50);
+}
+/** The export carries exactly the parts that are ticked — nothing more. */
+function exModelCustom(){
+  const v=cxView;
+  if(!v||!v.cols.length) return null;
+  const fmtRow=g=>[g.key,...v.cols.map(id=>cxCell(g,id))];
+  const head=[v.dim.label,...v.cols.map(id=>CX_METRIC[id].label)];
+  const blocks=[];
+  if(cx.parts.includes('cards')) blocks.push({id:'cards',label:'Summary',sheet:'Summary',
+    kpis:v.cols.map(id=>({label:CX_METRIC[id].label,value:cxCell(v.total,id)??'–'})),
+    table:{head:['Measure','Value'],rows:v.cols.map(id=>[CX_METRIC[id].label,cxCell(v.total,id)])}});
+  if(cx.parts.includes('chart')&&cx.chartMetric) blocks.push({id:'chart',label:`${CX_METRIC[cx.chartMetric].label} by ${v.dim.label.toLowerCase()}`,
+    sheet:'Chart',chart:()=>cxChart,table:{head:[v.dim.label,CX_METRIC[cx.chartMetric].label],rows:v.rows.map(g=>[g.key,cxCell(g,cx.chartMetric)])}});
+  if(cx.parts.includes('table')) blocks.push({id:'table',label:`By ${v.dim.label.toLowerCase()}`,sheet:`By ${v.dim.label.toLowerCase()}`,
+    table:{head,rows:[...v.rows.map(fmtRow),fmtRow({...v.total,key:'All'})]}});
+  if(cx.parts.includes('list')) blocks.push({id:'list',label:'Inspections',sheet:'Inspections',
+    table:{head:['Report ID','Date','Quarter','Type','Building','Division','Area','Auditor','Score','Rating'],
+      rows:rpSorted(v.list).map(x=>[x.id,x.date,x.quarter,x.type,x.building,x.division,x.area,x.inspector,x.overall,rpBandOf(x)])}});
+  return {title:'Custom report',file:`custom-report-${exSlug(cxTitle())}`,note:cxTitle(),context:cxContext(),blocks};
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -6248,7 +6640,7 @@ async function openExport(ctx,only){
   let model=null;
   try{
     model=ctx==='insights'?exModelInsights():ctx==='builder'?exModelBuilder():ctx==='compare'?exModelCompare():ctx==='quality'?exModelQuality()
-      :ctx==='overview'?exModelOverview():ctx==='officer'?exModelOfficer():ctx==='auditor'?exModelAuditor()
+      :ctx==='custom'?exModelCustom():ctx==='overview'?exModelOverview():ctx==='officer'?exModelOfficer():ctx==='auditor'?exModelAuditor()
         :ctx==='library'?await exModelLibrary():null;
   }catch(err){
     if(exCtx===key){ closeModal('modal-export'); showToast(err.message||'Could not prepare the export.',true); }
