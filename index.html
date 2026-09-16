@@ -18,9 +18,9 @@
 <style>
 /* Same identity as the app: Cairo, royal blue and teal, the navy-to-teal header gradient. */
 :root{
-  --royal:#0033A0;--royal-dk:#002070;--navy:#001540;--teal:#00A3E0;--teal-lt:#7FD4F2;
+  --royal:#0033A0;--royal-dk:#002070;--navy:#001540;--teal:#26A8AB;--teal-lt:#8CFEE3;
   --ink:#102040;--muted:#5F6369;--line:#C0C0C0;--paper:#f5f8fb;
-  --hero:linear-gradient(150deg,#001540 0%,#002A87 55%,#0A67B0 100%);
+  --hero:linear-gradient(150deg,#001540 0%,#00246F 32%,#0A5C9E 70%,#26A8AB 100%);
   --font:'Cairo',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -42,13 +42,13 @@ a{color:inherit}
 .brand-logo{height:34px;width:auto;display:block;flex-shrink:0}
 .brand-sep{width:1px;height:32px;background:var(--line);flex-shrink:0}
 .brand-text{min-width:0}
-.brand small{display:block;font-size:.62rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#00709B;line-height:1.3}
+.brand small{display:block;font-size:.62rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#0C7B7D;line-height:1.3}
 .brand b{display:block;font-size:1rem;font-weight:900;color:var(--royal-dk);line-height:1.25;white-space:nowrap}
 .top nav{display:flex;align-items:center;gap:28px;margin-left:auto;margin-right:12px}
 .top nav a{text-decoration:none;font-weight:700;font-size:.86rem;color:var(--muted)}
 @media(hover:hover){.top nav a:hover{color:var(--royal)}}
 .who{display:flex;align-items:center;gap:10px;font-size:.84rem;font-weight:700}
-.avatar{width:32px;height:32px;border-radius:50%;background:var(--royal);color:#fff;font-size:.7rem;font-weight:900;display:flex;align-items:center;justify-content:center}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0033A0 0%,#0B5FAE 55%,#26A8AB 100%);color:#fff;font-size:.7rem;font-weight:900;display:flex;align-items:center;justify-content:center}
 .link-btn{background:none;border:none;font:inherit;font-weight:700;font-size:.84rem;color:var(--muted);cursor:pointer;padding:6px 4px}
 @media(hover:hover){.link-btn:hover{color:var(--royal)}}
 
@@ -56,8 +56,8 @@ a{color:inherit}
 .btn .i{width:17px;height:17px}
 .btn-primary{background:var(--royal);color:#fff;box-shadow:0 10px 24px -12px rgba(0,51,160,.7)}
 @media(hover:hover){.btn-primary:hover{background:var(--royal-dk)}}
-.btn-teal{background:var(--teal);color:#fff;box-shadow:0 12px 26px -14px rgba(0,163,224,.9)}
-@media(hover:hover){.btn-teal:hover{background:#0089BE}}
+.btn-teal{background:var(--teal);color:#fff;box-shadow:0 12px 26px -14px rgba(38,168,171,.9)}
+@media(hover:hover){.btn-teal:hover{background:#1F9194}}
 .btn-sm{padding:8px 16px;font-size:.84rem}
 
 /* Hero */
@@ -173,15 +173,15 @@ footer .brand small{color:var(--teal-lt)}
       <div class="emblem" aria-hidden="true">
         <svg viewBox="0 0 400 400">
           <defs>
-            <linearGradient id="em-line" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7FD4F2"/><stop offset="1" stop-color="#00A3E0"/></linearGradient>
-            <radialGradient id="em-glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#00A3E0" stop-opacity=".32"/><stop offset="1" stop-color="#00A3E0" stop-opacity="0"/></radialGradient>
+            <linearGradient id="em-line" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8CFEE3"/><stop offset="1" stop-color="#26A8AB"/></linearGradient>
+            <radialGradient id="em-glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#26A8AB" stop-opacity=".32"/><stop offset="1" stop-color="#26A8AB" stop-opacity="0"/></radialGradient>
           </defs>
           <circle class="em-glow" cx="200" cy="200" r="198" fill="url(#em-glow)"/>
           <circle cx="200" cy="200" r="186" fill="none" stroke="#ffffff" stroke-opacity=".1"/>
           <circle class="em-orbit" cx="200" cy="200" r="186" fill="none" stroke="url(#em-line)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="150 1019"/>
-          <circle class="em-ticks" cx="200" cy="200" r="168" fill="none" stroke="#7FD4F2" stroke-opacity=".35" stroke-width="7" stroke-dasharray="1.2 9.3"/>
+          <circle class="em-ticks" cx="200" cy="200" r="168" fill="none" stroke="#8CFEE3" stroke-opacity=".35" stroke-width="7" stroke-dasharray="1.2 9.3"/>
           <circle cx="200" cy="200" r="148" fill="none" stroke="#ffffff" stroke-opacity=".14"/>
-          <g class="em-sats"><circle cx="200" cy="52" r="4" fill="#7FD4F2"/><circle cx="200" cy="348" r="2.5" fill="#ffffff" fill-opacity=".7"/></g>
+          <g class="em-sats"><circle cx="200" cy="52" r="4" fill="#8CFEE3"/><circle cx="200" cy="348" r="2.5" fill="#ffffff" fill-opacity=".7"/></g>
           <circle cx="200" cy="200" r="124" fill="#001A4D" fill-opacity=".45"/>
           <circle class="em-rim" cx="200" cy="200" r="124" fill="none" stroke="url(#em-line)" stroke-opacity=".7" stroke-width="1.5"/>
           <image class="em-logo" href="/osqa-logo-white.svg" x="112" y="169" width="176" height="62"/>
