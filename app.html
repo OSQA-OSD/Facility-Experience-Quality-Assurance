@@ -480,7 +480,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .lib-snip{display:flex!important;gap:5px;align-items:flex-start;margin-top:4px;color:#0b3a5c!important;background:rgba(38,168,171,.08);border-radius:6px;padding:3px 7px;max-width:420px}
 .lib-snip svg{flex-shrink:0;margin-top:2px}
 .lib-table mark{background:rgba(250,178,25,.35);color:inherit;border-radius:3px;padding:0 1px}
-.lib-score{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:28px;border-radius:8px;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c);font-weight:900}
+.lib-score{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:28px;border-radius:8px;background:var(--soft,color-mix(in srgb,var(--c) 14%,#fff));color:var(--c);font-weight:900}
 .lib-open{color:var(--muted);text-align:right;width:28px}
 .rv-drawer{width:760px}
 .rv-head-ring{margin-left:auto;width:64px;height:64px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
@@ -792,13 +792,13 @@ body.no-export #btn-pdf,body.no-export #btn-pdf-edit,body.no-export #save-notice
 .sc-ring>div{width:112px;height:112px;border-radius:50%;background:#02205f;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .sc-ring b{font-size:2.3rem;font-weight:900;line-height:1;color:#fff}
 .sc-ring small{font-size:.68rem;color:rgba(255,255,255,.55);font-weight:700}
-.sc-ring span{margin-top:4px;background:var(--c);color:#fff;border-radius:999px;padding:1px 10px;font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.sc-ring span{margin-top:4px;background:var(--c);color:var(--on,#fff);border-radius:999px;padding:1px 10px;font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
 #sc-stats{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 .sc-scale{display:flex;gap:10px;flex-wrap:wrap}
 .sc-band{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 14px 6px 8px;font-size:.76rem;font-weight:800}
 .sc-band i{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .sc-band small{color:var(--muted);font-weight:700}
-.sc-band.active{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c);background:color-mix(in srgb,var(--c) 8%,#fff)}
+.sc-band.active{border-color:var(--ink,var(--c));box-shadow:inset 0 0 0 1px var(--ink,var(--c));background:color-mix(in srgb,var(--c) 10%,#fff)}
 .sc-scale-note{margin-top:10px;font-size:.8rem;color:var(--muted)}
 .sc-scale-note b{color:var(--text)}
 .sc-table td .ov-bar{min-width:120px}
@@ -1286,9 +1286,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <div class="sc-scale">
             <div class="sc-band"><i style="background:#00843D"></i>Excellent <small>91–100</small></div>
             <div class="sc-band"><i style="background:#84BD00"></i>Good <small>81–90</small></div>
-            <div class="sc-band"><i style="background:#B26A00"></i>Acceptable <small>71–80</small></div>
-            <div class="sc-band"><i style="background:#C0392B"></i>Poor <small>51–70</small></div>
-            <div class="sc-band"><i style="background:#6B0000"></i>Critical <small>0–50</small></div>
+            <div class="sc-band"><i style="background:#0033A0"></i>Acceptable <small>71–80</small></div>
+            <div class="sc-band"><i style="background:#FFC846"></i>Poor <small>51–70</small></div>
+            <div class="sc-band"><i style="background:#F05F41"></i>Critical <small>0–50</small></div>
           </div>
           <button class="btn bt" id="start-insp-btn" onclick="startNewInspection()">Start scoring <svg data-lucide="arrow-right" width="15" height="15"></svg></button>
         </div>
@@ -2371,8 +2371,19 @@ let rpTab = 'insights', insReady = false, insSavedQuarter = null, insSavedDivisi
 let exCtx = null, exModel = null, exFmt = 'pdf', exPicks = {}; // Export dialog
 let rpData = null, rpReady = false, rpCharts = {}, rpShown = 100, rpGroup = 'division', rpMetric = 'avg', rpTrend = 'quarter'; // Reports state
 const RP_FILTER_IDS = ['rp-year','rp-month','rp-quarter','rp-type','rp-division','rp-area','rp-building','rp-inspector','rp-rating','rp-from','rp-to','rp-search'];
-const RP_BANDS = ['Excellent','Good','Acceptable','Poor','Critical'];
-const RP_BAND_COLOR = {Excellent:'#00843D',Good:'#84BD00',Acceptable:'#B26A00',Poor:'#C0392B',Critical:'#6B0000'};
+// The five rating bands, in the brand's colours — one definition behind every dot,
+// pill, bar and cell in the system. `fill` is the brand colour; `ink` is that same hue
+// darkened until it reads as text on white (≥4.5:1); `on` is what reads on top of the
+// fill; `soft` is the tint a score pill sits on.
+const BANDS = {
+  Excellent:  {range:'91–100', fill:'#00843D', ink:'#007A38', on:'#FFFFFF', soft:'#DBEEE4', note:'Exceeds international best practices'},
+  Good:       {range:'81–90',  fill:'#84BD00', ink:'#557A00', on:'#1C2433', soft:'#EEF6DB', note:'Fully compliant, minor optimization possible'},
+  Acceptable: {range:'71–80',  fill:'#0033A0', ink:'#0033A0', on:'#FFFFFF', soft:'#DBE2F2', note:'Minimum compliance met'},
+  Poor:       {range:'51–70',  fill:'#FFC846', ink:'#966900', on:'#1C2433', soft:'#FFF7E5', note:'Partial compliance, corrective action needed'},
+  Critical:   {range:'0–50',   fill:'#F05F41', ink:'#CB3010', on:'#1C2433', soft:'#FDE9E4', note:'Non-compliant, immediate action required'},
+};
+const RP_BANDS = Object.keys(BANDS);
+const RP_BAND_COLOR = Object.fromEntries(RP_BANDS.map(b=>[b,BANDS[b].fill]));
 const RP_GROUPS = {
   division: {label:'Division', key:x=>x.division||'Unknown division',
     drill:k=>{ document.getElementById('rp-division').value=k; rpGroup='area'; }},
@@ -2885,11 +2896,9 @@ function updateSidebar(){
   document.getElementById('ss-summary').textContent=`${complete} of ${SECTIONS.length} sections complete`;
 }
 function grade(s){
-  if(s>=91)return{label:'Excellent',cls:'ge',color:'#00843D'};
-  if(s>=81)return{label:'Good',cls:'gg',color:'#4E7A00'};
-  if(s>=71)return{label:'Acceptable',cls:'ga',color:'#B26A00'};
-  if(s>=51)return{label:'Poor',cls:'gpo',color:'#C0392B'};
-  return{label:'Critical',cls:'gcr',color:'#6B0000'};
+  const label=s>=91?'Excellent':s>=81?'Good':s>=71?'Acceptable':s>=51?'Poor':'Critical';
+  const b=BANDS[label];
+  return {label,color:b.fill,ink:b.ink,on:b.on,soft:b.soft,range:b.range,note:b.note};
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2897,9 +2906,7 @@ function grade(s){
 // ═══════════════════════════════════════════════════════════
 function updateScoreCard(){
   const st=curState();
-  const bands=[['Excellent','91–100','#00843D','Exceeds international best practices'],['Good','81–90','#84BD00','Fully compliant, minor optimization possible'],
-    ['Acceptable','71–80','#B26A00','Minimum compliance met'],['Poor','51–70','#C0392B','Partial compliance, corrective action needed'],
-    ['Critical','0–50','#6B0000','Non-compliant, immediate action required']];
+  const bands=RP_BANDS.map(l=>[l,BANDS[l].range,BANDS[l].fill,BANDS[l].note,BANDS[l].ink]);
   let grand=0, itemsTotal=0, itemsDone=0, complete=0;
   const secs=SECTIONS.map((sec,si)=>{
     const{total,answered,max}=getSecScore(si);
@@ -2913,6 +2920,7 @@ function updateScoreCard(){
   const ring=document.getElementById('sc-ring');
   ring.style.setProperty('--p',started?overall:0);
   ring.style.setProperty('--c',og.color);
+  ring.style.setProperty('--on',og.on);
   document.getElementById('sc-total').textContent=started?overall:'–';
   document.getElementById('sc-grade').textContent=started?og.label:'Not started';
   const tv=document.getElementById('meta-type').value;
@@ -2934,12 +2942,12 @@ function updateScoreCard(){
   document.getElementById('sc-stats').innerHTML=
     tile('layers',`${complete}/${SECTIONS.length}`,'Sections complete',bar(Math.round(complete/SECTIONS.length*100)))+
     tile('list-checks',`${itemsDone}/${itemsTotal}`,'Items answered',bar(Math.round(itemsDone/itemsTotal*100)))+
-    tile('thumbs-up',best?`${best.total}/${best.max}`:'–','Strongest section',best?note(ovEsc(best.title)):note('Nothing scored yet'),best?grade(best.pct).color:'')+
-    tile('triangle-alert',worst?`${worst.total}/${worst.max}`:'–','Needs attention',worst?note(ovEsc(worst.title)):note('Nothing scored yet'),worst?grade(worst.pct).color:'');
+    tile('thumbs-up',best?`${best.total}/${best.max}`:'–','Strongest section',best?note(ovEsc(best.title)):note('Nothing scored yet'),best?grade(best.pct).ink:'')+
+    tile('triangle-alert',worst?`${worst.total}/${worst.max}`:'–','Needs attention',worst?note(ovEsc(worst.title)):note('Nothing scored yet'),worst?grade(worst.pct).ink:'');
 
   // Rating scale with this inspection's band highlighted
-  document.getElementById('sc-scale').innerHTML=bands.map(([label,range,color])=>
-    `<div class="sc-band${started&&og.label===label?' active':''}" style="--c:${color}"><i style="background:${color}"></i>${label} <small>${range}</small></div>`).join('');
+  document.getElementById('sc-scale').innerHTML=bands.map(([label,range,color,,ink])=>
+    `<div class="sc-band${started&&og.label===label?' active':''}" style="--c:${color};--ink:${ink}"><i style="background:${color}"></i>${label} <small>${range}</small></div>`).join('');
   const band=bands.find(b=>b[0]===og.label);
   document.getElementById('sc-scale-note').innerHTML=started?`<b>${band[0]}</b> — ${band[3]}.`:'Score the sections to see where this inspection lands.';
 
@@ -3460,12 +3468,8 @@ function reportPrintEsc(value){
 }
 
 function reportPrintTone(score){
-  const label=grade(Number(score)||0).label;
-  if(score>=90)return {label,color:'#00843D',soft:'#E8F4EC'};
-  if(score>=75)return {label,color:'#4E7A00',soft:'#F0F6E4'};
-  if(score>=60)return {label,color:'#0C7B7D',soft:'#E6F4FA'};
-  if(score>=40)return {label,color:'#B26A00',soft:'#FBF1E3'};
-  return {label,color:'#C0392B',soft:'#FBECEA'};
+  const g=grade(Number(score)||0);
+  return {label:g.label,color:g.ink,soft:g.soft};
 }
 
 function printInspectionReport(report){
@@ -3811,7 +3815,7 @@ function renderAuditorProfile(){
   document.getElementById('au-stats').innerHTML=
     tile('circle-check',`${pct}%`,`Completed · ${q}`,note(`${done.length} of ${list.length} buildings`)+bar(pct))+
     tile('hourglass',pending.length,'Still to inspect',note(d.carriedOver.length?`+ ${d.carriedOver.length} carried over`:'This quarter'),{jump:'todo'})+
-    tile('trending-up',avg??'–','Quarter average',note(avg!=null?grade(avg).label:'No results yet'),{color:avg!=null?grade(avg).color:''})+
+    tile('trending-up',avg??'–','Quarter average',note(avg!=null?grade(avg).label:'No results yet'),{color:avg!=null?grade(avg).ink:''})+
     tile('calendar-plus',d.upcoming.total,`Assigned for ${d.upcoming.quarter}`,note(d.upcoming.total?'Open the next quarter':'Nothing yet'),{jump:'next'});
 
   // Carried over
@@ -3876,7 +3880,7 @@ function auRenderActivity(){
   document.getElementById('au-feed-title').textContent='Recent Activity';
   const ev=auData.events;
   document.getElementById('au-feed').innerHTML=ev.length?ev.map(e=>e.kind==='completed'
-    ?`<li><span class="dot" style="background:${e.score!=null?grade(e.score).color:'var(--teal)'}"><svg data-lucide="check" width="14" height="14"></svg></span>
+    ?`<li><span class="dot" style="background:${e.score!=null?grade(e.score).color:'var(--teal)'};color:${e.score!=null?grade(e.score).on:'#fff'}"><svg data-lucide="check" width="14" height="14"></svg></span>
        <div>Completed <b>${ovEsc(e.building)}</b>${e.score!=null?` — ${e.score}/100`:''}<small>${e.quarter} ${e.type} · ${timeAgo(e.at)}</small></div></li>`
     :`<li><span class="dot" style="background:var(--royal)"><svg data-lucide="clipboard-list" width="14" height="14"></svg></span>
        <div>Assigned <b>${ovEsc(e.building)}</b>${e.actor?` by ${ovEsc(e.actor)}`:''}<small>${e.quarter} ${e.type} · ${timeAgo(e.at)}</small></div></li>`
@@ -3950,7 +3954,7 @@ function auRenderPerformance(){
   const typeNote=['BOQI','EOQI'].map(t=>`${t} ${p.byType[t].avgScore??'–'}`).join(' · ');
   document.getElementById('au-perf').innerHTML=
     tile('clipboard-check',`${p.completed}/${p.assigned}`,'Inspections completed',note('All quarters'))+
-    tile('award',p.avgScore??'–','All-time average',note(p.avgScore!=null?`${grade(p.avgScore).label} · ${typeNote}`:'No results yet'),p.avgScore!=null?grade(p.avgScore).color:'')+
+    tile('award',p.avgScore??'–','All-time average',note(p.avgScore!=null?`${grade(p.avgScore).label} · ${typeNote}`:'No results yet'),p.avgScore!=null?grade(p.avgScore).ink:'')+
     tile('timer',p.avgTurnaroundDays!=null?`${p.avgTurnaroundDays}d`:'–','Average turnaround',note('From assignment to submission'));
 
   const ctx=document.getElementById('au-q-chart');
@@ -4177,7 +4181,7 @@ function ovPct(done,total){
   const p=total?Math.round(done/total*100):0;
   return `<div class="ov-pct"><div class="ov-bar"><i style="width:${p}%"></i></div><span>${p}%</span></div>`;
 }
-function ovScore(v){ return v==null?'<span style="color:var(--muted)">–</span>':`<span class="ov-score" style="color:${grade(v).color}">${v}</span>`; }
+function ovScore(v){ return v==null?'<span style="color:var(--muted)">–</span>':`<span class="ov-score" style="color:${grade(v).ink}">${v}</span>`; }
 function ovSetOptions(sel,values,allLabel){
   const cur=sel.value;
   sel.innerHTML=`<option value="all">${allLabel}</option>`+values.map(v=>`<option value="${ovEsc(v)}">${ovEsc(v)}</option>`).join('');
@@ -4280,8 +4284,8 @@ function renderOverview(){
   document.getElementById('ov-feed').innerHTML=d.activity.length?d.activity.map(x=>{
     if(x.kind==='assignment') return `<li><span class="dot" style="background:var(--royal)"><svg data-lucide="clipboard-list" width="14" height="14"></svg></span>
       <div><b>${ovEsc(x.actor)}</b> assigned <b>${ovEsc(x.building)}</b> to ${ovEsc(x.target)}<small>${ovEsc(x.quarter)} ${ovEsc(x.type)} · ${timeAgo(x.at)}</small></div></li>`;
-    const bg=x.score!=null?grade(x.score).color:'var(--teal)';
-    return `<li><span class="dot" style="background:${bg}"><svg data-lucide="check" width="14" height="14"></svg></span>
+    const bg=x.score!=null?grade(x.score).color:'var(--teal)', fg=x.score!=null?grade(x.score).on:'#fff';
+    return `<li><span class="dot" style="background:${bg};color:${fg}"><svg data-lucide="check" width="14" height="14"></svg></span>
       <div><b>${ovEsc(x.actor)}</b> submitted <b>${ovEsc(x.building)}</b>${x.score!=null?` — ${x.score}/100`:''}<small>${ovEsc(x.type||'')}${x.quarter?' · '+ovEsc(x.quarter):''}${x.linked?' · assigned':''} · ${timeAgo(x.at)}</small></div></li>`;
   }).join(''):'<li class="ov-empty" style="display:block">No activity for these filters yet.</li>';
 
@@ -4495,7 +4499,7 @@ function renderOfficer(fresh=[]){
     tile('circle-check',`${pct(completed,assigned)}%`,'Completion',note(`${completed} of ${assigned} assigned done`)+bar(pct(completed,assigned)),'completed')+
     tile('hourglass',pending,'Pending',note('Assigned, not yet inspected'),'pending')+
     tile('circle-dashed',total-assigned,'Unassigned',note('Still need an auditor'),'unassigned')+
-    tile('trending-up',avg??'–','Average score',avg!=null?note(grade(avg).label):note('No results yet'),null,avg!=null?grade(avg).color:'');
+    tile('trending-up',avg??'–','Average score',avg!=null?note(grade(avg).label):note('No results yet'),null,avg!=null?grade(avg).ink:'');
 
   // Auditor progress: the whole quarter + type, so workloads compare fairly
   const byAud=new Map(d.auditors.map(a=>[a.id,{...a,assigned:0,completed:0,scores:[],last:null}]));
@@ -4519,7 +4523,7 @@ function renderOfficer(fresh=[]){
       <div class="ov-bar"><i style="width:${p}%"></i></div>
       <div class="of-nums">
         <span><b>${a.assigned}</b>Assigned</span><span><b>${a.completed}</b>Done</span>
-        <span><b>${a.assigned-a.completed}</b>Pending</span><span><b${av!=null?` style="color:${grade(av).color}"`:''}>${av??'–'}</b>Avg</span>
+        <span><b>${a.assigned-a.completed}</b>Pending</span><span><b${av!=null?` style="color:${grade(av).ink}"`:''}>${av??'–'}</b>Avg</span>
       </div>
       <div class="of-card-ft"><span>${a.last?`Last submission ${timeAgo(a.last)}`:a.assigned?'No submissions yet':'Nothing assigned this period'}</span><b>Profile <svg data-lucide="chevron-right" width="13" height="13"></svg></b></div>
     </div>`;
@@ -4555,7 +4559,7 @@ function renderOfficer(fresh=[]){
   });
   const grouped=[...groups.values()];
   document.getElementById('of-feed').innerHTML=grouped.length?grouped.map(e=>e.kind==='completed'
-    ?`<li><span class="dot" style="background:${e.score!=null?grade(e.score).color:'var(--teal)'}"><svg data-lucide="check" width="14" height="14"></svg></span>
+    ?`<li><span class="dot" style="background:${e.score!=null?grade(e.score).color:'var(--teal)'};color:${e.score!=null?grade(e.score).on:'#fff'}"><svg data-lucide="check" width="14" height="14"></svg></span>
        <div><b>${ovEsc(e.auditor)}</b> completed <b>${ovEsc(e.names[0])}</b>${e.score!=null?` — ${e.score}/100`:''}<small>${timeAgo(e.at)}</small></div></li>`
     :`<li><span class="dot" style="background:var(--royal)"><svg data-lucide="clipboard-list" width="14" height="14"></svg></span>
        <div><b>${ovEsc(e.actor)}</b> assigned <b>${e.names.length===1?ovEsc(e.names[0]):e.names.length+' buildings'}</b> to ${ovEsc(e.auditor)}<small>${timeAgo(e.at)}</small></div></li>`
@@ -4900,7 +4904,7 @@ function renderReports(){
   const note=t=>`<small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</small>`;
   document.getElementById('rp-stats').innerHTML=
     tile('file-text',list.length,'Inspections',note(`${st.n} scored`))+
-    tile('trending-up',st.avg??'–','Average score',st.avg!=null?note(grade(st.avg).label):'',st.avg!=null?grade(st.avg).color:'')+
+    tile('trending-up',st.avg??'–','Average score',st.avg!=null?note(grade(st.avg).label):'',st.avg!=null?grade(st.avg).ink:'')+
     tile('activity',st.sd??'–','Std deviation',note('σ — how spread out scores are'))+
     tile('arrow-up-circle',st.max??'–','Highest',best?note(ovEsc(best.building)):'')+
     tile('arrow-down-circle',st.min??'–','Lowest',worst?note(ovEsc(worst.building)):'')+
@@ -5233,7 +5237,7 @@ function renderLibrary(){
         ${r.snippet?`<small class="lib-snip"><svg data-lucide="message-square-quote" width="12" height="12"></svg> ${ovEsc(r.snippet.section||'')}: “${mark(String(r.snippet.text||'').slice(0,140))}”</small>`:''}</td>
       <td>${ovEsc(r.type||'—')}</td>
       <td>${mark(r.auditor||'—')}${r.own?'<small>You</small>':''}</td>
-      <td>${g?`<span class="lib-score" style="--c:${g.color}">${r.overall}</span><small>${g.label}</small>`:'–'}</td>
+      <td>${g?`<span class="lib-score" style="--c:${g.ink};--soft:${g.soft}">${r.overall}</span><small>${g.label}</small>`:'–'}</td>
       <td>${libStatusPill(r.status)}${r.lastDecision?`<small>${ovEsc(r.lastDecision.by)} · ${timeAgo(r.lastDecision.at)}</small>`:''}</td>
       <td class="lib-open"><svg data-lucide="chevron-right" width="16" height="16"></svg></td>
     </tr>`;
@@ -5453,16 +5457,11 @@ function sectionScores(x){ // → Map(title → score out of 10)
 function bandFor100(v){ return v==null?null:grade(v).label; }
 function heatColor(v10){
   if(v10==null) return ['#ffffff',VIZ_INK.muted];
-  const p=v10*10;
-  if(p>=91) return ['#0B57B8','#ffffff'];
-  if(p>=81) return ['#7FBDE8',VIZ_INK.primary];
-  if(p>=71) return ['#EFF1F3',VIZ_INK.primary];
-  if(p>=51) return ['#f2a09f',VIZ_INK.primary];
-  return ['#b42318','#ffffff'];
+  const b=grade(v10*10);
+  return [b.color,b.on];
 }
 function heatLegend(){
-  return [['Excellent','#0B57B8'],['Good','#7FBDE8'],['Acceptable','#EFF1F3'],['Poor','#f2a09f'],['Critical','#b42318']]
-    .map(([l,c])=>`<span class="ins-key"><i style="background:${c}"></i>${l}</span>`).join('');
+  return RP_BANDS.map(l=>`<span class="ins-key"><i style="background:${BANDS[l].fill}"></i>${l}</span>`).join('');
 }
 function vizOptions(extra={}){
   const base={
@@ -5578,7 +5577,7 @@ function renderInsights(){
   document.getElementById('ins-stats').innerHTML=!cur.length
     ?`<div class="ov-empty" style="grid-column:1/-1">No inspections in ${ovEsc(Q||'this period')} for these filters.</div>`
     :tile('file-text',A.n,'Inspections',insDelta(hasPrev?A.n-B.n:null,{vs:pLabel,neutral:true,digits:0}))+
-     tile('trending-up',A.avg==null?'–':r1(A.avg),'Average score',insDelta(hasPrev&&A.avg!=null&&B.avg!=null?r1(A.avg)-r1(B.avg):null,{vs:pLabel}),A.avg!=null?grade(A.avg).color:'')+
+     tile('trending-up',A.avg==null?'–':r1(A.avg),'Average score',insDelta(hasPrev&&A.avg!=null&&B.avg!=null?r1(A.avg)-r1(B.avg):null,{vs:pLabel}),A.avg!=null?grade(A.avg).ink:'')+
      tile('building-2',A.coverage==null?'–':`${Math.round(A.coverage)}%`,'Buildings covered',insDelta(hasPrev&&A.coverage!=null&&B.coverage!=null?Math.round(A.coverage)-Math.round(B.coverage):null,{vs:pLabel,unit:' pts',digits:0})+`<div class="ov-bar" style="margin-top:8px"><i style="width:${Math.round(A.coverage||0)}%"></i></div>`)+
      tile('award',A.goodShare==null?'–':`${Math.round(A.goodShare)}%`,'Good or excellent',insDelta(hasPrev&&A.goodShare!=null&&B.goodShare!=null?Math.round(A.goodShare)-Math.round(B.goodShare):null,{vs:pLabel,unit:' pts',digits:0}))+
      tile('triangle-alert',A.low,'Below acceptable',insDelta(hasPrev?A.low-B.low:null,{vs:pLabel,inverse:true,digits:0}),A.low?'#b42318':'');
