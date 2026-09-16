@@ -493,7 +493,21 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .rv-status .ad-note{flex-wrap:nowrap;align-items:flex-start;margin-top:10px}
 .rv-status .ad-note svg{flex-shrink:0;margin-top:2px}
 .rv-auditor{font-size:.8rem;color:var(--muted)}
-.rv-last{font-size:.8rem;color:var(--text);margin:10px 0 0;line-height:1.5}
+.of-review{display:block;margin-top:4px}
+.rv-mark-pill{font-size:.64rem}
+.rv-decided{display:flex;align-items:flex-start;gap:11px;margin-top:12px;padding:12px 14px;border-radius:var(--r);border:1px solid var(--border);background:#fff}
+.rv-decided.approved{border-color:rgba(0,132,61,.45);background:#F1F8F3}
+.rv-decided.changes{border-color:rgba(178,106,0,.45);background:#FDF7EC}
+.rv-decided.resubmitted{border-color:rgba(38,168,171,.5);background:#EFF9FA}
+.rv-decided-ic{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff}
+.rv-decided.approved .rv-decided-ic{background:var(--good)}
+.rv-decided.changes .rv-decided-ic{background:var(--warn)}
+.rv-decided.resubmitted .rv-decided-ic{background:var(--teal)}
+.rv-decided-txt{flex:1;min-width:0}
+.rv-decided-txt b{display:block;font-size:.86rem;font-weight:800;color:var(--text)}
+.rv-decided-txt small{display:block;font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.45}
+.rv-change{padding:7px 13px;font-size:.76rem;flex-shrink:0}
+.rv-decided[hidden],.rv-form[hidden]{display:none}
 .rv-form{margin-top:12px;background:var(--bg);border-radius:10px;padding:12px}
 .rv-form label{display:block;font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
 .rv-form label small{text-transform:none;letter-spacing:0;font-weight:600}
@@ -3793,6 +3807,7 @@ function auCard(x,{carried=false}={}){
       <div class="au-main"><b>${ovEsc(x.buildingName)}</b><small>${ovEsc(meta)}</small>
         <small>Completed ${x.inspectionDate?ovEsc(x.inspectionDate):''}${x.completedAt?` · ${timeAgo(x.completedAt)}`:''}</small></div>
       ${g?`<span class="ov-pill" style="background:${g.color}1a;color:${g.color}">${x.score} · ${g.label}</span>`:''}
+      ${x.review?reviewMark(x.review):''}
       ${x.inspectionId?`<button class="ad-btn" data-view="${x.inspectionId}">View report</button>`:''}
     </div>`;
   }
@@ -4491,7 +4506,7 @@ function renderOfRows(fresh=[]){
       <td>${ovEsc(b.division)}<small>${ovEsc(b.area)}</small></td>
       <td>${auditorCell}</td>
       <td><span class="ov-pill ${b.status}">${label[b.status]}</span></td>
-      <td>${done?`${b.inspectionId?`<button class="rp-link" style="padding:0" onclick="openReport(${b.inspectionId})" title="Open the report">${ovScore(b.score)}</button>`:ovScore(b.score)}<small>${ovEsc(b.inspectionDate||'')}${b.inspector?' · '+ovEsc(b.inspector):''}</small>`:'<span style="color:var(--muted)">–</span>'}</td>
+      <td>${done?`${b.inspectionId?`<button class="rp-link" style="padding:0" onclick="openReport(${b.inspectionId})" title="Open the report">${ovScore(b.score)}</button>`:ovScore(b.score)}${b.review?`<small class="of-review">${reviewMark(b.review)}</small>`:''}<small>${ovEsc(b.inspectionDate||'')}${b.inspector?' · '+ovEsc(b.inspector):''}</small>`:'<span style="color:var(--muted)">–</span>'}</td>
     </tr>`;
   }).join(''):'<tr><td colspan="6" class="ov-empty">No buildings match these filters.</td></tr>';
   const scopedTotal=ofData.buildings.filter(b=>!ofVal('of-division')||b.division===ofVal('of-division')).length;
@@ -5011,6 +5026,14 @@ document.addEventListener('click',e=>{
 // The list comes from /api/reports/library (no photos); opening a report loads the full
 // record and its review history. Reviewing needs the "review" permission and is never
 // allowed on your own report; downloading needs "export".
+/** Short review mark for boards and cards: green when approved, amber when changes are due. */
+function reviewMark(review){
+  if(!review) return '';
+  const [label,cls]=LIB_STATUS[review.status]||LIB_STATUS.pending;
+  const short={pending:'Needs review',resubmitted:'Review again',changes:'Changes requested',approved:'Approved'}[review.status]||label;
+  const title=review.by?`${short} · ${review.by}${review.at?' · '+timeAgo(review.at):''}`:short;
+  return `<span class="ov-pill ${cls} rv-mark-pill" title="${ovEsc(title)}">${review.status==='approved'?'✓ ':''}${short}</span>`;
+}
 const LIB_STATUS={pending:['Needs review','setup'],resubmitted:['Updated — review again','setup'],changes:['Changes requested','suspended'],approved:['Approved','active']};
 function libStatusPill(s){ const [l,c]=LIB_STATUS[s]||LIB_STATUS.pending; return `<span class="ov-pill ${c}">${l}</span>`; }
 function libFilterIds(){ return ['lib-quarter','lib-type','lib-division','lib-area','lib-auditor','lib-rating','lib-from','lib-to','lib-sort']; }
@@ -5043,6 +5066,11 @@ function initLibrary(){
   document.getElementById('rv-close').addEventListener('click',()=>closeReport());
   document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!document.getElementById('rv-drawer').hidden&&!document.getElementById('lb').classList.contains('open')) closeReport(); });
   document.getElementById('rv-body').addEventListener('click',e=>{
+    if(e.target.closest('#rv-change')){
+      const form=document.getElementById('rv-form');
+      if(form){ form.hidden=false; document.getElementById('rv-comment')?.focus(); e.target.closest('#rv-change').hidden=true; }
+      return;
+    }
     const b=e.target.closest('[data-rv]');
     if(b) rvAction(b.dataset.rv);
     const img=e.target.closest('img[data-photo]');
@@ -5166,18 +5194,34 @@ function renderReportPanel(){
   document.getElementById('rv-score').textContent=s.overall??'–';
   document.getElementById('rv-grade').textContent=g?g.label:'—';
   const canEdit=hasPerm('inspect')&&(s.own||currentUser?.role==='quality_admin');
-  const last=s.lastDecision;
-  const reviewBox=canReview?`
-    <div class="rv-form">
-      <label for="rv-comment">Review note <small>required when requesting changes</small></label>
+  // A decision is the report's state, not a button waiting to be pressed again. A plain comment never changes it.
+  const decided=reviews.find(v=>v.decision!=='comment')||null;
+  const mine=!!(decided&&currentUser&&decided.byId===currentUser.id);
+  const who=decided?ovEsc(decided.by||'someone'):'';
+  const settled=!!decided&&s.status!=='pending';
+  const decidedCard=settled?`
+    <div class="rv-decided ${s.status}">
+      <span class="rv-decided-ic"><svg data-lucide="${s.status==='approved'?'circle-check':s.status==='changes'?'undo-2':'refresh-cw'}" width="17" height="17"></svg></span>
+      <div class="rv-decided-txt">
+        <b>${s.status==='approved'?(mine?'You approved this report':`Approved by ${who}`)
+          :s.status==='changes'?(mine?'You asked for changes':`Changes requested by ${who}`)
+          :(mine?'You reviewed this — the auditor has updated it since':`Reviewed by ${who} — the auditor has updated it since`)}</b>
+        <small>${timeAgo(decided.at)}${decided.comment?` · “${ovEsc(decided.comment)}”`:''}</small>
+      </div>
+      ${canReview?`<button type="button" class="btn bo rv-change" id="rv-change">${s.status==='resubmitted'?'Review again':'Change decision'}</button>`:''}
+    </div>`:'';
+  const formOpen=canReview&&(!settled||s.status==='resubmitted');
+  const reviewBox=canReview?`${decidedCard}
+    <div class="rv-form" id="rv-form"${formOpen?'':' hidden'}>
+      <label for="rv-comment">Review note <small>${settled?'say what changed your mind':'required when requesting changes'}</small></label>
       <textarea id="rv-comment" rows="3" maxlength="2000" placeholder="What looks good, what needs to change…"></textarea>
       <div class="rv-btns">
-        <button class="btn bt" data-rv="approved"><svg data-lucide="circle-check" width="15" height="15"></svg> Approve</button>
+        <button class="btn bt" data-rv="approved"><svg data-lucide="circle-check" width="15" height="15"></svg> ${s.status==='approved'?'Keep approved':'Approve'}</button>
         <button class="btn bo rv-warn" data-rv="changes_requested"><svg data-lucide="undo-2" width="15" height="15"></svg> Request changes</button>
         <button class="rp-link" data-rv="comment">Comment only</button>
       </div>
     </div>`
-    :`<p class="ad-note"><svg data-lucide="info" width="14" height="14"></svg>${reviewBlockedReason==='own'?'This is your report, so someone else reviews it.':'Your account can read reports but not review them — an admin can grant “Review reports” in Admin Control.'}</p>`;
+    :decidedCard+`<p class="ad-note"><svg data-lucide="info" width="14" height="14"></svg>${reviewBlockedReason==='own'?'This is your report, so someone else reviews it.':'Your account can read reports but not review them — an admin can grant “Review reports” in Admin Control.'}</p>`;
   const sections=(r.sections||[]).map((sec,si)=>{
     const pct=sec.max?Math.round((sec.score||0)/sec.max*100):0, sg=grade(pct);
     const items=(sec.items||[]).map((it,ii)=>{
@@ -5203,7 +5247,6 @@ function renderReportPanel(){
   document.getElementById('rv-body').innerHTML=`
     <section class="rv-status">
       <div class="rv-status-top">${libStatusPill(s.status)}<span class="rv-auditor">Auditor: <b>${ovEsc(s.auditor||'—')}</b>${s.assigned?' · assigned':''}</span></div>
-      ${last&&s.status!=='pending'?`<p class="rv-last">${last.decision==='approved'?'Approved':'Changes requested'} by <b>${ovEsc(last.by)}</b> ${timeAgo(last.at)}${last.comment?`: “${ovEsc(last.comment)}”`:''}${s.status==='resubmitted'?' — the report has been edited since.':''}</p>`:''}
       ${reviewBox}
     </section>
     <div class="rv-actions">
@@ -7025,6 +7068,7 @@ function adRenderAudit(){
     // Views drawn before the account loaded can now label "you" and apply permissions.
     if(ofData) renderOfficer();
     if(auData) renderAuditorProfile();
+    if(rvData) renderReportPanel();   // a report opened straight from a link can now say "you", and show the buttons this account has
     // Permissions arrive after the initial hash routing, so re-check where we landed.
     const landed=hashToPage(location.hash);
     if(!pageAllowed(landed)) nav('pg-home');
