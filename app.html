@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -595,6 +595,9 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 /* One Export button per view */
 .page-export{margin-left:auto;display:inline-flex;align-items:center;gap:7px;border:none;background:#fff;color:var(--royal);padding:6px 16px;border-radius:999px;font-family:var(--font);font-size:.8rem;font-weight:800;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .page-export:hover{background:var(--teal-lt)}
+.tool-x{margin-left:6px;width:27px;height:27px;flex-shrink:0;border-radius:50%;border:1px solid var(--border);background:#fff;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;vertical-align:middle;transition:color .12s,border-color .12s}
+@media(hover:hover){.tool-x:hover{color:var(--teal);border-color:var(--teal)}}
+.tool-x:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .ex-btn{margin-left:auto;display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--border);background:#fff;color:var(--royal);padding:6px 14px;border-radius:999px;font-family:var(--font);font-size:.78rem;font-weight:800;cursor:pointer}
 .ex-btn:hover{border-color:var(--teal)}
 .modal-box.ex-box{width:560px;max-height:92vh;overflow:auto;padding:24px}
@@ -922,6 +925,13 @@ body.nav-rail #acct-row{justify-content:center}
   .hist-filters select,.hist-filters input{width:100%;min-width:0}
   .app-toast{right:12px;bottom:12px;left:12px;max-width:none}
 }
+
+/* Long tables keep their column headings in view while scrolling */
+.ov-scroll{max-height:none}
+.ov-scroll table thead th{position:sticky;top:0;z-index:2;background:var(--bg);box-shadow:inset 0 -1px 0 var(--border)}
+.ins-heat thead th{position:sticky;top:0;z-index:2;background:#fff}
+/* Keyboard focus is always visible */
+a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
 
 /* ── Device awareness ──────────────────────────────────────
    Phones, tablets and desktops get the same app: safe areas on notched iPhones,
@@ -1264,6 +1274,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <div class="ey" id="au-eyebrow">My assignments</div>
           <h2 id="au-title">My <span>Assignments</span></h2>
           <p class="sub" id="au-sub">Your buildings for the quarter, the inspection schedule and your results.</p>
+          <button class="page-export rp-export" type="button" data-ex-ctx="auditor" title="Download this profile as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
         </div>
       </div>
     </div>
@@ -1344,6 +1355,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <h2>Team <span>Overview</span></h2>
       <p class="sub">Everything your officers and auditors are working on — assignments, results and progress by division, area and building.</p>
       <div class="page-tabs team-tabs" hidden></div>
+      <button class="page-export rp-export" type="button" data-ex-ctx="overview" title="Download this page as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
     </div>
 
     <div class="hist-filters ov-filters">
@@ -1426,6 +1438,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <h2>Assign &amp; <span>Track</span></h2>
       <p class="sub">Assign buildings to your auditors for the quarter and follow their progress live.</p>
       <div class="page-tabs team-tabs" hidden></div>
+      <button class="page-export rp-export" type="button" data-ex-ctx="officer" title="Download this page as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
     </div>
 
     <div class="hist-filters ov-filters">
@@ -1800,6 +1813,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
                 <button class="rp-chip" data-trend="month">Month</button>
                 <button class="rp-chip" data-trend="each">Each inspection</button>
               </div>
+              <button type="button" class="tool-x rp-export" data-ex-ctx="builder" data-ex-block="trend" title="Export this — PDF, Excel or image" aria-label="Export this"><svg data-lucide="download" width="14" height="14"></svg></button>
             </div>
           </div>
           <div class="ov-chart" style="height:300px"><canvas id="rp-trend-chart"></canvas></div>
@@ -1807,6 +1821,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <div class="ov-panel">
           <div class="ov-panel-hd">
             <span>Average by section <small>out of 10</small></span>
+            <button type="button" class="tool-x rp-export" data-ex-ctx="builder" data-ex-block="sections" title="Export this — PDF, Excel or image" aria-label="Export this"><svg data-lucide="download" width="14" height="14"></svg></button>
           </div>
           <div class="ov-chart" style="height:300px"><canvas id="rp-section-chart"></canvas></div>
         </div>
@@ -2242,7 +2257,7 @@ let ovData = null, ovChart = null, ovReady = false; // Team Overview state
 let auData = null, auReady = false, auReq = 0, auId = null, auCharts = {}, auFilter = {status:'todo', type:'all'}; // Auditor profile state
 let inBuildings = null, inReady = false, inAssignCache = {}; // Inspection details state
 let adUsers = [], adReady = false, adTab = 'users', adRoleDefaults = null, adBuildings = null, adEditingBuilding = null, adAudit = [], adAuditMore = false, adOpenUserId = null, adUserFilter = 'all', adAuditFilter = 'all', lastSection = 'pg-s0'; // Admin Control state; last opened inspection section
-let ofData = null, ofReady = false, ofReq = 0, ofPrevDone = null, ofPrevKey = '', ofSelected = new Set(), ofRowsStale = false; // Assign & Track state
+let ofData = null, ofView = null, ofReady = false, ofReq = 0, ofPrevDone = null, ofPrevKey = '', ofSelected = new Set(), ofRowsStale = false; // Assign & Track state
 let libReady = false, libReq = 0, libRows = [], libData = null, libStatus = '', libPending = {}, libTimer = null, rvId = null, rvData = null; // Inspection Reports
 let rpTab = 'insights', insReady = false, insSavedQuarter = null, insSavedDivision = '', insHeatData = null, cmpReady = false, cmpDim = 'division', cmpMode = 'quarter', cmpRows = null, cmpView = null, insView = null, rpView = null, dqReady = false, dqIssues = null, dqView = null, rpSavedList = [], rpSavedReady = false; // Reports tabs
 let exCtx = null, exModel = null, exFmt = 'pdf', exPicks = {}; // Export dialog
@@ -3385,7 +3400,7 @@ function printInspectionReport(report){
   const filename=value(report.filename||'inspection-report.pdf');
   const pw=window.open('','_blank');
   if(!pw){alert('Please allow pop-ups to export the PDF.');return;}
-  pw.document.write(`<!DOCTYPE html><html lang="en"><head>
+  pw.document.write(`<!DOCTYPE html><html lang="en" dir="ltr"><head>
     <meta charset="UTF-8"><title>${filename}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -4174,13 +4189,17 @@ function renderOverview(){
   renderOvBuildings();
   lucide.createIcons();
 }
-function renderOvBuildings(){
-  if(!ovData) return;
+function ovFilteredBuildings(){
+  if(!ovData) return [];
   const term=document.getElementById('ov-b-search').value.trim().toLowerCase();
   const status=document.getElementById('ov-b-status').value;
-  const rows=ovData.byBuilding.filter(x=>
+  return ovData.byBuilding.filter(x=>
     (status==='all'||x.status===status) &&
     (!term||x.name.toLowerCase().includes(term)||(x.auditorName||'').toLowerCase().includes(term)));
+}
+function renderOvBuildings(){
+  if(!ovData) return;
+  const rows=ovFilteredBuildings();
   document.getElementById('ov-b-count').textContent=`${rows.length} of ${ovData.byBuilding.length} buildings`;
   const label={completed:'Completed',pending:'Pending',unassigned:'Unassigned'};
   document.getElementById('ov-b-rows').innerHTML=rows.length?rows.map(x=>`
@@ -4433,6 +4452,7 @@ function renderOfficer(fresh=[]){
        <div><b>${ovEsc(e.actor)}</b> assigned <b>${e.names.length===1?ovEsc(e.names[0]):e.names.length+' buildings'}</b> to ${ovEsc(e.auditor)}<small>${timeAgo(e.at)}</small></div></li>`
   ).join(''):'<li class="ov-empty" style="display:block">Nothing has happened for this quarter yet.</li>';
 
+  ofView={kpis:{total,assigned,completed,pending,avg},team:cards,areas:[...areas.values()],activity:grouped};
   renderOfRows(fresh);
   lucide.createIcons();
 }
@@ -5974,19 +5994,110 @@ function exModelQuality(){
   const v=dqView;
   if(!v||!dqIssues) return null;
   const c=v.counts, q=v.latestQ||'the latest quarter';
+  const of=kind=>dqIssues.filter(i=>i.issue===kind).map(i=>[i.x?.date,i.x?.quarter,i.x?.type,i.x?.building,i.x?.division,i.x?.inspector,i.detail]);
+  const head=['Date','Quarter','Type','Building as recorded','Division','Auditor','Detail'];
   return {title:'Data Quality',file:'data-quality',context:[['Latest quarter with data',v.latestQ||'—']],blocks:[
-    {id:'kpis',label:'Checks',
+    {id:'kpis',label:'Checks',sheet:'Checks',
       kpis:[{label:'Not linked to a building',value:c.unlinked},{label:'Possible duplicates',value:c.dups},{label:'Incomplete scoring',value:c.incomplete},
         {label:'Missing details',value:c.missing},{label:`Not inspected in ${q}`,value:c.notInspected,sub:`${v.total-c.notInspected} of ${v.total} buildings covered`}],
       table:{head:['Check','Count'],rows:[['Not linked to a building',c.unlinked],['Possible duplicates (groups)',c.dups],['Incomplete scoring',c.incomplete],['Missing details',c.missing],[`Buildings not inspected in ${q}`,c.notInspected]]}},
-    {id:'issues',label:'All issues',table:{head:['Issue','Date','Quarter','Type','Building as recorded','Division','Auditor','Detail'],
-      rows:dqIssues.map(i=>[i.issue,i.x?.date,i.x?.quarter,i.x?.type,i.x?.building,i.x?.division,i.x?.inspector,i.detail])}},
+    {id:'unlinked',label:'Not linked to a building',sheet:'Not linked',table:{head,rows:of('Not linked to a building')}},
+    {id:'dups',label:'Possible duplicates',sheet:'Duplicates',table:{head,rows:of('Possible duplicate')}},
+    {id:'incomplete',label:'Incomplete scoring',sheet:'Incomplete',table:{head,rows:of('Incomplete scoring')}},
+    {id:'missing',label:'Missing details',sheet:'Missing details',table:{head,rows:of('Missing details')}},
     {id:'coverage',label:`Coverage by division · ${q}`,sheet:'Coverage',table:{head:['Division','Buildings','Inspected','Not inspected','Coverage (%)'],
       rows:v.coverage.map(r=>[r.division,r.total,r.total-r.missing.length,r.missing.length,r.total?Math.round((r.total-r.missing.length)/r.total*100):null])}},
     {id:'not-inspected',label:`Buildings not inspected · ${q}`,sheet:'Not inspected',defaults:{pdf:false},table:{head:['Division','Area','Building'],
       rows:v.coverage.flatMap(r=>r.missing.map(b=>[r.division,b.area,b.name]))}},
   ]};
 }
+
+/** Team Overview, Assign & Track and an auditor's profile export the same way as Analytics. */
+function exModelOverview(){
+  const d=ovData;
+  if(!d) return null;
+  const s=d.summary, quarter=ofVal('ov-quarter'), div=ofVal('ov-division');
+  const pct=(a,b)=>b?Math.round(a/b*100):null;
+  return {title:'Team Overview',file:`team-overview-${quarter==='all'?'all-quarters':quarter}`,
+    context:[['Quarter',quarter==='all'?'All quarters':quarter],['Division',div||'All divisions']],
+    blocks:[
+      {id:'kpis',label:'Key numbers',sheet:'Key numbers',
+        kpis:[{label:'Assignments completed',value:`${s.completed}/${s.assignments}`,sub:`${s.completionPct}%`},
+          {label:'Buildings assigned',value:`${s.buildingsCovered}/${s.buildings}`},{label:'Average score',value:s.avgScore??'–'},
+          {label:'Inspections',value:s.inspections},{label:'Active auditors',value:s.activeAuditors}],
+        table:{head:['Measure','Value'],rows:[['Assignments',s.assignments],['Completed',s.completed],['Completion (%)',s.completionPct],
+          ['Buildings assigned',s.buildingsCovered],['Buildings in list',s.buildings],['Average score',s.avgScore],['Inspections',s.inspections],['Active auditors',s.activeAuditors]]}},
+      {id:'division',label:'By division',sheet:'By division',chart:()=>ovChart,
+        table:{head:['Division','Buildings','Assignments','Completed','Completion (%)','Inspections','Average'],
+          rows:d.byDivision.map(x=>[x.division,x.buildings,x.assignments,x.completed,pct(x.completed,x.assignments),x.inspections,x.avgScore])}},
+      {id:'auditors',label:'Auditors',sheet:'Auditors',
+        table:{head:['Auditor','Role','Status','Assigned','Completed','Pending','Completion (%)','Average'],
+          rows:d.auditors.map(x=>[x.name,roleShort(x.role)||'Auditor',x.status,x.assigned,x.completed,x.assigned-x.completed,pct(x.completed,x.assigned),x.avgScore])}},
+      {id:'officers',label:'Officers',sheet:'Officers',
+        table:{head:['Officer','Role','Assignments made','Completed','Completion (%)'],
+          rows:d.officers.map(x=>[x.name,roleShort(x.role)||'Officer',x.assignmentsMade,x.completed,pct(x.completed,x.assignmentsMade)])}},
+      {id:'areas',label:'By area',sheet:'By area',
+        table:{head:['Area','Division','Buildings','Assignments','Completed','Completion (%)','Inspections','Average'],
+          rows:d.byArea.map(x=>[x.area,x.division,x.buildings,x.assignments,x.completed,pct(x.completed,x.assignments),x.inspections,x.avgScore])}},
+      {id:'buildings',label:'Buildings',sheet:'Buildings',
+        table:{head:['Building','Location','Division','Area','Auditor','Status','Inspections','Latest score','Latest date'],
+          rows:ovFilteredBuildings().map(x=>[x.name,x.location,x.division,x.area,x.auditorName,x.status,x.inspections,x.lastScore,x.lastDate])}},
+      {id:'activity',label:'Recent activity',sheet:'Activity',defaults:{pdf:false},
+        table:{head:['When','Who','Action','Building','Target','Quarter','Type','Score'],
+          rows:d.activity.map(x=>[x.at,x.actor,x.kind==='assignment'?'Assigned':'Submitted',x.building,x.target||'',x.quarter,x.type,x.score??null])}},
+    ]};
+}
+function exModelOfficer(){
+  const v=ofView, d=ofData;
+  if(!v||!d) return null;
+  const pct=(a,b)=>b?Math.round(a/b*100):null;
+  const quarter=ofVal('of-quarter');
+  const context=[['Quarter',quarter],['Type',exSel('of-type')||'All types'],['Division',ofVal('of-division')||'All divisions'],['Area',ofVal('of-area')||'All areas']];
+  return {title:'Assign & Track',file:`assign-and-track-${quarter}`,context,blocks:[
+    {id:'kpis',label:'Key numbers',sheet:'Key numbers',
+      kpis:[{label:'Buildings',value:v.kpis.total},{label:'Assigned',value:v.kpis.assigned},{label:'Completed',value:v.kpis.completed},
+        {label:'Pending',value:v.kpis.pending},{label:'Average score',value:v.kpis.avg??'–'}],
+      table:{head:['Measure','Value'],rows:[['Buildings',v.kpis.total],['Assigned',v.kpis.assigned],['Completed',v.kpis.completed],
+        ['Pending',v.kpis.pending],['Unassigned',v.kpis.total-v.kpis.assigned],['Average score',v.kpis.avg]]}},
+    {id:'team',label:'Team progress',sheet:'Team progress',
+      table:{head:['Auditor','Role','Status','Assigned','Completed','Pending','Completion (%)','Average','Last submitted'],
+        rows:v.team.map(a=>[a.name,roleShort(a.role)||'Auditor',a.status,a.assigned,a.completed,a.assigned-a.completed,pct(a.completed,a.assigned),
+          a.scores.length?Math.round(a.scores.reduce((t,n)=>t+n,0)/a.scores.length):null,a.last])}},
+    {id:'areas',label:'Progress by area',sheet:'By area',
+      table:{head:['Area','Division','Buildings','Assigned','Completed','Completion (%)'],
+        rows:v.areas.map(g=>[g.area,g.division,g.buildings,g.assigned,g.completed,pct(g.completed,g.assigned)])}},
+    {id:'buildings',label:'Buildings',sheet:'Buildings',
+      table:{head:['Building','Location','Division','Area','Status','Auditor','Score','Completed'],
+        rows:ofFilteredRows().map(b=>[b.name,b.location,b.division,b.area,b.status,b.auditorName,b.score??null,b.completedAt||null])}},
+    {id:'activity',label:'Recent activity',sheet:'Activity',defaults:{pdf:false},
+      table:{head:['When','Who','Action','Building','Auditor','Score'],
+        rows:v.activity.map(e=>[e.at,e.actor||'',e.kind==='completed'?'Submitted':'Assigned',e.building||'',e.auditor||e.auditorName||'',e.score??null])}},
+  ]};
+}
+function exModelAuditor(){
+  const d=auData;
+  if(!d) return null;
+  const p=d.performance, pct=(a,b)=>b?Math.round(a/b*100):null;
+  const done=d.assignments.filter(x=>x.status==='completed');
+  const row=x=>[x.buildingName,x.division,x.area,x.type,x.status,x.score??null,x.completedAt||x.inspectionDate||null,x.quarter];
+  const head=['Building','Division','Area','Type','Status','Score','Completed at','Quarter'];
+  return {title:`Auditor · ${d.auditor.name}`,file:`auditor-${exSlug(d.auditor.name)}-${d.quarter}`,
+    context:[['Auditor',d.auditor.name],['Quarter',d.quarter]],
+    blocks:[
+      {id:'kpis',label:'Key numbers',sheet:'Key numbers',
+        kpis:[{label:'Assigned',value:d.assignments.length},{label:'Completed',value:done.length,sub:`${pct(done.length,d.assignments.length)??0}%`},
+          {label:'Average score',value:p?.avgScore??'–'},{label:'Still open from earlier',value:d.carriedOver.length}],
+        table:{head:['Measure','Value'],rows:[['Assigned',d.assignments.length],['Completed',done.length],
+          ['Completion (%)',pct(done.length,d.assignments.length)],['Average score',p?.avgScore??null],['Carried over',d.carriedOver.length]]}},
+      {id:'quarters',label:'Average score by quarter',sheet:'By quarter',chart:()=>auCharts.q,
+        table:{head:['Quarter','Assigned','Completed','Average'],rows:(p?.byQuarter||[]).map(x=>[x.quarter,x.assigned,x.completed,x.avgScore])}},
+      {id:'sections',label:'Average by section',sheet:'By section',chart:()=>auCharts.sec,
+        table:{head:['Section','Average (/10)'],rows:(p?.sections||[]).map(x=>[x.title,x.avg])}},
+      {id:'buildings',label:'Buildings this quarter',sheet:'Buildings',table:{head,rows:d.assignments.map(row)}},
+      {id:'carried',label:'Still open from earlier quarters',sheet:'Carried over',table:{head,rows:d.carriedOver.map(row)}},
+    ]};
+}
+
 async function exModelLibrary(){
   const p=libParams(); p.set('limit','200');
   const rows=[]; let offset=0, total=1;
@@ -6026,6 +6137,39 @@ async function exModelLibrary(){
   ]};
 }
 
+// ── One export button per tool, placed beside its ⓘ ──
+const EXPORT_TOOLS={
+  'ins-kpis':['insights','kpis'],'ins-trend':['insights','trend'],'ins-heat':['insights','heat'],'ins-board':['insights','board'],
+  'ins-fail':['insights','fail'],'ins-attention':['insights','attention'],'ins-movers':['insights','movers'],
+  'rp-summary':['builder','summary'],'rp-detail':['builder','detail'],
+  'cmp':['compare','cmp-dim'],
+  'dq-unlinked':['quality','unlinked'],'dq-dups':['quality','dups'],'dq-incomplete':['quality','incomplete'],'dq-missing':['quality','missing'],'dq-coverage':['quality','coverage'],
+  'ov-kpis':['overview','kpis'],'ov-division':['overview','division'],'ov-team':['overview','auditors'],'ov-area':['overview','areas'],'ov-building':['overview','buildings'],
+  'of-kpis':['officer','kpis'],'of-team':['officer','team'],'of-area':['officer','areas'],'of-activity':['officer','activity'],'of-buildings':['officer','buildings'],
+  'au-quality':['auditor','quarters'],'au-carried':['auditor','carried'],
+  'lib-status':['library','list'],
+};
+function injectToolExports(){
+  document.querySelectorAll('.info-tip[data-tip]').forEach(tip=>{
+    const spot=EXPORT_TOOLS[tip.dataset.tip];
+    if(!spot||tip.nextElementSibling?.classList.contains('tool-x')) return;
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className='tool-x rp-export';
+    btn.dataset.exCtx=spot[0]; btn.dataset.exBlock=spot[1];
+    btn.title='Export this — PDF, Excel or image'; btn.setAttribute('aria-label','Export this');
+    btn.innerHTML='<svg data-lucide="download" width="14" height="14"></svg>';
+    tip.insertAdjacentElement('afterend',btn);
+  });
+  lucide.createIcons();
+}
+injectToolExports(); // EXPORT_TOOLS is declared just above, so this runs after it exists
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-ex-ctx]');
+  if(!btn) return;
+  const block=btn.dataset.exBlock==='cmp-dim'?'dim-'+cmpDim:btn.dataset.exBlock;
+  openExport(btn.dataset.exCtx,block||undefined);
+});
+
 // ── Dialog ──
 function initExport(){
   const modal=document.getElementById('modal-export');
@@ -6043,30 +6187,39 @@ function initExport(){
   document.getElementById('ex-go').addEventListener('click',exRun);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&modal.classList.contains('open')) closeModal('modal-export'); });
 }
-async function openExport(ctx){
+async function openExport(ctx,only){
   if(!hasPerm('export')){ showToast('Your account cannot export data.',true); return; }
   initExport();
-  exCtx=ctx; exModel=null;
+  exCtx=only?ctx+':'+only:ctx; exModel=null;
   document.getElementById('ex-title').textContent='Export';
   document.getElementById('ex-sub').textContent='';
   document.getElementById('ex-list').innerHTML='<div class="ex-wait">Preparing…</div>';
   document.getElementById('ex-msg').hidden=true;
   document.getElementById('ex-go').disabled=true;
   document.getElementById('modal-export').classList.add('open');
+  const key=exCtx;
   let model=null;
   try{
-    model=ctx==='insights'?exModelInsights():ctx==='builder'?exModelBuilder():ctx==='compare'?exModelCompare():ctx==='quality'?exModelQuality():ctx==='library'?await exModelLibrary():null;
+    model=ctx==='insights'?exModelInsights():ctx==='builder'?exModelBuilder():ctx==='compare'?exModelCompare():ctx==='quality'?exModelQuality()
+      :ctx==='overview'?exModelOverview():ctx==='officer'?exModelOfficer():ctx==='auditor'?exModelAuditor()
+        :ctx==='library'?await exModelLibrary():null;
   }catch(err){
-    if(exCtx===ctx){ closeModal('modal-export'); showToast(err.message||'Could not prepare the export.',true); }
+    if(exCtx===key){ closeModal('modal-export'); showToast(err.message||'Could not prepare the export.',true); }
     return;
   }
-  if(exCtx!==ctx) return;
+  if(exCtx!==key) return;
+  if(model&&only){
+    const block=model.blocks.find(b=>b.id===only);
+    if(!block){ closeModal('modal-export'); showToast('Nothing to export here yet.',true); return; }
+    model={...model,title:`${model.title} · ${block.label}`,file:`${model.file}-${only}`,blocks:[block]};
+  }
   if(!model){ closeModal('modal-export'); showToast('Nothing to export yet — wait for the data to load.',true); return; }
   exModel=model;
   exRender();
   lucide.createIcons();
 }
-function exVisual(){ return exModel.blocks.filter(b=>(b.chart&&rpCharts[b.chart])||b.image); }
+function exChart(b){ const c=typeof b.chart==='function'?b.chart():b.chart?rpCharts[b.chart]:null; return c&&c.canvas?c:null; }
+function exVisual(){ return exModel.blocks.filter(b=>exChart(b)||b.image); }
 function exRender(){
   const m=exModel, visual=exVisual(), list=document.getElementById('ex-list'), all=document.getElementById('ex-all');
   document.querySelector('#modal-export input[value="png"]').disabled=!visual.length;
@@ -6087,7 +6240,7 @@ function exRender(){
     const chosen=Array.isArray(picked)?picked:avail.filter(b=>b.defaults?.[exFmt]??true).map(b=>b.id);
     list.innerHTML=avail.map(b=>{
       const n=b.table?b.table.rows.length:null;
-      const meta=exFmt==='pdf'&&b.kpis?'cards':[exFmt==='pdf'&&b.chart&&rpCharts[b.chart]?'chart':'',n!=null?`${n} row${n===1?'':'s'}`:'',b.hint||''].filter(Boolean).join(' + ');
+      const meta=exFmt==='pdf'&&b.kpis?'cards':[exFmt==='pdf'&&exChart(b)?'chart':'',n!=null?`${n} row${n===1?'':'s'}`:'',b.hint||''].filter(Boolean).join(' + ');
       return `<label class="ex-row"><input type="checkbox" value="${b.id}"${chosen.includes(b.id)?' checked':''}> ${ovEsc(b.label)}<small>${ovEsc(meta)}</small></label>`;
     }).join('');
     document.getElementById('ex-parts-title').textContent=exFmt==='pdf'?'Include in the PDF':'One sheet each';
@@ -6185,7 +6338,7 @@ function exHeatCanvas(h,scale=2){
 }
 async function exPng(m,blocks){
   const S=2, W=1100*S, pad=36*S, headH=112*S, titleH=40*S, gap=24*S, footH=44*S;
-  const parts=blocks.map(b=>{ const cv=b.image?b.image():exChartCanvas(rpCharts[b.chart]); const w=Math.min(W-2*pad,cv.width); return {b,cv,w,h:Math.round(cv.height*w/cv.width)}; });
+  const parts=blocks.map(b=>{ const cv=b.image?b.image():exChartCanvas(exChart(b)); const w=Math.min(W-2*pad,cv.width); return {b,cv,w,h:Math.round(cv.height*w/cv.width)}; });
   const H=headH+parts.reduce((n,p)=>n+titleH+p.h+gap,0)+footH;
   const out=document.createElement('canvas');
   out.width=W; out.height=H;
@@ -6211,7 +6364,8 @@ async function exPng(m,blocks){
   g.fillText('Facility Experience Quality Assurance',pad,H-16*S);
   g.textAlign='right'; g.fillText('Generated '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),W-pad,H-16*S);
   const blob=await new Promise((resolve,reject)=>out.toBlob(b=>b?resolve(b):reject(new Error('Could not create the image.')),'image/png'));
-  exDownload(`${exSlug(m.file)}-${blocks.length>1?'charts':exSlug(blocks[0].id)}-${exDate()}.png`,blob);
+  const file=exSlug(m.file), tag=blocks.length>1?'-charts':file.endsWith(exSlug(blocks[0].id))?'':'-'+exSlug(blocks[0].id);
+  exDownload(`${file}${tag}-${exDate()}.png`,blob);
 }
 
 // ── PDF: a print-ready page (landscape A4) in a new window; "Save as PDF" keeps text sharp and searchable ──
@@ -6228,11 +6382,11 @@ function exPdf(m,blocks){
   };
   const html=blocks.map(b=>{
     if(b.kpis) return `<section class="block"><h2>${ovEsc(b.label)}</h2><div class="kpis">${b.kpis.map(k=>`<div class="kpi"><span>${ovEsc(k.label)}</span><b>${cell(k.value)}</b>${k.sub?`<small>${ovEsc(k.sub)}</small>`:''}</div>`).join('')}</div></section>`;
-    const img=b.chart&&rpCharts[b.chart]?exChartCanvas(rpCharts[b.chart]).toDataURL('image/png'):'';
+    const img=exChart(b)?exChartCanvas(exChart(b)).toDataURL('image/png'):'';
     return `<section class="block"><h2>${ovEsc(b.label)}</h2>${img?`<figure><img src="${img}" alt="${ovEsc(b.label)}"></figure>`:''}${b.table?table(b.table):''}</section>`;
   }).join('');
   const generated=new Date().toLocaleString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  w.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  w.document.write(`<!DOCTYPE html><html lang="en" dir="ltr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${ovEsc(exSlug(m.file)+'-'+exDate())}</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -6363,7 +6517,7 @@ async function exXlsx(m,blocks){
     });
     const last=lastCell(sh);
     const rows=sh.rows.map((r,ri)=>`<row r="${ri+1}"${ri===0&&sh.table?' ht="32" customHeight="1"':''}>${r.map((x,ci)=>cellXml(exColName(ci)+(ri+1),x)).join('')}</row>`).join('');
-    return XML+`<worksheet xmlns="${NS}" xmlns:r="${REL}"><dimension ref="A1:${last}"/><sheetViews><sheetView workbookViewId="0"${idx===0?' tabSelected="1"':''}>`+
+    return XML+`<worksheet xmlns="${NS}" xmlns:r="${REL}"><dimension ref="A1:${last}"/><sheetViews><sheetView rightToLeft="0" workbookViewId="0"${idx===0?' tabSelected="1"':''}>`+
       (sh.table?'<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A2" sqref="A2"/>':'')+
       `</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${widths.map((wd,i)=>`<col min="${i+1}" max="${i+1}" width="${wd}" customWidth="1"/>`).join('')}</cols>`+
       `<sheetData>${rows}</sheetData>${sh.table&&sh.rows.length>1?`<autoFilter ref="A1:${last}"/>`:''}</worksheet>`;
