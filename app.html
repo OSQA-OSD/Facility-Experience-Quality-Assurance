@@ -2066,6 +2066,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
               <button type="button" class="rp-link" id="cx-reset">Reset</button>
             </div>
             <span class="rp-count" id="cx-count"></span>
+            <button type="button" class="info-tip" data-tip="cx-report" aria-expanded="false" aria-label="How does this work?" title="How does this work?">i</button>
             <button type="button" class="ex-btn rp-export" id="cx-export"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
           </div>
           <div class="cx-doc" id="cx-doc"></div>
@@ -4711,13 +4712,15 @@ async function ofRunBulk(action){
 function rpVal(id){ return document.getElementById(id).value; }
 function rpMonthLabel(ym){ return new Date(ym+'-01T12:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'}); }
 function rpRound(v){ return v==null?null:Math.round(v*10)/10; }
+function minOf(vals){ return vals.reduce((a,v)=>v<a?v:a,Infinity); }
+function maxOf(vals){ return vals.reduce((a,v)=>v>a?v:a,-Infinity); }
 function rpStats(list){
   const vals=list.map(x=>x.overall).filter(v=>typeof v==='number');
   const n=vals.length;
   if(!n) return {count:list.length,n:0,avg:null,min:null,max:null,sd:null};
   const avg=vals.reduce((a,b)=>a+b,0)/n;
-  const sd=n>1?Math.sqrt(vals.reduce((a,v)=>a+(v-avg)**2,0)/(n-1)):0;
-  return {count:list.length,n,avg:rpRound(avg),min:Math.min(...vals),max:Math.max(...vals),sd:rpRound(sd)};
+  const sd=n>1?Math.sqrt(vals.reduce((a,v)=>a+(v-avg)**2,0)/(n-1)):null;  // one score has no spread — “–”, not 0
+  return {count:list.length,n,avg:rpRound(avg),min:minOf(vals),max:maxOf(vals),sd:rpRound(sd)};
 }
 function rpBandOf(x){ return typeof x.overall==='number'?grade(x.overall).label:null; }
 function rpSelect(id,values,allLabel){
@@ -5046,6 +5049,7 @@ function renderRpDetail(list=rpFilter()){
 // ═══════════════════════════════════════════════════════════
 const TIPS={
   'home-kpis':['What these numbers are',['Reports on file, average and highest score count every saved report in the system (not just the list below).','“Reports in” counts reports dated in the current quarter. The list shows the six newest reports — open one to review it, or search them all in Inspection Reports.']],
+  'cx-report':['Building your own report',['The four steps on the left decide everything: <b>1</b> which inspections are counted, <b>2</b> what one row stands for, <b>3</b> which columns are measured, <b>4</b> which parts appear.','The page you see <em>is</em> the report — Export gives you exactly these parts and columns as PDF, Excel or an image, nothing else.','<ul><li><b>Buildings in list</b>, <b>Coverage</b> — only for rows that are divisions, areas or buildings; they count the buildings on file, inspected or not.</li><li><b>BOQI / EOQI / Change</b> — averages of each type, and end minus beginning.</li><li><b>Sections</b> — the average of that section, out of 10.</li></ul>','“Save setup” keeps the whole arrangement under a name; share it and the rest of the team sees the same report.']],
   'lib-status':['Review status and search',['<b>Needs review</b>: saved and not yet reviewed. <b>Updated — review again</b>: edited after a decision. <b>Changes requested</b>: sent back to the auditor. <b>Approved</b>: accepted.','Search looks at the building, auditor, division, area and report number. Tick “Also search comments & notes” to look inside what auditors wrote.']],
   'ins-kpis':['Summary cards',['For the chosen period (a quarter or a whole year), type and division:','<ul><li><b>Inspections</b> — reports saved.</li><li><b>Average score</b> — mean overall score out of 100.</li><li><b>Buildings covered</b> — buildings in the list with at least one inspection ÷ all buildings.</li><li><b>Good or excellent</b> — share scoring 81 or more.</li><li><b>Below acceptable</b> — reports scoring 70 or less.</li></ul>','Arrows compare with the period before — the previous quarter, or the previous year. While a year is still in progress it is compared with the same quarters of the year before. Green is better, red is worse.']],
   'ins-trend':['Average score by quarter',['The average overall score for each of the last 8 quarters — one line per division, or the selected division next to all divisions.','Hover a point to see how many inspections it is based on. “View as table” shows the same numbers.']],
@@ -6058,8 +6062,8 @@ const CX_METRICS=[
   ]],
   ['Scores',[
     ['avg','Average score',g=>cxAvg(g.scores)],
-    ['min','Lowest',g=>g.scores.length?Math.min(...g.scores):null],
-    ['max','Highest',g=>g.scores.length?Math.max(...g.scores):null],
+    ['min','Lowest',g=>g.scores.length?minOf(g.scores):null],
+    ['max','Highest',g=>g.scores.length?maxOf(g.scores):null],
     ['sd','Std deviation',g=>g.scores.length>1?rpStats(g.list).sd:null],
   ]],
   ['Beginning and end of quarter',[
@@ -6083,7 +6087,8 @@ const CX_DEFAULT={period:'',scores:'both',division:'',area:'',building:'',audito
   metrics:['inspected','inspections','avg','boqi','eoqi','change'],parts:['cards','chart','table'],chartMetric:'avg',chartType:'bar'};
 
 function cxLoad(){
-  const saved=stateLoad('cx-state');
+  const saved=stateLoad('cx-state')||{};
+  delete saved.kind;
   cx={...CX_DEFAULT,...saved};
   cx.metrics=(cx.metrics||[]).filter(id=>CX_METRIC[id]);
   cx.parts=(cx.parts||[]).filter(id=>CX_PARTS.some(([p])=>p===id));
@@ -6121,7 +6126,11 @@ function initCustom(){
   document.getElementById('cx-saved').addEventListener('change',()=>{
     const r=rpSavedList.find(x=>String(x.id)===document.getElementById('cx-saved').value);
     if(!r) { cxRenderSaved(); return; }
-    cx={...CX_DEFAULT,...r.config,kind:undefined};
+    const {kind,...conf}=r.config||{};
+    cx={...CX_DEFAULT,...conf};
+    cx.metrics=(cx.metrics||[]).filter(id=>CX_METRIC[id]);
+    cx.parts=(cx.parts||[]).filter(id=>CX_PARTS.some(([p])=>p===id));
+    if(!CX_DIMS[cx.group]) cx.group='division';
     cxSave(); renderCustom(); cxRenderSaved();
     showToast(`Loaded “${r.name}”`);
   });
@@ -6247,7 +6256,7 @@ function renderCustom(){
   }
   const fmt=(g,id)=>{ const v=cxCell(g,id); return v==null?'–':`${v}${CX_METRIC[id].unit||''}`; };
   const cards=cx.parts.includes('cards')?`<div class="cx-part"><h4>Summary</h4><div class="cx-cards">${
-    cols.map(id=>`<div class="cx-card"><b>${fmt(total,id)}</b><span>${ovEsc(CX_METRIC[id].label)}</span></div>`).join('')}</div></div>`:'';
+    cols.map(id=>`<div class="cx-card"><b>${fmt(total,id)}</b><span>${ovEsc(cxCardLabel(id))}</span></div>`).join('')}</div></div>`:'';
   const chart=cx.parts.includes('chart')&&cx.chartMetric?`<div class="cx-part"><h4>${ovEsc(CX_METRIC[cx.chartMetric].label)} by ${ovEsc(cxView.dim.label.toLowerCase())}</h4>
     <div class="ov-chart" style="height:300px"><canvas id="cx-chart"></canvas></div></div>`:'';
   const table=cx.parts.includes('table')?`<div class="cx-part"><h4>By ${ovEsc(cxView.dim.label.toLowerCase())}</h4>
@@ -6272,11 +6281,13 @@ function renderCustom(){
       data:{labels:top.map(g=>g.key),datasets:[{label:metric.label,data:top.map(g=>cxValue(g,cx.chartMetric)),
         backgroundColor:cx.chartType==='line'?'rgba(0,51,160,.08)':top.map(g=>scoreLike&&cxValue(g,cx.chartMetric)!=null?grade(cxValue(g,cx.chartMetric)).color:'#0033A0'),
         borderColor:'#0033A0',borderWidth:cx.chartType==='line'?2:0,fill:cx.chartType==='line',tension:.25,pointRadius:4,pointBackgroundColor:'#0033A0',borderRadius:5,maxBarThickness:48}]},
-      options:vizOptions({scales:{y:{beginAtZero:true,...(scoreLike?{max:100}:{})},x:{ticks:{autoSkip:false,maxRotation:50}}},plugins:{legend:{display:false}}}),
+      options:vizOptions({scales:{y:{beginAtZero:true,...(scoreLike?{max:100}:{})},x:{ticks:{autoSkip:true,autoSkipPadding:6,maxRotation:50}}},plugins:{legend:{display:false}}}),
     });
   }
   lucide.createIcons();
 }
+/** On a card the value already carries the %, so the label does not repeat it. */
+function cxCardLabel(id){ return CX_METRIC[id].label.replace(/\s*\(%\)$/,''); }
 function cxDocHead(){
   return `<div class="cx-doc-hd"><h3>${ovEsc(cxTitle())}</h3>
     <div class="cx-chips">${cxContext().map(([k,v])=>`<span class="cx-chip">${ovEsc(k)}<b>${ovEsc(v)}</b></span>`).join('')}</div></div>`;
@@ -6311,7 +6322,7 @@ function exModelCustom(){
   const head=[v.dim.label,...v.cols.map(id=>CX_METRIC[id].label)];
   const blocks=[];
   if(cx.parts.includes('cards')) blocks.push({id:'cards',label:'Summary',sheet:'Summary',
-    kpis:v.cols.map(id=>({label:CX_METRIC[id].label,value:cxCell(v.total,id)??'–'})),
+    kpis:v.cols.map(id=>({label:cxCardLabel(id),value:cxCell(v.total,id)??'–'})),
     table:{head:['Measure','Value'],rows:v.cols.map(id=>[CX_METRIC[id].label,cxCell(v.total,id)])}});
   if(cx.parts.includes('chart')&&cx.chartMetric) blocks.push({id:'chart',label:`${CX_METRIC[cx.chartMetric].label} by ${v.dim.label.toLowerCase()}`,
     sheet:'Chart',chart:()=>cxChart,table:{head:[v.dim.label,CX_METRIC[cx.chartMetric].label],rows:v.rows.map(g=>[g.key,cxCell(g,cx.chartMetric)])}});
