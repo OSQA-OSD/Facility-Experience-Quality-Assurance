@@ -3491,21 +3491,48 @@ function reportPrintTone(score){
   return {label:g.label,color:g.ink,soft:g.soft};
 }
 
-function printInspectionReport(report){
+/** The journey map artwork with this inspection's own scores written into it. */
+function journeyScoreCard(svg,sections,overall){
+  const order=['Arrival & Parking','Landscape','Entrance & Lobby','Workspaces','Elevators & Corridors','Food & Concession',
+    'Washrooms / Bathrooms','Health, Safety & Emergency Readiness','Maintenance','Miscellaneous'];
+  const by=new Map(sections.map(s=>[s.title,s]));
+  const vals=order.map(t=>{
+    const s=by.get(t), v=s==null?null:Number(s.score);
+    return v==null||Number.isNaN(v)?'–':String(Math.round(v)).padStart(2,'0');
+  });
+  vals.push(String(Math.round(Number(overall)||0)));
+  let i=0;
+  return svg
+    .replace(/<\?xml[^>]*\?>/,'')
+    .replace(/<!--[\s\S]*?-->/g,'')
+    .replace(/(<text\b[^>]*>)([\s\S]*?)(<\/text>)/g,(whole,open,inner,close)=>{
+      if(!/^\d{2}$/.test(inner.replace(/<[^>]+>/g,'').trim())) return whole;      // labels and the title stay
+      const v=vals[i++];
+      return open+inner.replace(/>[^<]*</,'>'+v+'<')+close;
+    });
+}
+
+async function printInspectionReport(report){
   const sections=Array.isArray(report.sections)?report.sections:[];
   const overall=Math.round(Number(report.overall)||0);
   const tone=reportPrintTone(overall);
   const value=v=>reportPrintEsc(v||'—');
   const words=report.type==='EOQI';                 // only the end-of-quarter check is worded as compliance
-  const journeyMapUrl=new URL('/journey-map-QA-2026-Q3-EOQ-009.svg',location.origin).href;
   const logoUrl=new URL('/osqa-logo.svg',location.origin).href;
   const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const quarter=report.quarter||(report.date?`${report.date.slice(0,4)}-Q${Math.floor((Number(report.date.slice(5,7))-1)/3)+1}`:'');
   const ref=report.filename?String(report.filename).replace(/\.pdf$/i,''):`${report.date||''} ${report.type||''}`.trim();
 
+  // The score card carries the touchpoint scores, so it is fetched before the window opens.
+  let journey='';
+  try{
+    const res=await fetch('/journey-map-QA-2026-Q3-EOQ-009.svg',{cache:'force-cache'});
+    if(res.ok) journey=journeyScoreCard(await res.text(),sections,overall);
+  }catch{ journey=''; }
+
   // Every answered item, so the summary can talk about real findings instead of generalities.
-  const flat=sections.flatMap((sec,si)=>(sec.items||[]).map((it,ii)=>({
-    section:sec.title, index:ii+1, si,
+  const flat=sections.flatMap((sec)=>(sec.items||[]).map((it)=>({
+    section:sec.title,
     label:typeof it==='string'?it:it.label,
     score:typeof it==='string'?null:it.score,
     comment:typeof it==='string'?'':(it.comment||''),
@@ -3539,11 +3566,15 @@ function printInspectionReport(report){
     figure(withPhotos,'Items with photos','evidence attached'),
   ].join('');
 
+  // The findings run in chunks so a long list can start a new sheet without splitting a row.
+  const findRow=(f,n)=>`<tr><td class="n">${n}</td><td class="f-item">${value(f.label)}</td><td class="f-sec">${value(f.section)}</td>
+    <td class="f-cmt">${f.comment?value(f.comment):'<span class="empty">No comment recorded</span>'}</td></tr>`;
+  const findHead=`<thead><tr><th class="n">#</th><th>Item</th><th>Touchpoint</th><th>Auditor comment</th></tr></thead>`;
   const findings=failed.length
-    ?`<table class="find-table"><thead><tr><th>#</th><th>Item</th><th>Touchpoint</th><th>Auditor comment</th></tr></thead><tbody>${
-      failed.map((f,n)=>`<tr><td class="n">${n+1}</td><td class="f-item">${value(f.label)}</td><td class="f-sec">${value(f.section)}</td>
-        <td class="f-cmt">${f.comment?value(f.comment):'<span class="empty">No comment recorded</span>'}</td></tr>`).join('')}</tbody></table>`
-    :`<p class="all-clear">Every item on the checklist met the expected level in this inspection.</p>`;
+    ?Array.from({length:Math.ceil(failed.length/8)},(_,c)=>
+      `<div class="blk"><table class="find-table">${findHead}<tbody>${
+        failed.slice(c*8,c*8+8).map((f,n)=>findRow(f,c*8+n+1)).join('')}</tbody></table></div>`).join('')
+    :`<div class="blk"><p class="all-clear">Every item on the checklist met the expected level in this inspection.</p></div>`;
 
   const detailSections=sections.map(sec=>{
     const max=Number(sec.max)||10, score=Number(sec.score)||0, pct=max?Math.round(score/max*100):0;
@@ -3562,17 +3593,16 @@ function printInspectionReport(report){
         <td class="item-res">${result}</td>
         <td class="comments">${comment?value(comment):'<span class="empty">—</span>'}${photoHtml}</td></tr>`;
     }).join('');
-    return `<section class="report-section">
+    return `<div class="blk"><section class="report-section">
       <div class="section-head"><div><span class="kicker">Journey touchpoint</span><h2>${value(sec.title)}</h2></div>
         <div class="section-total"><b style="color:${t.color}">${score}<small>/${max}</small></b><span class="chip" style="--tone:${t.color};--soft:${t.soft}">${t.label}</span></div></div>
       <table class="detail-table"><thead><tr><th class="n">#</th><th>Inspection item</th><th class="item-res">Result</th><th>Observations &amp; evidence</th></tr></thead>
         <tbody>${rows}</tbody>
         ${sec.notes?`<tfoot><tr><td colspan="4"><b>Auditor note</b><span>${value(sec.notes)}</span></td></tr></tfoot>`:''}</table>
-    </section>`;
+    </section></div>`;
   }).join('');
 
   const filename=value(report.filename||'inspection-report.pdf');
-  const runHead=`<div class="run-head"><span>${value(report.facility)}</span><span>${value(report.typeLabel)} · ${value(report.date)}</span></div>`;
   const pw=window.open('','_blank');
   if(!pw){alert('Please allow pop-ups to export the PDF.');return;}
   pw.document.write(`<!DOCTYPE html><html lang="en" dir="ltr"><head>
@@ -3581,38 +3611,42 @@ function printInspectionReport(report){
     <style>
       :root{--ink:#002070;--deep:#102040;--royal:#0033A0;--teal:#26A8AB;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369}
       *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-      @page{size:A4;margin:15mm 15mm 14mm}
+      /* No page margin: the paper edge belongs to the document, not to the browser's own header and footer. */
+      @page{size:A4;margin:0}
       html,body{margin:0;padding:0;background:#fff;color:var(--deep);font-family:Cairo,Arial,sans-serif;line-height:1.45}
-      .page{min-height:calc(297mm - 29mm);display:flex;flex-direction:column;break-after:page}
-      .page:last-child{break-after:auto}
-      @media screen{body{background:#EEF1F4;padding:10mm 0}.page{width:210mm;padding:15mm 15mm 14mm;margin:0 auto 8mm;background:#fff;box-shadow:0 1px 4px rgba(16,32,64,.18)}}
-      .rule{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--royal),var(--teal))}
-      .brand{display:flex;align-items:center;gap:11px;margin-top:13px;color:var(--royal);font-weight:900;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase}
+      .sheet{width:210mm;height:297mm;padding:15mm 15mm 14mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;break-after:page;position:relative}
+      .sheet:last-child{break-after:auto}
+      #flow{position:absolute;left:-9999px;top:0;width:180mm}
+      @media screen{body{background:#EEF1F4;padding:10mm 0}.sheet{margin:0 auto 8mm;box-shadow:0 1px 4px rgba(16,32,64,.18)}}
+      .rule{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--royal),var(--teal));flex:none}
+      .brand{display:flex;align-items:center;gap:11px;margin-top:13px;color:var(--royal);font-weight:900;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;flex:none}
       .brand img{display:block;height:28px;width:auto}.brand i{width:1px;height:20px;background:var(--line);display:block}
 
       /* Cover */
-      .cover h1+.cover-type{margin-bottom:0}
-      .cover h1{font-size:34px;line-height:1.1;letter-spacing:-.035em;color:var(--ink);margin:22mm 0 6px}
-      .cover h1 span{display:block;color:var(--royal)}
-      .cover-type{font-size:12px;font-weight:800;color:var(--muted);margin:0}
-      .cover-main{margin-top:auto;display:grid;grid-template-columns:1fr 132px;gap:26px;align-items:end}
-      .fact-table{border-collapse:collapse;width:100%}
-      .fact-table th{text-align:left;width:120px;padding:9px 0;border-top:1px solid var(--line);color:var(--muted);font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;vertical-align:middle}
-      .fact-table td{padding:9px 0;border-top:1px solid var(--line);font-size:12px;font-weight:700;color:var(--deep);overflow-wrap:anywhere}
-      .orb{width:132px;height:132px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--soft);border:8px solid var(--tone);color:var(--tone)}
-      .orb b{font-size:38px;letter-spacing:-.06em;line-height:.9}.orb small{font-size:10px;font-weight:800}
-      .orb span{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-top:5px}
-      .cover-foot{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:9px;margin-top:20mm;font-size:8.5px;color:var(--muted)}
+      .cover h1{font-size:30px;line-height:1.1;letter-spacing:-.035em;color:var(--ink);margin:14mm 0 5px}
+      .cover h1 span{color:var(--royal)}
+      .cover-type{font-size:11.5px;font-weight:800;color:var(--muted);margin:0 0 3px}
+      .cover-score{display:inline-flex;align-items:center;gap:8px;margin-top:9px;font-size:11px;font-weight:900;color:var(--muted)}
+      .cover-score b{font-size:19px;color:var(--ink);letter-spacing:-.03em}
+      .fact-table{border-collapse:collapse;width:100%;margin-top:9mm}
+      .fact-table th{text-align:left;width:112px;padding:7px 0;border-top:1px solid var(--line);color:var(--muted);font-size:8px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+      .fact-table td{padding:7px 0;border-top:1px solid var(--line);font-size:11.5px;font-weight:700;color:var(--deep);overflow-wrap:anywhere}
+      .journey-card{padding-top:9mm}
+      .journey-card svg{display:block;width:100%;height:auto}
+      .cover-foot{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px;margin-top:auto;font-size:8.5px;color:var(--muted);flex:none}
 
-      /* Running head, page titles */
-      .run-head{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:14px;font-size:8.5px;color:var(--muted);font-weight:700}
+      /* Page furniture */
+      .run-head{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:13px;font-size:8.5px;color:var(--muted);font-weight:700;flex:none}
+      .foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8px;color:var(--muted);flex:none}
+      .body{flex:1 1 auto;min-height:0}
       .page-title{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--royal);padding-bottom:7px;margin:0 0 13px}
       .page-title p{margin:0;color:var(--royal);font-size:8.5px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
       .page-title h2{font-size:19px;color:var(--ink);letter-spacing:-.025em;margin:3px 0 0}
       .page-title em{font-style:normal;font-size:10px;color:var(--muted)}
+      .blk{margin-bottom:13px}.blk:last-child{margin-bottom:0}
 
       /* Summary */
-      .figs{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:15px}
+      .figs{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
       .fig{border:1px solid var(--line);border-radius:8px;padding:11px 12px}
       .fig b{display:block;font-size:22px;letter-spacing:-.04em;color:var(--ink);line-height:1}
       .fig b small{font-size:11px;color:var(--muted);letter-spacing:0}
@@ -3628,18 +3662,16 @@ function printInspectionReport(report){
       .s-bar i{display:block;height:6px;border-radius:99px}
       .s-band{width:86px;text-align:right}
       .chip{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--soft);color:var(--tone);font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
-      .find-table{margin-top:4px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+      .find-table{border:1px solid var(--line);border-radius:8px;overflow:hidden}
       .find-table th{background:var(--ink);color:#fff;text-align:left;padding:7px 10px;font-size:8px;letter-spacing:.08em;text-transform:uppercase}
       .find-table td{padding:8px 10px;border-top:1px solid var(--line);font-size:9.5px;vertical-align:top}
-      .find-table tr,.detail-table tr{break-inside:avoid}
-      .find-table thead th,.detail-table thead th{break-inside:avoid}
       .find-table .n,.detail-table .n{width:22px;text-align:center;color:var(--muted);font-weight:800}
       .f-item{width:31%;font-weight:700}.f-sec{width:20%;color:var(--muted)}.f-cmt{color:#4A5A6B;white-space:pre-line}
-      .all-clear{margin:2px 0 0;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:10px;color:var(--muted)}
+      .all-clear{margin:0;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:10px;color:var(--muted)}
       .empty{color:#9AA2A9;font-style:italic}
 
       /* Detail */
-      .report-section{break-inside:avoid;margin:0 0 13px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+      .report-section{border:1px solid var(--line);border-radius:8px;overflow:hidden}
       .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;background:var(--paper)}
       .section-head .kicker{display:block;color:var(--muted);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
       .section-head h2{font-size:13px;color:var(--ink);margin:2px 0 0}
@@ -3659,57 +3691,68 @@ function printInspectionReport(report){
       .detail-table tfoot td{background:var(--paper);color:var(--deep)}
       .detail-table tfoot b{display:block;color:var(--royal);font-size:8px;text-transform:uppercase;letter-spacing:.08em}
       .detail-table tfoot span{display:block;margin-top:2px;white-space:pre-line}
-      .sign{margin-top:18px;display:grid;grid-template-columns:repeat(2,minmax(0,200px));gap:26px}
+      .sign{display:grid;grid-template-columns:repeat(2,minmax(0,200px));gap:26px}
       .sign div span{font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
       .sign div b{display:block;border-bottom:1px solid var(--ink);padding-top:24px;font-size:10px;font-weight:700;color:var(--deep)}
-      .foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8px;color:var(--muted)}
-
-      /* Journey map */
-      .journey-frame{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:7mm;display:flex;align-items:center;justify-content:center}
-      .journey-frame img{display:block;width:100%;max-height:225mm;object-fit:contain}
-      @media print{.report-section{break-inside:avoid}}
     </style></head><body>
-    <section class="page cover">
+    <section class="sheet cover">
       <div class="rule"></div>
       <div class="brand"><img src="${reportPrintEsc(logoUrl)}" alt="OSQA"><i></i>OSD · Facility Experience Quality Assurance</div>
-      <h1>Inspection<span>report.</span></h1>
+      <h1>Inspection <span>report.</span></h1>
       <p class="cover-type">${value(report.typeLabel)}</p>
-      <div class="cover-main">
-        <table class="fact-table"><tbody>${coverFacts}</tbody></table>
-        <div class="orb" style="--tone:${tone.color};--soft:${tone.soft}"><b>${overall}</b><small>/${totalMax||100}</small><span>${tone.label}</span></div>
-      </div>
+      <div class="cover-score"><b>${overall}</b> / ${totalMax||100}<span class="chip" style="--tone:${tone.color};--soft:${tone.soft}">${tone.label}</span></div>
+      <table class="fact-table"><tbody>${coverFacts}</tbody></table>
+      ${journey?`<div class="journey-card">${journey}</div>`:''}
       <div class="cover-foot"><span>${value(ref)}</span><span>Generated ${today}</span></div>
     </section>
-
-    <main class="page">
-      ${runHead}
-      <div class="page-title"><div><p>Inspection summary</p><h2>Score and findings</h2></div><em>${sections.length} touchpoints · ${flat.length} checklist items</em></div>
-      <div class="figs">${figures}</div>
-      <div class="page-title"><div><p>By touchpoint</p><h2>Section scores</h2></div></div>
-      <table class="sec-table"><tbody>${sectionRows}</tbody></table>
-      <div class="page-title" style="margin-top:16px"><div><p>${words?'Not compliant':'Scored 0'}</p><h2>Items needing action</h2></div><em>${failed.length} of ${scored.length} checked</em></div>
+    <div id="sheets"></div>
+    <div id="flow">
+      <div class="blk" data-keep><div class="page-title"><div><p>Inspection summary</p><h2>Score and findings</h2></div><em>${sections.length} touchpoints · ${flat.length} checklist items</em></div><div class="figs">${figures}</div></div>
+      <div class="blk" data-keep><div class="page-title"><div><p>By touchpoint</p><h2>Section scores</h2></div></div><table class="sec-table"><tbody>${sectionRows}</tbody></table></div>
+      <div class="blk" data-keep><div class="page-title"><div><p>${words?'Not compliant':'Scored 0'}</p><h2>Items needing action</h2></div><em>${failed.length} of ${scored.length} checked</em></div></div>
       ${findings}
-      <div class="foot"><span>Facility Experience Quality Assurance</span><span>${value(ref)}</span></div>
-    </main>
-
-    <main class="page">
-      ${runHead}
-      <div class="page-title"><div><p>Evidence &amp; observations</p><h2>Detailed inspection</h2></div><em>${value(report.inspector)}</em></div>
+      <div class="blk" data-keep><div class="page-title"><div><p>Evidence &amp; observations</p><h2>Detailed inspection</h2></div><em>${value(report.inspector)}</em></div></div>
       ${detailSections}
-      <div class="sign">
-        <div><span>Auditor</span><b>${value(report.inspector)}</b></div>
-        <div><span>Reviewed by</span><b>&nbsp;</b></div>
-      </div>
-      <div class="foot"><span>Facility Experience Quality Assurance</span><span>${value(ref)}</span></div>
-    </main>
-
-    <section class="page">
-      ${runHead}
-      <div class="page-title"><div><p>Reference</p><h2>Facility Experience Journey Map</h2></div></div>
-      <div class="journey-frame"><img id="journey-map" src="${reportPrintEsc(journeyMapUrl)}" alt="Facility Experience Journey Map"></div>
-      <div class="foot"><span>Facility Experience Quality Assurance</span><span>Journey map reference</span></div>
-    </section>
-    <script>document.title=${JSON.stringify(report.filename||'inspection-report.pdf')};window.addEventListener('load',function(){setTimeout(function(){window.print();},240);});<\/script>
+      <div class="blk"><div class="sign"><div><span>Auditor</span><b>${value(report.inspector)}</b></div><div><span>Reviewed by</span><b>&nbsp;</b></div></div></div>
+    </div>
+    <script>
+    (function(){
+      var flow=document.getElementById('flow'), holder=document.getElementById('sheets');
+      var head='<div class="run-head"><span>${reportPrintEsc(report.facility||'')}</span><span>${reportPrintEsc((report.typeLabel||'')+' · '+(report.date||''))}</span></div>';
+      var foot='<div class="foot"><span>Facility Experience Quality Assurance</span><span>${reportPrintEsc(ref)}</span></div>';
+      function sheet(){
+        var s=document.createElement('section');
+        s.className='sheet';
+        s.innerHTML=head+'<div class="body"></div>'+foot;
+        holder.appendChild(s);
+        return s;
+      }
+      // Blocks are poured into a sheet until one would overflow the paper, then a new sheet starts.
+      var s=sheet(), body=s.querySelector('.body'), blocks=[].slice.call(flow.children);
+      blocks.forEach(function(b){
+        body.appendChild(b);
+        if(s.scrollHeight>s.clientHeight && body.children.length>1){
+          var prev=b.previousElementSibling;
+          var carry=prev&&prev.hasAttribute('data-keep')&&body.children.length>2?prev:null;
+          s=sheet(); body=s.querySelector('.body');
+          if(carry) body.appendChild(carry);
+          body.appendChild(b);
+        }
+      });
+      flow.remove();
+      // Findings that land on the same sheet read as one table, not as three with repeated headers.
+      [].forEach.call(holder.querySelectorAll('.sheet'),function(sh){
+        var tables=sh.querySelectorAll('.find-table');
+        for(var i=1;i<tables.length;i++){
+          var into=tables[0].querySelector('tbody');
+          [].forEach.call(tables[i].querySelectorAll('tbody tr'),function(tr){ into.appendChild(tr); });
+          var blk=tables[i].parentNode;
+          if(blk) blk.parentNode.removeChild(blk);
+        }
+      });
+      window.addEventListener('load',function(){ setTimeout(function(){ window.print(); },260); });
+    })();
+    <\/script>
     </body></html>`);
   pw.document.close();
 }
