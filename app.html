@@ -722,6 +722,8 @@ body.no-export #btn-pdf,body.no-export #btn-pdf-edit,body.no-export #save-notice
   font-size:.76rem;font-weight:800;color:var(--muted);cursor:pointer;transition:background .13s,color .13s;white-space:nowrap}
 .sb svg{width:15px;height:15px}
 .sb em{font-style:normal;font-size:.64rem;background:rgba(0,0,0,.06);border-radius:5px;padding:0 5px}
+html:not([data-itype="EOQI"]) .sb-w{display:none}
+html:not([data-itype="EOQI"]) .sb em{font-size:.78rem;background:none;padding:0}
 .sb:hover{color:var(--text);background:#fff}
 .sb.s0{background:var(--danger);color:#fff}
 .sb.s1,.sb.s2{background:var(--good);color:#fff}
@@ -2487,6 +2489,21 @@ function dismissSpell(){
 // ═══════════════════════════════════════════════════════════
 // BUILD SECTIONS
 // ═══════════════════════════════════════════════════════════
+/** EOQI is a compliance check, so its two answers read as words; every other type just scores. */
+function applyScoreWording(){
+  const eoqi=document.getElementById('meta-type').value==='EOQI';
+  document.documentElement.dataset.itype=eoqi?'EOQI':'score';
+  document.querySelectorAll('#insp-layout .sb[data-val]').forEach(b=>{
+    const v=b.dataset.val;
+    b.title=eoqi?(v==='0'?'Not compliant (0)':`Compliant (${v})`):`Score ${v}`;
+  });
+  document.querySelectorAll('.cmt-wrap input').forEach(i=>{
+    i.placeholder=eoqi?'Add a comment — required when not compliant':'Add a comment — required when the score is 0';
+  });
+  document.querySelectorAll('.cmt-required-hint').forEach(h=>{
+    h.textContent=eoqi?'A comment is required when an item is not compliant.':'A comment is required when an item scores 0.';
+  });
+}
 function buildSections(){
   const cont=document.getElementById('secs-container');
   document.getElementById('ss-list').innerHTML=SECTIONS.map((sec,si)=>`
@@ -2526,8 +2543,8 @@ function buildSections(){
         <div class="ci-head">
           <div class="in">${ii+1}</div><div class="il">${item}</div>
           <div class="ss" role="group" aria-label="Score for item ${ii+1}">
-            <button class="sb" id="sb-${si}-${ii}-0" onclick="setScore(${si},${ii},0)" title="Not compliant (0)"><svg data-lucide="x" width="15" height="15"></svg>Not compliant<em>0</em></button>
-            <button class="sb" id="sb-${si}-${ii}-${hi}" onclick="setScore(${si},${ii},${hi})" title="Compliant (${hi})"><svg data-lucide="check" width="15" height="15"></svg>Compliant<em>${hi}</em></button>
+            <button class="sb" id="sb-${si}-${ii}-0" data-val="0" onclick="setScore(${si},${ii},0)"><svg data-lucide="x" width="15" height="15"></svg><span class="sb-w">Not compliant</span><em>0</em></button>
+            <button class="sb" id="sb-${si}-${ii}-${hi}" data-val="${hi}" onclick="setScore(${si},${ii},${hi})"><svg data-lucide="check" width="15" height="15"></svg><span class="sb-w">Compliant</span><em>${hi}</em></button>
           </div>
         </div>
         <div class="ci-body">
@@ -2784,6 +2801,7 @@ function syncFormToState(){
     const va=document.getElementById(`val-${si}`);
     if(va) va.classList.remove('show');
   });
+  applyScoreWording();
   updateProgress();updateSidebar();
 }
 
@@ -3153,6 +3171,7 @@ function inOnBuilding({final}){
 function inRenderTypes(){
   const t=document.getElementById('meta-type').value;
   document.querySelectorAll('#in-types .in-type').forEach(b=>b.classList.toggle('active',b.dataset.type===t));
+  applyScoreWording();
 }
 /** Links the inspection to the person's own pending assignment for this building, type and quarter. */
 async function inCheckAssignment(){
@@ -3475,84 +3494,221 @@ function reportPrintTone(score){
 function printInspectionReport(report){
   const sections=Array.isArray(report.sections)?report.sections:[];
   const overall=Math.round(Number(report.overall)||0);
-  const overallTone=reportPrintTone(overall);
+  const tone=reportPrintTone(overall);
   const value=v=>reportPrintEsc(v||'—');
+  const words=report.type==='EOQI';                 // only the end-of-quarter check is worded as compliance
   const journeyMapUrl=new URL('/journey-map-QA-2026-Q3-EOQ-009.svg',location.origin).href;
-  const coverFacts=[
-    ['Auditor',report.inspector],['Facility',report.facility],['Division',report.division],
-    ['Inspection date',report.date],['Inspection type',report.typeLabel]
-  ].map(([label,item])=>`<div class="cover-fact"><span>${label}</span><strong>${value(item)}</strong></div>`).join('');
+  const logoUrl=new URL('/osqa-logo.svg',location.origin).href;
+  const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const quarter=report.quarter||(report.date?`${report.date.slice(0,4)}-Q${Math.floor((Number(report.date.slice(5,7))-1)/3)+1}`:'');
+  const ref=report.filename?String(report.filename).replace(/\.pdf$/i,''):`${report.date||''} ${report.type||''}`.trim();
 
-  const scoreRows=sections.map((section,index)=>{
-    const max=Number(section.max)||10;
-    const score=Number(section.score)||0;
-    const tone=reportPrintTone(Math.round(score/max*100));
-    return `<tr class="${index%2?'muted-row':''}"><td>${value(section.title)}</td><td class="score-cell">${score}/${max}</td><td><span class="grade-chip" style="--tone:${tone.color};--soft:${tone.soft}">${tone.label}</span></td></tr>`;
+  // Every answered item, so the summary can talk about real findings instead of generalities.
+  const flat=sections.flatMap((sec,si)=>(sec.items||[]).map((it,ii)=>({
+    section:sec.title, index:ii+1, si,
+    label:typeof it==='string'?it:it.label,
+    score:typeof it==='string'?null:it.score,
+    comment:typeof it==='string'?'':(it.comment||''),
+    photos:typeof it==='string'?[]:(it.photos||[]),
+  })));
+  const scored=flat.filter(i=>typeof i.score==='number');
+  const failed=scored.filter(i=>i.score===0);
+  const totalMax=sections.reduce((a,s)=>a+(Number(s.max)||0),0);
+  const withPhotos=flat.filter(i=>i.photos.length).length;
+
+  const factRow=(label,v)=>`<tr><th>${label}</th><td>${value(v)}</td></tr>`;
+  const coverFacts=[
+    ['Building',report.facility],['Division',report.division],['Inspection type',report.typeLabel],
+    ['Quarter',quarter],['Inspection date',report.date],['Auditor',report.inspector],
+  ].map(([l,v])=>factRow(l,v)).join('');
+
+  const sectionRows=sections.map(sec=>{
+    const max=Number(sec.max)||10, score=Number(sec.score)||0, pct=max?Math.round(score/max*100):0;
+    const t=reportPrintTone(pct);
+    return `<tr><td class="s-name">${value(sec.title)}</td>
+      <td class="s-score"><b>${score}</b><small>/${max}</small></td>
+      <td class="s-bar"><span><i style="width:${pct}%;background:${t.color}"></i></span></td>
+      <td class="s-band"><span class="chip" style="--tone:${t.color};--soft:${t.soft}">${t.label}</span></td></tr>`;
   }).join('');
-  const detailSections=sections.map(section=>{
-    const max=Number(section.max)||10;
-    const score=Number(section.score)||0;
-    const pct=Math.round(score/max*100);
-    const tone=reportPrintTone(pct);
-    const rows=(section.items||[]).map((item,index)=>{
+
+  const figure=(n,l,sub)=>`<div class="fig"><b>${n}</b><span>${l}</span>${sub?`<small>${sub}</small>`:''}</div>`;
+  const figures=[
+    figure(`${overall}<small>/${totalMax||100}</small>`,'Overall score',tone.label),
+    figure(scored.length,words?'Items checked':'Items scored',`of ${flat.length} on the checklist`),
+    figure(failed.length,words?'Not compliant':'Scored 0',failed.length?'listed below':'nothing to action'),
+    figure(withPhotos,'Items with photos','evidence attached'),
+  ].join('');
+
+  const findings=failed.length
+    ?`<table class="find-table"><thead><tr><th>#</th><th>Item</th><th>Touchpoint</th><th>Auditor comment</th></tr></thead><tbody>${
+      failed.map((f,n)=>`<tr><td class="n">${n+1}</td><td class="f-item">${value(f.label)}</td><td class="f-sec">${value(f.section)}</td>
+        <td class="f-cmt">${f.comment?value(f.comment):'<span class="empty">No comment recorded</span>'}</td></tr>`).join('')}</tbody></table>`
+    :`<p class="all-clear">Every item on the checklist met the expected level in this inspection.</p>`;
+
+  const detailSections=sections.map(sec=>{
+    const max=Number(sec.max)||10, score=Number(sec.score)||0, pct=max?Math.round(score/max*100):0;
+    const t=reportPrintTone(pct);
+    const rows=(sec.items||[]).map((item,index)=>{
       const label=typeof item==='string'?item:item.label;
-      const itemScore=typeof item==='string'?null:item.score;
+      const sc=typeof item==='string'?null:item.score;
       const comment=typeof item==='string'?'':item.comment;
       const photos=typeof item==='string'?[]:(item.photos||[]);
-      const status=itemScore===null||itemScore===undefined?'not-scored':itemScore===0?'needs-attention':itemScore===1?'partial':'met';
-      const scoreLabel=itemScore===null||itemScore===undefined?'—':itemScore;
+      const state=sc==null?'na':sc===0?'no':'yes';
+      const result=sc==null?'<span class="res na">Not scored</span>'
+        :words?`<span class="res ${state}">${sc===0?'✗ Not compliant':'✓ Compliant'}</span>`
+          :`<span class="res ${state}">${sc}</span>`;
       const photoHtml=photos.length?`<div class="photo-strip">${photos.map(src=>`<img src="${reportPrintEsc(src)}" alt="Inspection evidence">`).join('')}</div>`:'';
-      return `<tr><td class="item-label"><b>${index+1}.</b> ${value(label)}</td><td class="item-score ${status}">${scoreLabel}</td><td class="comments">${comment?value(comment):'<span class="empty-copy">No comment recorded</span>'}${photoHtml}</td></tr>`;
+      return `<tr><td class="n">${index+1}</td><td class="item-label">${value(label)}</td>
+        <td class="item-res">${result}</td>
+        <td class="comments">${comment?value(comment):'<span class="empty">—</span>'}${photoHtml}</td></tr>`;
     }).join('');
     return `<section class="report-section">
-      <div class="section-head" style="--tone:${tone.color};--soft:${tone.soft}"><div><span class="section-kicker">Journey touchpoint</span><h2>${value(section.title)}</h2></div><div class="section-total"><b>${score}<small>/${max}</small></b><span>${tone.label}</span></div></div>
-      <table class="detail-table"><thead><tr><th>Inspection item</th><th>Score</th><th>Observations & evidence</th></tr></thead><tbody>${rows}</tbody>${section.notes?`<tfoot><tr><td colspan="3"><b>Auditor note</b><span>${value(section.notes)}</span></td></tr></tfoot>`:''}</table>
+      <div class="section-head"><div><span class="kicker">Journey touchpoint</span><h2>${value(sec.title)}</h2></div>
+        <div class="section-total"><b style="color:${t.color}">${score}<small>/${max}</small></b><span class="chip" style="--tone:${t.color};--soft:${t.soft}">${t.label}</span></div></div>
+      <table class="detail-table"><thead><tr><th class="n">#</th><th>Inspection item</th><th class="item-res">Result</th><th>Observations &amp; evidence</th></tr></thead>
+        <tbody>${rows}</tbody>
+        ${sec.notes?`<tfoot><tr><td colspan="4"><b>Auditor note</b><span>${value(sec.notes)}</span></td></tr></tfoot>`:''}</table>
     </section>`;
   }).join('');
+
   const filename=value(report.filename||'inspection-report.pdf');
+  const runHead=`<div class="run-head"><span>${value(report.facility)}</span><span>${value(report.typeLabel)} · ${value(report.date)}</span></div>`;
   const pw=window.open('','_blank');
   if(!pw){alert('Please allow pop-ups to export the PDF.');return;}
   pw.document.write(`<!DOCTYPE html><html lang="en" dir="ltr"><head>
     <meta charset="UTF-8"><title>${filename}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-      :root{--ink:#002070;--deep:#102040;--teal:#0033A0;--aqua:#26A8AB;--mist:#8CFEE3;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369}
+      :root{--ink:#002070;--deep:#102040;--royal:#0033A0;--teal:#26A8AB;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369}
       *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-      @page{size:A4;margin:0}
+      @page{size:A4;margin:15mm 15mm 14mm}
       html,body{margin:0;padding:0;background:#fff;color:var(--deep);font-family:Cairo,Arial,sans-serif;line-height:1.45}
-      body{counter-reset:page}
-      .page{min-height:297mm;padding:15mm 14mm 16mm;position:relative;background:#fff}
-      .cover{page-break-after:always;display:flex;flex-direction:column;overflow:hidden}
-      .cover-accent{width:100%;height:7px;background:linear-gradient(90deg,var(--teal),var(--aqua),var(--mist));border-radius:12px;margin-bottom:27mm}
-      .brand{display:flex;align-items:center;gap:10px;color:var(--teal);font-weight:900;font-size:10px;letter-spacing:.17em;text-transform:uppercase}
-      .brand-logo{display:block;height:30px;width:auto}.brand-sep{width:1px;height:22px;background:var(--line)}
-      .cover h1{font-size:31px;line-height:1.13;letter-spacing:-.04em;color:var(--ink);margin:15mm 0 7px;max-width:430px}
-      .cover h1 span{color:var(--teal)}
-      .cover-lead{margin:0;max-width:400px;font-size:13px;color:var(--muted)}
-      .cover-content{margin-top:auto;display:grid;grid-template-columns:1fr 118px;gap:20px;align-items:end}
-      .cover-facts{border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:13px 22px;padding-top:13px}
-      .cover-fact{min-width:0}.cover-fact span,.section-kicker{display:block;color:var(--muted);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}.cover-fact strong{font-size:12px;color:var(--deep);display:block;overflow-wrap:anywhere}
-      .score-orb{width:112px;height:112px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--soft);border:7px solid var(--tone);color:var(--tone)}
-      .score-orb b{font-size:35px;letter-spacing:-.07em;line-height:.9}.score-orb small{font-size:10px;font-weight:800}.score-orb span{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-top:5px}
-      .cover-footer{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px;margin-top:26mm;font-size:8px;color:var(--muted)}
-      .content-page{padding-top:13mm}.page-title{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--teal);padding-bottom:8px;margin-bottom:13px}.page-title p{margin:0;color:var(--teal);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}.page-title h2{font-size:19px;color:var(--ink);letter-spacing:-.025em;margin:3px 0 0}.page-title .report-score{font-size:12px;color:var(--muted)}.page-title .report-score b{color:var(--teal);font-size:18px}
-      .summary-grid{display:grid;grid-template-columns:1.16fr .84fr;gap:13px;margin-bottom:16px}.summary-card,.action-note{border:1px solid var(--line);border-radius:8px;overflow:hidden}.summary-card h3{margin:0;padding:10px 13px;background:var(--paper);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink)}
-      table{border-collapse:collapse;width:100%}.score-table td{padding:8px 12px;border-top:1px solid var(--line);font-size:10px}.score-table .muted-row{background:var(--paper)}.score-cell{text-align:center;font-size:11px!important;font-weight:900;color:var(--ink)}.grade-chip{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--soft);color:var(--tone);font-size:8px;font-weight:900}.action-note{padding:15px;background:linear-gradient(145deg,#F8F8F5,#fff)}.action-note i{display:block;width:24px;height:5px;background:linear-gradient(90deg,var(--teal),var(--mist));border-radius:99px;margin-bottom:13px}.action-note h3{font-size:13px;color:var(--ink);margin:0 0 7px}.action-note p{margin:0;color:var(--muted);font-size:10px}
-      .report-section{break-inside:avoid;margin:0 0 15px;border:1px solid var(--line);border-radius:8px;overflow:hidden}.section-head{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:linear-gradient(90deg,var(--soft),#fff)}.section-head h2{font-size:13px;color:var(--ink);margin:1px 0 0}.section-total{text-align:right;color:var(--tone)}.section-total b{font-size:20px;line-height:1;letter-spacing:-.05em}.section-total small{font-size:10px}.section-total span{display:block;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
-      .detail-table th{padding:7px 11px;background:var(--ink);color:#fff;text-align:left;font-size:8px;letter-spacing:.08em;text-transform:uppercase}.detail-table th:nth-child(2){text-align:center;width:48px}.detail-table td{padding:8px 11px;border-top:1px solid var(--line);vertical-align:top;font-size:9.5px}.item-label{width:47%;color:var(--deep);font-weight:600}.item-label b{color:var(--teal)}.item-score{text-align:center;font-size:14px!important;font-weight:900}.item-score.met{color:var(--teal)}.item-score.partial{color:var(--aqua)}.item-score.needs-attention{color:var(--ink)}.item-score.not-scored{color:var(--muted)}.comments{color:#526476;white-space:pre-line}.empty-copy{font-style:italic;color:#9AA2A9}.photo-strip{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.photo-strip img{width:52px;height:52px;border-radius:5px;object-fit:cover;border:1px solid var(--mist)}.detail-table tfoot td{background:var(--paper);color:var(--deep)}.detail-table tfoot b{display:block;color:var(--teal);font-size:8px;text-transform:uppercase;letter-spacing:.08em}.detail-table tfoot span{display:block;margin-top:2px;white-space:pre-line}
-      .signature{margin:25px 0 8px;padding-top:12px;border-top:1px solid var(--line);width:190px}.signature span{font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.signature b{display:block;border-bottom:1px solid var(--ink);padding-top:25px;font-size:10px;font-weight:700;color:var(--deep)}
-      .journey-page{break-before:page;display:flex;flex-direction:column;background:#fff}.journey-header{border-top:7px solid var(--teal);padding-top:13mm;margin-bottom:9mm}.journey-header p{margin:0;color:var(--teal);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}.journey-header h2{margin:3px 0 0;color:var(--ink);font-size:22px;letter-spacing:-.03em}.journey-header span{color:var(--muted);font-size:10px}.journey-frame{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:7mm;display:flex;align-items:center;justify-content:center}.journey-frame img{display:block;width:100%;max-height:232mm;object-fit:contain}.journey-footer{display:flex;justify-content:space-between;color:var(--muted);font-size:8px;padding-top:8px}
-      @media print{.page{min-height:auto}.cover{min-height:297mm}.content-page{padding-bottom:14mm}.journey-page{min-height:297mm}.report-section{break-inside:avoid}.page-number:after{content:counter(page)}}
+      .page{min-height:calc(297mm - 29mm);display:flex;flex-direction:column;break-after:page}
+      .page:last-child{break-after:auto}
+      @media screen{body{background:#EEF1F4;padding:10mm 0}.page{width:210mm;padding:15mm 15mm 14mm;margin:0 auto 8mm;background:#fff;box-shadow:0 1px 4px rgba(16,32,64,.18)}}
+      .rule{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--royal),var(--teal))}
+      .brand{display:flex;align-items:center;gap:11px;margin-top:13px;color:var(--royal);font-weight:900;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase}
+      .brand img{display:block;height:28px;width:auto}.brand i{width:1px;height:20px;background:var(--line);display:block}
+
+      /* Cover */
+      .cover h1+.cover-type{margin-bottom:0}
+      .cover h1{font-size:34px;line-height:1.1;letter-spacing:-.035em;color:var(--ink);margin:22mm 0 6px}
+      .cover h1 span{display:block;color:var(--royal)}
+      .cover-type{font-size:12px;font-weight:800;color:var(--muted);margin:0}
+      .cover-main{margin-top:auto;display:grid;grid-template-columns:1fr 132px;gap:26px;align-items:end}
+      .fact-table{border-collapse:collapse;width:100%}
+      .fact-table th{text-align:left;width:120px;padding:9px 0;border-top:1px solid var(--line);color:var(--muted);font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;vertical-align:middle}
+      .fact-table td{padding:9px 0;border-top:1px solid var(--line);font-size:12px;font-weight:700;color:var(--deep);overflow-wrap:anywhere}
+      .orb{width:132px;height:132px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--soft);border:8px solid var(--tone);color:var(--tone)}
+      .orb b{font-size:38px;letter-spacing:-.06em;line-height:.9}.orb small{font-size:10px;font-weight:800}
+      .orb span{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-top:5px}
+      .cover-foot{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:9px;margin-top:20mm;font-size:8.5px;color:var(--muted)}
+
+      /* Running head, page titles */
+      .run-head{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:14px;font-size:8.5px;color:var(--muted);font-weight:700}
+      .page-title{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--royal);padding-bottom:7px;margin:0 0 13px}
+      .page-title p{margin:0;color:var(--royal);font-size:8.5px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+      .page-title h2{font-size:19px;color:var(--ink);letter-spacing:-.025em;margin:3px 0 0}
+      .page-title em{font-style:normal;font-size:10px;color:var(--muted)}
+
+      /* Summary */
+      .figs{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:15px}
+      .fig{border:1px solid var(--line);border-radius:8px;padding:11px 12px}
+      .fig b{display:block;font-size:22px;letter-spacing:-.04em;color:var(--ink);line-height:1}
+      .fig b small{font-size:11px;color:var(--muted);letter-spacing:0}
+      .fig span{display:block;margin-top:5px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--deep)}
+      .fig small{display:block;font-size:8.5px;color:var(--muted)}
+      table{border-collapse:collapse;width:100%}
+      .sec-table{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+      .sec-table td{padding:8px 11px;border-top:1px solid var(--line);font-size:10px;vertical-align:middle}
+      .sec-table tr:first-child td{border-top:none}
+      .s-name{font-weight:700;color:var(--deep)}
+      .s-score{width:58px;text-align:right;white-space:nowrap}.s-score b{font-size:12px;color:var(--ink)}.s-score small{color:var(--muted);font-size:9px}
+      .s-bar{width:88px}.s-bar span{display:block;height:6px;border-radius:99px;background:#E7EBEF;overflow:hidden}
+      .s-bar i{display:block;height:6px;border-radius:99px}
+      .s-band{width:86px;text-align:right}
+      .chip{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--soft);color:var(--tone);font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+      .find-table{margin-top:4px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+      .find-table th{background:var(--ink);color:#fff;text-align:left;padding:7px 10px;font-size:8px;letter-spacing:.08em;text-transform:uppercase}
+      .find-table td{padding:8px 10px;border-top:1px solid var(--line);font-size:9.5px;vertical-align:top}
+      .find-table tr,.detail-table tr{break-inside:avoid}
+      .find-table thead th,.detail-table thead th{break-inside:avoid}
+      .find-table .n,.detail-table .n{width:22px;text-align:center;color:var(--muted);font-weight:800}
+      .f-item{width:31%;font-weight:700}.f-sec{width:20%;color:var(--muted)}.f-cmt{color:#4A5A6B;white-space:pre-line}
+      .all-clear{margin:2px 0 0;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:10px;color:var(--muted)}
+      .empty{color:#9AA2A9;font-style:italic}
+
+      /* Detail */
+      .report-section{break-inside:avoid;margin:0 0 13px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+      .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;background:var(--paper)}
+      .section-head .kicker{display:block;color:var(--muted);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
+      .section-head h2{font-size:13px;color:var(--ink);margin:2px 0 0}
+      .section-total{text-align:right;white-space:nowrap}
+      .section-total b{font-size:19px;line-height:1;letter-spacing:-.05em;display:block}.section-total b small{font-size:10px;color:var(--muted)}
+      .section-total .chip{margin-top:4px}
+      .detail-table th{padding:7px 10px;background:var(--ink);color:#fff;text-align:left;font-size:8px;letter-spacing:.08em;text-transform:uppercase}
+      .detail-table td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top;font-size:9.5px}
+      .item-label{width:38%;color:var(--deep);font-weight:600}
+      .item-res{width:92px}
+      .res{display:inline-block;font-size:8.5px;font-weight:900;padding:3px 8px;border-radius:999px;white-space:nowrap}
+      .res.yes{background:#DBEEE4;color:#007A38}.res.no{background:#FDE9E4;color:#CB3010}.res.na{background:var(--paper);color:var(--muted)}
+      td.item-res .res{min-width:38px;text-align:center}
+      .comments{color:#4A5A6B;white-space:pre-line}
+      .photo-strip{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+      .photo-strip img{width:58px;height:58px;border-radius:5px;object-fit:cover;border:1px solid var(--line)}
+      .detail-table tfoot td{background:var(--paper);color:var(--deep)}
+      .detail-table tfoot b{display:block;color:var(--royal);font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+      .detail-table tfoot span{display:block;margin-top:2px;white-space:pre-line}
+      .sign{margin-top:18px;display:grid;grid-template-columns:repeat(2,minmax(0,200px));gap:26px}
+      .sign div span{font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+      .sign div b{display:block;border-bottom:1px solid var(--ink);padding-top:24px;font-size:10px;font-weight:700;color:var(--deep)}
+      .foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8px;color:var(--muted)}
+
+      /* Journey map */
+      .journey-frame{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:7mm;display:flex;align-items:center;justify-content:center}
+      .journey-frame img{display:block;width:100%;max-height:225mm;object-fit:contain}
+      @media print{.report-section{break-inside:avoid}}
     </style></head><body>
     <section class="page cover">
-      <div class="cover-accent"></div><div class="brand"><img class="brand-logo" src="${reportPrintEsc(new URL('/osqa-logo.svg',location.origin).href)}" alt="OSQA"><i class="brand-sep"></i>OSD Facility Experience</div>
-      <h1>Quality assurance<br><span>inspection report.</span></h1>
-      <p class="cover-lead">A clear record of the facility experience, touchpoints and actions observed during this inspection.</p>
-      <div class="cover-content"><div class="cover-facts">${coverFacts}</div><div class="score-orb" style="--tone:${overallTone.color};--soft:${overallTone.soft}"><b>${overall}</b><small>/100</small><span>${overallTone.label}</span></div></div>
-      <div class="cover-footer"><span>Facility Experience Quality Assurance</span><span>Generated ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span></div>
+      <div class="rule"></div>
+      <div class="brand"><img src="${reportPrintEsc(logoUrl)}" alt="OSQA"><i></i>OSD · Facility Experience Quality Assurance</div>
+      <h1>Inspection<span>report.</span></h1>
+      <p class="cover-type">${value(report.typeLabel)}</p>
+      <div class="cover-main">
+        <table class="fact-table"><tbody>${coverFacts}</tbody></table>
+        <div class="orb" style="--tone:${tone.color};--soft:${tone.soft}"><b>${overall}</b><small>/${totalMax||100}</small><span>${tone.label}</span></div>
+      </div>
+      <div class="cover-foot"><span>${value(ref)}</span><span>Generated ${today}</span></div>
     </section>
-    <main class="page content-page"><div class="page-title"><div><p>Inspection overview</p><h2>Journey Map Score Card</h2></div><span class="report-score"><b>${overall}</b> / 100</span></div><div class="summary-grid"><section class="summary-card"><h3>Touchpoint performance</h3><table class="score-table"><tbody>${scoreRows}</tbody></table></section><aside class="action-note"><i></i><h3>Focus for improvement</h3><p>Address any item marked below the expected level, record the corrective action, and confirm the improvement at the next inspection.</p></aside></div><div class="page-title"><div><p>Evidence & observations</p><h2>Detailed Inspection</h2></div></div>${detailSections}<div class="signature"><span>Auditor signature</span><b>${value(report.inspector)}</b></div></main>
-    <section class="page journey-page"><header class="journey-header"><p>Reference at the end of report</p><h2>Facility Experience Journey Map</h2><span>Visual reference for the inspection journey and its touchpoints.</span></header><div class="journey-frame"><img id="journey-map" src="${reportPrintEsc(journeyMapUrl)}" alt="Facility Experience Journey Map"></div><footer class="journey-footer"><span>Facility Experience Quality Assurance</span><span>Journey map reference</span></footer></section>
+
+    <main class="page">
+      ${runHead}
+      <div class="page-title"><div><p>Inspection summary</p><h2>Score and findings</h2></div><em>${sections.length} touchpoints · ${flat.length} checklist items</em></div>
+      <div class="figs">${figures}</div>
+      <div class="page-title"><div><p>By touchpoint</p><h2>Section scores</h2></div></div>
+      <table class="sec-table"><tbody>${sectionRows}</tbody></table>
+      <div class="page-title" style="margin-top:16px"><div><p>${words?'Not compliant':'Scored 0'}</p><h2>Items needing action</h2></div><em>${failed.length} of ${scored.length} checked</em></div>
+      ${findings}
+      <div class="foot"><span>Facility Experience Quality Assurance</span><span>${value(ref)}</span></div>
+    </main>
+
+    <main class="page">
+      ${runHead}
+      <div class="page-title"><div><p>Evidence &amp; observations</p><h2>Detailed inspection</h2></div><em>${value(report.inspector)}</em></div>
+      ${detailSections}
+      <div class="sign">
+        <div><span>Auditor</span><b>${value(report.inspector)}</b></div>
+        <div><span>Reviewed by</span><b>&nbsp;</b></div>
+      </div>
+      <div class="foot"><span>Facility Experience Quality Assurance</span><span>${value(ref)}</span></div>
+    </main>
+
+    <section class="page">
+      ${runHead}
+      <div class="page-title"><div><p>Reference</p><h2>Facility Experience Journey Map</h2></div></div>
+      <div class="journey-frame"><img id="journey-map" src="${reportPrintEsc(journeyMapUrl)}" alt="Facility Experience Journey Map"></div>
+      <div class="foot"><span>Facility Experience Quality Assurance</span><span>Journey map reference</span></div>
+    </section>
     <script>document.title=${JSON.stringify(report.filename||'inspection-report.pdf')};window.addEventListener('load',function(){setTimeout(function(){window.print();},240);});<\/script>
     </body></html>`);
   pw.document.close();
@@ -3634,6 +3790,7 @@ function exportPDF(){
     facility:document.getElementById('meta-facility').value,
     division:document.getElementById('meta-division').value,
     date:document.getElementById('meta-date').value,
+    type:reportType,
     typeLabel:reportType==='BOQI'?'Beginning of Quarter Inspection (BOQI)':reportType==='EOQI'?'End of Quarter Inspection (EOQI)':reportType==='Follow-up'?'Follow-up and Edit':'—',
     overall:reportSections.reduce((sum,section)=>sum+section.score,0),
     filename:buildFilenameFrom(reportType,document.getElementById('meta-date').value,document.getElementById('meta-facility').value,document.getElementById('meta-division').value,activeInspector),
@@ -5320,6 +5477,7 @@ function renderReportPanel(){
       </div>
     </div>`
     :decidedCard+`<p class="ad-note"><svg data-lucide="info" width="14" height="14"></svg>${reviewBlockedReason==='own'?'This is your report, so someone else reviews it.':'Your account can read reports but not review them — an admin can grant “Review reports” in Admin Control.'}</p>`;
+  const words=r.type==='EOQI';   // only the end-of-quarter check is worded as compliance
   const sections=(r.sections||[]).map((sec,si)=>{
     const pct=sec.max?Math.round((sec.score||0)/sec.max*100):0, sg=grade(pct);
     const items=(sec.items||[]).map((it,ii)=>{
@@ -5329,12 +5487,12 @@ function renderReportPanel(){
         <span class="rv-mark">${v==null?'–':v===0?'✗':'✓'}</span>
         <div><b>${ovEsc(label)}</b>${it.comment?`<p>${ovEsc(it.comment)}</p>`:''}
           ${(it.photos||[]).length?`<div class="rv-photos">${it.photos.map(src=>`<img src="${ovEsc(src)}" data-photo alt="Photo for ${ovEsc(label)}" loading="lazy">`).join('')}</div>`:''}</div>
-        <em>${v==null?'Not scored':v===0?'Not compliant':'Compliant'}</em>
+        <em>${v==null?'Not scored':words?(v===0?'Not compliant':'Compliant'):v}</em>
       </li>`;
     }).join('');
     const fails=(sec.items||[]).filter(it=>it.score===0).length;
     return `<details class="rv-sec"${fails?' open':''}>
-      <summary><span class="rv-sec-t">${ovEsc(sec.title)}</span>${fails?`<span class="rv-fails">${fails} not compliant</span>`:''}
+      <summary><span class="rv-sec-t">${ovEsc(sec.title)}</span>${fails?`<span class="rv-fails">${fails} ${words?'not compliant':'scored 0'}</span>`:''}
         <span class="rv-sec-s"><b style="color:${sg.color}">${sec.score??'–'}</b>/${sec.max}</span></summary>
       <ul>${items}</ul>${sec.notes?`<div class="rv-notes"><b>Section notes</b>${ovEsc(sec.notes)}</div>`:''}
     </details>`;
@@ -5361,7 +5519,7 @@ async function rvAction(act){
   const {record:r,summary:s}=rvData||{};
   if(!r) return;
   if(act==='pdf'){
-    return printInspectionReport({inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,typeLabel:r.typeLabel||r.type,overall:r.overall,
+    return printInspectionReport({inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,type:r.type,typeLabel:r.typeLabel||r.type,overall:r.overall,
       filename:r.filename||`${r.date||'inspection'}_${r.type||'Inspection'}_${r.facility||'facility'}.pdf`,sections:r.sections||[]});
   }
   if(act==='edit'){ closeReport(); return editInspection({stopPropagation(){}},r.id,r); }
