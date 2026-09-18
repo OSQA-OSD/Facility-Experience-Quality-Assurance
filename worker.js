@@ -9,7 +9,9 @@ import {
   registerFailedAttempt, clearFailedAttempts, SESSION_COOKIE, MAX_FAILED_ATTEMPTS,
 } from './auth.js';
 
-const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
+// API answers describe live data, so no browser may keep a copy — Safari in particular will
+// otherwise hand back an old list for the same URL.
+const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
 
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...extraHeaders } });
