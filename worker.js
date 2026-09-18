@@ -1863,7 +1863,8 @@ async function handleAssets(request, env, url) {
   const isAppShell = url.pathname === '/app.html' || url.pathname === '/app';
   const isAdminShell = url.pathname === '/admin.html' || url.pathname === '/admin';
   const isAssignShell = url.pathname === '/assign.html' || url.pathname === '/assign';
-  if (isAppShell || isAdminShell || isAssignShell) {
+  const isReportShell = url.pathname === '/report.html' || url.pathname === '/report';
+  if (isAppShell || isAdminShell || isAssignShell || isReportShell) {
     const user = await getUserFromRequest(request, env);
     if (!user) return Response.redirect(new URL('/login.html', url).toString(), 302);
     // User management and assigning moved inside the app; keep old links working.

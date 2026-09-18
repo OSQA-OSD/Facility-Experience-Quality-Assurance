@@ -3839,17 +3839,29 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
  * gesture) and then pointed at the finished document.
  */
 async function openInspectionReport(report,{autoPrint=false}={}){
-  const pw=window.open('','_blank');
+  // /report.html gives the window an address of its own — Safari on iPhone and iPad will not
+  // print a document written into about:blank, which is why printing did nothing there.
+  const pw=window.open('/report','_blank');
   if(!pw) return askToOpenReport(report,{autoPrint});     // pop-ups are blocked — Safari does this by default
+  let html=null, ready=false, sent=false;
+  const send=()=>{
+    if(sent||!ready||html==null) return;
+    sent=true;
+    try{ pw.postMessage({type:'qa-report',html},location.origin); }catch(err){}
+    window.removeEventListener('message',onMessage);
+  };
+  const onMessage=e=>{
+    if(e.origin!==location.origin||!e.data||e.data.type!=='qa-report-ready') return;
+    ready=true; send();
+  };
+  window.addEventListener('message',onMessage);
+  setTimeout(()=>window.removeEventListener('message',onMessage),60000);
   try{
-    pw.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-      +'<title>Preparing the report…</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;'
-      +'font:600 15px/1.5 -apple-system,system-ui,sans-serif;color:#5F6369;background:#fff}</style></head><body>Preparing the report…</body></html>');
-    const html=await buildInspectionReportHtml(report,{autoPrint});
-    pw.document.open(); pw.document.write(html); pw.document.close();
-    pw.focus();
+    html=await buildInspectionReportHtml(report,{autoPrint});
+    send();
     return true;
   }catch(err){
+    window.removeEventListener('message',onMessage);
     try{ pw.close(); }catch{}
     showToast('Could not build the report. '+(err&&err.message||''),true);
     return false;
