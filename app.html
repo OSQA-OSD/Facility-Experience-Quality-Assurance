@@ -3715,6 +3715,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
       .sign div span{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
       .sign div b{display:block;border-bottom:1px solid var(--ink);padding-top:26px}
       .sign div em{display:block;margin-top:6px;font-style:normal;font-size:11px;font-weight:700;color:var(--deep)}
+      .sign div i{display:block;margin-top:4px;font-style:normal;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
     </style></head><body>
     ${embedded?'':`<div class="bar">
       <b>${filename}</b>
@@ -3741,7 +3742,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
       ${findings}
       <div class="blk" data-keep><div class="page-title"><div><p>Evidence &amp; observations</p><h2>Detailed inspection</h2></div><em>${sections.length} touchpoints</em></div></div>
       ${detailSections}
-      <div class="blk"><div class="sign"><div><span>Auditor signature</span><b>&nbsp;</b><em>${value(report.inspector)}</em></div><div><span>Quality Officer</span><b>&nbsp;</b><em>${report.approvedBy?value(report.approvedBy):'&nbsp;'}</em></div></div></div>
+      <div class="blk"><div class="sign"><div><span>Auditor signature</span><b>&nbsp;</b><em>${value(report.inspector)}</em></div><div><span>Reviewed by</span><b>&nbsp;</b>${report.approvedBy?`<em>${value(report.approvedBy)}</em>`:''}<i>Quality Officer</i></div></div></div>
     </div>
     <script>
     (function(){
