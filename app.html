@@ -3534,9 +3534,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
   const value=v=>reportPrintEsc(v||'—');
   const words=report.type==='EOQI';                 // only the end-of-quarter check is worded as compliance
   const logoUrl=new URL('/osqa-logo.svg',location.origin).href;
-  const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const quarter=report.quarter||(report.date?`${report.date.slice(0,4)}-Q${Math.floor((Number(report.date.slice(5,7))-1)/3)+1}`:'');
-  const ref=report.filename?String(report.filename).replace(/\.pdf$/i,''):`${report.date||''} ${report.type||''}`.trim();
 
   let journey='';
   try{
@@ -3646,8 +3644,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
       /* Page 1 — overview */
       .cover h1{font-size:36px;line-height:1.08;letter-spacing:-.035em;color:var(--ink);margin:11mm 0 6px}
       .cover h1 span{color:var(--royal)}
-      .cover-type{font-size:13px;font-weight:800;color:var(--muted);margin:0}
-      .cover-score{display:inline-flex;align-items:center;gap:9px;margin-top:11px;font-size:12.5px;font-weight:900;color:var(--muted)}
+      .cover-score{display:inline-flex;align-items:center;gap:9px;margin-top:14px;font-size:12.5px;font-weight:900;color:var(--muted)}
       .cover-score b{font-size:23px;color:var(--ink);letter-spacing:-.03em}
       .fact-table{border-collapse:collapse;width:100%;margin-top:7mm}
       .fact-table th{text-align:left;width:34mm;padding:8px 0;border-top:1px solid var(--line);color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
@@ -3657,7 +3654,6 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
       .cover-foot{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:9px;margin-top:auto;font-size:9px;color:var(--muted);flex:none}
 
       /* Page furniture */
-      .run-head{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:12px;font-size:9px;color:var(--muted);font-weight:700;flex:none}
       .foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8.5px;color:var(--muted);flex:none}
       .body{flex:1 1 auto;min-height:0;overflow:hidden}
       .page-title{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--royal);padding-bottom:7px;margin:0 0 12px}
@@ -3730,12 +3726,11 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
       <div class="rule"></div>
       <div class="brand"><img src="${reportPrintEsc(logoUrl)}" alt="OSQA"><i></i>OSD · Facility Experience Quality Assurance</div>
       <h1>Inspection <span>report.</span></h1>
-      <p class="cover-type">${value(report.typeLabel)}</p>
       <div class="cover-score"><b>${overall}</b> / ${totalMax||100}<span class="chip" style="--tone:${tone.color};--soft:${tone.soft}">${tone.label}</span></div>
       <table class="fact-table"><tbody>${coverFacts}</tbody></table>
       ${journey?`<div class="journey-card">${journey}</div>`:''}
       <div class="figs" style="margin-top:6mm">${figures}</div>
-      <div class="cover-foot"><span>${value(ref)}</span><span>Generated ${today}</span></div>
+      <div class="cover-foot"><span>Facility Experience Quality Assurance</span><span class="pno"></span></div>
     </section>
     <div id="sheets"></div>
     </div></div>
@@ -3743,30 +3738,29 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
       <div class="blk" data-keep><div class="page-title"><div><p>By touchpoint</p><h2>Section scores</h2></div><em>${sections.length} touchpoints · ${flat.length} checklist items</em></div><table class="sec-table"><tbody>${sectionRows}</tbody></table></div>
       <div class="blk" data-keep><div class="page-title"><div><p>${words?'Not compliant':'Scored 0'}</p><h2>Items needing action</h2></div><em>${failed.length} of ${scored.length} checked</em></div></div>
       ${findings}
-      <div class="blk" data-keep><div class="page-title"><div><p>Evidence &amp; observations</p><h2>Detailed inspection</h2></div><em>${value(report.inspector)}</em></div></div>
+      <div class="blk" data-keep><div class="page-title"><div><p>Evidence &amp; observations</p><h2>Detailed inspection</h2></div><em>${sections.length} touchpoints</em></div></div>
       ${detailSections}
-      <div class="blk"><div class="sign"><div><span>Auditor</span><b>${value(report.inspector)}</b></div><div><span>Reviewed by</span><b>&nbsp;</b></div></div></div>
+      <div class="blk"><div class="sign"><div><span>Auditor signature</span><b>&nbsp;</b></div><div><span>Reviewed by</span><b>&nbsp;</b></div></div></div>
     </div>
     <script>
     (function(){
       var flow=document.getElementById('flow'), holder=document.getElementById('sheets');
-      var head='<div class="run-head"><span>${reportPrintEsc(report.facility||'')}</span><span>${reportPrintEsc((report.typeLabel||'')+' · '+(report.date||''))}</span></div>';
       var sheets=[];
       function sheet(){
         var s=document.createElement('section');
         s.className='sheet';
-        s.innerHTML=head+'<div class="body"></div><div class="foot"><span>Facility Experience Quality Assurance</span><span class="pno"></span></div>';
+        s.innerHTML='<div class="body"></div><div class="foot"><span>Facility Experience Quality Assurance</span><span class="pno"></span></div>';
         holder.appendChild(s); sheets.push(s);
         return s;
       }
       var s=sheet(), body=s.querySelector('.body');
-      function fits(){ return s.scrollHeight<=s.clientHeight && body.scrollHeight<=body.clientHeight; }
-      function next(){ s=sheet(); body=s.querySelector('.body'); }
-      /** Space still free inside the current sheet's body, in px. */
+      /** Space still free inside the current sheet's body, in px (negative when it overflows). */
       function room(){
         var box=body.getBoundingClientRect(), last=body.lastElementChild;
         return box.height-(last?last.getBoundingClientRect().bottom-box.top:0);
       }
+      function fits(){ return room()>=4; }                              // 4px of slack keeps a row off the footer
+      function next(){ s=sheet(); body=s.querySelector('.body'); }
       var FILL=Math.round(45*3.78);                                    // 45mm of free paper is worth filling with rows
       function rowsOf(b){ var t=b.querySelector('tbody'); return t?t.rows.length:0; }
       /** Move trailing rows out of an oversized block into a continuation of the same table. */
@@ -3800,8 +3794,6 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
         }
         if(splittable){ var c2=split(b); if(c2){ next(); pour(c2); } }
       }
-      [].slice.call(flow.children).forEach(pour);
-      flow.parentNode.removeChild(flow);
       // A phone cannot show 210mm at full size: the paper is scaled to the screen, not reflowed.
       var doc=document.getElementById('doc'), wrap=document.getElementById('docwrap');
       function fit(){
@@ -3818,11 +3810,18 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
       window.addEventListener('resize',fit);
       window.addEventListener('beforeprint',function(){ doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height=''; });
       window.addEventListener('afterprint',fit);
-      var total=sheets.length+1;                                        // the cover counts too
-      [].forEach.call(document.querySelectorAll('.pno'),function(el,i){ el.textContent='Page '+(i+2)+' of '+total; });
-      fit();
-      ${autoPrint?`window.addEventListener('load',function(){ setTimeout(function(){ window.print(); },350); });
-      if(document.readyState==='complete') setTimeout(function(){ window.print(); },350);`:''}
+      function start(){
+        [].slice.call(flow.children).forEach(pour);
+        flow.parentNode.removeChild(flow);
+        var total=sheets.length+1;                                      // the cover counts too
+        [].forEach.call(document.querySelectorAll('.pno'),function(el,i){ el.textContent='Page '+(i+1)+' of '+total; });
+        fit();
+        ${autoPrint?'setTimeout(function(){ window.print(); },250);':''}
+      }
+      // Pages are measured only once the web font and the photos are in — measuring before
+      // that is what used to push a row over the footer.
+      function ready(){ (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){ setTimeout(start,30); }); }
+      if(document.readyState==='complete') ready(); else window.addEventListener('load',ready);
     })();
     <\/script>
     </body></html>`;
