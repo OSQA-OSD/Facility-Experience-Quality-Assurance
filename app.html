@@ -3568,7 +3568,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
     return `<div class="blk"><section class="report-section">
       <div class="section-head"><div><span class="kicker">Journey touchpoint</span><h2>${value(sec.title)}</h2></div>
         <div class="section-total"><b style="color:${t.color}">${score}<small>/${max}</small></b><span class="chip" style="--tone:${t.color};--soft:${t.soft}">${t.label}</span></div></div>
-      <table class="detail-table"><thead><tr><th class="n">#</th><th>Inspection item</th><th class="item-res">Result</th><th>Observations &amp; evidence</th></tr></thead>
+      <table class="detail-table"><thead><tr><th class="n">#</th><th class="item-col">Inspection item</th><th class="item-res">Result</th><th>Observations &amp; evidence</th></tr></thead>
         <tbody>${rows}</tbody>
         ${sec.notes?`<tfoot><tr><td colspan="4"><b>Auditor note</b><span>${value(sec.notes)}</span></td></tr></tfoot>`:''}</table>
     </section></div>`;
@@ -3623,11 +3623,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       .foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8.5px;color:var(--muted);flex:none}
       .body{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column}
       .sheet.measuring .body{display:block}
-      .sheet:not(.measuring) .body>.blk{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;margin-bottom:0}
-      .sheet:not(.measuring) .report-section{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
-      .sheet:not(.measuring) .report-section .detail-table{flex:1 1 auto}
-      .sheet:not(.measuring) .detail-table td{vertical-align:middle}
-      .sheet:not(.measuring) .detail-table td.comments{vertical-align:middle}
+      .body>.blk{flex:0 0 auto;margin-bottom:0}
       .sheet .body>.blk[data-sign]{flex:0 0 auto;display:block}          /* the signatures never grow; the section takes the room */
       .page-title{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--royal);padding-bottom:7px;margin:0 0 12px}
       .page-title p{margin:0;color:var(--royal);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
@@ -3649,14 +3645,21 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       .section-total{text-align:right;white-space:nowrap}
       .section-total b{font-size:21px;line-height:1;letter-spacing:-.05em;display:block}.section-total b small{font-size:11px;color:var(--muted)}
       .section-total .chip{margin-top:4px}
-      .detail-table th{padding:8px 11px;background:var(--ink);color:#fff;text-align:left;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
-      .detail-table td{padding:var(--rowpad,9px) 11px;border-top:1px solid var(--line);vertical-align:top;font-size:var(--fs,11px)}
-      .item-label{width:36%;color:var(--deep);font-weight:600}
-      .item-res{width:28mm}
+      .detail-table{table-layout:fixed}
+      .detail-table th{padding:9px 12px;background:var(--ink);color:#fff;text-align:left;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
+      .detail-table th.n{width:10mm}
+      .detail-table th.item-col{width:43%}
+      .detail-table th.item-res{width:28mm;text-align:center}
+      .detail-table td{padding:var(--rowpad,9px) 12px;border-top:1px solid var(--line);vertical-align:middle;font-size:var(--fs,11px);line-height:1.4}
+      .detail-table tbody tr{height:var(--rowh,auto)}
+      .detail-table tbody tr:nth-child(even) td{background:#FAFBFC}
+      .item-label{color:var(--deep);font-weight:600;overflow-wrap:anywhere}
+      td.item-res{text-align:center}
       .res{display:inline-block;font-size:9.5px;font-weight:900;padding:3px 9px;border-radius:999px;white-space:nowrap}
       .res.yes{background:#DBEEE4;color:#007A38}.res.no{background:#FDE9E4;color:#CB3010}.res.na{background:var(--paper);color:var(--muted)}
       td.item-res .res{min-width:11mm;text-align:center}
-      .comments{color:#43536B}
+      .comments{color:#43536B;overflow-wrap:anywhere}
+      .comments .empty{display:block;text-align:left}
       .photo-strip{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
       .photo-strip img{width:var(--photo,74px);height:var(--photo,74px);border-radius:6px;object-fit:cover;border:1px solid var(--line)}
       .detail-table tfoot td{background:var(--paper);color:var(--deep);font-size:var(--fs,11px)}
@@ -3786,9 +3789,8 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       // Roomy first, tighter only as the content demands it: row padding, type, photo size
       // and the header move together so the page keeps its proportions.
       var DENSITY=[
-        {pad:16,fs:13,photo:126,head:16},
-        {pad:14,fs:12.5,photo:114,head:15},
-        {pad:12,fs:12,photo:102,head:14},
+        {pad:11,fs:12.5,photo:106,head:14},
+        {pad:10,fs:12,photo:98,head:13},
         {pad:10,fs:11.5,photo:92,head:13},
         {pad:9,fs:11,photo:80,head:12},
         {pad:7.5,fs:10.5,photo:70,head:11},
@@ -3802,6 +3804,20 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
         sh.style.setProperty('--photo',d.photo+'px');
         sh.style.setProperty('--headpad',d.head+'px');
       }
+      // Rows share the spare paper, but only up to a comfortable height: a short touchpoint
+      // ends where its content ends instead of turning each row into a tall empty box.
+      var ROW_MAX=Math.round(18*3.78);                                  // 18mm
+      function evenRows(sh,body){
+        var tb=body.querySelector('.detail-table tbody');
+        if(!tb||!tb.rows.length) return;
+        var even=Math.min(ROW_MAX,(tb.getBoundingClientRect().height+free(body)-4)/tb.rows.length);
+        if(even<=0) return;
+        for(var h=even;h>0;h-=4){                                       // back off until nothing spills
+          sh.style.setProperty('--rowh',h+'px');
+          if(free(body)>=4) return;
+        }
+        sh.style.removeProperty('--rowh');
+      }
       function fitToPage(sh){
         var body=sh.querySelector('.body'), card=body.firstElementChild;
         sh.classList.add('measuring');                                  // measure at natural height
@@ -3810,8 +3826,9 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
           density(sh,DENSITY[i]);
           if(free(body)>=4){ ok=true; break; }
         }
-        sh.classList.remove('measuring');                               // then let the card fill the page
-        if(ok||!card) return ok;
+        sh.classList.remove('measuring');
+        if(ok){ evenRows(sh,body); return ok; }
+        if(!card) return ok;
         sh.classList.add('measuring');                                  // more than one page holds even at its tightest
         // Scale the whole card to the paper. A wider box wraps text into fewer lines, so the
         // factor is settled over a few passes rather than guessed once.
