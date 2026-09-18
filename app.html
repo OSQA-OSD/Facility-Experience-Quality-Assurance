@@ -5584,7 +5584,7 @@ async function loadLibrary({more=false}={}){
   const panel=document.getElementById('lib-panel');
   panel.classList.add('loading');
   try{
-    const res=await fetch('/api/reports/library?'+p);
+    const res=await fetch('/api/reports/library?'+p,{cache:'no-store'});
     const d=await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(d.error||'Could not load reports.');
     if(req!==libReq) return;
@@ -5660,7 +5660,7 @@ async function openReport(id,{fromHash=false}={}){
   document.getElementById('rv-body').innerHTML='<div class="ov-empty">Loading…</div>';
   if(!fromHash&&document.getElementById('pg-library').classList.contains('active')) window.history.pushState(null,'','#pg-library/'+id);
   try{
-    const res=await fetch('/api/inspections/'+id);
+    const res=await fetch('/api/inspections/'+id,{cache:'no-store'});
     const d=await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(d.error||'Could not open the report.');
     if(rvId!==id) return;
@@ -5752,6 +5752,24 @@ function renderReportPanel(){
     <section><h4>Review history</h4><ul class="ov-feed ad-log">${history}</ul></section>`;
   lucide.createIcons();
 }
+/**
+ * A decision changes the report's status everywhere it is shown. The row in view takes the
+ * status the server saved straight away, then every list that shows a status reloads from
+ * the database — so nothing waits for the user to leave the page and come back.
+ */
+function afterReview(id,act,status){
+  const row=libRows.find(x=>x.id===id);
+  if(row&&act!=='comment'&&status){
+    row.status=status;
+    row.lastDecision={by:currentUser?.name||'You',at:new Date().toISOString().slice(0,19).replace('T',' ')};
+    if(libData) renderLibrary();
+  }
+  const on=p=>document.getElementById(p).classList.contains('active');
+  if(on('pg-library')) loadLibrary(); else refreshReviewBadge();   // the library answer carries the badge count
+  if(on('pg-home')) loadHome();
+  ofData=null; if(on('pg-officer')) loadOfficer();                   // boards and profiles show review marks too
+  auData=null; if(on('pg-auditor')) loadAuditorProfile();
+}
 async function rvAction(act){
   const {record:r,summary:s}=rvData||{};
   if(!r) return;
@@ -5787,9 +5805,8 @@ async function rvAction(act){
     const d=await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(d.error||'Could not save the review.');
     showToast(act==='approved'?'Report approved':act==='changes_requested'?'Changes requested — the auditor has been notified':'Comment added');
+    afterReview(r.id,act,d.status);
     await openReport(r.id,{fromHash:true});
-    if(document.getElementById('pg-library').classList.contains('active')) loadLibrary();
-    refreshReviewBadge();
   }catch(err){ showToast(err.message,true); btns.forEach(b=>b.disabled=false); }
 }
 
@@ -6950,7 +6967,7 @@ async function exModelLibrary(){
   const rows=[]; let offset=0, total=1;
   while(offset<total&&offset<5000){
     p.set('offset',String(offset));
-    const res=await fetch('/api/reports/library?'+p);
+    const res=await fetch('/api/reports/library?'+p,{cache:'no-store'});
     if(!res.ok) throw new Error((await res.json().catch(()=>({}))).error||'Could not load the reports.');
     const d=await res.json(); total=d.total; rows.push(...d.rows); offset+=200;
   }
