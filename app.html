@@ -516,13 +516,12 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .rv-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
 .rv-btns .btn{padding:8px 14px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px}
 .rv-warn{color:#8a4b00!important;border-color:rgba(212,128,0,.45)!important}
-.rpt-overlay{position:fixed;inset:0;z-index:1200;background:#0A1B3D;display:flex;flex-direction:column}
-.rpt-bar{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px 10px;padding:10px 14px;color:#fff}
-.rpt-bar b{min-width:0;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rpt-bar small{grid-column:1/-1;opacity:.7;font-size:.68rem}
-@media(max-width:560px){.rpt-bar b{display:none}}
-.rpt-bar .btn{padding:8px 14px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px}
-.rpt-overlay iframe{flex:1;width:100%;border:0;background:#fff}
+.rpt-ask{position:fixed;inset:0;z-index:1200;background:rgba(10,27,61,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.rpt-ask-box{background:#fff;border-radius:14px;padding:22px;max-width:380px;box-shadow:0 20px 50px -20px rgba(0,32,112,.6)}
+.rpt-ask-box>b{font-size:1rem;color:var(--royal-dk)}
+.rpt-ask-box p{margin:8px 0 16px;font-size:.82rem;color:var(--muted);line-height:1.6}
+.rpt-ask-row{display:flex;gap:9px;flex-wrap:wrap}
+.rpt-ask-row .btn{padding:9px 15px;font-size:.82rem;display:inline-flex;align-items:center;gap:6px}
 .rv-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0;border-bottom:1px solid var(--bg)}
 .rv-actions .btn{padding:8px 14px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px}
 .rv-sec{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
@@ -3527,7 +3526,7 @@ function journeyScoreCard(svg,sections,overall){
  * carry the detail. The document paginates itself, so nothing is left to the browser except
  * the paper — which is why @page has no margin and no browser header or footer can appear.
  */
-async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}={}){
+async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}={}){
   const sections=Array.isArray(report.sections)?report.sections:[];
   const overall=Math.round(Number(report.overall)||0);
   const tone=reportPrintTone(overall);
@@ -3717,11 +3716,11 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
       .sign div em{display:block;margin-top:6px;font-style:normal;font-size:11px;font-weight:700;color:var(--deep)}
       .sign div i{display:block;margin-top:4px;font-style:normal;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
     </style></head><body>
-    ${embedded?'':`<div class="bar">
+    ${`<div class="bar">
       <b>${filename}</b>
       <button type="button" onclick="window.print()">Print / Save as PDF</button>
-      <button type="button" class="ghost" onclick="window.close()">Close</button>
-      <small>On iPhone or iPad: Print opens the system print sheet — or use Share → Options → PDF to save the file.</small>
+      <button type="button" class="ghost" onclick="${sameTab?'location.reload()':'window.close()'}">${sameTab?'Back to the app':'Close'}</button>
+      <small>On iPhone or iPad: Print opens the system print sheet — pinch the preview to open it as a PDF, or use Share → Options → PDF.</small>
     </div>`}
     <div id="docwrap"><div id="doc">
     <section class="sheet cover">
@@ -3834,9 +3833,14 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
  * iPhone and iPad only allows that from a user gesture, and the document is written into it
  * once the artwork has loaded.
  */
+/**
+ * The report has to be a page of its own: a phone can only print or share the page it is on,
+ * never a frame inside it. The window is opened on the click (Safari allows that only from a
+ * gesture) and then pointed at the finished document.
+ */
 async function openInspectionReport(report,{autoPrint=false}={}){
   const pw=window.open('','_blank');
-  if(!pw) return showReportOverlay(report,{autoPrint});   // pop-ups blocked (Safari does this by default)
+  if(!pw) return askToOpenReport(report,{autoPrint});     // pop-ups are blocked — Safari does this by default
   try{
     pw.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
       +'<title>Preparing the report…</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;'
@@ -3852,29 +3856,31 @@ async function openInspectionReport(report,{autoPrint=false}={}){
   }
 }
 
-/** The same document, shown inside the app when a pop-up cannot be opened. */
-async function showReportOverlay(report,{autoPrint=false}={}){
+/**
+ * With pop-ups blocked there is no second window to print, so the report takes over this tab:
+ * one tap opens it as its own page, where Print and Share work the way the phone expects.
+ * Back returns to the app.
+ */
+async function askToOpenReport(report,{autoPrint=false}={}){
+  let html;
+  try{ html=await buildInspectionReportHtml(report,{autoPrint,sameTab:true}); }
+  catch(err){ showToast('Could not build the report. '+(err&&err.message||''),true); return false; }
   const wrap=document.createElement('div');
-  wrap.className='rpt-overlay';
-  wrap.innerHTML=`<div class="rpt-bar"><b>${ovEsc(report.filename||'Inspection report')}</b>
-      <button type="button" class="btn bt" data-a="print"><svg data-lucide="printer" width="15" height="15"></svg> Print / Save as PDF</button>
-      <button type="button" class="btn bo" data-a="close">Close</button>
-      <small>On iPhone or iPad you can also use Share → Options → PDF.</small></div>
-    <iframe title="Inspection report"></iframe>`;
+  wrap.className='rpt-ask';
+  wrap.innerHTML=`<div class="rpt-ask-box">
+      <b>Open the report</b>
+      <p>Your browser blocked the new window, so the report opens in this tab. Print or share it from there, then tap <b>Back to the app</b>.</p>
+      <div class="rpt-ask-row"><button type="button" class="btn bt" data-a="go"><svg data-lucide="external-link" width="15" height="15"></svg> Open report</button>
+      <button type="button" class="btn bo" data-a="cancel">Cancel</button></div>
+    </div>`;
   document.body.appendChild(wrap);
   lucide.createIcons({nodes:[wrap]});
-  const frame=wrap.querySelector('iframe');
-  const print=()=>{ try{ frame.contentWindow.focus(); frame.contentWindow.print(); }catch(err){ showToast('Use your browser’s Share or Print menu to save this report.',true); } };
   wrap.addEventListener('click',e=>{
     const b=e.target.closest('[data-a]');
-    if(!b) return;
-    if(b.dataset.a==='close') wrap.remove(); else print();
+    if(!b&&e.target!==wrap) return;
+    if(b&&b.dataset.a==='go'){ document.open(); document.write(html); document.close(); return; }
+    wrap.remove();
   });
-  try{
-    frame.srcdoc=await buildInspectionReportHtml(report,{autoPrint,embedded:true});
-  }catch(err){
-    wrap.remove(); showToast('Could not build the report. '+(err&&err.message||''),true); return false;
-  }
   return true;
 }
 
