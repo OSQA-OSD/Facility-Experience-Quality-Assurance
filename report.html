@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inspection report</title>
+<link rel="icon" type="image/svg+xml" href="/osqa-icon.svg">
+<style>
+  html,body{margin:0;height:100%;background:#fff;color:#5F6369;
+    font:600 15px/1.6 'Cairo',-apple-system,system-ui,sans-serif}
+  main{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
+  .dot{width:34px;height:34px;border-radius:50%;border:3px solid #DCE3EA;border-top-color:#0033A0;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){.dot{animation:none}}
+</style>
+</head>
+<body>
+<!--
+  The report window needs a real address of its own: Safari on iPhone and iPad will not print
+  a document that was written into about:blank. This page is that address — it asks the app
+  that opened it for the finished report and then becomes it.
+-->
+<main><div class="dot" aria-hidden="true"></div><p id="msg">Preparing the report…</p></main>
+<script>
+(function(){
+  var done=false, msg=document.getElementById('msg');
+  window.addEventListener('message',function(e){
+    if(done||e.origin!==location.origin) return;
+    var d=e.data||{};
+    if(d.type==='qa-report'&&typeof d.html==='string'){
+      done=true;
+      document.open(); document.write(d.html); document.close();
+    }
+  });
+  function host(){ return window.opener||(window.parent!==window?window.parent:null); }
+  function ask(){
+    var h=host();
+    if(done||!h) return;
+    try{ h.postMessage({type:'qa-report-ready'},location.origin); }catch(err){}
+  }
+  ask();
+  var poll=setInterval(function(){ done?clearInterval(poll):ask(); },250);
+  setTimeout(function(){
+    clearInterval(poll);
+    if(!done){
+      document.querySelector('.dot').style.display='none';
+      msg.textContent=host()?'The report did not arrive. Close this tab and try again.'
+        :'Open this report from the app: Inspection Reports → the report → Print report.';
+    }
+  },30000);
+})();
+</script>
+</body>
+</html>
