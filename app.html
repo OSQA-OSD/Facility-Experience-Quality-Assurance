@@ -3628,6 +3628,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       .bar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px;background:#0A1B3D;color:#fff;font-size:13px}
       .bar b{font-weight:800;margin-right:auto;font-size:13px}
       .bar button{font:inherit;font-weight:800;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:#26A8AB;color:#04263A}
+      .bar button[disabled]{opacity:.6;cursor:default}
       .bar button.ghost{background:rgba(255,255,255,.14);color:#fff}
       .bar small{opacity:.7;width:100%;font-size:11px}
       @media screen{body{background:#E9EDF1}.sheet{margin:0 auto 10px;box-shadow:0 1px 5px rgba(16,32,64,.2)}
@@ -3716,12 +3717,13 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       .sign div em{display:block;margin-top:6px;font-style:normal;font-size:11px;font-weight:700;color:var(--deep)}
       .sign div i{display:block;margin-top:4px;font-style:normal;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
     </style></head><body>
-    ${`<div class="bar">
+    <div class="bar">
       <b>${filename}</b>
-      <button type="button" onclick="window.print()">Print / Save as PDF</button>
+      <button type="button" id="save-pdf">Save as PDF</button>
+      <button type="button" class="ghost" onclick="window.print()">Print</button>
       <button type="button" class="ghost" onclick="${sameTab?'location.reload()':'window.close()'}">${sameTab?'Back to the app':'Close'}</button>
-      <small>On iPhone or iPad: Print opens the system print sheet — pinch the preview to open it as a PDF, or use Share → Options → PDF.</small>
-    </div>`}
+      <small id="bar-note">On iPhone or iPad, use <b>Save as PDF</b> — the file opens in the share sheet, where you can save it to Files, send it, or print it.</small>
+    </div>
     <div id="docwrap"><div id="doc">
     <section class="sheet cover">
       <div class="rule"></div>
@@ -3744,6 +3746,81 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       <div class="blk"><div class="sign"><div><span>Auditor signature</span><b>&nbsp;</b><em>${value(report.inspector)}</em></div><div><span>Reviewed by</span><b>&nbsp;</b>${report.approvedBy?`<em>${value(report.approvedBy)}</em>`:''}<i>Quality Officer</i></div></div></div>
     </div>
     <script>
+    // Safari on iPhone ignores window.print() when the site runs from the Home Screen, and
+    // there is no share menu there either — so the page builds the PDF itself and hands the
+    // file to the system share sheet, which can save it to Files, send it, or print it.
+    function reportFileName(){ return ${JSON.stringify(String(report.filename||'inspection-report.pdf').replace(/\.pdf$/i,'')+'.pdf')}; }
+    function loadOnce(src){
+      return new Promise(function(res,rej){
+        var s=document.createElement('script');
+        s.src=src; s.onload=res; s.onerror=function(){ rej(new Error('Could not load '+src)); };
+        document.head.appendChild(s);
+      });
+    }
+    /** html2canvas draws an <img> of an SVG badly; the browser itself draws it correctly. */
+    async function flattenLogo(){
+      var img=document.querySelector('.brand img');
+      if(!img) return function(){};
+      var src=img.getAttribute('src');
+      try{
+        var im=new Image(); im.decoding='sync'; im.src=src; await im.decode();
+        var w=im.naturalWidth||300, h=im.naturalHeight||106, c=document.createElement('canvas');
+        c.width=w*3; c.height=h*3;
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        img.setAttribute('src',c.toDataURL('image/png'));
+      }catch(err){ return function(){}; }
+      return function(){ img.setAttribute('src',src); };
+    }
+    var readyFile=null;
+    function saveFile(blob,name){
+      var url=URL.createObjectURL(blob), a=document.createElement('a');
+      a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); },60000);
+    }
+    async function savePdf(){
+      var btn=document.getElementById('save-pdf'), note=document.getElementById('bar-note'), label=btn.textContent;
+      if(readyFile){                                                   // second tap: the share sheet, on a fresh gesture
+        try{ await navigator.share({files:[readyFile],title:readyFile.name}); }
+        catch(err){ if(err&&err.name!=='AbortError') saveFile(readyFile,readyFile.name); }
+        return;
+      }
+      btn.disabled=true; btn.textContent='Preparing…';
+      var doc=document.getElementById('doc'), wrap=document.getElementById('docwrap');
+      var tf=doc.style.transform, ml=doc.style.marginLeft, wh=wrap.style.height, restoreLogo=null;
+      try{
+        if(!window.html2canvas) await loadOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        if(!window.jspdf) await loadOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+        doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height='';   // capture the paper at full size
+        var restoreLogo=await flattenLogo();
+        var sheets=[].slice.call(document.querySelectorAll('.sheet'));
+        var pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+        for(var i=0;i<sheets.length;i++){
+          btn.textContent='Page '+(i+1)+' of '+sheets.length+'…';
+          var canvas=await window.html2canvas(sheets[i],{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,
+            width:sheets[i].offsetWidth,height:sheets[i].offsetHeight,windowWidth:sheets[i].offsetWidth});
+          if(i) pdf.addPage();
+          pdf.addImage(canvas.toDataURL('image/jpeg',0.9),'JPEG',0,0,210,297,undefined,'FAST');
+          canvas.width=canvas.height=0;                                          // let the phone reclaim it
+        }
+        var name=reportFileName(), blob=pdf.output('blob');
+        var file=new File([blob],name,{type:'application/pdf'});
+        // iOS only opens the share sheet from a fresh tap, and building the file takes a few
+        // seconds — so the finished file waits behind a second tap instead of being refused.
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+          readyFile=file;
+          label='Share / save file · '+Math.max(1,Math.round(blob.size/104857.6)/10)+' MB';
+          note.textContent='The report is ready. Tap “Share / save file” to save it to Files, send it, or print it.';
+        }else{
+          saveFile(blob,name);
+        }
+      }catch(err){
+        if(!err||err.name!=='AbortError') note.textContent='Could not build the PDF: '+((err&&err.message)||'unknown error')+'. Try Print instead.';
+      }finally{
+        if(typeof restoreLogo==='function') restoreLogo();
+        doc.style.transform=tf; doc.style.marginLeft=ml; wrap.style.height=wh;
+        btn.disabled=false; btn.textContent=label;
+      }
+    }
     (function(){
       var flow=document.getElementById('flow'), holder=document.getElementById('sheets');
       var sheets=[];
@@ -3821,6 +3898,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       }
       // Pages are measured only once the web font and the photos are in — measuring before
       // that is what used to push a row over the footer.
+      document.getElementById('save-pdf').addEventListener('click',savePdf);
       function ready(){ (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){ setTimeout(start,30); }); }
       if(document.readyState==='complete') ready(); else window.addEventListener('load',ready);
     })();
