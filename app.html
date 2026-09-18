@@ -3522,9 +3522,10 @@ function journeyScoreCard(svg,sections,overall){
 
 /**
  * The inspection report as a standalone A4 document.
- * Page 1 is the overview (details, score card, the headline figures); the pages after it
- * carry the detail. The document paginates itself, so nothing is left to the browser except
- * the paper — which is why @page has no margin and no browser header or footer can appear.
+ * Page 1 is the overview (details and the journey score card); after it comes one page per
+ * journey touchpoint, never split and never repeated. The document paginates itself, so
+ * nothing is left to the browser except the paper — which is why @page has no margin and no
+ * browser header or footer can appear.
  */
 async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}={}){
   const sections=Array.isArray(report.sections)?report.sections:[];
@@ -3541,46 +3542,11 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
     if(res.ok) journey=journeyScoreCard(await res.text(),sections,overall);
   }catch{ journey=''; }
 
-  const flat=sections.flatMap((sec)=>(sec.items||[]).map((it)=>({
-    section:sec.title,
-    label:typeof it==='string'?it:it.label,
-    score:typeof it==='string'?null:it.score,
-    comment:typeof it==='string'?'':(it.comment||''),
-    photos:typeof it==='string'?[]:(it.photos||[]),
-  })));
-  const scored=flat.filter(i=>typeof i.score==='number');
-  const failed=scored.filter(i=>i.score===0);
   const totalMax=sections.reduce((a,s)=>a+(Number(s.max)||0),0);
-  const withPhotos=flat.filter(i=>i.photos.length).length;
-
   const coverFacts=[
     ['Building',report.facility],['Division',report.division],['Inspection type',report.typeLabel],
     ['Quarter',quarter],['Inspection date',report.date],['Auditor',report.inspector],
   ].map(([l,v])=>`<tr><th>${l}</th><td>${value(v)}</td></tr>`).join('');
-
-  const figure=(n,l,sub)=>`<div class="fig"><b>${n}</b><span>${l}</span>${sub?`<small>${sub}</small>`:''}</div>`;
-  const figures=[
-    figure(`${overall}<small>/${totalMax||100}</small>`,'Overall score',tone.label),
-    figure(scored.length,words?'Items checked':'Items scored',`of ${flat.length} on the checklist`),
-    figure(failed.length,words?'Not compliant':'Scored 0',failed.length?'listed in this report':'nothing to action'),
-    figure(withPhotos,'Items with photos','evidence attached'),
-  ].join('');
-
-  const sectionRows=sections.map(sec=>{
-    const max=Number(sec.max)||10, score=Number(sec.score)||0, pct=max?Math.round(score/max*100):0;
-    const t=reportPrintTone(pct);
-    return `<tr><td class="s-name">${value(sec.title)}</td>
-      <td class="s-score"><b>${score}</b><small>/${max}</small></td>
-      <td class="s-bar"><span><i style="width:${pct}%;background:${t.color}"></i></span></td>
-      <td class="s-band"><span class="chip" style="--tone:${t.color};--soft:${t.soft}">${t.label}</span></td></tr>`;
-  }).join('');
-
-  const findRow=(f,n)=>`<tr><td class="n">${n}</td><td class="f-item">${value(f.label)}</td><td class="f-sec">${value(f.section)}</td>
-    <td class="f-cmt">${f.comment?value(f.comment):'<span class="empty">No comment recorded</span>'}</td></tr>`;
-  const findings=failed.length
-    ?`<div class="blk"><table class="find-table"><thead><tr><th class="n">#</th><th>Item</th><th>Touchpoint</th><th>Auditor comment</th></tr></thead>
-       <tbody>${failed.map((f,n)=>findRow(f,n+1)).join('')}</tbody></table></div>`
-    :`<div class="blk"><p class="all-clear">Every item on the checklist met the expected level in this inspection.</p></div>`;
 
   const detailSections=sections.map(sec=>{
     const max=Number(sec.max)||10, score=Number(sec.score)||0, pct=max?Math.round(score/max*100):0;
@@ -3597,7 +3563,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       const photoHtml=photos.length?`<div class="photo-strip">${photos.map(src=>`<img src="${reportPrintEsc(src)}" alt="Inspection evidence">`).join('')}</div>`:'';
       return `<tr><td class="n">${index+1}</td><td class="item-label">${value(label)}</td>
         <td class="item-res">${result}</td>
-        <td class="comments">${comment?value(comment):'<span class="empty">—</span>'}${photoHtml}</td></tr>`;
+        <td class="comments">${comment?value(comment):(photos.length?'':'<span class="empty">—</span>')}${photoHtml}</td></tr>`;
     }).join('');
     return `<div class="blk"><section class="report-section">
       <div class="section-head"><div><span class="kicker">Journey touchpoint</span><h2>${value(sec.title)}</h2></div>
@@ -3655,43 +3621,28 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
 
       /* Page furniture */
       .foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8.5px;color:var(--muted);flex:none}
-      .body{flex:1 1 auto;min-height:0;overflow:hidden}
+      .body{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+      .sheet.measuring .body{display:block}
+      .sheet:not(.measuring) .body>.blk{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;margin-bottom:0}
+      .sheet:not(.measuring) .report-section{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+      .sheet:not(.measuring) .report-section .detail-table{flex:1 1 auto}
+      .sheet:not(.measuring) .detail-table td{vertical-align:middle}
+      .sheet:not(.measuring) .detail-table td.comments{vertical-align:middle}
+      .sheet .body>.blk[data-sign]{flex:0 0 auto;display:block}          /* the signatures never grow; the section takes the room */
       .page-title{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--royal);padding-bottom:7px;margin:0 0 12px}
       .page-title p{margin:0;color:var(--royal);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
       .page-title h2{font-size:22px;color:var(--ink);letter-spacing:-.025em;margin:3px 0 0}
       .page-title em{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap}
       .blk{margin-bottom:12px}.blk:last-child{margin-bottom:0}
 
-      /* Figures */
-      .figs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-      .fig{border:1px solid var(--line);border-radius:9px;padding:12px 13px}
-      .fig b{display:block;font-size:27px;letter-spacing:-.04em;color:var(--ink);line-height:1}
-      .fig b small{font-size:13px;color:var(--muted);letter-spacing:0}
-      .fig span{display:block;margin-top:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--deep)}
-      .fig small{display:block;font-size:9.5px;color:var(--muted)}
-
       table{border-collapse:collapse;width:100%}
-      .sec-table{border:1px solid var(--line);border-radius:9px;overflow:hidden}
-      .sec-table td{padding:10px 13px;border-top:1px solid var(--line);font-size:12px;vertical-align:middle}
-      .sec-table tr:first-child td{border-top:none}
-      .s-name{font-weight:700;color:var(--deep)}
-      .s-score{width:20mm;text-align:right;white-space:nowrap}.s-score b{font-size:14px;color:var(--ink)}.s-score small{color:var(--muted);font-size:10px}
-      .s-bar{width:32mm}.s-bar span{display:block;height:7px;border-radius:99px;background:#E7EBEF;overflow:hidden}
-      .s-bar i{display:block;height:7px;border-radius:99px}
-      .s-band{width:26mm;text-align:right}
       .chip{display:inline-block;padding:3px 9px;border-radius:999px;background:var(--soft);color:var(--tone);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
 
-      .find-table{border:1px solid var(--line);border-radius:9px;overflow:hidden}
-      .find-table th{background:var(--ink);color:#fff;text-align:left;padding:8px 11px;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
-      .find-table td{padding:9px 11px;border-top:1px solid var(--line);font-size:11px;vertical-align:top}
-      .find-table .n,.detail-table .n{width:8mm;text-align:center;color:var(--muted);font-weight:800}
-      .f-item{width:33%;font-weight:700}.f-sec{width:22%;color:var(--muted)}.f-cmt{color:#43536B}
-      .all-clear{margin:0;padding:15px;border:1px solid var(--line);border-radius:9px;background:var(--paper);font-size:11.5px;color:var(--muted)}
       .empty{color:#9AA2A9;font-style:italic}
 
       /* Detail */
-      .report-section{border:1px solid var(--line);border-radius:9px;overflow:hidden}
-      .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;background:var(--paper)}
+      .report-section{border:1px solid var(--line);border-radius:9px;overflow:hidden;break-inside:avoid;page-break-inside:avoid}
+      .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:var(--headpad,11px) 14px;background:var(--paper)}
       .section-head .kicker{display:block;color:var(--muted);font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
       .section-head h2{font-size:15px;color:var(--ink);margin:2px 0 0}
       .section-head .cont{font-size:10px;font-weight:700;color:var(--muted)}
@@ -3699,7 +3650,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       .section-total b{font-size:21px;line-height:1;letter-spacing:-.05em;display:block}.section-total b small{font-size:11px;color:var(--muted)}
       .section-total .chip{margin-top:4px}
       .detail-table th{padding:8px 11px;background:var(--ink);color:#fff;text-align:left;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
-      .detail-table td{padding:9px 11px;border-top:1px solid var(--line);vertical-align:top;font-size:11px}
+      .detail-table td{padding:var(--rowpad,9px) 11px;border-top:1px solid var(--line);vertical-align:top;font-size:var(--fs,11px)}
       .item-label{width:36%;color:var(--deep);font-weight:600}
       .item-res{width:28mm}
       .res{display:inline-block;font-size:9.5px;font-weight:900;padding:3px 9px;border-radius:999px;white-space:nowrap}
@@ -3707,11 +3658,11 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       td.item-res .res{min-width:11mm;text-align:center}
       .comments{color:#43536B}
       .photo-strip{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
-      .photo-strip img{width:74px;height:74px;border-radius:6px;object-fit:cover;border:1px solid var(--line)}
-      .detail-table tfoot td{background:var(--paper);color:var(--deep);font-size:11px}
+      .photo-strip img{width:var(--photo,74px);height:var(--photo,74px);border-radius:6px;object-fit:cover;border:1px solid var(--line)}
+      .detail-table tfoot td{background:var(--paper);color:var(--deep);font-size:var(--fs,11px)}
       .detail-table tfoot b{display:block;color:var(--royal);font-size:9px;text-transform:uppercase;letter-spacing:.07em}
       .detail-table tfoot span{display:block;margin-top:3px}
-      .sign{display:grid;grid-template-columns:repeat(2,minmax(0,62mm));gap:28px}
+      .sign{display:grid;grid-template-columns:repeat(2,minmax(0,62mm));gap:28px;margin-top:10mm}
       .sign div span{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
       .sign div b{display:block;border-bottom:1px solid var(--ink);padding-top:26px}
       .sign div em{display:block;margin-top:6px;font-style:normal;font-size:11px;font-weight:700;color:var(--deep)}
@@ -3732,18 +3683,13 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       <div class="cover-score"><b>${overall}</b> / ${totalMax||100}<span class="chip" style="--tone:${tone.color};--soft:${tone.soft}">${tone.label}</span></div>
       <table class="fact-table"><tbody>${coverFacts}</tbody></table>
       ${journey?`<div class="journey-card">${journey}</div>`:''}
-      <div class="figs" style="margin-top:6mm">${figures}</div>
       <div class="cover-foot"><span>Facility Experience Quality Assurance</span><span class="pno"></span></div>
     </section>
     <div id="sheets"></div>
     </div></div>
     <div id="flow">
-      <div class="blk" data-keep><div class="page-title"><div><p>By touchpoint</p><h2>Section scores</h2></div><em>${sections.length} touchpoints · ${flat.length} checklist items</em></div><table class="sec-table"><tbody>${sectionRows}</tbody></table></div>
-      <div class="blk" data-keep><div class="page-title"><div><p>${words?'Not compliant':'Scored 0'}</p><h2>Items needing action</h2></div><em>${failed.length} of ${scored.length} checked</em></div></div>
-      ${findings}
-      <div class="blk" data-keep><div class="page-title"><div><p>Evidence &amp; observations</p><h2>Detailed inspection</h2></div><em>${sections.length} touchpoints</em></div></div>
       ${detailSections}
-      <div class="blk"><div class="sign"><div><span>Auditor signature</span><b>&nbsp;</b><em>${value(report.inspector)}</em></div><div><span>Reviewed by</span><b>&nbsp;</b>${report.approvedBy?`<em>${value(report.approvedBy)}</em>`:''}<i>Quality Officer</i></div></div></div>
+      <div class="blk" data-sign><div class="sign"><div><span>Auditor signature</span><b>&nbsp;</b><em>${value(report.inspector)}</em></div><div><span>Reviewed by</span><b>&nbsp;</b>${report.approvedBy?`<em>${value(report.approvedBy)}</em>`:''}<i>Quality Officer</i></div></div></div>
     </div>
     <script>
     // Safari on iPhone ignores window.print() when the site runs from the Home Screen, and
@@ -3831,46 +3777,77 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
         holder.appendChild(s); sheets.push(s);
         return s;
       }
-      var s=sheet(), body=s.querySelector('.body');
-      /** Space still free inside the current sheet's body, in px (negative when it overflows). */
-      function room(){
+      /** One touchpoint, one sheet: a section is never split, so it is fitted to the page instead. */
+      function used(body){
         var box=body.getBoundingClientRect(), last=body.lastElementChild;
-        return box.height-(last?last.getBoundingClientRect().bottom-box.top:0);
+        return last?last.getBoundingClientRect().bottom-box.top:0;
       }
-      function fits(){ return room()>=4; }                              // 4px of slack keeps a row off the footer
-      function next(){ s=sheet(); body=s.querySelector('.body'); }
-      var FILL=Math.round(45*3.78);                                    // 45mm of free paper is worth filling with rows
-      function rowsOf(b){ var t=b.querySelector('tbody'); return t?t.rows.length:0; }
-      /** Move trailing rows out of an oversized block into a continuation of the same table. */
-      function split(b){
-        var tb=b.querySelector('tbody'), moved=[];
-        if(!tb) return null;
-        while(!fits() && tb.rows.length>1){ moved.unshift(tb.rows[tb.rows.length-1]); tb.deleteRow(tb.rows.length-1); }
-        if(!moved.length) return null;
-        var cont=b.cloneNode(true), ctb=cont.querySelector('tbody');
-        ctb.innerHTML='';
-        moved.forEach(function(tr){ ctb.appendChild(tr); });
-        var h=cont.querySelector('.section-head h2');
-        if(h&&!h.querySelector('.cont')) h.innerHTML+=' <span class="cont">continued</span>';
-        var tf=b.querySelector('tfoot'); if(tf&&cont.querySelector('tfoot')) tf.parentNode.removeChild(tf);
-        return cont;
+      function free(body){ return body.getBoundingClientRect().height-used(body); }
+      // Roomy first, tighter only as the content demands it: row padding, type, photo size
+      // and the header move together so the page keeps its proportions.
+      var DENSITY=[
+        {pad:16,fs:13,photo:126,head:16},
+        {pad:14,fs:12.5,photo:114,head:15},
+        {pad:12,fs:12,photo:102,head:14},
+        {pad:10,fs:11.5,photo:92,head:13},
+        {pad:9,fs:11,photo:80,head:12},
+        {pad:7.5,fs:10.5,photo:70,head:11},
+        {pad:6,fs:10,photo:62,head:10},
+        {pad:5,fs:9.5,photo:54,head:9},
+        {pad:4,fs:9,photo:48,head:8}
+      ];
+      function density(sh,d){
+        sh.style.setProperty('--rowpad',d.pad+'px');
+        sh.style.setProperty('--fs',d.fs+'px');
+        sh.style.setProperty('--photo',d.photo+'px');
+        sh.style.setProperty('--headpad',d.head+'px');
       }
-      function pour(b){
-        var hadRoom=room();          // measured before the block goes in
-        body.appendChild(b);
-        if(fits()) return;
-        var splittable=rowsOf(b)>=4;
-        // A big table fills the space that is left rather than leaving the page half empty.
-        if(splittable && hadRoom>=FILL){ var cont=split(b); if(cont){ next(); pour(cont); return; } }
-        if(body.children.length>1){
-          var prev=b.previousElementSibling;
-          var carry=prev&&prev.hasAttribute('data-keep')&&body.children.length>2?prev:null;
-          next();
-          if(carry) body.appendChild(carry);
-          body.appendChild(b);
-          if(fits()) return;
+      function fitToPage(sh){
+        var body=sh.querySelector('.body'), card=body.firstElementChild;
+        sh.classList.add('measuring');                                  // measure at natural height
+        var ok=false;
+        for(var i=0;i<DENSITY.length;i++){
+          density(sh,DENSITY[i]);
+          if(free(body)>=4){ ok=true; break; }
         }
-        if(splittable){ var c2=split(b); if(c2){ next(); pour(c2); } }
+        sh.classList.remove('measuring');                               // then let the card fill the page
+        if(ok||!card) return ok;
+        sh.classList.add('measuring');                                  // more than one page holds even at its tightest
+        // Scale the whole card to the paper. A wider box wraps text into fewer lines, so the
+        // factor is settled over a few passes rather than guessed once.
+        card.style.transformOrigin='top left'; card.style.transform='';
+        var k=1;
+        for(var p=0;p<5;p++){
+          card.style.width=(100/k)+'%';
+          var nk=Math.min(1,(body.getBoundingClientRect().height-4)/used(body));
+          if(Math.abs(nk-k)<0.004){ k=nk; break; }
+          k=nk;
+        }
+        card.style.width=(100/k)+'%';
+        card.style.transform='scale('+k+')';
+        return false;
+      }
+      function start(){
+        var blocks=[].slice.call(flow.children).filter(function(b){ return !b.hasAttribute('data-sign'); });
+        var sign=flow.querySelector('[data-sign]');
+        blocks.forEach(function(b,idx){
+          var sh=sheet(), body=sh.querySelector('.body');
+          body.appendChild(b);
+          var last=idx===blocks.length-1;
+          if(last&&sign) body.appendChild(sign);                        // the signatures share the last page
+          if(!fitToPage(sh)&&last&&sign){                               // unless that page is already full
+            body.removeChild(sign);
+            fitToPage(sh);
+            sheet().querySelector('.body').appendChild(sign);
+          }
+        });
+        if(sign&&!sign.parentNode) sheet().querySelector('.body').appendChild(sign);
+        if(!blocks.length&&sign) sheet().querySelector('.body').appendChild(sign);
+        flow.parentNode.removeChild(flow);
+        var total=sheets.length+1;                                     // the cover counts too
+        [].forEach.call(document.querySelectorAll('.pno'),function(el,i){ el.textContent='Page '+(i+1)+' of '+total; });
+        fit();
+        ${autoPrint?'setTimeout(function(){ window.print(); },250);':''}
       }
       // A phone cannot show 210mm at full size: the paper is scaled to the screen, not reflowed.
       var doc=document.getElementById('doc'), wrap=document.getElementById('docwrap');
@@ -3888,14 +3865,6 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       window.addEventListener('resize',fit);
       window.addEventListener('beforeprint',function(){ doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height=''; });
       window.addEventListener('afterprint',fit);
-      function start(){
-        [].slice.call(flow.children).forEach(pour);
-        flow.parentNode.removeChild(flow);
-        var total=sheets.length+1;                                      // the cover counts too
-        [].forEach.call(document.querySelectorAll('.pno'),function(el,i){ el.textContent='Page '+(i+1)+' of '+total; });
-        fit();
-        ${autoPrint?'setTimeout(function(){ window.print(); },250);':''}
-      }
       // Pages are measured only once the web font and the photos are in — measuring before
       // that is what used to push a row over the footer.
       document.getElementById('save-pdf').addEventListener('click',savePdf);
