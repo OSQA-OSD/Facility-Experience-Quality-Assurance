@@ -3741,7 +3741,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}
       ${findings}
       <div class="blk" data-keep><div class="page-title"><div><p>Evidence &amp; observations</p><h2>Detailed inspection</h2></div><em>${sections.length} touchpoints</em></div></div>
       ${detailSections}
-      <div class="blk"><div class="sign"><div><span>Auditor signature</span><b>&nbsp;</b><em>${value(report.inspector)}</em></div><div><span>Reviewed by</span><b>&nbsp;</b><em>${report.approvedBy?value(report.approvedBy):'&nbsp;'}</em></div></div></div>
+      <div class="blk"><div class="sign"><div><span>Auditor signature</span><b>&nbsp;</b><em>${value(report.inspector)}</em></div><div><span>Quality Officer</span><b>&nbsp;</b><em>${report.approvedBy?value(report.approvedBy):'&nbsp;'}</em></div></div></div>
     </div>
     <script>
     (function(){
