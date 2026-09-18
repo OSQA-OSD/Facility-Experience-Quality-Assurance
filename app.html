@@ -516,6 +516,13 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .rv-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
 .rv-btns .btn{padding:8px 14px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px}
 .rv-warn{color:#8a4b00!important;border-color:rgba(212,128,0,.45)!important}
+.rpt-overlay{position:fixed;inset:0;z-index:1200;background:#0A1B3D;display:flex;flex-direction:column}
+.rpt-bar{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px 10px;padding:10px 14px;color:#fff}
+.rpt-bar b{min-width:0;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rpt-bar small{grid-column:1/-1;opacity:.7;font-size:.68rem}
+@media(max-width:560px){.rpt-bar b{display:none}}
+.rpt-bar .btn{padding:8px 14px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px}
+.rpt-overlay iframe{flex:1;width:100%;border:0;background:#fff}
 .rv-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0;border-bottom:1px solid var(--bg)}
 .rv-actions .btn{padding:8px 14px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px}
 .rv-sec{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
@@ -2130,6 +2137,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="abar" id="abar-normal">
       <button class="btn bt" onclick="submitReport()" id="btn-save">Submit report</button>
       <button class="btn br" onclick="exportPDF()" id="btn-pdf" disabled title="Submit first">Export PDF</button>
+      <button class="btn bo" onclick="printPDF()" id="btn-print" disabled title="Submit first"><svg data-lucide="printer" width="15" height="15"></svg> Print report</button>
       <button class="btn bo" onclick="resetForm()">New Inspection</button>
     </div>
     <!-- Edit mode actions — shown instead when editing a saved record -->
@@ -2141,6 +2149,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div style="display:flex;gap:9px;flex-wrap:wrap">
         <button class="btn bt" onclick="openSaveChoice()" id="btn-save-edit">Save Changes</button>
         <button class="btn br" onclick="exportPDF()" id="btn-pdf-edit" disabled title="Save first">Export PDF</button>
+        <button class="btn bo" onclick="printPDF()" id="btn-print-edit" disabled title="Save first"><svg data-lucide="printer" width="15" height="15"></svg> Print report</button>
         <button class="btn bo" onclick="cancelEdit()">Cancel Edit</button>
       </div>
     </div>
@@ -2986,7 +2995,7 @@ function updateScoreCard(){
 }
 function updatePDFButton(){
   const enabled=currentReportSaved;
-  ['btn-pdf','btn-pdf-edit'].forEach(id=>{
+  ['btn-pdf','btn-pdf-edit','btn-print','btn-print-edit'].forEach(id=>{
     const btn=document.getElementById(id);
     if(btn){btn.disabled=!enabled;btn.title=enabled?'':(editingRecordId!==null?'Save your changes first':'Submit the report first');}
   });
@@ -3512,7 +3521,13 @@ function journeyScoreCard(svg,sections,overall){
     });
 }
 
-async function printInspectionReport(report){
+/**
+ * The inspection report as a standalone A4 document.
+ * Page 1 is the overview (details, score card, the headline figures); the pages after it
+ * carry the detail. The document paginates itself, so nothing is left to the browser except
+ * the paper — which is why @page has no margin and no browser header or footer can appear.
+ */
+async function buildInspectionReportHtml(report,{autoPrint=false,embedded=false}={}){
   const sections=Array.isArray(report.sections)?report.sections:[];
   const overall=Math.round(Number(report.overall)||0);
   const tone=reportPrintTone(overall);
@@ -3523,14 +3538,12 @@ async function printInspectionReport(report){
   const quarter=report.quarter||(report.date?`${report.date.slice(0,4)}-Q${Math.floor((Number(report.date.slice(5,7))-1)/3)+1}`:'');
   const ref=report.filename?String(report.filename).replace(/\.pdf$/i,''):`${report.date||''} ${report.type||''}`.trim();
 
-  // The score card carries the touchpoint scores, so it is fetched before the window opens.
   let journey='';
   try{
     const res=await fetch('/journey-map-QA-2026-Q3-EOQ-009.svg',{cache:'force-cache'});
     if(res.ok) journey=journeyScoreCard(await res.text(),sections,overall);
   }catch{ journey=''; }
 
-  // Every answered item, so the summary can talk about real findings instead of generalities.
   const flat=sections.flatMap((sec)=>(sec.items||[]).map((it)=>({
     section:sec.title,
     label:typeof it==='string'?it:it.label,
@@ -3543,11 +3556,18 @@ async function printInspectionReport(report){
   const totalMax=sections.reduce((a,s)=>a+(Number(s.max)||0),0);
   const withPhotos=flat.filter(i=>i.photos.length).length;
 
-  const factRow=(label,v)=>`<tr><th>${label}</th><td>${value(v)}</td></tr>`;
   const coverFacts=[
     ['Building',report.facility],['Division',report.division],['Inspection type',report.typeLabel],
     ['Quarter',quarter],['Inspection date',report.date],['Auditor',report.inspector],
-  ].map(([l,v])=>factRow(l,v)).join('');
+  ].map(([l,v])=>`<tr><th>${l}</th><td>${value(v)}</td></tr>`).join('');
+
+  const figure=(n,l,sub)=>`<div class="fig"><b>${n}</b><span>${l}</span>${sub?`<small>${sub}</small>`:''}</div>`;
+  const figures=[
+    figure(`${overall}<small>/${totalMax||100}</small>`,'Overall score',tone.label),
+    figure(scored.length,words?'Items checked':'Items scored',`of ${flat.length} on the checklist`),
+    figure(failed.length,words?'Not compliant':'Scored 0',failed.length?'listed in this report':'nothing to action'),
+    figure(withPhotos,'Items with photos','evidence attached'),
+  ].join('');
 
   const sectionRows=sections.map(sec=>{
     const max=Number(sec.max)||10, score=Number(sec.score)||0, pct=max?Math.round(score/max*100):0;
@@ -3558,22 +3578,11 @@ async function printInspectionReport(report){
       <td class="s-band"><span class="chip" style="--tone:${t.color};--soft:${t.soft}">${t.label}</span></td></tr>`;
   }).join('');
 
-  const figure=(n,l,sub)=>`<div class="fig"><b>${n}</b><span>${l}</span>${sub?`<small>${sub}</small>`:''}</div>`;
-  const figures=[
-    figure(`${overall}<small>/${totalMax||100}</small>`,'Overall score',tone.label),
-    figure(scored.length,words?'Items checked':'Items scored',`of ${flat.length} on the checklist`),
-    figure(failed.length,words?'Not compliant':'Scored 0',failed.length?'listed below':'nothing to action'),
-    figure(withPhotos,'Items with photos','evidence attached'),
-  ].join('');
-
-  // The findings run in chunks so a long list can start a new sheet without splitting a row.
   const findRow=(f,n)=>`<tr><td class="n">${n}</td><td class="f-item">${value(f.label)}</td><td class="f-sec">${value(f.section)}</td>
     <td class="f-cmt">${f.comment?value(f.comment):'<span class="empty">No comment recorded</span>'}</td></tr>`;
-  const findHead=`<thead><tr><th class="n">#</th><th>Item</th><th>Touchpoint</th><th>Auditor comment</th></tr></thead>`;
   const findings=failed.length
-    ?Array.from({length:Math.ceil(failed.length/8)},(_,c)=>
-      `<div class="blk"><table class="find-table">${findHead}<tbody>${
-        failed.slice(c*8,c*8+8).map((f,n)=>findRow(f,c*8+n+1)).join('')}</tbody></table></div>`).join('')
+    ?`<div class="blk"><table class="find-table"><thead><tr><th class="n">#</th><th>Item</th><th>Touchpoint</th><th>Auditor comment</th></tr></thead>
+       <tbody>${failed.map((f,n)=>findRow(f,n+1)).join('')}</tbody></table></div>`
     :`<div class="blk"><p class="all-clear">Every item on the checklist met the expected level in this inspection.</p></div>`;
 
   const detailSections=sections.map(sec=>{
@@ -3603,98 +3612,120 @@ async function printInspectionReport(report){
   }).join('');
 
   const filename=value(report.filename||'inspection-report.pdf');
-  const pw=window.open('','_blank');
-  if(!pw){alert('Please allow pop-ups to export the PDF.');return;}
-  pw.document.write(`<!DOCTYPE html><html lang="en" dir="ltr"><head>
-    <meta charset="UTF-8"><title>${filename}</title>
+  return `<!DOCTYPE html><html lang="en" dir="ltr"><head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${filename}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-      :root{--ink:#002070;--deep:#102040;--royal:#0033A0;--teal:#26A8AB;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369}
+      :root{--ink:#002070;--deep:#102040;--royal:#0033A0;--teal:#26A8AB;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369;
+        --pad-x:12mm;--pad-t:11mm;--pad-b:10mm}
       *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-      /* No page margin: the paper edge belongs to the document, not to the browser's own header and footer. */
-      @page{size:A4;margin:0}
-      html,body{margin:0;padding:0;background:#fff;color:var(--deep);font-family:Cairo,Arial,sans-serif;line-height:1.45}
-      .sheet{width:210mm;height:297mm;padding:15mm 15mm 14mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;break-after:page;position:relative}
-      .sheet:last-child{break-after:auto}
-      #flow{position:absolute;left:-9999px;top:0;width:180mm}
-      @media screen{body{background:#EEF1F4;padding:10mm 0}.sheet{margin:0 auto 8mm;box-shadow:0 1px 4px rgba(16,32,64,.18)}}
-      .rule{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--royal),var(--teal));flex:none}
-      .brand{display:flex;align-items:center;gap:11px;margin-top:13px;color:var(--royal);font-weight:900;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;flex:none}
-      .brand img{display:block;height:28px;width:auto}.brand i{width:1px;height:20px;background:var(--line);display:block}
+      /* The document owns the paper: no page margin means no browser header, footer or URL. */
+      @page{size:A4 portrait;margin:0}
+      html,body{margin:0;padding:0;background:#fff;color:var(--deep);font-family:Cairo,Arial,sans-serif;line-height:1.42}
+      .sheet{width:210mm;height:297mm;padding:var(--pad-t) var(--pad-x) var(--pad-b);overflow:hidden;display:flex;flex-direction:column;background:#fff;break-after:page;page-break-after:always}
+      .sheet:last-child{break-after:auto;page-break-after:auto}
+      #flow{position:absolute;left:-9999px;top:0;width:186mm}
 
-      /* Cover */
-      .cover h1{font-size:30px;line-height:1.1;letter-spacing:-.035em;color:var(--ink);margin:14mm 0 5px}
+      /* Screen: the sheets sit on a desk, with the toolbar above them. Print: only the sheets. */
+      .bar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px;background:#0A1B3D;color:#fff;font-size:13px}
+      .bar b{font-weight:800;margin-right:auto;font-size:13px}
+      .bar button{font:inherit;font-weight:800;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:#26A8AB;color:#04263A}
+      .bar button.ghost{background:rgba(255,255,255,.14);color:#fff}
+      .bar small{opacity:.7;width:100%;font-size:11px}
+      @media screen{body{background:#E9EDF1}.sheet{margin:0 auto 10px;box-shadow:0 1px 5px rgba(16,32,64,.2)}
+        body{padding-bottom:10px}}
+      @media print{.bar{display:none!important}body{background:#fff}.sheet{margin:0;box-shadow:none}}
+      #doc{width:210mm;margin:0 auto;transform-origin:top left}
+      @media print{#doc{transform:none!important;width:auto}#docwrap{height:auto!important}}
+
+      .rule{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--royal),var(--teal));flex:none}
+      .brand{display:flex;align-items:center;gap:12px;margin-top:14px;color:var(--royal);font-weight:900;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;flex:none}
+      .brand img{display:block;height:32px;width:auto}.brand i{width:1px;height:22px;background:var(--line);display:block}
+
+      /* Page 1 — overview */
+      .cover h1{font-size:36px;line-height:1.08;letter-spacing:-.035em;color:var(--ink);margin:11mm 0 6px}
       .cover h1 span{color:var(--royal)}
-      .cover-type{font-size:11.5px;font-weight:800;color:var(--muted);margin:0 0 3px}
-      .cover-score{display:inline-flex;align-items:center;gap:8px;margin-top:9px;font-size:11px;font-weight:900;color:var(--muted)}
-      .cover-score b{font-size:19px;color:var(--ink);letter-spacing:-.03em}
-      .fact-table{border-collapse:collapse;width:100%;margin-top:9mm}
-      .fact-table th{text-align:left;width:112px;padding:7px 0;border-top:1px solid var(--line);color:var(--muted);font-size:8px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
-      .fact-table td{padding:7px 0;border-top:1px solid var(--line);font-size:11.5px;font-weight:700;color:var(--deep);overflow-wrap:anywhere}
-      .journey-card{padding-top:9mm}
+      .cover-type{font-size:13px;font-weight:800;color:var(--muted);margin:0}
+      .cover-score{display:inline-flex;align-items:center;gap:9px;margin-top:11px;font-size:12.5px;font-weight:900;color:var(--muted)}
+      .cover-score b{font-size:23px;color:var(--ink);letter-spacing:-.03em}
+      .fact-table{border-collapse:collapse;width:100%;margin-top:7mm}
+      .fact-table th{text-align:left;width:34mm;padding:8px 0;border-top:1px solid var(--line);color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+      .fact-table td{padding:8px 0;border-top:1px solid var(--line);font-size:13px;font-weight:700;color:var(--deep);overflow-wrap:anywhere}
+      .journey-card{padding-top:6mm}
       .journey-card svg{display:block;width:100%;height:auto}
-      .cover-foot{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px;margin-top:auto;font-size:8.5px;color:var(--muted);flex:none}
+      .cover-foot{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:9px;margin-top:auto;font-size:9px;color:var(--muted);flex:none}
 
       /* Page furniture */
-      .run-head{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:13px;font-size:8.5px;color:var(--muted);font-weight:700;flex:none}
-      .foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8px;color:var(--muted);flex:none}
-      .body{flex:1 1 auto;min-height:0}
-      .page-title{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--royal);padding-bottom:7px;margin:0 0 13px}
-      .page-title p{margin:0;color:var(--royal);font-size:8.5px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
-      .page-title h2{font-size:19px;color:var(--ink);letter-spacing:-.025em;margin:3px 0 0}
-      .page-title em{font-style:normal;font-size:10px;color:var(--muted)}
-      .blk{margin-bottom:13px}.blk:last-child{margin-bottom:0}
+      .run-head{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:12px;font-size:9px;color:var(--muted);font-weight:700;flex:none}
+      .foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8.5px;color:var(--muted);flex:none}
+      .body{flex:1 1 auto;min-height:0;overflow:hidden}
+      .page-title{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--royal);padding-bottom:7px;margin:0 0 12px}
+      .page-title p{margin:0;color:var(--royal);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+      .page-title h2{font-size:22px;color:var(--ink);letter-spacing:-.025em;margin:3px 0 0}
+      .page-title em{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap}
+      .blk{margin-bottom:12px}.blk:last-child{margin-bottom:0}
 
-      /* Summary */
-      .figs{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-      .fig{border:1px solid var(--line);border-radius:8px;padding:11px 12px}
-      .fig b{display:block;font-size:22px;letter-spacing:-.04em;color:var(--ink);line-height:1}
-      .fig b small{font-size:11px;color:var(--muted);letter-spacing:0}
-      .fig span{display:block;margin-top:5px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--deep)}
-      .fig small{display:block;font-size:8.5px;color:var(--muted)}
+      /* Figures */
+      .figs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+      .fig{border:1px solid var(--line);border-radius:9px;padding:12px 13px}
+      .fig b{display:block;font-size:27px;letter-spacing:-.04em;color:var(--ink);line-height:1}
+      .fig b small{font-size:13px;color:var(--muted);letter-spacing:0}
+      .fig span{display:block;margin-top:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--deep)}
+      .fig small{display:block;font-size:9.5px;color:var(--muted)}
+
       table{border-collapse:collapse;width:100%}
-      .sec-table{border:1px solid var(--line);border-radius:8px;overflow:hidden}
-      .sec-table td{padding:8px 11px;border-top:1px solid var(--line);font-size:10px;vertical-align:middle}
+      .sec-table{border:1px solid var(--line);border-radius:9px;overflow:hidden}
+      .sec-table td{padding:10px 13px;border-top:1px solid var(--line);font-size:12px;vertical-align:middle}
       .sec-table tr:first-child td{border-top:none}
       .s-name{font-weight:700;color:var(--deep)}
-      .s-score{width:58px;text-align:right;white-space:nowrap}.s-score b{font-size:12px;color:var(--ink)}.s-score small{color:var(--muted);font-size:9px}
-      .s-bar{width:88px}.s-bar span{display:block;height:6px;border-radius:99px;background:#E7EBEF;overflow:hidden}
-      .s-bar i{display:block;height:6px;border-radius:99px}
-      .s-band{width:86px;text-align:right}
-      .chip{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--soft);color:var(--tone);font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
-      .find-table{border:1px solid var(--line);border-radius:8px;overflow:hidden}
-      .find-table th{background:var(--ink);color:#fff;text-align:left;padding:7px 10px;font-size:8px;letter-spacing:.08em;text-transform:uppercase}
-      .find-table td{padding:8px 10px;border-top:1px solid var(--line);font-size:9.5px;vertical-align:top}
-      .find-table .n,.detail-table .n{width:22px;text-align:center;color:var(--muted);font-weight:800}
-      .f-item{width:31%;font-weight:700}.f-sec{width:20%;color:var(--muted)}.f-cmt{color:#4A5A6B;white-space:pre-line}
-      .all-clear{margin:0;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:10px;color:var(--muted)}
+      .s-score{width:20mm;text-align:right;white-space:nowrap}.s-score b{font-size:14px;color:var(--ink)}.s-score small{color:var(--muted);font-size:10px}
+      .s-bar{width:32mm}.s-bar span{display:block;height:7px;border-radius:99px;background:#E7EBEF;overflow:hidden}
+      .s-bar i{display:block;height:7px;border-radius:99px}
+      .s-band{width:26mm;text-align:right}
+      .chip{display:inline-block;padding:3px 9px;border-radius:999px;background:var(--soft);color:var(--tone);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+
+      .find-table{border:1px solid var(--line);border-radius:9px;overflow:hidden}
+      .find-table th{background:var(--ink);color:#fff;text-align:left;padding:8px 11px;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
+      .find-table td{padding:9px 11px;border-top:1px solid var(--line);font-size:11px;vertical-align:top}
+      .find-table .n,.detail-table .n{width:8mm;text-align:center;color:var(--muted);font-weight:800}
+      .f-item{width:33%;font-weight:700}.f-sec{width:22%;color:var(--muted)}.f-cmt{color:#43536B}
+      .all-clear{margin:0;padding:15px;border:1px solid var(--line);border-radius:9px;background:var(--paper);font-size:11.5px;color:var(--muted)}
       .empty{color:#9AA2A9;font-style:italic}
 
       /* Detail */
-      .report-section{border:1px solid var(--line);border-radius:8px;overflow:hidden}
-      .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;background:var(--paper)}
-      .section-head .kicker{display:block;color:var(--muted);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
-      .section-head h2{font-size:13px;color:var(--ink);margin:2px 0 0}
+      .report-section{border:1px solid var(--line);border-radius:9px;overflow:hidden}
+      .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;background:var(--paper)}
+      .section-head .kicker{display:block;color:var(--muted);font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
+      .section-head h2{font-size:15px;color:var(--ink);margin:2px 0 0}
+      .section-head .cont{font-size:10px;font-weight:700;color:var(--muted)}
       .section-total{text-align:right;white-space:nowrap}
-      .section-total b{font-size:19px;line-height:1;letter-spacing:-.05em;display:block}.section-total b small{font-size:10px;color:var(--muted)}
+      .section-total b{font-size:21px;line-height:1;letter-spacing:-.05em;display:block}.section-total b small{font-size:11px;color:var(--muted)}
       .section-total .chip{margin-top:4px}
-      .detail-table th{padding:7px 10px;background:var(--ink);color:#fff;text-align:left;font-size:8px;letter-spacing:.08em;text-transform:uppercase}
-      .detail-table td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top;font-size:9.5px}
-      .item-label{width:38%;color:var(--deep);font-weight:600}
-      .item-res{width:92px}
-      .res{display:inline-block;font-size:8.5px;font-weight:900;padding:3px 8px;border-radius:999px;white-space:nowrap}
+      .detail-table th{padding:8px 11px;background:var(--ink);color:#fff;text-align:left;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
+      .detail-table td{padding:9px 11px;border-top:1px solid var(--line);vertical-align:top;font-size:11px}
+      .item-label{width:36%;color:var(--deep);font-weight:600}
+      .item-res{width:28mm}
+      .res{display:inline-block;font-size:9.5px;font-weight:900;padding:3px 9px;border-radius:999px;white-space:nowrap}
       .res.yes{background:#DBEEE4;color:#007A38}.res.no{background:#FDE9E4;color:#CB3010}.res.na{background:var(--paper);color:var(--muted)}
-      td.item-res .res{min-width:38px;text-align:center}
-      .comments{color:#4A5A6B;white-space:pre-line}
-      .photo-strip{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
-      .photo-strip img{width:58px;height:58px;border-radius:5px;object-fit:cover;border:1px solid var(--line)}
-      .detail-table tfoot td{background:var(--paper);color:var(--deep)}
-      .detail-table tfoot b{display:block;color:var(--royal);font-size:8px;text-transform:uppercase;letter-spacing:.08em}
-      .detail-table tfoot span{display:block;margin-top:2px;white-space:pre-line}
-      .sign{display:grid;grid-template-columns:repeat(2,minmax(0,200px));gap:26px}
-      .sign div span{font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-      .sign div b{display:block;border-bottom:1px solid var(--ink);padding-top:24px;font-size:10px;font-weight:700;color:var(--deep)}
+      td.item-res .res{min-width:11mm;text-align:center}
+      .comments{color:#43536B}
+      .photo-strip{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+      .photo-strip img{width:74px;height:74px;border-radius:6px;object-fit:cover;border:1px solid var(--line)}
+      .detail-table tfoot td{background:var(--paper);color:var(--deep);font-size:11px}
+      .detail-table tfoot b{display:block;color:var(--royal);font-size:9px;text-transform:uppercase;letter-spacing:.07em}
+      .detail-table tfoot span{display:block;margin-top:3px}
+      .sign{display:grid;grid-template-columns:repeat(2,minmax(0,62mm));gap:28px}
+      .sign div span{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+      .sign div b{display:block;border-bottom:1px solid var(--ink);padding-top:26px;font-size:11px;font-weight:700;color:var(--deep)}
     </style></head><body>
+    ${embedded?'':`<div class="bar">
+      <b>${filename}</b>
+      <button type="button" onclick="window.print()">Print / Save as PDF</button>
+      <button type="button" class="ghost" onclick="window.close()">Close</button>
+      <small>On iPhone or iPad: Print opens the system print sheet — or use Share → Options → PDF to save the file.</small>
+    </div>`}
+    <div id="docwrap"><div id="doc">
     <section class="sheet cover">
       <div class="rule"></div>
       <div class="brand"><img src="${reportPrintEsc(logoUrl)}" alt="OSQA"><i></i>OSD · Facility Experience Quality Assurance</div>
@@ -3703,12 +3734,13 @@ async function printInspectionReport(report){
       <div class="cover-score"><b>${overall}</b> / ${totalMax||100}<span class="chip" style="--tone:${tone.color};--soft:${tone.soft}">${tone.label}</span></div>
       <table class="fact-table"><tbody>${coverFacts}</tbody></table>
       ${journey?`<div class="journey-card">${journey}</div>`:''}
+      <div class="figs" style="margin-top:6mm">${figures}</div>
       <div class="cover-foot"><span>${value(ref)}</span><span>Generated ${today}</span></div>
     </section>
     <div id="sheets"></div>
+    </div></div>
     <div id="flow">
-      <div class="blk" data-keep><div class="page-title"><div><p>Inspection summary</p><h2>Score and findings</h2></div><em>${sections.length} touchpoints · ${flat.length} checklist items</em></div><div class="figs">${figures}</div></div>
-      <div class="blk" data-keep><div class="page-title"><div><p>By touchpoint</p><h2>Section scores</h2></div></div><table class="sec-table"><tbody>${sectionRows}</tbody></table></div>
+      <div class="blk" data-keep><div class="page-title"><div><p>By touchpoint</p><h2>Section scores</h2></div><em>${sections.length} touchpoints · ${flat.length} checklist items</em></div><table class="sec-table"><tbody>${sectionRows}</tbody></table></div>
       <div class="blk" data-keep><div class="page-title"><div><p>${words?'Not compliant':'Scored 0'}</p><h2>Items needing action</h2></div><em>${failed.length} of ${scored.length} checked</em></div></div>
       ${findings}
       <div class="blk" data-keep><div class="page-title"><div><p>Evidence &amp; observations</p><h2>Detailed inspection</h2></div><em>${value(report.inspector)}</em></div></div>
@@ -3719,43 +3751,136 @@ async function printInspectionReport(report){
     (function(){
       var flow=document.getElementById('flow'), holder=document.getElementById('sheets');
       var head='<div class="run-head"><span>${reportPrintEsc(report.facility||'')}</span><span>${reportPrintEsc((report.typeLabel||'')+' · '+(report.date||''))}</span></div>';
-      var foot='<div class="foot"><span>Facility Experience Quality Assurance</span><span>${reportPrintEsc(ref)}</span></div>';
+      var sheets=[];
       function sheet(){
         var s=document.createElement('section');
         s.className='sheet';
-        s.innerHTML=head+'<div class="body"></div>'+foot;
-        holder.appendChild(s);
+        s.innerHTML=head+'<div class="body"></div><div class="foot"><span>Facility Experience Quality Assurance</span><span class="pno"></span></div>';
+        holder.appendChild(s); sheets.push(s);
         return s;
       }
-      // Blocks are poured into a sheet until one would overflow the paper, then a new sheet starts.
-      var s=sheet(), body=s.querySelector('.body'), blocks=[].slice.call(flow.children);
-      blocks.forEach(function(b){
+      var s=sheet(), body=s.querySelector('.body');
+      function fits(){ return s.scrollHeight<=s.clientHeight && body.scrollHeight<=body.clientHeight; }
+      function next(){ s=sheet(); body=s.querySelector('.body'); }
+      /** Space still free inside the current sheet's body, in px. */
+      function room(){
+        var box=body.getBoundingClientRect(), last=body.lastElementChild;
+        return box.height-(last?last.getBoundingClientRect().bottom-box.top:0);
+      }
+      var FILL=Math.round(45*3.78);                                    // 45mm of free paper is worth filling with rows
+      function rowsOf(b){ var t=b.querySelector('tbody'); return t?t.rows.length:0; }
+      /** Move trailing rows out of an oversized block into a continuation of the same table. */
+      function split(b){
+        var tb=b.querySelector('tbody'), moved=[];
+        if(!tb) return null;
+        while(!fits() && tb.rows.length>1){ moved.unshift(tb.rows[tb.rows.length-1]); tb.deleteRow(tb.rows.length-1); }
+        if(!moved.length) return null;
+        var cont=b.cloneNode(true), ctb=cont.querySelector('tbody');
+        ctb.innerHTML='';
+        moved.forEach(function(tr){ ctb.appendChild(tr); });
+        var h=cont.querySelector('.section-head h2');
+        if(h&&!h.querySelector('.cont')) h.innerHTML+=' <span class="cont">continued</span>';
+        var tf=b.querySelector('tfoot'); if(tf&&cont.querySelector('tfoot')) tf.parentNode.removeChild(tf);
+        return cont;
+      }
+      function pour(b){
+        var hadRoom=room();          // measured before the block goes in
         body.appendChild(b);
-        if(s.scrollHeight>s.clientHeight && body.children.length>1){
+        if(fits()) return;
+        var splittable=rowsOf(b)>=4;
+        // A big table fills the space that is left rather than leaving the page half empty.
+        if(splittable && hadRoom>=FILL){ var cont=split(b); if(cont){ next(); pour(cont); return; } }
+        if(body.children.length>1){
           var prev=b.previousElementSibling;
           var carry=prev&&prev.hasAttribute('data-keep')&&body.children.length>2?prev:null;
-          s=sheet(); body=s.querySelector('.body');
+          next();
           if(carry) body.appendChild(carry);
           body.appendChild(b);
+          if(fits()) return;
         }
-      });
-      flow.remove();
-      // Findings that land on the same sheet read as one table, not as three with repeated headers.
-      [].forEach.call(holder.querySelectorAll('.sheet'),function(sh){
-        var tables=sh.querySelectorAll('.find-table');
-        for(var i=1;i<tables.length;i++){
-          var into=tables[0].querySelector('tbody');
-          [].forEach.call(tables[i].querySelectorAll('tbody tr'),function(tr){ into.appendChild(tr); });
-          var blk=tables[i].parentNode;
-          if(blk) blk.parentNode.removeChild(blk);
+        if(splittable){ var c2=split(b); if(c2){ next(); pour(c2); } }
+      }
+      [].slice.call(flow.children).forEach(pour);
+      flow.parentNode.removeChild(flow);
+      // A phone cannot show 210mm at full size: the paper is scaled to the screen, not reflowed.
+      var doc=document.getElementById('doc'), wrap=document.getElementById('docwrap');
+      function fit(){
+        var avail=document.documentElement.clientWidth-10, w=doc.offsetWidth;
+        var z=Math.min(1,avail/w);
+        if(z<1){
+          doc.style.transform='scale('+z+')';
+          doc.style.marginLeft=Math.max(0,(avail-w*z)/2)+'px';
+          wrap.style.height=Math.ceil(doc.offsetHeight*z)+'px';
+        }else{
+          doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height='';
         }
-      });
-      window.addEventListener('load',function(){ setTimeout(function(){ window.print(); },260); });
+      }
+      window.addEventListener('resize',fit);
+      window.addEventListener('beforeprint',function(){ doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height=''; });
+      window.addEventListener('afterprint',fit);
+      var total=sheets.length+1;                                        // the cover counts too
+      [].forEach.call(document.querySelectorAll('.pno'),function(el,i){ el.textContent='Page '+(i+2)+' of '+total; });
+      fit();
+      ${autoPrint?`window.addEventListener('load',function(){ setTimeout(function(){ window.print(); },350); });
+      if(document.readyState==='complete') setTimeout(function(){ window.print(); },350);`:''}
     })();
     <\/script>
-    </body></html>`);
-  pw.document.close();
+    </body></html>`;
 }
+
+/**
+ * Opens the report in its own window. The window is opened on the click itself — Safari on
+ * iPhone and iPad only allows that from a user gesture, and the document is written into it
+ * once the artwork has loaded.
+ */
+async function openInspectionReport(report,{autoPrint=false}={}){
+  const pw=window.open('','_blank');
+  if(!pw) return showReportOverlay(report,{autoPrint});   // pop-ups blocked (Safari does this by default)
+  try{
+    pw.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+      +'<title>Preparing the report…</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;'
+      +'font:600 15px/1.5 -apple-system,system-ui,sans-serif;color:#5F6369;background:#fff}</style></head><body>Preparing the report…</body></html>');
+    const html=await buildInspectionReportHtml(report,{autoPrint});
+    pw.document.open(); pw.document.write(html); pw.document.close();
+    pw.focus();
+    return true;
+  }catch(err){
+    try{ pw.close(); }catch{}
+    showToast('Could not build the report. '+(err&&err.message||''),true);
+    return false;
+  }
+}
+
+/** The same document, shown inside the app when a pop-up cannot be opened. */
+async function showReportOverlay(report,{autoPrint=false}={}){
+  const wrap=document.createElement('div');
+  wrap.className='rpt-overlay';
+  wrap.innerHTML=`<div class="rpt-bar"><b>${ovEsc(report.filename||'Inspection report')}</b>
+      <button type="button" class="btn bt" data-a="print"><svg data-lucide="printer" width="15" height="15"></svg> Print / Save as PDF</button>
+      <button type="button" class="btn bo" data-a="close">Close</button>
+      <small>On iPhone or iPad you can also use Share → Options → PDF.</small></div>
+    <iframe title="Inspection report"></iframe>`;
+  document.body.appendChild(wrap);
+  lucide.createIcons({nodes:[wrap]});
+  const frame=wrap.querySelector('iframe');
+  const print=()=>{ try{ frame.contentWindow.focus(); frame.contentWindow.print(); }catch(err){ showToast('Use your browser’s Share or Print menu to save this report.',true); } };
+  wrap.addEventListener('click',e=>{
+    const b=e.target.closest('[data-a]');
+    if(!b) return;
+    if(b.dataset.a==='close') wrap.remove(); else print();
+  });
+  try{
+    frame.srcdoc=await buildInspectionReportHtml(report,{autoPrint,embedded:true});
+  }catch(err){
+    wrap.remove(); showToast('Could not build the report. '+(err&&err.message||''),true); return false;
+  }
+  return true;
+}
+
+/** Export: opens the report so it can be saved as a PDF (or printed from its own toolbar). */
+function printInspectionReport(report){ return openInspectionReport(report,{autoPrint:false}); }
+/** Print: opens the report and goes straight to the system print sheet. */
+function printInspectionReportNow(report){ return openInspectionReport(report,{autoPrint:true}); }
 
 
 
@@ -3817,8 +3942,10 @@ function cancelEdit(){
 // ═══════════════════════════════════════════════════════════
 // PDF EXPORT
 // ═══════════════════════════════════════════════════════════
-function exportPDF(){
-  if(!currentReportSaved){alert(editingRecordId!==null?'Save your changes before downloading the PDF.':'Submit the report before downloading the PDF.');return;}
+function exportPDF(){ const r=currentReportForPrint(); if(r) printInspectionReport(r); }
+function printPDF(){ const r=currentReportForPrint(); if(r) printInspectionReportNow(r); }
+function currentReportForPrint(){
+  if(!currentReportSaved){alert(editingRecordId!==null?'Save your changes before printing or downloading the PDF.':'Submit the report before printing or downloading the PDF.');return null;}
   const reportType=document.getElementById('meta-type').value;
   const reportState=curState();
   const reportSections=SECTIONS.map((section,sectionIndex)=>{
@@ -3828,7 +3955,7 @@ function exportPDF(){
       items:section.items.map((label,itemIndex)=>({label,score:reportState.scores[sectionIndex][itemIndex],comment:reportState.comments[sectionIndex][itemIndex],photos:reportState.photos[sectionIndex][itemIndex]}))
     };
   });
-  return printInspectionReport({
+  return {
     inspector:activeInspector,
     facility:document.getElementById('meta-facility').value,
     division:document.getElementById('meta-division').value,
@@ -3838,7 +3965,7 @@ function exportPDF(){
     overall:reportSections.reduce((sum,section)=>sum+section.score,0),
     filename:buildFilenameFrom(reportType,document.getElementById('meta-date').value,document.getElementById('meta-facility').value,document.getElementById('meta-division').value,activeInspector),
     sections:reportSections
-  });
+  };
 }
 
 function resetForm(){
@@ -5550,6 +5677,7 @@ function renderReportPanel(){
     </section>
     <div class="rv-actions">
       ${hasPerm('export')?'<button class="btn br" data-rv="pdf"><svg data-lucide="file-down" width="15" height="15"></svg> Download PDF</button>':''}
+      ${hasPerm('export')?'<button class="btn bo" data-rv="print"><svg data-lucide="printer" width="15" height="15"></svg> Print report</button>':''}
       ${canEdit?'<button class="btn bo" data-rv="edit"><svg data-lucide="pencil" width="15" height="15"></svg> Edit report</button>':''}
       <button class="rp-link" data-rv="link"><svg data-lucide="link" width="14" height="14" style="vertical-align:-3px"></svg> Copy link</button>
       ${hasPerm('delete')?'<button class="rp-link" data-rv="delete" style="color:var(--danger);margin-left:auto"><svg data-lucide="trash-2" width="14" height="14" style="vertical-align:-3px"></svg> Delete report</button>':''}
@@ -5561,9 +5689,10 @@ function renderReportPanel(){
 async function rvAction(act){
   const {record:r,summary:s}=rvData||{};
   if(!r) return;
-  if(act==='pdf'){
-    return printInspectionReport({inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,type:r.type,typeLabel:r.typeLabel||r.type,overall:r.overall,
-      filename:r.filename||`${r.date||'inspection'}_${r.type||'Inspection'}_${r.facility||'facility'}.pdf`,sections:r.sections||[]});
+  if(act==='pdf'||act==='print'){
+    const doc={inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,type:r.type,typeLabel:r.typeLabel||r.type,overall:r.overall,
+      filename:r.filename||`${r.date||'inspection'}_${r.type||'Inspection'}_${r.facility||'facility'}.pdf`,sections:r.sections||[]};
+    return act==='print'?printInspectionReportNow(doc):printInspectionReport(doc);
   }
   if(act==='edit'){ closeReport(); return editInspection({stopPropagation(){}},r.id,r); }
   if(act==='delete'){
