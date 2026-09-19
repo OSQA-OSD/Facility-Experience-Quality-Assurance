@@ -276,7 +276,14 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 /* History */
 /* Home overview cards — same language as the landing page */
 #home-stats{padding:24px 44px 4px;background:var(--bg);display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+  grid-template-columns:repeat(6,minmax(0,1fr));gap:16px}
+#home-stats .hs-card{grid-column:span 2}
+#home-stats .hs-card.hs-wide{grid-column:span 3}
+.hs-wide[data-report]{cursor:pointer}
+.hs-where{margin-top:10px;padding-top:9px;border-top:1px solid var(--border);min-width:0}
+.hs-where b{display:block;font-size:.86rem!important;font-weight:800;color:var(--text)!important;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hs-where small{display:block;margin-top:2px;font-size:.72rem;color:var(--muted);font-weight:600}
+@media(max-width:780px){#home-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#home-stats .hs-card,#home-stats .hs-card.hs-wide{grid-column:auto}#home-stats .hs-card.hs-q{grid-column:1/-1}}
 .hs-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;
   box-shadow:0 1px 2px rgba(16,32,64,.04);transition:transform .15s,box-shadow .15s}
 .hs-card:hover{transform:translateY(-3px);box-shadow:0 16px 32px -18px rgba(0,32,112,.3)}
@@ -449,7 +456,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .tip-box p{margin:0 0 3px}
 .tip-box ul{margin:2px 0 3px;padding-left:18px}
 .tip-box li b{display:inline;margin:0}
-@media(max-width:480px){.ov-stats,#home-stats,#rp-stats,#of-stats,#sc-stats,#ins-stats,#cmp-stats,#dq-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}.hs-card{padding:13px 14px}.hs-card b{font-size:1.3rem}.hs-ic{width:32px;height:32px;margin-bottom:8px}}
+@media(max-width:480px){.ov-stats,#home-stats,#rp-stats,#of-stats,#sc-stats,#ins-stats,#cmp-stats,#dq-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}.hs-card{padding:13px 14px}.hs-card b{font-size:1.3rem}#home-stats .hs-card{grid-column:auto}#home-stats .hs-card.hs-q{grid-column:1/-1}.hs-ic{width:32px;height:32px;margin-bottom:8px}}
 .tip-close{margin-left:auto;background:none;border:none;font-size:1.15rem;color:var(--muted);cursor:pointer;line-height:1;padding:0 2px}
 .ov-panel>.tip-box{margin:10px 14px;width:auto}
 .hist-filters+.tip-box{margin:12px 44px 0;width:auto}
@@ -1223,13 +1230,19 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <div class="hs-ic"><svg data-lucide="trending-up" width="19" height="19"></svg></div>
         <b id="hs-avg">–</b><span>Average score</span>
       </div>
-      <div class="hs-card">
-        <div class="hs-ic"><svg data-lucide="award" width="19" height="19"></svg></div>
-        <b id="hs-best">–</b><span>Highest score</span>
-      </div>
-      <div class="hs-card">
+      <div class="hs-card hs-q">
         <div class="hs-ic"><svg data-lucide="calendar-days" width="19" height="19"></svg></div>
         <b id="hs-quarter">–</b><span id="hs-quarter-label">This quarter</span>
+      </div>
+      <div class="hs-card hs-wide" id="hs-best-card" tabindex="0" role="button" title="Open this report">
+        <div class="hs-ic"><svg data-lucide="award" width="19" height="19"></svg></div>
+        <b id="hs-best">–</b><span>Highest score</span>
+        <div class="hs-where" id="hs-best-where"></div>
+      </div>
+      <div class="hs-card hs-wide" id="hs-worst-card" tabindex="0" role="button" title="Open this report">
+        <div class="hs-ic"><svg data-lucide="trending-down" width="19" height="19"></svg></div>
+        <b id="hs-worst">–</b><span>Lowest score</span>
+        <div class="hs-where" id="hs-worst-where"></div>
       </div>
     </div>
 
@@ -3457,6 +3470,22 @@ async function saveAsEOQI(){
 // so the numbers can never disagree with the list below them.
 
 /** Home: whole-archive figures and the latest reports, from the same source as Inspection Reports. */
+/** Highest / lowest score, with the building, division and area it was given to. */
+function homeExtreme(key,r,fallback){
+  const card=document.getElementById(`hs-${key}-card`), num=document.getElementById(`hs-${key}`), where=document.getElementById(`hs-${key}-where`);
+  const score=r?r.score:fallback;
+  num.textContent=score??'–';
+  num.style.color=score!=null?grade(score).ink:'';
+  where.innerHTML=r?`<b>${ovEsc(r.building||'—')}</b><small>${ovEsc([r.division,r.area].filter(Boolean).join(' · ')||'Division not set')}</small>`:'';
+  if(r){ card.dataset.report=r.id; card.title='Open this report'; } else { delete card.dataset.report; card.removeAttribute('title'); }
+}
+document.addEventListener('click',e=>{
+  const c=e.target.closest('#home-stats [data-report]');
+  if(c) openReport(Number(c.dataset.report));
+});
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('#home-stats [data-report]')){ e.preventDefault(); openReport(Number(e.target.dataset.report)); }
+});
 async function loadHome(){
   try{
     const res=await fetch('/api/reports/library?limit=6&sort=newest');
@@ -3465,7 +3494,8 @@ async function loadHome(){
     setSyncChip('ok','Online · '+o.count+' reports');
     document.getElementById('hs-total').textContent=o.count;
     document.getElementById('hs-avg').textContent=o.avg??'–';
-    document.getElementById('hs-best').textContent=o.max??'–';
+    homeExtreme('best',o.best,o.max);
+    homeExtreme('worst',o.worst,null);
     document.getElementById('hs-quarter').textContent=o.currentQuarterCount;
     document.getElementById('hs-quarter-label').textContent=`Reports in ${o.currentQuarter}`;
     const list=document.getElementById('hist-list');
@@ -5470,7 +5500,7 @@ function renderRpDetail(list=rpFilter()){
 // ⓘ EXPLANATIONS — a short, plain description for each analysis tool, shown on demand
 // ═══════════════════════════════════════════════════════════
 const TIPS={
-  'home-kpis':['What these numbers are',['Reports on file, average and highest score count every saved report in the system (not just the list below).','“Reports in” counts reports dated in the current quarter. The list shows the six newest reports — open one to review it, or search them all in Inspection Reports.']],
+  'home-kpis':['What these numbers are',['Reports on file, average, highest and lowest score count every saved report in the system (not just the list below). Under the highest and lowest score is the building they were given to, with its division and area — tap the card to open that report.','“Reports in” counts reports dated in the current quarter. The list shows the six newest reports — open one to review it, or search them all in Inspection Reports.']],
   'cx-report':['Building your own report',['The four steps on the left decide everything: <b>1</b> which inspections are counted, <b>2</b> what one row stands for, <b>3</b> which columns are measured, <b>4</b> which parts appear.','The page you see <em>is</em> the report — Export gives you exactly these parts and columns as PDF, Excel or an image, nothing else.','<ul><li><b>Buildings in list</b>, <b>Coverage</b> — only for rows that are divisions, areas or buildings; they count the buildings on file, inspected or not.</li><li><b>BOQI / EOQI / Change</b> — averages of each type, and end minus beginning.</li><li><b>Sections</b> — the average of that section, out of 10.</li></ul>','“Save setup” keeps the whole arrangement under a name; share it and the rest of the team sees the same report.']],
   'lib-status':['Review status and search',['<b>Needs review</b>: saved and not yet reviewed. <b>Updated — review again</b>: edited after a decision. <b>Changes requested</b>: sent back to the auditor. <b>Approved</b>: accepted.','Search looks at the building, auditor, division, area and report number. Tick “Also search comments & notes” to look inside what auditors wrote.']],
   'ins-kpis':['Summary cards',['For the chosen period (a quarter or a whole year), type and division:','<ul><li><b>Inspections</b> — reports saved.</li><li><b>Average score</b> — mean overall score out of 100.</li><li><b>Buildings covered</b> — buildings in the list with at least one inspection ÷ all buildings.</li><li><b>Good or excellent</b> — share scoring 81 or more.</li><li><b>Below acceptable</b> — reports scoring 70 or less.</li></ul>','Arrows compare with the period before — the previous quarter, or the previous year. While a year is still in progress it is compared with the same quarters of the year before. Green is better, red is worse.']],
