@@ -157,6 +157,13 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .page-tab:hover{background:rgba(255,255,255,.16);color:#fff}
 .page-tab.active{background:#fff;color:var(--royal);border-color:#fff}
 .page-tab svg{width:14px;height:14px}
+/* Team pages: the tabs and Export sit together on one row, never wrapping */
+.hero-actions{display:flex;align-items:center;gap:6px;margin-top:18px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.hero-actions::-webkit-scrollbar{display:none}
+.hero-actions .page-tabs{margin-top:0;flex-wrap:nowrap}
+.hero-actions .page-tab,.hero-actions .page-export{flex:none;white-space:nowrap}
+.hero-actions .page-export{margin-left:0}
+@media(max-width:420px){.hero-actions{gap:5px}.hero-actions .page-tabs{gap:5px}.hero-actions .page-tab,.hero-actions .page-export{padding:6px 11px;font-size:.72rem}}
 /* Home quick actions */
 #home-actions{padding:16px 44px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
 #home-actions:empty{display:none}
@@ -1139,7 +1146,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     </div>
     <div class="nav-group">
       <span class="nav-label">Team &amp; Insights</span>
-      <div class="ni" id="team-link" data-page="pg-overview" hidden><svg data-lucide="users" width="18" height="18"></svg><span class="ni-txt">Team</span></div>
+      <div class="ni" id="team-link" data-page="pg-officer" hidden><svg data-lucide="users" width="18" height="18"></svg><span class="ni-txt">Team</span></div>
       <div class="ni" id="reports-link" data-page="pg-reports" hidden><svg data-lucide="bar-chart-3" width="18" height="18"></svg><span class="ni-txt">Analytics</span></div>
     </div>
     <div class="nav-group">
@@ -1427,8 +1434,10 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="home-hero">
       <h2>Team <span>Overview</span></h2>
       <p class="sub">Everything your officers and auditors are working on — assignments, results and progress by division, area and building.</p>
-      <div class="page-tabs team-tabs" hidden></div>
-      <button class="page-export rp-export" type="button" data-ex-ctx="overview" title="Download this page as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
+      <div class="hero-actions">
+        <div class="page-tabs team-tabs" hidden></div>
+        <button class="page-export rp-export" type="button" data-ex-ctx="overview" title="Download this page as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
+      </div>
     </div>
 
     <div class="hist-filters ov-filters">
@@ -1510,8 +1519,10 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="home-hero">
       <h2>Assign &amp; <span>Track</span></h2>
       <p class="sub">Assign buildings to your auditors for the quarter and follow their progress live.</p>
-      <div class="page-tabs team-tabs" hidden></div>
-      <button class="page-export rp-export" type="button" data-ex-ctx="officer" title="Download this page as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
+      <div class="hero-actions">
+        <div class="page-tabs team-tabs" hidden></div>
+        <button class="page-export rp-export" type="button" data-ex-ctx="officer" title="Download this page as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
+      </div>
     </div>
 
     <div class="hist-filters ov-filters">
@@ -7921,12 +7932,12 @@ function adRenderAudit(){
     document.getElementById('reports-link').hidden=!hasPerm('reports');
     if(ASSIGNEE_ROLES.includes(user.role)&&hasPerm('inspect')){ document.getElementById('my-assignments-link').hidden=false; if(!document.getElementById('pg-auditor').classList.contains('active')) loadAuditorProfile({quiet:true}); }
     if(hasPerm('inspect')) document.getElementById('inspection-link').hidden=false;
-    // Team: Overview and/or Assign & Track, as the account's permissions allow (tabs when both).
-    const teamPages=[...(hasPerm('team')?['pg-overview']:[]),...(hasPerm('assign')?['pg-officer']:[])];
+    // Team: Assign & Track and/or Overview, as the account's permissions allow (tabs when both).
+    const teamPages=[...(hasPerm('assign')?['pg-officer']:[]),...(hasPerm('team')?['pg-overview']:[])];
     if(teamPages.length){
       const teamLink=document.getElementById('team-link');
       teamLink.hidden=false;
-      if(!teamPages.includes(teamLink.dataset.page)) teamLink.dataset.page=teamPages[0];
+      teamLink.dataset.page=teamPages[0];                            // the first tab is where Team opens
       renderTeamTabs(teamPages);
     }
     renderHomeActions(user,teamPages);
