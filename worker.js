@@ -1035,8 +1035,15 @@ async function reportLibrary(env, user, url) {
   // Whole-archive figures for Home (independent of search and filters).
   const scored = all.map((r) => r.overall).filter((v) => typeof v === 'number');
   const currentQuarter = quarterOf(new Date().toISOString().slice(0, 10));
+  // Where the highest and the lowest score were given — the most recent report on a tie.
+  const pick = (better) => all.filter((r) => typeof r.overall === 'number')
+    .reduce((b, r) => (!b || better(r, b) ? r : b), null);
+  const brief = (r) => (r ? { id: r.id, score: r.overall, building: r.building, division: r.division, area: r.area, date: r.date } : null);
+  const best = pick((r, b) => r.overall > b.overall || (r.overall === b.overall && byDate(r, b) > 0));
+  const worst = pick((r, b) => r.overall < b.overall || (r.overall === b.overall && byDate(r, b) > 0));
   const overview = {
     count: all.length, avg: average(scored), max: scored.length ? Math.max(...scored) : null,
+    best: brief(best), worst: brief(worst),
     currentQuarter, currentQuarterCount: all.filter((r) => r.quarter === currentQuarter).length,
   };
   return json({
