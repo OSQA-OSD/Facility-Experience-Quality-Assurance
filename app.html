@@ -3551,6 +3551,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
   const detailSections=sections.map(sec=>{
     const max=Number(sec.max)||10, score=Number(sec.score)||0, pct=max?Math.round(score/max*100):0;
     const t=reportPrintTone(pct);
+    const shots=[];
     const rows=(sec.items||[]).map((item,index)=>{
       const label=typeof item==='string'?item:item.label;
       const sc=typeof item==='string'?null:item.score;
@@ -3560,18 +3561,23 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       const result=sc==null?'<span class="res na">Not scored</span>'
         :words?`<span class="res ${state}">${sc===0?'✗ Not compliant':'✓ Compliant'}</span>`
           :`<span class="res ${state}">${sc}</span>`;
-      const photoHtml=photos.length?`<div class="photo-strip">${photos.map(src=>`<img src="${reportPrintEsc(src)}" alt="Inspection evidence">`).join('')}</div>`:'';
+      photos.forEach(src=>shots.push({src,n:index+1,label}));
+      const ref=photos.length?`<span class="ph-ref">${photos.length} photo${photos.length===1?'':'s'} below</span>`:'';
       return `<tr><td class="n">${index+1}</td><td class="item-label">${value(label)}</td>
         <td class="item-res">${result}</td>
-        <td class="comments">${comment?value(comment):(photos.length?'':'<span class="empty">—</span>')}${photoHtml}</td></tr>`;
+        <td class="comments">${comment?value(comment):(photos.length?'':'<span class="empty">—</span>')}${ref}</td></tr>`;
     }).join('');
+    // Every photo of the touchpoint, captioned with the item it belongs to.
+    const gallery=shots.length?`<div class="gallery"><div class="gal-head">Evidence photos <small>${shots.length}</small></div>
+      <div class="gal-grid">${shots.map(p=>`<figure><div class="gal-img"><img src="${reportPrintEsc(p.src)}" alt="Evidence for item ${p.n}"></div>
+        <figcaption><b>Item ${p.n}</b> ${value(p.label)}</figcaption></figure>`).join('')}</div></div>`:'';
     return `<div class="blk"><section class="report-section">
       <div class="section-head"><div><span class="kicker">Journey touchpoint</span><h2>${value(sec.title)}</h2></div>
         <div class="section-total"><b style="color:${t.color}">${score}<small>/${max}</small></b><span class="chip" style="--tone:${t.color};--soft:${t.soft}">${t.label}</span></div></div>
       <table class="detail-table"><thead><tr><th class="n">#</th><th class="item-col">Inspection item</th><th class="item-res">Result</th><th>Observations &amp; evidence</th></tr></thead>
         <tbody>${rows}</tbody>
         ${sec.notes?`<tfoot><tr><td colspan="4"><b>Auditor note</b><span>${value(sec.notes)}</span></td></tr></tfoot>`:''}</table>
-    </section></div>`;
+    </section>${gallery}</div>`;
   }).join('');
 
   const filename=value(report.filename||'inspection-report.pdf');
@@ -3622,8 +3628,9 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       /* Page furniture */
       .foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8.5px;color:var(--muted);flex:none}
       .body{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column}
-      .sheet.measuring .body{display:block}
       .body>.blk{flex:0 0 auto;margin-bottom:0}
+      .sheet.settled .body>.blk:not([data-sign]){flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+      .sheet.settled .gallery{margin-top:auto}
       .sheet .body>.blk[data-sign]{flex:0 0 auto;display:block}          /* the signatures never grow; the section takes the room */
       .page-title{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--royal);padding-bottom:7px;margin:0 0 12px}
       .page-title p{margin:0;color:var(--royal);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
@@ -3638,7 +3645,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
 
       /* Detail */
       .report-section{border:1px solid var(--line);border-radius:9px;overflow:hidden;break-inside:avoid;page-break-inside:avoid}
-      .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:var(--headpad,11px) 14px;background:var(--paper)}
+      .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--paper)}
       .section-head .kicker{display:block;color:var(--muted);font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
       .section-head h2{font-size:15px;color:var(--ink);margin:2px 0 0}
       .section-head .cont{font-size:10px;font-weight:700;color:var(--muted)}
@@ -3650,8 +3657,9 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       .detail-table th.n{width:10mm}
       .detail-table th.item-col{width:43%}
       .detail-table th.item-res{width:28mm;text-align:center}
-      .detail-table td{padding:var(--rowpad,9px) 12px;border-top:1px solid var(--line);vertical-align:middle;font-size:var(--fs,11px);line-height:1.4}
-      .detail-table tbody tr{height:var(--rowh,auto)}
+      .detail-table td{padding:5px 12px;border-top:1px solid var(--line);vertical-align:middle;font-size:11.5px;line-height:1.35}
+      .detail-table td.item-label{font-size:12px}
+      .detail-table tbody tr{height:var(--rowh,15mm)}
       .detail-table tbody tr:nth-child(even) td{background:#FAFBFC}
       .item-label{color:var(--deep);font-weight:600;overflow-wrap:anywhere}
       td.item-res{text-align:center}
@@ -3660,9 +3668,20 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       td.item-res .res{min-width:11mm;text-align:center}
       .comments{color:#43536B;overflow-wrap:anywhere}
       .comments .empty{display:block;text-align:left}
-      .photo-strip{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
-      .photo-strip img{width:var(--photo,74px);height:var(--photo,74px);border-radius:6px;object-fit:cover;border:1px solid var(--line)}
-      .detail-table tfoot td{background:var(--paper);color:var(--deep);font-size:var(--fs,11px)}
+      .ph-ref{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#E7EEF7;color:var(--royal);font-size:9px;font-weight:800;white-space:nowrap}
+      .comments .ph-ref:first-child{margin-left:0}
+
+      /* Evidence photos: one gallery under the table, sized to the paper that is left */
+      .gallery{margin-top:10px;border:1px solid var(--line);border-radius:9px;padding:10px 12px 12px;break-inside:avoid}
+      .gal-head{font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--royal);margin-bottom:8px}
+      .gal-head small{margin-left:6px;color:var(--muted);font-size:9px;letter-spacing:0}
+      .gal-grid{display:grid;grid-template-columns:repeat(var(--gcols,4),var(--gw,40mm));gap:8px;justify-content:start}
+      .gal-grid figure{margin:0;min-width:0}
+      .gal-img{width:100%;aspect-ratio:4/3;background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+      .gal-img img{width:100%;height:100%;object-fit:contain;display:block}
+      .gal-grid figcaption{margin-top:3px;font-size:8.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .gal-grid figcaption b{color:var(--deep)}
+      .detail-table tfoot td{background:var(--paper);color:var(--deep);font-size:11.5px;padding:8px 12px}
       .detail-table tfoot b{display:block;color:var(--royal);font-size:9px;text-transform:uppercase;letter-spacing:.07em}
       .detail-table tfoot span{display:block;margin-top:3px}
       .sign{display:grid;grid-template-columns:repeat(2,minmax(0,62mm));gap:28px;margin-top:10mm}
@@ -3786,52 +3805,41 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
         return last?last.getBoundingClientRect().bottom-box.top:0;
       }
       function free(body){ return body.getBoundingClientRect().height-used(body); }
-      // Roomy first, tighter only as the content demands it: row padding, type, photo size
-      // and the header move together so the page keeps its proportions.
-      var DENSITY=[
-        {pad:11,fs:12.5,photo:106,head:14},
-        {pad:10,fs:12,photo:98,head:13},
-        {pad:10,fs:11.5,photo:92,head:13},
-        {pad:9,fs:11,photo:80,head:12},
-        {pad:7.5,fs:10.5,photo:70,head:11},
-        {pad:6,fs:10,photo:62,head:10},
-        {pad:5,fs:9.5,photo:54,head:9},
-        {pad:4,fs:9,photo:48,head:8}
-      ];
-      function density(sh,d){
-        sh.style.setProperty('--rowpad',d.pad+'px');
-        sh.style.setProperty('--fs',d.fs+'px');
-        sh.style.setProperty('--photo',d.photo+'px');
-        sh.style.setProperty('--headpad',d.head+'px');
-      }
-      // Rows share the spare paper, but only up to a comfortable height: a short touchpoint
-      // ends where its content ends instead of turning each row into a tall empty box.
-      var ROW_MAX=Math.round(18*3.78);                                  // 18mm
-      function evenRows(sh,body){
-        var tb=body.querySelector('.detail-table tbody');
-        if(!tb||!tb.rows.length) return;
-        var even=Math.min(ROW_MAX,(tb.getBoundingClientRect().height+free(body)-4)/tb.rows.length);
-        if(even<=0) return;
-        for(var h=even;h>0;h-=4){                                       // back off until nothing spills
-          sh.style.setProperty('--rowh',h+'px');
-          if(free(body)>=4) return;
+      // Every touchpoint page uses the same row height and type; only the photo gallery under
+      // the table changes size, taking the paper that is left.
+      var MM=3.78, GAP=8, CAP=16;                                     // gap between tiles, caption height (px)
+      function sizeGallery(body,gal){
+        var grid=gal.querySelector('.gal-grid'), n=grid.children.length;
+        if(!n) return true;
+        var W=grid.getBoundingClientRect().width;
+        gal.style.setProperty('--gcols','1'); gal.style.setProperty('--gw','20mm');
+        var room=free(body)+grid.getBoundingClientRect().height;        // what the grid may occupy
+        var best=null;
+        for(var cols=1;cols<=8;cols++){
+          var w=Math.min(58*MM,(W-GAP*(cols-1))/cols);                  // a lone photo stays a sensible size
+          if(w<18*MM) break;
+          var rows=Math.ceil(n/cols), h=rows*(w*0.75+CAP)+(rows-1)*GAP;
+          if(h<=room-6&&(!best||w>best.w)) best={cols:cols,w:w};
         }
-        sh.style.removeProperty('--rowh');
+        if(!best){ var c=Math.max(1,Math.floor((W+GAP)/(18*MM+GAP))); best={cols:c,w:18*MM}; }
+        gal.style.setProperty('--gcols',String(best.cols));
+        gal.style.setProperty('--gw',best.w+'px');
+        for(var k=0;k<12&&free(body)<4;k++){                          // measured, not assumed
+          best.w-=3; if(best.w<14*MM) break;
+          gal.style.setProperty('--gw',best.w+'px');
+        }
+        return free(body)>=4;
       }
       function fitToPage(sh){
         var body=sh.querySelector('.body'), card=body.firstElementChild;
-        sh.classList.add('measuring');                                  // measure at natural height
-        var ok=false;
-        for(var i=0;i<DENSITY.length;i++){
-          density(sh,DENSITY[i]);
-          if(free(body)>=4){ ok=true; break; }
+        var gal=body.querySelector('.gallery');
+        if(gal) gal.style.setProperty('--gw','20mm');
+        for(var mm=15;mm>=11;mm--){                                   // rows give way only if the page is truly full
+          sh.style.setProperty('--rowh',mm+'mm');
+          if(gal?sizeGallery(body,gal):free(body)>=4){ sh.classList.add('settled'); return true; }
         }
-        sh.classList.remove('measuring');
-        if(ok){ evenRows(sh,body); return ok; }
-        if(!card) return ok;
-        sh.classList.add('measuring');                                  // more than one page holds even at its tightest
-        // Scale the whole card to the paper. A wider box wraps text into fewer lines, so the
-        // factor is settled over a few passes rather than guessed once.
+        if(!card) return false;
+        // Nothing split and nothing lost: an over-full page is scaled to the paper as a whole.
         card.style.transformOrigin='top left'; card.style.transform='';
         var k=1;
         for(var p=0;p<5;p++){
