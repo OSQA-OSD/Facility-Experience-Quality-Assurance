@@ -924,9 +924,6 @@ body.nav-rail #acct-row{justify-content:center}
   .pb-step i{font-size:.68rem}
   .pb-step small{display:none}
   #pb-progress{order:5;max-width:none;flex-basis:100%}
-  #sync-chip{font-size:0;padding:0;width:10px;height:10px;flex:0 0 10px;border-radius:50%;overflow:hidden;text-indent:-999px}
-  #sync-chip>*{display:none}
-  #sync-chip.ok{background:var(--good)}#sync-chip.syncing{background:var(--warn)}#sync-chip.err{background:var(--danger)}
   #insp-layout.on{display:block}
   #insp-layout.on #sec-switch{position:static;padding:14px 13px 0;max-height:none}
   #ss-list{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px}
@@ -1088,6 +1085,15 @@ html[data-pointer=mouse] .ph-cam{display:none}
 #sync-chip.ok{background:#d1fae5;color:#065f46}
 #sync-chip.syncing{background:#fef3c7;color:#92400e}
 #sync-chip.err{background:#fee2e2;color:#991b1b}
+#sync-chip .sc-short{display:none}
+/* On a phone the connection only speaks up when there is something to say: nothing while all is
+   well, a short word ("Saving…", "Offline") when it is not. */
+@media(max-width:780px){
+  #sync-chip.ok{display:none}
+  #sync-chip{padding:3px 9px;font-size:.66rem}
+  #sync-chip .sc-full{display:none}
+  #sync-chip .sc-short{display:inline}
+}
 /* Connection indicator on sidebar */
 #conn-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;margin-right:4px;transition:background .3s}
 #conn-dot.online{background:#00843D}
@@ -2460,9 +2466,11 @@ function setSyncChip(state, msg){
   const chip=document.getElementById('sync-chip');
   const dot=document.getElementById('conn-dot');
   chip.className='';chip.id='sync-chip';
-  if(state==='ok'){    chip.classList.add('ok');   chip.innerHTML='&#10003; '+msg; dot.className='online'; dbOnline=true; }
-  if(state==='sync'){  chip.classList.add('syncing'); chip.innerHTML='&#8635; '+msg; dot.className=''; dbOnline=true; }
-  if(state==='err'){   chip.classList.add('err');  chip.innerHTML='&#9888; '+msg; dot.className='offline'; dbOnline=false; }
+  const both=(icon,full,short)=>`<span class="sc-full">${icon} ${ovEsc(full)}</span><span class="sc-short">${icon} ${ovEsc(short)}</span>`;
+  chip.title=msg;
+  if(state==='ok'){    chip.classList.add('ok');   chip.innerHTML=both('&#10003;',msg,'Online'); dot.className='online'; dbOnline=true; }
+  if(state==='sync'){  chip.classList.add('syncing'); chip.innerHTML=both('&#8635;',msg,String(msg).split(/[ …]/)[0]+'…'); dot.className=''; dbOnline=true; }
+  if(state==='err'){   chip.classList.add('err');  chip.innerHTML=both('&#9888;',msg,'Offline'); dot.className='offline'; dbOnline=false; }
 }
 
 // ═══════════════════════════════════════════════════════════
