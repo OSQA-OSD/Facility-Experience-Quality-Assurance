@@ -388,12 +388,8 @@ async function deleteAssignment(env, id) {
 
 const QUARTER_RE = /^\d{4}-Q[1-4]$/;
 
-async function officerBoard(env, viewer, url) {
-  const quarter = url.searchParams.get('quarter') || '';
-  const type = url.searchParams.get('type') || '';
-  if (!QUARTER_RE.test(quarter) || !ASSIGNMENT_TYPES.has(type)) {
-    return fail('quarter (YYYY-Qn) and a valid type (BOQI/EOQI) are required', 400);
-  }
+/** Every building for one quarter and type: who holds it, and what came back. */
+async function quarterBoard(env, quarter, type) {
   const [b, a, u, i] = await Promise.all([
     env.DB.prepare('SELECT id, location, division, area, name FROM buildings ORDER BY division, area, name').all(),
     env.DB.prepare('SELECT id, building_id, auditor_id, quarter, type, assigned_by, created_at, updated_at FROM assignments').all(),
@@ -439,6 +435,16 @@ async function officerBoard(env, viewer, url) {
   });
   const boardReviews = await reviewStateFor(env, buildings.map((b) => b.inspectionId));
   for (const b of buildings) b.review = b.inspectionId ? (boardReviews.get(b.inspectionId) || { status: 'pending' }) : null;
+  return { buildings, assignments, users, results, inPeriod };
+}
+
+async function officerBoard(env, viewer, url) {
+  const quarter = url.searchParams.get('quarter') || '';
+  const type = url.searchParams.get('type') || '';
+  if (!QUARTER_RE.test(quarter) || !ASSIGNMENT_TYPES.has(type)) {
+    return fail('quarter (YYYY-Qn) and a valid type (BOQI/EOQI) are required', 400);
+  }
+  const { buildings, assignments, users, results, inPeriod } = await quarterBoard(env, quarter, type);
 
   // Auditors: everyone active, plus suspended ones still holding work this period.
   const openElsewhere = new Map();
@@ -469,6 +475,29 @@ async function officerBoard(env, viewer, url) {
 
   const quarters = [...new Set(assignments.map((x) => x.quarter))].sort().reverse();
   return json({ quarter, type, quarters, buildings, auditors, events, serverTime: new Date().toISOString() });
+}
+
+/** The quarter's plan, as everyone may see it: each auditor's buildings, and the whole list. */
+async function assignmentSchedule(env, quarter, type) {
+  const { buildings, assignments, users, inPeriod } = await quarterBoard(env, quarter, type);
+  const byAuditor = new Map();
+  for (const x of inPeriod) {
+    const entry = byAuditor.get(x.auditor_id) || { id: x.auditor_id, name: users.get(x.auditor_id)?.name || 'Unknown', count: 0, completed: 0 };
+    entry.count += 1;
+    byAuditor.set(x.auditor_id, entry);
+  }
+  for (const b of buildings) {
+    if (b.auditorId && b.status === 'completed') byAuditor.get(b.auditorId).completed += 1;
+  }
+  const auditors = [...byAuditor.values()].sort((x, y) => x.name.localeCompare(y.name));
+  const assigned = buildings.filter((b) => b.assignmentId).length;
+  const completed = buildings.filter((b) => b.status === 'completed').length;
+  const quarters = [...new Set(assignments.map((x) => x.quarter))].sort().reverse();
+  return json({
+    quarter, type, quarters, auditors,
+    buildings: buildings.map(({ review, assignmentId, assignedBy, completedAt, ...rest }) => rest),
+    totals: { buildings: buildings.length, assigned, completed, unassigned: buildings.length - assigned, auditors: auditors.length },
+  });
 }
 
 /* Assign (or unassign) many buildings in one go. Uses json_each so the
@@ -1172,6 +1201,12 @@ async function handleAssignments(request, env, url, path, user) {
   const canManage = can(user, 'assign');
   const canView = canManage || can(user, 'team');
 
+  if (path === 'assignments/schedule' && method === 'GET') {
+    const quarter = url.searchParams.get('quarter') || '';
+    const type = url.searchParams.get('type') || '';
+    if (!QUARTER_RE.test(quarter) || !ASSIGNMENT_TYPES.has(type)) return fail('quarter (YYYY-Qn) and a valid type (BOQI/EOQI) are required', 400);
+    return assignmentSchedule(env, quarter, type);          // the plan is for the whole team to see
+  }
   if (path === 'assignments/auditors' && method === 'GET') {
     if (!canManage) return fail('you do not have permission to view this', 403);
     return listAuditors(env, user);

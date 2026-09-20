@@ -164,6 +164,20 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .hero-actions .page-tab,.hero-actions .page-export{flex:none;white-space:nowrap}
 .hero-actions .page-export{margin-left:0}
 @media(max-width:420px){.hero-actions{gap:5px}.hero-actions .page-tabs{gap:5px}.hero-actions .page-tab,.hero-actions .page-export{padding:6px 11px;font-size:.72rem}}
+/* Quick assign: pick an auditor once, then one tap per building */
+.of-quick{max-width:220px}
+.of-quick.on{border-color:var(--teal);box-shadow:0 0 0 2px rgba(38,168,171,.16);font-weight:800;color:var(--royal-dk)}
+.of-tap{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed var(--border);background:#fff;color:var(--royal);
+  border-radius:999px;padding:6px 13px;font-family:var(--font);font-size:.76rem;font-weight:800;cursor:pointer;transition:background .12s,border-color .12s}
+.of-tap:hover{border-color:var(--teal);background:rgba(38,168,171,.08)}
+.of-tap.on{border-style:solid;border-color:var(--good);background:rgba(0,132,61,.1);color:var(--good)}
+.of-tap[disabled]{opacity:.6;cursor:default}
+/* Quarter schedule */
+.sch-aud{margin-bottom:14px}
+.sch-aud-hd{display:flex;align-items:center;gap:11px;padding:12px 16px;border-bottom:1px solid var(--bg)}
+.sch-aud-hd>div{min-width:0;flex:1}
+.sch-aud-hd b{display:block;font-size:.9rem;color:var(--royal-dk)}
+.sch-aud-hd small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}
 /* Home quick actions */
 #home-actions{padding:16px 44px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
 #home-actions:empty{display:none}
@@ -1148,6 +1162,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="ni active" data-page="pg-home"><svg data-lucide="layout-dashboard" width="18" height="18"></svg><span class="ni-txt">Home</span></div>
       <div class="ni" id="my-assignments-link" data-page="pg-auditor" hidden><svg data-lucide="calendar-check" width="18" height="18"></svg><span class="ni-txt">My Assignments</span><span class="ns" id="ns-assign">–</span></div>
       <div class="ni" id="inspection-link" data-page="pg-new" hidden><svg data-lucide="clipboard-check" width="18" height="18"></svg><span class="ni-txt">Inspection</span><span class="ns" id="ns-progress">0%</span></div>
+      <div class="ni" id="schedule-link" data-page="pg-schedule"><svg data-lucide="calendar-range" width="18" height="18"></svg><span class="ni-txt">Quarter Schedule</span></div>
       <div class="ni" id="library-link" data-page="pg-library"><svg data-lucide="file-search" width="18" height="18"></svg><span class="ni-txt">Inspection Reports</span><span class="ns ns-alert" id="ns-review"></span></div>
     </div>
     <div class="nav-group">
@@ -1572,6 +1587,8 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="hist-hdr">
         <div><span class="sec-eyebrow">Buildings</span><h3><svg data-lucide="building-2" width="18" height="18"></svg> Assign Buildings <button type="button" class="info-tip" data-tip="of-buildings" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         <div class="ov-tools">
+          <select id="of-quick" class="of-quick" aria-label="Quick assign to"><option value="">Quick assign: off</option></select>
+          <button class="rp-link" id="of-copy-last" title="Give the same auditors the buildings they had last quarter"><svg data-lucide="copy" width="13" height="13" style="vertical-align:-2px"></svg> Copy last quarter</button>
           <input type="text" id="of-search" placeholder="Search building or auditor…">
           <select id="of-area"><option value="">All areas</option></select>
           <select id="of-status">
@@ -1603,6 +1620,44 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <button class="btn bo" style="background:#fff" id="of-bulk-unassign">Unassign</button>
         <button class="rp-link" id="of-bulk-clear">Clear</button>
       </div>
+    </div>
+  </div>
+
+  <!-- QUARTER SCHEDULE (everyone) -->
+  <div class="page" id="pg-schedule">
+    <div class="home-hero">
+      <h2>Quarter <span>Schedule</span></h2>
+      <p class="sub">Who is inspecting which building this quarter — a table for each auditor, and the full list in one place.</p>
+      <div class="hero-actions">
+        <button class="page-export rp-export" type="button" data-ex-ctx="schedule" title="Download this schedule as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
+      </div>
+    </div>
+
+    <div class="hist-filters ov-filters">
+      <select id="sch-quarter" aria-label="Quarter"></select>
+      <select id="sch-type" aria-label="Inspection type">
+        <option value="BOQI">BOQI — Beginning of Quarter</option>
+        <option value="EOQI">EOQI — End of Quarter</option>
+      </select>
+      <select id="sch-auditor" aria-label="Auditor"><option value="">All auditors</option></select>
+      <span class="ov-updated" id="sch-note"></span>
+      <button type="button" class="info-tip" data-tip="sch-tables" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
+      <button class="rp-link" id="sch-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
+    </div>
+
+    <div class="ov-stats" id="sch-stats"></div>
+
+    <div class="ov-section">
+      <div class="hist-hdr"><div><span class="sec-eyebrow">By auditor</span><h3><svg data-lucide="user-check" width="18" height="18"></svg> Each auditor's buildings</h3></div></div>
+      <div id="sch-by-auditor"></div>
+    </div>
+
+    <div class="ov-section">
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Full list</span><h3><svg data-lucide="list" width="18" height="18"></svg> All assigned buildings</h3></div>
+        <span class="ov-updated" id="sch-all-note"></span></div>
+      <div class="ov-panel"><div class="ov-scroll"><table class="ov-table" id="sch-all-table">
+        <thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Auditor</th><th>Status</th><th>Result</th></tr></thead>
+        <tbody id="sch-all-rows"></tbody></table></div></div>
     </div>
   </div>
 
@@ -2404,6 +2459,8 @@ let ovData = null, ovChart = null, ovReady = false; // Team Overview state
 let auData = null, auReady = false, auReq = 0, auId = null, auCharts = {}, auFilter = {status:'todo', type:'all'}; // Auditor profile state
 let inBuildings = null, inReady = false, inAssignCache = {}; // Inspection details state
 let adUsers = [], adReady = false, adTab = 'users', adRoleDefaults = null, adBuildings = null, adEditingBuilding = null, adAudit = [], adAuditMore = false, adOpenUserId = null, adUserFilter = 'all', adAuditFilter = 'all', lastSection = 'pg-s0'; // Admin Control state; last opened inspection section
+let schData = null, schReady = false, schReq = 0, schView = null;   // Quarter schedule state
+let ofQuick = '';                                                   // quick assign: the auditor a tap gives a building to
 let ofData = null, ofView = null, ofReady = false, ofReq = 0, ofPrevDone = null, ofPrevKey = '', ofSelected = new Set(), ofRowsStale = false; // Assign & Track state
 let libReady = false, libReq = 0, libRows = [], libData = null, libStatus = '', libPending = {}, libTimer = null, rvId = null, rvData = null; // Inspection Reports
 let cxReady = false, cx = null, cxView = null, cxChart = null; // Custom Report
@@ -2660,7 +2717,7 @@ function updateCommentHint(si,ii){
 // so a page can be bookmarked, shared, or restored with the browser's
 // back/forward buttons.
 // ═══════════════════════════════════════════════════════════
-const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-auditor','pg-overview','pg-reports','pg-officer','pg-admin','pg-library']);
+const VALID_PAGES=new Set(['pg-home','pg-new','pg-s0','pg-s1','pg-s2','pg-s3','pg-s4','pg-s5','pg-s6','pg-s7','pg-s8','pg-s9','pg-scorecard','pg-auditor','pg-overview','pg-reports','pg-officer','pg-admin','pg-library','pg-schedule']);
 function hashToPage(hash){
   const id=(hash||'').replace(/^#/,'').split('/')[0];
   if(id==='pg-assignments') return 'pg-auditor';   // older notification links
@@ -2700,6 +2757,7 @@ function nav(pageId){
   if(pageId==='pg-reports') loadReports();
   if(pageId==='pg-library'){ loadLibrary(); const rid=Number(hashParam(location.hash)); if(rid&&rid!==rvId) openReport(rid,{fromHash:true}); }
   if(pageId==='pg-officer') loadOfficer();
+  if(pageId==='pg-schedule') loadSchedule();
   if(pageId==='pg-admin') loadAdmin();
   updateTopBar(pageId);
   if(pageId.startsWith('pg-s')) syncFormToState();
@@ -2921,7 +2979,7 @@ function updateTopBar(pageId){
   document.getElementById('pb-name').textContent=link?link.querySelector('.ni-txt').textContent:'';
   const sec=/^pg-s(\d)$/.exec(pageId);
   document.getElementById('pb-sub').textContent=
-    pageId==='pg-overview'?'Overview':pageId==='pg-officer'?'Assign & Track':sec?SECTIONS[+sec[1]].title:
+    pageId==='pg-overview'?'Overview':pageId==='pg-officer'?'Assign & Track':pageId==='pg-schedule'?(schData?`${schData.quarter} · ${schData.type}`:''):sec?SECTIONS[+sec[1]].title:
     pageId==='pg-auditor'&&auData&&!auData.isSelf?auData.auditor.name:pageId==='pg-admin'?adTabLabel(adTab):pageId==='pg-reports'?rpTabLabel(rpTab):'';
   const inspecting=group==='inspection';
   document.getElementById('pb-steps').hidden=!inspecting;
@@ -4810,6 +4868,12 @@ function ofQuarterOptions(extra=[]){
   }
   return [...new Set([...out,...extra.filter(v=>/^\d{4}-Q[1-4]$/.test(v))])].sort().reverse();
 }
+/** A name short enough for a button: the whole name when it fits, otherwise the first part. */
+function firstName(name){
+  const full=String(name||'').trim();
+  if(!full) return 'the auditor';
+  return full.length<=16?full:full.split(/\s+/)[0];
+}
 function ofInitials(name){ return String(name||'?').split(/\s+/).filter(Boolean).map(p=>p[0]).slice(0,2).join('').toUpperCase(); }
 function ofOnPage(){ return document.getElementById('pg-officer').classList.contains('active'); }
 function showToast(msg,isErr){
@@ -4893,6 +4957,15 @@ function initOfficer(){
     const sel=e.target.closest('select[data-building]');
     if(sel) ofAssignOne(Number(sel.dataset.building),sel.value,sel);
   });
+  rowsEl.addEventListener('click',e=>{
+    const tap=e.target.closest('[data-quick]');
+    if(!tap||!ofData) return;
+    const id=Number(tap.dataset.quick), b=ofData.buildings.find(x=>x.buildingId===id);
+    tap.disabled=true;
+    ofAssignOne(id,b&&b.auditorId===ofQuick?'':ofQuick);          // tapping the same auditor again takes it back
+  });
+  document.getElementById('of-quick').addEventListener('change',e=>{ ofQuick=e.target.value; renderOfRows(); });
+  document.getElementById('of-copy-last').addEventListener('click',ofCopyLastQuarter);
   // A refresh never re-draws the table under an open auditor picker; it catches up on blur.
   rowsEl.addEventListener('focusout',()=>setTimeout(()=>{ if(ofRowsStale&&!rowsEl.contains(document.activeElement)) renderOfRows(); },0));
   document.getElementById('of-check-all').addEventListener('change',e=>{
@@ -5056,9 +5129,14 @@ function renderOfRows(fresh=[]){
   rowsEl.innerHTML=rows.length?rows.map(b=>{
     const done=b.status==='completed', picked=ofSelected.has(b.buildingId);
     const held=b.auditorId&&!active.some(a=>a.id===b.auditorId)?`<option value="${ovEsc(b.auditorId)}" selected disabled>${ovEsc(b.auditorName||'Unknown')} (not available)</option>`:'';
+    const quick=ofQuick&&active.some(a=>a.id===ofQuick)?active.find(a=>a.id===ofQuick):null;
     const auditorCell=done
       ?`<span class="of-lock"><svg data-lucide="lock" width="12" height="12"></svg> ${ovEsc(b.auditorName||'—')}</span><small>Locked — already inspected</small>`
-      :`<select class="of-sel${b.auditorId?'':' unassigned'}" data-building="${b.buildingId}" aria-label="Auditor for ${ovEsc(b.name)}">
+      :quick
+        ?(b.auditorId===quick.id
+          ?`<button class="of-tap on" data-quick="${b.buildingId}" title="Tap to take it back"><svg data-lucide="check" width="13" height="13"></svg> ${ovEsc(firstName(quick.name))}</button><small>Tap to unassign</small>`
+          :`<button class="of-tap" data-quick="${b.buildingId}"><svg data-lucide="plus" width="13" height="13"></svg> Give to ${ovEsc(firstName(quick.name))}</button>${b.auditorName?`<small>now ${ovEsc(b.auditorName)}</small>`:''}`)
+        :`<select class="of-sel${b.auditorId?'':' unassigned'}" data-building="${b.buildingId}" aria-label="Auditor for ${ovEsc(b.name)}">
           <option value="">— Unassigned —</option>${held}
           ${active.map(a=>`<option value="${ovEsc(a.id)}"${a.id===b.auditorId?' selected':''}>${ovEsc(assigneeLabel(a))} (${counts.get(a.id)||0})</option>`).join('')}
         </select>${b.assignedBy?`<small>by ${ovEsc(b.assignedBy)} · ${timeAgo(b.assignedAt)}</small>`:''}`;
@@ -5073,7 +5151,7 @@ function renderOfRows(fresh=[]){
   }).join(''):'<tr><td colspan="6" class="ov-empty">No buildings match these filters.</td></tr>';
   const scopedTotal=ofData.buildings.filter(b=>!ofVal('of-division')||b.division===ofVal('of-division')).length;
   document.getElementById('of-count').textContent=`${rows.length} of ${scopedTotal} buildings shown${ofSelected.size?` · ${ofSelected.size} selected`:''}`;
-  ofSyncCheckAll(); ofUpdateBulk();
+  ofSyncCheckAll(); ofUpdateQuick(); ofUpdateBulk();
   lucide.createIcons();
 }
 function ofSyncCheckAll(){
@@ -5082,6 +5160,15 @@ function ofSyncCheckAll(){
   box.checked=!!ids.length&&n===ids.length;
   box.indeterminate=n>0&&n<ids.length;
   box.disabled=!ids.length;
+}
+function ofUpdateQuick(){
+  const sel=document.getElementById('of-quick'), counts=ofCounts();
+  const active=ofActiveAuditors();
+  if(ofQuick&&!active.some(a=>a.id===ofQuick)) ofQuick='';
+  sel.innerHTML='<option value="">Quick assign: off</option>'
+    +active.map(a=>`<option value="${ovEsc(a.id)}"${a.id===ofQuick?' selected':''}>Quick assign: ${ovEsc(assigneeLabel(a))} (${counts.get(a.id)||0})</option>`).join('');
+  sel.value=ofQuick;
+  sel.classList.toggle('on',!!ofQuick);
 }
 function ofUpdateBulk(){
   const n=ofSelected.size;
@@ -5097,8 +5184,10 @@ function ofUpdateBulk(){
 async function ofAssignOne(buildingId,auditorId,el){
   const b=ofData.buildings.find(x=>x.buildingId===buildingId);
   if(!b) return;
-  const who=auditorId?el.options[el.selectedIndex].text.replace(/ \(\d+\)$/,'').replace(/ · you$/,' (you)'):'';
-  el.disabled=true;
+  const who=!auditorId?''
+    :el?el.options[el.selectedIndex].text.replace(/ \(\d+\)$/,'').replace(/ · you$/,' (you)')
+      :(ofData.auditors.find(a=>a.id===auditorId)?.name||'the auditor');
+  if(el) el.disabled=true;
   try{
     let res=null;
     if(auditorId){
@@ -5112,8 +5201,43 @@ async function ofAssignOne(buildingId,auditorId,el){
   }catch(err){
     showToast(err.message,true);
   }
-  el.blur();
+  if(el) el.blur();
   await loadOfficer({quiet:true});
+}
+
+/** The quarter before this one, same type — the usual starting point for a new quarter. */
+function ofPreviousQuarter(q){
+  const m=/^(\d{4})-Q([1-4])$/.exec(q||'');
+  if(!m) return '';
+  const y=+m[1], n=+m[2];
+  return n===1?`${y-1}-Q4`:`${y}-Q${n-1}`;
+}
+async function ofCopyLastQuarter(){
+  const btn=document.getElementById('of-copy-last');
+  const quarter=ofVal('of-quarter'), type=ofVal('of-type'), prev=ofPreviousQuarter(quarter);
+  if(!prev||!ofData) return;
+  btn.disabled=true;
+  try{
+    const res=await fetch(`/api/assignments/schedule?quarter=${encodeURIComponent(prev)}&type=${encodeURIComponent(type)}`,{cache:'no-store'});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'Could not read last quarter.');
+    const free=new Set(ofData.buildings.filter(b=>b.status==='unassigned').map(b=>b.buildingId));
+    const canTake=new Map(ofActiveAuditors().map(a=>[a.id,a.name]));
+    const plan=new Map();                                          // auditor → buildings they had, still free now
+    (d.buildings||[]).forEach(b=>{
+      if(!b.auditorId||!free.has(b.buildingId)||!canTake.has(b.auditorId)) return;
+      if(!plan.has(b.auditorId)) plan.set(b.auditorId,[]);
+      plan.get(b.auditorId).push(b.buildingId);
+    });
+    const total=[...plan.values()].reduce((n,ids)=>n+ids.length,0);
+    if(!total){ showToast(`Nothing to copy from ${prev} — those buildings are already assigned or their auditors are unavailable.`,true); return; }
+    const who=[...plan.entries()].map(([id,ids])=>`${canTake.get(id)}: ${ids.length}`).join(' · ');
+    if(!confirm(`Copy ${prev} into ${quarter} (${type})?\n\n${total} building${total===1?'':'s'} would be assigned as they were.\n${who}\n\nNothing already assigned or inspected is touched.`)) return;
+    for(const [auditorId,ids] of plan) await ofBulk(auditorId,ids);
+    showToast(`${total} building${total===1?'':'s'} copied from ${prev}`);
+    await loadOfficer();
+  }catch(err){ showToast(err.message,true); }
+  finally{ btn.disabled=false; }
 }
 
 async function ofBulk(auditorId,buildingIds){
@@ -5546,6 +5670,7 @@ const TIPS={
   'ov-team':['Officers and auditors',['Auditors (and anyone holding buildings): buildings assigned, how many are done and their average score on completed work. Officers: assignments they made and how many are complete.','Click a person to open their profile.']],
   'ov-area':['By area',['Buildings, assignments, completion and average score for each area.']],
   'ov-building':['By building',['Every building with its status for the filters: <b>Unassigned</b>, <b>Pending</b> (assigned, not inspected yet) or <b>Completed</b>, plus its number of inspections and latest score.']],
+  'sch-tables':['The quarter schedule',['Every building assigned for the chosen quarter and type. The first part gives each auditor a table of their own; the list underneath is the same buildings together, by division and area.','<b>Pending</b> means assigned but not inspected yet, <b>Completed</b> means the report is in — open it by tapping the score.','Export gives you the whole schedule or any single auditor\u2019s table, as PDF or Excel.']],
   'of-kpis':['Assign & Track cards',['For the chosen quarter and type: <b>Assigned</b> = buildings with someone assigned; <b>Completion</b> = completed ÷ assigned; <b>Pending</b> = assigned but not inspected; <b>Unassigned</b> = still need someone.','Click a card to filter the buildings table. The page refreshes itself every 30 seconds.']],
   'of-team':['Team progress',['One card per person holding buildings this quarter: completion %, assigned / done / pending, average score of completed buildings and when they last submitted. Click a card to show only their buildings.']],
   'of-area':['Progress by area',['How many buildings in each area are assigned, and how many of those are completed.']],
@@ -5882,6 +6007,115 @@ async function rvAction(act){
     afterReview(r.id,act,d.status);
     await openReport(r.id,{fromHash:true});
   }catch(err){ showToast(err.message,true); btns.forEach(b=>b.disabled=false); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// QUARTER SCHEDULE — the plan everyone can see
+// ═══════════════════════════════════════════════════════════
+// One table per auditor and one table of the whole list, from the same board the
+// officer assigns on, so the plan and the work never disagree.
+function schInit(){
+  if(schReady) return;
+  schReady=true;
+  document.getElementById('sch-quarter').innerHTML=ofQuarterOptions().map(q=>`<option value="${q}">${q}${q===ofCurrentQuarter()?' (current)':''}</option>`).join('');
+  document.getElementById('sch-quarter').value=ofCurrentQuarter();
+  ['sch-quarter','sch-type','sch-auditor'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{
+    if(id==='sch-auditor') renderSchedule(); else loadSchedule();
+  }));
+  document.getElementById('sch-refresh').addEventListener('click',()=>loadSchedule());
+}
+async function loadSchedule(){
+  schInit();
+  const req=++schReq, q=ofVal('sch-quarter'), t=ofVal('sch-type');
+  document.getElementById('sch-note').textContent='Loading…';
+  try{
+    const res=await fetch(`/api/assignments/schedule?quarter=${encodeURIComponent(q)}&type=${encodeURIComponent(t)}`,{cache:'no-store'});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'Could not load the schedule.');
+    if(req!==schReq) return;
+    schData=d;
+    const sel=document.getElementById('sch-auditor'), cur=sel.value;
+    sel.innerHTML='<option value="">All auditors</option>'+d.auditors.map(a=>`<option value="${ovEsc(a.id)}">${ovEsc(a.name)} (${a.count})</option>`).join('');
+    sel.value=d.auditors.some(a=>a.id===cur)?cur:'';
+    renderSchedule();
+    updateTopBar('pg-schedule');
+  }catch(err){
+    if(req!==schReq) return;
+    document.getElementById('sch-note').textContent='';
+    document.getElementById('sch-by-auditor').innerHTML=`<div class="ov-empty">${ovEsc(err.message)}</div>`;
+    document.getElementById('sch-all-rows').innerHTML=`<tr><td colspan="6" class="ov-empty">${ovEsc(err.message)}</td></tr>`;
+  }
+}
+const SCH_STATUS={completed:'Completed',pending:'Pending',unassigned:'Unassigned'};
+function schResult(b){
+  if(b.status!=='completed') return '<span style="color:var(--muted)">–</span>';
+  const score=b.inspectionId?`<button class="rp-link" style="padding:0" onclick="openReport(${b.inspectionId})" title="Open the report">${ovScore(b.score)}</button>`:ovScore(b.score);
+  return `${score}<small>${ovEsc(b.inspectionDate||'')}</small>`;
+}
+function renderSchedule(){
+  if(!schData) return;
+  const only=ofVal('sch-auditor');
+  const assigned=schData.buildings.filter(b=>b.auditorId);
+  const shown=only?assigned.filter(b=>b.auditorId===only):assigned;
+  const t=schData.totals;
+  const tile=(icon,value,label,note)=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b>${value}</b><span>${label}</span>${note?`<small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px">${note}</small>`:''}</div>`;
+  document.getElementById('sch-stats').innerHTML=
+    tile('building-2',`${t.assigned}/${t.buildings}`,'Buildings assigned',`${t.unassigned} still unassigned`)+
+    tile('users',t.auditors,'Auditors','with buildings this quarter')+
+    tile('circle-check',t.completed,'Completed',`${t.assigned-t.completed} still to inspect`)+
+    tile('calendar-range',`${schData.quarter}`,'Quarter',schData.type);
+
+  // A table of its own for every auditor.
+  const auditors=schData.auditors.filter(a=>!only||a.id===only);
+  document.getElementById('sch-by-auditor').innerHTML=auditors.length?auditors.map(a=>{
+    const rows=assigned.filter(b=>b.auditorId===a.id).sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name));
+    return `<div class="ov-panel sch-aud">
+      <div class="sch-aud-hd"><i class="of-av">${ovEsc(ofInitials(a.name))}</i>
+        <div><b>${ovEsc(a.name)}</b><small>${a.count} building${a.count===1?'':'s'} · ${a.completed} completed · ${a.count-a.completed} to go</small></div>
+        <button class="tool-x rp-export" data-ex-ctx="schedule" data-ex-block="aud-${ovEsc(a.id)}" title="Export this auditor's table"><svg data-lucide="download" width="14" height="14"></svg></button></div>
+      <div class="ov-scroll"><table class="ov-table"><thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Status</th><th>Result</th></tr></thead>
+        <tbody>${rows.map((b,i)=>`<tr><td>${i+1}</td><td><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
+          <td>${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
+          <td><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
+          <td>${schResult(b)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  }).join(''):'<div class="ov-panel"><div class="ov-empty">No buildings assigned for this quarter and type yet.</div></div>';
+
+  // And one list of the same buildings together.
+  const all=[...shown].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name));
+  document.getElementById('sch-all-rows').innerHTML=all.length?all.map((b,i)=>`<tr>
+    <td>${i+1}</td><td><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
+    <td>${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
+    <td>${ovEsc(b.auditorName||'—')}</td>
+    <td><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
+    <td>${schResult(b)}</td></tr>`).join(''):'<tr><td colspan="6" class="ov-empty">Nothing assigned yet.</td></tr>';
+  document.getElementById('sch-all-note').textContent=`${all.length} building${all.length===1?'':'s'}${only?' · filtered to one auditor':''}`;
+  document.getElementById('sch-note').textContent=`${schData.quarter} · ${schData.type}`;
+  schView={assigned,auditors:schData.auditors,totals:t,only};
+  lucide.createIcons({nodes:[document.getElementById('pg-schedule')]});
+}
+/** The schedule exports as it reads: a sheet per auditor, then the whole list. */
+function exModelSchedule(){
+  if(!schView||!schData) return null;
+  const head=['#','Building','Location','Division','Area','Status','Score','Inspected on','Auditor'];
+  const row=(b,i)=>[i+1,b.name,b.location,b.division,b.area,SCH_STATUS[b.status],b.score,b.inspectionDate,b.auditorName];
+  const sheetName=n=>String(n||'Auditor').replace(/[\\/?*\[\]:]/g,' ').slice(0,28);
+  const blocks=[{id:'summary',label:'Summary',sheet:'Summary',
+    kpis:[{label:'Quarter',value:`${schData.quarter} · ${schData.type}`},{label:'Buildings assigned',value:`${schView.totals.assigned} of ${schView.totals.buildings}`},
+      {label:'Auditors',value:schView.totals.auditors},{label:'Completed',value:schView.totals.completed}],
+    table:{head:['Auditor','Buildings','Completed','Still to inspect'],
+      rows:schView.auditors.map(a=>[a.name,a.count,a.completed,a.count-a.completed])}}];
+  schView.auditors.forEach(a=>{
+    const rows=schView.assigned.filter(b=>b.auditorId===a.id)
+      .sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name));
+    blocks.push({id:`aud-${a.id}`,label:`${a.name} · ${rows.length} building${rows.length===1?'':'s'}`,sheet:sheetName(a.name),
+      table:{head:head.slice(0,8),rows:rows.map((b,i)=>row(b,i).slice(0,8))}});
+  });
+  blocks.push({id:'all',label:'All assigned buildings',sheet:'All buildings',
+    table:{head,rows:[...schView.assigned].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name)).map(row)}});
+  return {title:'Quarter schedule',file:`schedule-${schData.quarter}-${schData.type}`,
+    note:`${schData.quarter} · ${schData.type}`,
+    context:[['Quarter',schData.quarter],['Type',schData.type],['Buildings assigned',`${schView.totals.assigned} of ${schView.totals.buildings}`],['Auditors',String(schView.totals.auditors)]],
+    blocks};
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -7140,7 +7374,7 @@ async function openExport(ctx,only){
   try{
     model=ctx==='insights'?exModelInsights():ctx==='builder'?exModelBuilder():ctx==='compare'?exModelCompare():ctx==='quality'?exModelQuality()
       :ctx==='custom'?exModelCustom():ctx==='overview'?exModelOverview():ctx==='officer'?exModelOfficer():ctx==='auditor'?exModelAuditor()
-        :ctx==='library'?await exModelLibrary():null;
+        :ctx==='library'?await exModelLibrary():ctx==='schedule'?exModelSchedule():null;
   }catch(err){
     if(exCtx===key){ closeModal('modal-export'); showToast(err.message||'Could not prepare the export.',true); }
     return;
