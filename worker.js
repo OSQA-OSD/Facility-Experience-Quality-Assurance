@@ -11,7 +11,7 @@ import {
 
 // API answers describe live data, so no browser may keep a copy — Safari in particular will
 // otherwise hand back an old list for the same URL.
-const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
+const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
 
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...extraHeaders } });
@@ -1986,7 +1986,11 @@ export default {
     try {
       return isApi ? await handleApi(request, env, url) : await handleAssets(request, env, url);
     } catch (err) {
-      if (isApi) return fail(err?.message || 'unexpected error', 500);
+      // A body that is not JSON is the caller's mistake, not a server fault.
+      if (isApi && err instanceof SyntaxError) return fail('the request body is not valid JSON', 400);
+      // Anything else stays in the log; the person sees a plain message, not a database error.
+      console.error('unhandled error', url.pathname, err && err.stack || err);
+      if (isApi) return fail('something went wrong on the server — please try again', 500);
       return new Response('Service temporarily unavailable.', { status: 503 });
     }
   },

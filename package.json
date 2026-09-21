@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build": "mkdir -p dist && cp index.html app.html login.html report.html journey-map-QA-2026-Q3-EOQ-009.svg osqa-logo.svg osqa-logo-white.svg osqa-icon.svg osqa-icon-180.png osqa-icon-512.png manifest.webmanifest dist/",
+    "build": "mkdir -p dist && cp index.html app.html login.html report.html journey-map-QA-2026-Q3-EOQ-009.svg osqa-logo.svg osqa-logo-white.svg osqa-icon.svg osqa-icon-180.png osqa-icon-512.png manifest.webmanifest _headers dist/",
     "migrate": "wrangler d1 migrations apply facility-qa --remote",
     "deploy": "npm run build && npm run migrate && wrangler deploy",
     "dev": "npm run build && wrangler dev"
