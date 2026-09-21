@@ -178,6 +178,39 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .sch-aud-hd>div{min-width:0;flex:1}
 .sch-aud-hd b{display:block;font-size:.9rem;color:var(--royal-dk)}
 .sch-aud-hd small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}
+/* Deadlines: the same chip wherever a due date is shown */
+.due{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.68rem;font-weight:800;white-space:nowrap;background:var(--bg);color:var(--royal-dk)}
+.due.soon{background:rgba(212,128,0,.13);color:var(--warn)}
+.due.over{background:rgba(240,95,65,.18);color:#B4310F}
+.due.met{background:rgba(0,132,61,.1);color:var(--good)}
+.due.late{background:rgba(240,95,65,.18);color:#B4310F}
+.of-due{border:1.5px solid var(--border);border-radius:7px;padding:4px 6px;font-family:var(--font);font-size:.72rem;font-weight:700;color:var(--text);background:#fff;
+  width:100%;min-width:0;max-width:152px}
+.of-due:focus{outline:none;border-color:var(--teal)}
+.of-due.over{border-color:#F05F41;color:#B4310F}
+.of-due.soon{border-color:var(--warn)}
+.of-bulk input[type=date]{border:none;border-radius:7px;padding:7px 10px;font-family:var(--font);font-size:.78rem;font-weight:700}
+/* On a phone every schedule row becomes a card: nothing is cut off and nothing scrolls sideways */
+@media(max-width:760px){
+  #pg-schedule .ov-scroll{overflow-x:visible}
+  .sch-t,.sch-t tbody,.sch-t tr,.sch-t td{display:block;width:auto}
+  .sch-t thead{display:none}
+  .sch-t tbody{counter-reset:schrow}
+  .sch-t tr{counter-increment:schrow;padding:13px 16px;border-bottom:1px solid var(--bg)}
+  .sch-t tr:last-child{border-bottom:none}
+  .sch-t td{border:none;padding:3px 0;display:flex;gap:14px;align-items:baseline;justify-content:space-between;font-size:.78rem}
+  .sch-t td::before{content:attr(data-l);flex:0 0 auto;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .sch-t td b,.sch-t td small{white-space:normal;text-align:right}
+  .sch-t td small{display:block;font-size:.68rem}
+  .sch-t td.num{display:none}
+  .sch-t td.bld{display:block;padding:0 0 7px;text-align:left}
+  .sch-t td.bld::before{content:counter(schrow) '. ';color:var(--royal);font-size:.86rem;font-weight:900}
+  .sch-t td.bld b{font-size:.88rem;color:var(--royal-dk)}
+  .sch-t td.bld small{text-align:left;color:var(--muted)}
+  .sch-t td.ov-empty{display:block;text-align:center}
+  .sch-t td.ov-empty::before{content:''}
+  .sch-aud-hd{padding:12px 16px}
+}
 /* Home quick actions */
 #home-actions{padding:16px 44px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
 #home-actions:empty{display:none}
@@ -654,6 +687,14 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .modal-box.ex-box{width:560px;max-height:92vh;overflow:auto;padding:24px}
 .ex-hd{display:flex;align-items:center;gap:10px}.ex-hd h3{margin:0}
 .ex-box .msub{margin-bottom:14px}
+.modal-box .ex-opt{display:flex;align-items:flex-start;gap:10px;margin:14px 0 0;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;
+  cursor:pointer;background:#fff;text-transform:none;letter-spacing:0;color:var(--text)}
+.modal-box .ex-opt[hidden]{display:none}
+.modal-box .ex-opt:hover{border-color:var(--teal)}
+.modal-box .ex-opt:has(input:checked){border-color:var(--royal);background:#f3f6fd}
+.ex-opt input{width:16px!important;height:16px;margin:2px 0 0!important;accent-color:var(--royal);flex:none}
+.ex-opt b{display:block;font-size:.8rem;font-weight:800;color:var(--royal-dk)}
+.ex-opt small{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:2px;line-height:1.35}
 .ex-formats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .modal-box .ex-fmt,.modal-box .ex-row{text-transform:none;letter-spacing:0}
 .modal-box .ex-fmt{position:relative;display:grid;gap:6px;margin:0;color:var(--text);font-size:.8rem;border:1.5px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:border-color .12s,background .12s}
@@ -1605,7 +1646,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <div class="ov-scroll"><table class="ov-table of-table">
           <thead><tr>
             <th class="of-chk"><input type="checkbox" id="of-check-all" title="Select every building shown that can still change"></th>
-            <th>Building</th><th>Division / Area</th><th>Auditor</th><th>Status</th><th>Result</th>
+            <th>Building</th><th>Division / Area</th><th>Auditor</th><th>Deadline</th><th>Status</th><th>Result</th>
           </tr></thead>
           <tbody id="of-rows"></tbody>
         </table></div>
@@ -1614,7 +1655,10 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="of-bulk" id="of-bulk" hidden>
         <b id="of-sel-count">0 selected</b>
         <select id="of-bulk-auditor" aria-label="Auditor for selected buildings"></select>
+        <input type="date" id="of-bulk-due" aria-label="Deadline for the selected buildings" title="Deadline for the selected buildings">
         <button class="btn bt" id="of-bulk-assign">Assign</button>
+        <button class="btn bo" style="background:#fff" id="of-bulk-due-set" title="Give the selected buildings this deadline — leave the date empty to remove it">
+          <svg data-lucide="calendar-clock" width="13" height="13"></svg> Set deadline</button>
         <button class="btn bo" style="background:#fff" id="of-bulk-distribute" title="Split the selection across active auditors, lightest workload first, keeping each area together">
           <svg data-lucide="shuffle" width="13" height="13"></svg> Distribute evenly</button>
         <button class="btn bo" style="background:#fff" id="of-bulk-unassign">Unassign</button>
@@ -1655,8 +1699,8 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="ov-section">
       <div class="hist-hdr"><div><span class="sec-eyebrow">Full list</span><h3><svg data-lucide="list" width="18" height="18"></svg> All assigned buildings</h3></div>
         <span class="ov-updated" id="sch-all-note"></span></div>
-      <div class="ov-panel"><div class="ov-scroll"><table class="ov-table" id="sch-all-table">
-        <thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Auditor</th><th>Status</th><th>Result</th></tr></thead>
+      <div class="ov-panel"><div class="ov-scroll"><table class="ov-table sch-t" id="sch-all-table">
+        <thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Auditor</th><th>Deadline</th><th>Status</th><th>Result</th></tr></thead>
         <tbody id="sch-all-rows"></tbody></table></div></div>
     </div>
   </div>
@@ -2300,6 +2344,10 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="ex-parts-hd"><span id="ex-parts-title">Include</span><button type="button" class="rp-link" id="ex-all">Select all</button></div>
       <div id="ex-list"></div>
     </div>
+    <label class="ex-opt" id="ex-results-row" hidden>
+      <input type="checkbox" id="ex-results" checked>
+      <span><b>Scores and inspection dates</b><small>Off gives the plan only: buildings, who inspects them, the deadline and whether they are done.</small></span>
+    </label>
     <p class="msub" id="ex-msg" hidden style="color:var(--danger);margin:10px 0 0"></p>
     <div class="mbtns" style="margin-top:16px">
       <button class="btn br" type="button" id="ex-go"><svg data-lucide="download" width="16" height="16"></svg> <span id="ex-go-label">Download</span></button>
@@ -4018,10 +4066,24 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
  * gesture) and then pointed at the finished document.
  */
 async function openInspectionReport(report,{autoPrint=false}={}){
-  // /report.html gives the window an address of its own — Safari on iPhone and iPad will not
-  // print a document written into about:blank, which is why printing did nothing there.
+  return openDocPage(()=>buildInspectionReportHtml(report,{autoPrint}),
+    {sameTab:()=>buildInspectionReportHtml(report,{autoPrint,sameTab:true}),what:'report'});
+}
+
+/**
+ * Every printable document in the app — the inspection report and the exports — opens the
+ * same way: a window opened on the click itself (Safari on iPhone and iPad allows nothing
+ * else), pointed at /report so it has a real address of its own, and handed the finished
+ * document by message. about:blank cannot be printed on iOS, which is why this detour exists.
+ */
+async function openDocPage(build,{sameTab,what='document'}={}){
   const pw=window.open('/report','_blank');
-  if(!pw) return askToOpenReport(report,{autoPrint});     // pop-ups are blocked — Safari does this by default
+  if(!pw){                                                // pop-ups blocked — Safari does this by default
+    let html;
+    try{ html=await (sameTab||build)(); }
+    catch(err){ showToast(`Could not build the ${what}. `+(err&&err.message||''),true); return false; }
+    return askToOpenDoc(html,what);
+  }
   let html=null, ready=false, sent=false;
   const send=()=>{
     if(sent||!ready||html==null) return;
@@ -4036,13 +4098,13 @@ async function openInspectionReport(report,{autoPrint=false}={}){
   window.addEventListener('message',onMessage);
   setTimeout(()=>window.removeEventListener('message',onMessage),60000);
   try{
-    html=await buildInspectionReportHtml(report,{autoPrint});
+    html=await build();
     send();
     return true;
   }catch(err){
     window.removeEventListener('message',onMessage);
     try{ pw.close(); }catch{}
-    showToast('Could not build the report. '+(err&&err.message||''),true);
+    showToast(`Could not build the ${what}. `+(err&&err.message||''),true);
     return false;
   }
 }
@@ -4052,16 +4114,13 @@ async function openInspectionReport(report,{autoPrint=false}={}){
  * one tap opens it as its own page, where Print and Share work the way the phone expects.
  * Back returns to the app.
  */
-async function askToOpenReport(report,{autoPrint=false}={}){
-  let html;
-  try{ html=await buildInspectionReportHtml(report,{autoPrint,sameTab:true}); }
-  catch(err){ showToast('Could not build the report. '+(err&&err.message||''),true); return false; }
+function askToOpenDoc(html,what='document'){
   const wrap=document.createElement('div');
   wrap.className='rpt-ask';
   wrap.innerHTML=`<div class="rpt-ask-box">
-      <b>Open the report</b>
-      <p>Your browser blocked the new window, so the report opens in this tab. Print or share it from there, then tap <b>Back to the app</b>.</p>
-      <div class="rpt-ask-row"><button type="button" class="btn bt" data-a="go"><svg data-lucide="external-link" width="15" height="15"></svg> Open report</button>
+      <b>Open the ${ovEsc(what)}</b>
+      <p>Your browser blocked the new window, so the ${ovEsc(what)} opens in this tab. Print or share it from there, then tap <b>Back to the app</b>.</p>
+      <div class="rpt-ask-row"><button type="button" class="btn bt" data-a="go"><svg data-lucide="external-link" width="15" height="15"></svg> Open ${ovEsc(what)}</button>
       <button type="button" class="btn bo" data-a="cancel">Cancel</button></div>
     </div>`;
   document.body.appendChild(wrap);
@@ -4436,6 +4495,7 @@ function auCard(x,{carried=false}={}){
     <span class="au-type ${x.type}">${x.type}</span>
     <div class="au-main"><b>${ovEsc(x.buildingName)}</b><small>${ovEsc(meta)}</small>
       <small>${carried?`${x.quarter} · `:''}${x.assignedBy?`Assigned by ${ovEsc(x.assignedBy)} · `:''}${x.assignedAt?timeAgo(x.assignedAt):''}</small></div>
+    ${x.dueDate?`<span class="due ${dueState(x).cls}" title="Deadline ${ovEsc(dueFmt(x.dueDate))}">${ovEsc(dueFmt(x.dueDate))} · ${ovEsc(dueState(x).note)}</span>`:''}
     ${resuming?`<span class="au-progress">${auAnsweredPct()}% answered</span>`:''}
     ${self?`<button class="btn bt" data-start="${x.id}">${resuming?'Continue':'Start inspection'} <svg data-lucide="arrow-right" width="14" height="14"></svg></button>`
       :'<span class="ov-pill pending">Pending</span>'}
@@ -4707,6 +4767,38 @@ function ovPct(done,total){
   return `<div class="ov-pct"><div class="ov-bar"><i style="width:${p}%"></i></div><span>${p}%</span></div>`;
 }
 function ovScore(v){ return v==null?'<span style="color:var(--muted)">–</span>':`<span class="ov-score" style="color:${grade(v).ink}">${v}</span>`; }
+
+/* ── Deadlines ─────────────────────────────────────────────────
+ * A deadline is a plain calendar date (YYYY-MM-DD) set by whoever assigns the quarter.
+ * Everyone then reads the same chip: when it falls, how long is left, and — once the
+ * inspection is in — whether it was met. Dates are compared as text, never in UTC, so a
+ * deadline never shifts by a day because of the phone's time zone. */
+function dueToday(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function dueDays(date,from){ return Math.round((Date.parse(date+'T12:00:00Z')-Date.parse((from||dueToday())+'T12:00:00Z'))/86400000); }
+function dueFmt(date){
+  const d=new Date(date+'T12:00:00'), o={day:'2-digit',month:'short'};
+  if(d.getFullYear()!==new Date().getFullYear()) o.year='numeric';
+  return d.toLocaleDateString('en-GB',o);
+}
+function dueDayWord(n){ return `${n} day${n===1?'':'s'}`; }
+function dueState(row){
+  const date=row&&row.dueDate;
+  if(!date) return null;
+  if(row.status==='completed'){
+    const late=row.inspectionDate&&row.inspectionDate>date;
+    return {date,cls:late?'late':'met',text:dueFmt(date),note:late?`${dueDayWord(dueDays(row.inspectionDate,date))} late`:'Met'};
+  }
+  const left=dueDays(date);
+  if(left<0) return {date,cls:'over',text:dueFmt(date),note:`${dueDayWord(-left)} overdue`};
+  if(left===0) return {date,cls:'soon',text:dueFmt(date),note:'Due today'};
+  return {date,cls:left<=7?'soon':'',text:dueFmt(date),note:`${dueDayWord(left)} left`};
+}
+function dueChip(row){
+  const s=dueState(row);
+  return s?`<span class="due ${s.cls}">${ovEsc(s.text)}</span><small>${ovEsc(s.note)}</small>`
+    :'<span style="color:var(--muted)">—</span>';
+}
+function dueOverdue(rows){ return rows.filter(b=>{ const s=dueState(b); return s&&(s.cls==='over'||s.cls==='late'); }).length; }
 function ovSetOptions(sel,values,allLabel){
   const cur=sel.value;
   sel.innerHTML=`<option value="all">${allLabel}</option>`+values.map(v=>`<option value="${ovEsc(v)}">${ovEsc(v)}</option>`).join('');
@@ -4955,7 +5047,9 @@ function initOfficer(){
       return;
     }
     const sel=e.target.closest('select[data-building]');
-    if(sel) ofAssignOne(Number(sel.dataset.building),sel.value,sel);
+    if(sel){ ofAssignOne(Number(sel.dataset.building),sel.value,sel); return; }
+    const day=e.target.closest('input[data-due]');
+    if(day) ofSetDue([Number(day.dataset.due)],day.value,day).then(()=>loadOfficer({quiet:true}));
   });
   rowsEl.addEventListener('click',e=>{
     const tap=e.target.closest('[data-quick]');
@@ -4976,6 +5070,7 @@ function initOfficer(){
   document.getElementById('of-bulk-distribute').addEventListener('click',()=>ofRunBulk('distribute'));
   document.getElementById('of-bulk-unassign').addEventListener('click',()=>ofRunBulk('unassign'));
   document.getElementById('of-bulk-clear').addEventListener('click',()=>{ ofSelected.clear(); renderOfRows(); });
+  document.getElementById('of-bulk-due-set').addEventListener('click',()=>ofRunBulk('due'));
 
   setInterval(()=>{ if(ofOnPage()&&document.visibilityState==='visible') loadOfficer({quiet:true}); },30000);
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&ofOnPage()) loadOfficer({quiet:true}); });
@@ -5122,10 +5217,11 @@ function ofFilteredRows(){
 function renderOfRows(fresh=[]){
   if(!ofData) return;
   const rowsEl=document.getElementById('of-rows');
-  if(rowsEl.contains(document.activeElement)&&document.activeElement.tagName==='SELECT'){ ofRowsStale=true; return; }
+  const focus=document.activeElement;
+  if(rowsEl.contains(focus)&&(focus.tagName==='SELECT'||focus.type==='date')){ ofRowsStale=true; return; }
   ofRowsStale=false;
   const rows=ofFilteredRows(), counts=ofCounts(), active=ofActiveAuditors(), freshSet=new Set(fresh);
-  const label={completed:'Completed',pending:'Pending',unassigned:'Unassigned'};
+  const label={completed:'Completed',pending:'Pending',unassigned:'Unassigned'}, canSetDue=hasPerm('assign');
   rowsEl.innerHTML=rows.length?rows.map(b=>{
     const done=b.status==='completed', picked=ofSelected.has(b.buildingId);
     const held=b.auditorId&&!active.some(a=>a.id===b.auditorId)?`<option value="${ovEsc(b.auditorId)}" selected disabled>${ovEsc(b.auditorName||'Unknown')} (not available)</option>`:'';
@@ -5140,15 +5236,20 @@ function renderOfRows(fresh=[]){
           <option value="">— Unassigned —</option>${held}
           ${active.map(a=>`<option value="${ovEsc(a.id)}"${a.id===b.auditorId?' selected':''}>${ovEsc(assigneeLabel(a))} (${counts.get(a.id)||0})</option>`).join('')}
         </select>${b.assignedBy?`<small>by ${ovEsc(b.assignedBy)} · ${timeAgo(b.assignedAt)}</small>`:''}`;
+    const due=dueState(b);
+    const dueCell=done||!canSetDue?dueChip(b)
+      :!b.auditorId?'<span style="color:var(--muted)">—</span><small>Assign it first</small>'
+      :`<input type="date" class="of-due${due&&due.cls?' '+due.cls:''}" data-due="${b.buildingId}" value="${ovEsc(b.dueDate||'')}" aria-label="Deadline for ${ovEsc(b.name)}">${due?`<small>${ovEsc(due.note)}</small>`:''}`;
     return `<tr class="${picked?'selected':''}${freshSet.has(b.buildingId)?' flash':''}">
       <td class="of-chk">${done?'':`<input type="checkbox" data-check="${b.buildingId}"${picked?' checked':''} aria-label="Select ${ovEsc(b.name)}">`}</td>
       <td><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
       <td>${ovEsc(b.division)}<small>${ovEsc(b.area)}</small></td>
       <td>${auditorCell}</td>
+      <td>${dueCell}</td>
       <td><span class="ov-pill ${b.status}">${label[b.status]}</span></td>
       <td>${done?`${b.inspectionId?`<button class="rp-link" style="padding:0" onclick="openReport(${b.inspectionId})" title="Open the report">${ovScore(b.score)}</button>`:ovScore(b.score)}${b.review?`<small class="of-review">${reviewMark(b.review)}</small>`:''}<small>${ovEsc(b.inspectionDate||'')}${b.inspector?' · '+ovEsc(b.inspector):''}</small>`:'<span style="color:var(--muted)">–</span>'}</td>
     </tr>`;
-  }).join(''):'<tr><td colspan="6" class="ov-empty">No buildings match these filters.</td></tr>';
+  }).join(''):'<tr><td colspan="7" class="ov-empty">No buildings match these filters.</td></tr>';
   const scopedTotal=ofData.buildings.filter(b=>!ofVal('of-division')||b.division===ofVal('of-division')).length;
   document.getElementById('of-count').textContent=`${rows.length} of ${scopedTotal} buildings shown${ofSelected.size?` · ${ofSelected.size} selected`:''}`;
   ofSyncCheckAll(); ofUpdateQuick(); ofUpdateBulk();
@@ -5205,6 +5306,21 @@ async function ofAssignOne(buildingId,auditorId,el){
   await loadOfficer({quiet:true});
 }
 
+/** The deadline for one or more buildings. An empty date removes it. */
+async function ofSetDue(buildingIds,dueDate,el){
+  if(el) el.disabled=true;
+  try{
+    const res=await fetch('/api/assignments/due',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({quarter:ofVal('of-quarter'),type:ofVal('of-type'),buildingIds,dueDate:dueDate||null})});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'Could not save the deadline.');
+    const many=buildingIds.length>1?`${d.updated} building${d.updated===1?'':'s'}`:'Deadline';
+    showToast(dueDate?`${many} due ${dueFmt(dueDate)}`:`${buildingIds.length>1?many+' — d':'D'}eadline removed`);
+    return d;
+  }catch(err){ showToast(err.message,true); return null; }
+  finally{ if(el) el.disabled=false; }
+}
+
 /** The quarter before this one, same type — the usual starting point for a new quarter. */
 function ofPreviousQuarter(q){
   const m=/^(\d{4})-Q([1-4])$/.exec(q||'');
@@ -5240,9 +5356,11 @@ async function ofCopyLastQuarter(){
   finally{ btn.disabled=false; }
 }
 
-async function ofBulk(auditorId,buildingIds){
+async function ofBulk(auditorId,buildingIds,dueDate){
+  const body={quarter:ofVal('of-quarter'),type:ofVal('of-type'),auditorId:auditorId||null,buildingIds};
+  if(dueDate) body.dueDate=dueDate;
   const res=await fetch('/api/assignments/bulk',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({quarter:ofVal('of-quarter'),type:ofVal('of-type'),auditorId:auditorId||null,buildingIds})});
+    body:JSON.stringify(body)});
   const data=await res.json().catch(()=>({}));
   if(!res.ok) throw new Error(data.error||'Could not save the change.');
   return data;
@@ -5270,16 +5388,23 @@ async function ofRunBulk(action){
   const plural=n=>`${n} building${n===1?'':'s'}`;
   try{
     if(action==='assign'){
-      const aud=ofVal('of-bulk-auditor');
+      const aud=ofVal('of-bulk-auditor'), due=ofVal('of-bulk-due');
       if(!aud){ showToast('Choose an auditor first.',true); return; }
       buttons.forEach(b=>b.disabled=true);
-      const r=await ofBulk(aud,ids);
-      showToast(`Assigned ${plural(r.changed)}${r.unchanged?` · ${r.unchanged} already theirs`:''}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
+      const r=await ofBulk(aud,ids,due);
+      showToast(`Assigned ${plural(r.changed)}${due?` · due ${dueFmt(due)}`:''}${r.unchanged?` · ${r.unchanged} already theirs`:''}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
     }else if(action==='unassign'){
       if(!confirm(`Unassign ${plural(ids.length)}? They go back to the unassigned list.`)) return;
       buttons.forEach(b=>b.disabled=true);
       const r=await ofBulk(null,ids);
       showToast(`Unassigned ${plural(r.changed)}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
+    }else if(action==='due'){
+      const due=ofVal('of-bulk-due');
+      if(!due&&!confirm(`Remove the deadline from ${plural(ids.length)}?`)) return;
+      buttons.forEach(b=>b.disabled=true);
+      const r=await ofSetDue(ids,due);
+      if(!r) return;
+      if(r.skipped) showToast(`${plural(r.updated)} updated · ${r.skipped} not assigned yet`,!r.updated);
     }else if(action==='distribute'){
       const plan=ofPlanDistribution(ids);
       if(!plan){ showToast('There are no active auditors to distribute to.',true); return; }
@@ -5670,12 +5795,12 @@ const TIPS={
   'ov-team':['Officers and auditors',['Auditors (and anyone holding buildings): buildings assigned, how many are done and their average score on completed work. Officers: assignments they made and how many are complete.','Click a person to open their profile.']],
   'ov-area':['By area',['Buildings, assignments, completion and average score for each area.']],
   'ov-building':['By building',['Every building with its status for the filters: <b>Unassigned</b>, <b>Pending</b> (assigned, not inspected yet) or <b>Completed</b>, plus its number of inspections and latest score.']],
-  'sch-tables':['The quarter schedule',['Every building assigned for the chosen quarter and type. The first part gives each auditor a table of their own; the list underneath is the same buildings together, by division and area.','<b>Pending</b> means assigned but not inspected yet, <b>Completed</b> means the report is in — open it by tapping the score.','Export gives you the whole schedule or any single auditor\u2019s table, as PDF or Excel.']],
+  'sch-tables':['The quarter schedule',['Every building assigned for the chosen quarter and type. The first part gives each auditor a table of their own; the list underneath is the same buildings together, by division and area.','<b>Pending</b> means assigned but not inspected yet, <b>Completed</b> means the report is in — open it by tapping the score.','The <b>deadline</b> is set by whoever assigns the quarter. It turns amber in the last week and red once it passes; on a finished building it says whether it was met.','Export gives you the whole schedule or any single auditor\u2019s table, as PDF (one auditor per A4 page) or Excel.']],
   'of-kpis':['Assign & Track cards',['For the chosen quarter and type: <b>Assigned</b> = buildings with someone assigned; <b>Completion</b> = completed ÷ assigned; <b>Pending</b> = assigned but not inspected; <b>Unassigned</b> = still need someone.','Click a card to filter the buildings table. The page refreshes itself every 30 seconds.']],
   'of-team':['Team progress',['One card per person holding buildings this quarter: completion %, assigned / done / pending, average score of completed buildings and when they last submitted. Click a card to show only their buildings.']],
   'of-area':['Progress by area',['How many buildings in each area are assigned, and how many of those are completed.']],
   'of-activity':['Recent activity',['The latest assignments and completed inspections for this quarter.']],
-  'of-buildings':['Assigning buildings',['Choose a person for each building, or tick several and use <b>Assign</b> or <b>Distribute evenly</b> (spreads them across auditors, lightest workload first, keeping each area together).','Buildings that were already inspected are locked. Click a score to open that report.']],
+  'of-buildings':['Assigning buildings',['Choose a person for each building, or tick several and use <b>Assign</b> or <b>Distribute evenly</b> (spreads them across auditors, lightest workload first, keeping each area together).','Set a <b>deadline</b> on any assigned building — one date at a time, or a date for everything you have ticked. Leave the date empty and press <b>Set deadline</b> to remove it.','Buildings that were already inspected are locked. Click a score to open that report.']],
   'au-carried':['Still open from earlier quarters',['Buildings assigned in a previous quarter that were never inspected. They still count as open work.']],
   'au-schedule':['Quarter schedule',['Key dates for the quarter and how much of this person’s work is done against them.']],
   'au-quality':['Quality of work',['Across all quarters: inspections completed out of those assigned, the average score of completed work, and the average time from assignment to submission.','The chart shows the average score per quarter (hover for assigned and completed counts); the section chart shows their average per section out of 10.']],
@@ -6043,7 +6168,7 @@ async function loadSchedule(){
     if(req!==schReq) return;
     document.getElementById('sch-note').textContent='';
     document.getElementById('sch-by-auditor').innerHTML=`<div class="ov-empty">${ovEsc(err.message)}</div>`;
-    document.getElementById('sch-all-rows').innerHTML=`<tr><td colspan="6" class="ov-empty">${ovEsc(err.message)}</td></tr>`;
+    document.getElementById('sch-all-rows').innerHTML=`<tr><td colspan="7" class="ov-empty">${ovEsc(err.message)}</td></tr>`;
   }
 }
 const SCH_STATUS={completed:'Completed',pending:'Pending',unassigned:'Unassigned'};
@@ -6059,11 +6184,14 @@ function renderSchedule(){
   const shown=only?assigned.filter(b=>b.auditorId===only):assigned;
   const t=schData.totals;
   const tile=(icon,value,label,note)=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b>${value}</b><span>${label}</span>${note?`<small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px">${note}</small>`:''}</div>`;
+  const dated=assigned.filter(b=>b.dueDate), overdue=dueOverdue(assigned);
+  const nextDue=assigned.filter(b=>b.dueDate&&b.status!=='completed').map(b=>b.dueDate).sort()[0];
   document.getElementById('sch-stats').innerHTML=
     tile('building-2',`${t.assigned}/${t.buildings}`,'Buildings assigned',`${t.unassigned} still unassigned`)+
     tile('users',t.auditors,'Auditors','with buildings this quarter')+
     tile('circle-check',t.completed,'Completed',`${t.assigned-t.completed} still to inspect`)+
-    tile('calendar-range',`${schData.quarter}`,'Quarter',schData.type);
+    tile('calendar-clock',overdue||(nextDue?dueFmt(nextDue):'—'),overdue?'Past deadline':'Next deadline',
+      overdue?`of ${dated.length} with a deadline`:dated.length?`${dated.length} of ${t.assigned} have a deadline`:'No deadline set yet');
 
   // A table of its own for every auditor.
   const auditors=schData.auditors.filter(a=>!only||a.id===only);
@@ -6073,21 +6201,26 @@ function renderSchedule(){
       <div class="sch-aud-hd"><i class="of-av">${ovEsc(ofInitials(a.name))}</i>
         <div><b>${ovEsc(a.name)}</b><small>${a.count} building${a.count===1?'':'s'} · ${a.completed} completed · ${a.count-a.completed} to go</small></div>
         <button class="tool-x rp-export" data-ex-ctx="schedule" data-ex-block="aud-${ovEsc(a.id)}" title="Export this auditor's table"><svg data-lucide="download" width="14" height="14"></svg></button></div>
-      <div class="ov-scroll"><table class="ov-table"><thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Status</th><th>Result</th></tr></thead>
-        <tbody>${rows.map((b,i)=>`<tr><td>${i+1}</td><td><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
-          <td>${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
-          <td><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
-          <td>${schResult(b)}</td></tr>`).join('')}</tbody></table></div></div>`;
+      <div class="ov-scroll"><table class="ov-table sch-t"><thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Deadline</th><th>Status</th><th>Result</th></tr></thead>
+        <tbody>${rows.length?rows.map((b,i)=>`<tr><td class="num">${i+1}</td>
+          <td class="bld" data-l="Building"><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
+          <td data-l="Division">${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
+          <td data-l="Deadline">${dueChip(b)}</td>
+          <td data-l="Status"><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
+          <td data-l="Result">${schResult(b)}</td></tr>`).join('')
+          :'<tr><td colspan="6" class="ov-empty">Nothing assigned yet.</td></tr>'}</tbody></table></div></div>`;
   }).join(''):'<div class="ov-panel"><div class="ov-empty">No buildings assigned for this quarter and type yet.</div></div>';
 
   // And one list of the same buildings together.
   const all=[...shown].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name));
   document.getElementById('sch-all-rows').innerHTML=all.length?all.map((b,i)=>`<tr>
-    <td>${i+1}</td><td><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
-    <td>${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
-    <td>${ovEsc(b.auditorName||'—')}</td>
-    <td><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
-    <td>${schResult(b)}</td></tr>`).join(''):'<tr><td colspan="6" class="ov-empty">Nothing assigned yet.</td></tr>';
+    <td class="num">${i+1}</td>
+    <td class="bld" data-l="Building"><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
+    <td data-l="Division">${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
+    <td data-l="Auditor">${ovEsc(b.auditorName||'—')}</td>
+    <td data-l="Deadline">${dueChip(b)}</td>
+    <td data-l="Status"><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
+    <td data-l="Result">${schResult(b)}</td></tr>`).join(''):'<tr><td colspan="7" class="ov-empty">Nothing assigned yet.</td></tr>';
   document.getElementById('sch-all-note').textContent=`${all.length} building${all.length===1?'':'s'}${only?' · filtered to one auditor':''}`;
   document.getElementById('sch-note').textContent=`${schData.quarter} · ${schData.type}`;
   schView={assigned,auditors:schData.auditors,totals:t,only};
@@ -6096,25 +6229,41 @@ function renderSchedule(){
 /** The schedule exports as it reads: a sheet per auditor, then the whole list. */
 function exModelSchedule(){
   if(!schView||!schData) return null;
-  const head=['#','Building','Location','Division','Area','Status','Score','Inspected on','Auditor'];
-  const row=(b,i)=>[i+1,b.name,b.location,b.division,b.area,SCH_STATUS[b.status],b.score,b.inspectionDate,b.auditorName];
+  const head=['#','Building','Location','Division','Area','Deadline','Status','Score','Inspected on','Auditor'];
+  const row=(b,i)=>[i+1,b.name,b.location,b.division,b.area,b.dueDate||null,SCH_STATUS[b.status],b.score,b.inspectionDate,b.auditorName];
   const sheetName=n=>String(n||'Auditor').replace(/[\\/?*\[\]:]/g,' ').slice(0,28);
-  const blocks=[{id:'summary',label:'Summary',sheet:'Summary',
+  const blocks=[{id:'summary',label:'Summary',sheet:'Summary',pdfTable:true,
     kpis:[{label:'Quarter',value:`${schData.quarter} · ${schData.type}`},{label:'Buildings assigned',value:`${schView.totals.assigned} of ${schView.totals.buildings}`},
-      {label:'Auditors',value:schView.totals.auditors},{label:'Completed',value:schView.totals.completed}],
-    table:{head:['Auditor','Buildings','Completed','Still to inspect'],
-      rows:schView.auditors.map(a=>[a.name,a.count,a.completed,a.count-a.completed])}}];
+      {label:'Auditors',value:schView.totals.auditors},{label:'Completed',value:schView.totals.completed},
+      {label:'Past deadline',value:dueOverdue(schView.assigned)}],
+    table:{head:['Auditor','Buildings','Completed','Still to inspect','Past deadline','Next deadline'],
+      rows:schView.auditors.map(a=>{
+        const mine=schView.assigned.filter(b=>b.auditorId===a.id);
+        const next=mine.filter(b=>b.dueDate&&b.status!=='completed').map(b=>b.dueDate).sort()[0]||null;
+        return [a.name,a.count,a.completed,a.count-a.completed,dueOverdue(mine),next];
+      })}}];
   schView.auditors.forEach(a=>{
     const rows=schView.assigned.filter(b=>b.auditorId===a.id)
       .sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name));
+    const next=rows.filter(b=>b.dueDate&&b.status!=='completed').map(b=>b.dueDate).sort()[0];
     blocks.push({id:`aud-${a.id}`,label:`${a.name} · ${rows.length} building${rows.length===1?'':'s'}`,sheet:sheetName(a.name),
-      table:{head:head.slice(0,8),rows:rows.map((b,i)=>row(b,i).slice(0,8))}});
+      pdfBreak:true,
+      // Exported on its own it is that auditor's schedule for this quarter — nothing else.
+      docTitle:'Quarter schedule',docNote:a.name,file:`quarter-schedule-${schData.quarter}-${schData.type}-${a.name}`,
+      docContext:[['Auditor',a.name],['Quarter',schData.quarter],['Type',schData.type],
+        ['Buildings',String(rows.length)],...(next?[['Next deadline',dueFmt(next)]]:[])],
+      table:{head:head.slice(0,9),rows:rows.map((b,i)=>row(b,i).slice(0,9)),
+        // On paper: the columns that fit an A4 page without shrinking the type.
+        pdfCols:[0,1,3,4,5,6,7,8],pdfHead:head,resultCols:[7,8]}});
   });
-  blocks.push({id:'all',label:'All assigned buildings',sheet:'All buildings',
-    table:{head,rows:[...schView.assigned].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name)).map(row)}});
+  blocks.push({id:'all',label:'All assigned buildings',sheet:'All buildings',pdfBreak:true,
+    table:{head,rows:[...schView.assigned].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name)).map(row),
+      pdfCols:[0,1,3,5,6,7,9],pdfHead:head,resultCols:[7,8]}});
+  const withDue=schView.assigned.filter(b=>b.dueDate).length;
   return {title:'Quarter schedule',file:`schedule-${schData.quarter}-${schData.type}`,
-    note:`${schData.quarter} · ${schData.type}`,
-    context:[['Quarter',schData.quarter],['Type',schData.type],['Buildings assigned',`${schView.totals.assigned} of ${schView.totals.buildings}`],['Auditors',String(schView.totals.auditors)]],
+    note:`${schData.quarter} · ${schData.type}`,pdfPage:'portrait',
+    context:[['Quarter',schData.quarter],['Type',schData.type],['Buildings assigned',`${schView.totals.assigned} of ${schView.totals.buildings}`],
+      ['Auditors',String(schView.totals.auditors)],['With a deadline',`${withDue} of ${schView.totals.assigned}`]],
     blocks};
 }
 
@@ -7239,8 +7388,9 @@ function exModelOfficer(){
       table:{head:['Area','Division','Buildings','Assigned','Completed','Completion (%)'],
         rows:v.areas.map(g=>[g.area,g.division,g.buildings,g.assigned,g.completed,pct(g.completed,g.assigned)])}},
     {id:'buildings',label:'Buildings',sheet:'Buildings',
-      table:{head:['Building','Location','Division','Area','Status','Auditor','Score','Completed'],
-        rows:ofFilteredRows().map(b=>[b.name,b.location,b.division,b.area,b.status,b.auditorName,b.score??null,b.completedAt||null])}},
+      table:{head:['Building','Location','Division','Area','Status','Auditor','Deadline','Score','Completed'],
+        rows:ofFilteredRows().map(b=>[b.name,b.location,b.division,b.area,b.status,b.auditorName,b.dueDate||null,b.score??null,b.completedAt||null]),
+        resultCols:[7,8]}},
     {id:'activity',label:'Recent activity',sheet:'Activity',defaults:{pdf:false},
       table:{head:['When','Who','Action','Building','Auditor','Score'],
         rows:v.activity.map(e=>[e.at,e.actor||'',e.kind==='completed'?'Submitted':'Assigned',e.building||'',e.auditor||e.auditorName||'',e.score??null])}},
@@ -7383,7 +7533,12 @@ async function openExport(ctx,only){
   if(model&&only){
     const block=model.blocks.find(b=>b.id===only);
     if(!block){ closeModal('modal-export'); showToast('Nothing to export here yet.',true); return; }
-    model={...model,title:`${model.title} · ${block.label}`,file:`${model.file}-${only}`,blocks:[block]};
+    model={...model,
+      title:block.docTitle||`${model.title} · ${block.label}`,
+      note:block.docNote!==undefined?block.docNote:model.note,
+      context:block.docContext||model.context,
+      file:block.file||`${model.file}-${only}`,
+      blocks:[block]};
   }
   if(!model){ closeModal('modal-export'); showToast('Nothing to export yet — wait for the data to load.',true); return; }
   exModel=model;
@@ -7391,6 +7546,25 @@ async function openExport(ctx,only){
   lucide.createIcons();
 }
 function exChart(b){ const c=typeof b.chart==='function'?b.chart():b.chart?rpCharts[b.chart]:null; return c&&c.canvas?c:null; }
+/** Parts that can be exported with or without the inspection results. */
+function exHasResults(m){ return !!m&&m.blocks.some(b=>b.table&&b.table.resultCols&&b.table.resultCols.length); }
+/** The same export with the score and inspection-date columns taken out. */
+function exStripResults(blocks){
+  return blocks.map(b=>{
+    const t=b.table;
+    if(!t||!t.resultCols||!t.resultCols.length) return b;
+    const drop=new Set(t.resultCols), keep=t.head.map((_,i)=>i).filter(i=>!drop.has(i));
+    const table={...t,head:keep.map(i=>t.head[i]),rows:t.rows.map(r=>keep.map(i=>r[i]))};
+    if(t.pdfHead) table.pdfHead=keep.map(i=>t.pdfHead[i]);
+    if(t.pdfCols) table.pdfCols=t.pdfCols.filter(i=>!drop.has(i)).map(i=>keep.indexOf(i));
+    delete table.resultCols;
+    return {...b,table};
+  });
+}
+function exWantsResults(){
+  const box=document.getElementById('ex-results');
+  return !box||document.getElementById('ex-results-row').hidden||box.checked;
+}
 function exVisual(){ return exModel.blocks.filter(b=>exChart(b)||b.image); }
 function exRender(){
   const m=exModel, visual=exVisual(), list=document.getElementById('ex-list'), all=document.getElementById('ex-all');
@@ -7419,6 +7593,7 @@ function exRender(){
     all.hidden=false;
     exSyncAll();
   }
+  document.getElementById('ex-results-row').hidden=exFmt==='png'||!exHasResults(m);
   document.getElementById('ex-go-label').textContent=exFmt==='pdf'?'Create PDF':exFmt==='xlsx'?'Download Excel':'Download image';
   document.getElementById('ex-go').disabled=false;
   document.getElementById('ex-msg').hidden=true;
@@ -7444,7 +7619,8 @@ async function exRun(){
   }
   const ids=[...list.querySelectorAll('input:checked')].map(i=>i.value);
   if(!ids.length) return fail('Choose at least one part to include.');
-  const blocks=m.blocks.filter(b=>ids.includes(b.id));
+  const chosen=m.blocks.filter(b=>ids.includes(b.id));
+  const blocks=exWantsResults()?chosen:exStripResults(chosen);
   if(exFmt==='pdf'){
     if(exPdf(m,blocks)) closeModal('modal-export');
     else fail('Your browser blocked the new window. Allow pop-ups for this site, then try again.');
@@ -7541,10 +7717,28 @@ async function exPng(m,blocks){
 }
 
 // ── PDF: a print-ready page (landscape A4) in a new window; "Save as PDF" keeps text sharp and searchable ──
-function exPdf(m,blocks){
-  const w=window.open('','_blank');
-  if(!w) return false;
-  const cell=v=>v==null||v===''?'–':ovEsc(String(v));
+/**
+ * The export as a printable A4 document, in the same hand as the inspection report:
+ * the document owns the paper (no page margin, so the browser prints no file name, date
+ * or address of its own), paginates itself, repeats a table's heading on every page it
+ * runs onto, and carries the same toolbar — Save as PDF works on iPhone and iPad, where
+ * printing a page written into about:blank does nothing.
+ */
+function exDocHtml(m,blocks,{sameTab=false}={}){
+  // A part exported on its own (an auditor's table, say) already speaks for itself: the
+  // model carries its heading and its facts, so the part is not announced a second time.
+  const solo=blocks.length===1&&!!(blocks[0].docTitle||blocks[0].docContext);
+  const title=m.title, note=m.note||'', chips=m.context||[];
+  const fileName=exSlug(m.file)+'-'+exDate()+'.pdf';
+  const portrait=m.pdfPage==='portrait';
+  const W=portrait?210:297, H=portrait?297:210;
+  const logoUrl=new URL('/osqa-logo.svg',location.origin).href;
+  const generated=new Date().toLocaleString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const cell=v=>{
+    if(v==null||v==='') return '–';
+    const text=String(v);
+    return ovEsc(/^\d{4}-\d{2}-\d{2}$/.test(text)?new Date(text+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):text);
+  };
   const table=t=>{
     const cols=t.pdfCols||t.head.map((_,i)=>i), head=t.pdfHead||t.head, numeric=i=>t.rows.some(r=>typeof r[i]==='number');
     const body=t.rows.map(r=>`<tr>${cols.map(i=>{ const v=r[i], c=t.heat&&i>0&&typeof v==='number'?heatColor(v):null;
@@ -7552,64 +7746,242 @@ function exPdf(m,blocks){
     return `<table${t.heat?' class="heat"':''}><thead><tr>${cols.map(i=>`<th${numeric(i)?' class="n"':''}>${ovEsc(head[i])}</th>`).join('')}</tr></thead>
       <tbody>${body||`<tr><td colspan="${cols.length}" class="empty">Nothing to show for these filters.</td></tr>`}</tbody></table>`;
   };
-  const html=blocks.map(b=>{
-    if(b.kpis) return `<section class="block"><h2>${ovEsc(b.label)}</h2><div class="kpis">${b.kpis.map(k=>`<div class="kpi"><span>${ovEsc(k.label)}</span><b>${cell(k.value)}</b>${k.sub?`<small>${ovEsc(k.sub)}</small>`:''}</div>`).join('')}</div></section>`;
-    const img=exChart(b)?exChartCanvas(exChart(b)).toDataURL('image/png'):'';
-    return `<section class="block"><h2>${ovEsc(b.label)}</h2>${img?`<figure><img src="${img}" alt="${ovEsc(b.label)}"></figure>`:''}${b.table?table(b.table):''}</section>`;
+  // Each part goes into the flow whole; the layout below cuts it into pages.
+  const flow=blocks.map(b=>{
+    const heading=solo?'':`<h2>${ovEsc(b.label)}</h2>`;
+    const cards=b.kpis?`<div class="kpis">${b.kpis.map(k=>`<div class="kpi"><span>${ovEsc(k.label)}</span><b>${cell(k.value)}</b>${k.sub?`<small>${ovEsc(k.sub)}</small>`:''}</div>`).join('')}</div>`:'';
+    const img=!b.kpis&&exChart(b)?exChartCanvas(exChart(b)).toDataURL('image/png'):'';
+    // Cards already say what a "Measure / Value" table would repeat; a part asks for both.
+    const rows=b.table&&(!b.kpis||b.pdfTable)?table(b.table):'';
+    return `<section class="blk"${b.pdfBreak?' data-break="1"':''}>${heading}${cards}${img?`<figure><img src="${img}" alt="${ovEsc(b.label)}"></figure>`:''}${rows}</section>`;
   }).join('');
-  const generated=new Date().toLocaleString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  w.document.write(`<!DOCTYPE html><html lang="en" dir="ltr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${ovEsc(exSlug(m.file)+'-'+exDate())}</title>
+
+  return `<!DOCTYPE html><html lang="en" dir="ltr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${ovEsc(title)}</title>
+<link rel="icon" type="image/svg+xml" href="/osqa-icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#002070;--deep:#102040;--teal:#0033A0;--mist:#8CFEE3;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369}
+:root{--ink:#002070;--deep:#102040;--royal:#0033A0;--teal:#26A8AB;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369;
+  --pad-x:12mm;--pad-t:11mm;--pad-b:9mm}
 *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-@page{size:A4 landscape;margin:11mm 12mm 13mm;@bottom-right{content:"Page " counter(page) " of " counter(pages);font-family:Cairo,Arial,sans-serif;font-size:8pt;color:#69727E}}
-html,body{margin:0;background:#fff;color:var(--deep);font-family:Cairo,Arial,sans-serif;font-size:9.5pt;line-height:1.4}
-.bar{position:sticky;top:0;z-index:2;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 18px;background:var(--ink);color:#fff;font-size:13px}
-.bar button{font:700 13px Cairo,Arial,sans-serif;background:#fff;color:var(--ink);border:0;border-radius:7px;padding:8px 16px;cursor:pointer}
-.bar button.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)}
-.doc{max-width:273mm;margin:0 auto;padding:18px 16px 30px}
-.head{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;border-top:6px solid var(--teal);padding-top:10px;margin-bottom:16px}
-.kicker{display:flex;align-items:center;gap:10px;color:var(--teal);font-size:8pt;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
-.kicker img{height:26px;width:auto;display:block}
-.kicker i{width:1px;height:18px;background:var(--line)}
-h1{margin:2px 0 7px;color:var(--ink);font-size:21pt;letter-spacing:-.02em;line-height:1.15}
-.chips{display:flex;flex-wrap:wrap;gap:5px}.chip{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:8.5pt;background:var(--paper)}.chip b{color:var(--muted);font-weight:700;margin-right:5px}
-.lead{margin:7px 0 0;color:var(--muted);font-size:8.5pt}
-.meta{text-align:right;color:var(--muted);font-size:8.5pt;white-space:nowrap}
-.block{margin:0 0 16px}
-h2{font-size:12pt;color:var(--ink);margin:0 0 7px;padding-bottom:4px;border-bottom:1.5px solid var(--line);break-after:avoid;page-break-after:avoid}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(42mm,1fr));gap:8px}
-.kpi{border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:8px;padding:8px 11px;break-inside:avoid}
-.kpi span{display:block;font-size:7.5pt;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
-.kpi b{display:block;font-size:16pt;color:var(--ink);line-height:1.25}
-.kpi small{font-size:8pt;color:var(--muted)}
-figure{margin:0 0 8px;border:1px solid var(--line);border-radius:8px;padding:8px;break-inside:avoid;page-break-inside:avoid}
-figure img{display:block;width:100%;max-height:118mm;object-fit:contain}
-table{width:100%;border-collapse:collapse;font-size:8.5pt}
-thead{display:table-header-group}
-th{background:var(--ink);color:#fff;text-align:left;font-size:7.5pt;font-weight:700;letter-spacing:.03em;padding:5px 7px;vertical-align:bottom}
+/* The document owns the paper: no page margin means no browser header, footer or URL. */
+@page{size:A4 ${portrait?'portrait':'landscape'};margin:0}
+html,body{margin:0;padding:0;background:#fff;color:var(--deep);font-family:Cairo,Arial,sans-serif;font-size:10pt;line-height:1.4}
+.sheet{width:${W}mm;height:${H}mm;padding:var(--pad-t) var(--pad-x) var(--pad-b);overflow:hidden;display:flex;flex-direction:column;background:#fff;break-after:page;page-break-after:always}
+.sheet:last-child{break-after:auto;page-break-after:auto}
+.body{flex:1;min-height:0;overflow:hidden}
+#flow{position:absolute;left:-9999px;top:0;width:${W-24}mm}
+
+.bar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px;background:#0A1B3D;color:#fff;font-size:13px}
+.bar b{font-weight:800;margin-right:auto;font-size:13px}
+.bar button{font:inherit;font-weight:800;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:#26A8AB;color:#04263A}
+.bar button[disabled]{opacity:.6;cursor:default}
+.bar button.ghost{background:rgba(255,255,255,.14);color:#fff}
+.bar small{opacity:.7;width:100%;font-size:11px}
+@media screen{body{background:#E9EDF1;padding-bottom:10px}.sheet{margin:0 auto 10px;box-shadow:0 1px 5px rgba(16,32,64,.2)}}
+@media print{.bar{display:none!important}body{background:#fff}.sheet{margin:0;box-shadow:none}}
+#doc{width:${W}mm;margin:0 auto;transform-origin:top left}
+@media print{#doc{transform:none!important;width:auto}#docwrap{height:auto!important}}
+
+.rule{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--royal),var(--teal));flex:none}
+.brand{display:flex;align-items:center;gap:12px;margin-top:12px;color:var(--royal);font-weight:900;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;flex:none}
+.brand img{display:block;height:30px;width:auto}.brand i{width:1px;height:20px;background:var(--line);display:block}
+.head{flex:none;display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin:9px 0 12px}
+h1{margin:0;color:var(--ink);font-size:26px;line-height:1.1;letter-spacing:-.03em}
+h1 span{color:var(--royal)}
+.lead{margin:6px 0 0;color:var(--muted);font-size:11px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:9px;background:var(--paper);font-weight:700}
+.chip b{color:var(--muted);font-weight:800;margin-right:5px;text-transform:uppercase;letter-spacing:.06em}
+.meta{text-align:right;color:var(--muted);font-size:9px;white-space:nowrap;font-weight:700}
+.run{flex:none;display:flex;justify-content:space-between;align-items:baseline;gap:14px;border-bottom:1.5px solid var(--line);padding-bottom:6px;margin-bottom:10px;
+  color:var(--royal);font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.run span{color:var(--muted);letter-spacing:.04em;text-transform:none;font-size:10px;font-weight:700}
+.foot{flex:none;display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:8.5px;font-weight:700;border-top:1px solid var(--line);padding-top:5px;margin-top:8px}
+
+.blk{margin:0 0 12px}
+.blk:last-child{margin-bottom:0}
+h2{font-size:13px;color:var(--ink);margin:0 0 7px;padding-bottom:4px;border-bottom:1.5px solid var(--line)}
+h2 small{float:right;color:var(--muted);font-size:9px;font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(38mm,1fr));gap:7px}
+.kpi{border:1px solid var(--line);border-left:4px solid var(--royal);border-radius:8px;padding:7px 10px;background:var(--paper)}
+.kpi span{display:block;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.kpi b{display:block;font-size:17px;color:var(--ink);line-height:1.25}
+.kpi small{font-size:8.5px;color:var(--muted)}
+figure{margin:0 0 8px;border:1px solid var(--line);border-radius:8px;padding:8px}
+figure img{display:block;width:100%;max-height:${portrait?'120mm':'105mm'};object-fit:contain}
+table{width:100%;border-collapse:collapse;font-size:9px;table-layout:auto}
+th{background:var(--ink);color:#fff;text-align:left;font-size:8px;font-weight:800;letter-spacing:.03em;padding:5px 7px;vertical-align:bottom}
+th:first-child{border-radius:5px 0 0 0}th:last-child{border-radius:0 5px 0 0}
 td{padding:4px 7px;border-bottom:1px solid var(--line);vertical-align:top}
-tr{break-inside:avoid;page-break-inside:avoid}
 tbody tr:nth-child(even) td:not(.hm){background:var(--paper)}
 .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 table.heat td.hm{text-align:center;font-weight:800;border:2px solid #fff}
 .empty{color:var(--muted);font-style:italic;text-align:center}
-.foot{margin-top:12px;display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:7.5pt;border-top:1px solid var(--line);padding-top:6px}
-@media print{.bar{display:none}.doc{max-width:none;padding:0}}
 </style></head><body>
-<div class="bar"><span>In the print window, choose <b>Save as PDF</b> as the destination.</span><span><button type="button" onclick="window.print()">Save as PDF</button> <button type="button" class="ghost" onclick="window.close()">Close</button></span></div>
-<main class="doc">
-  <header class="head"><div><div class="kicker"><img src="${ovEsc(new URL('/osqa-logo.svg',location.origin).href)}" alt="OSQA"><i></i>OSD Facility Experience · Quality Assurance</div><h1>${ovEsc(m.title)}</h1>
-    <div class="chips">${m.context.map(([k,v])=>`<span class="chip"><b>${ovEsc(k)}</b>${ovEsc(v)}</span>`).join('')}</div>${m.note?`<p class="lead">${ovEsc(m.note)}</p>`:''}</div>
-    <div class="meta">Generated ${ovEsc(generated)}${currentUser?.name?`<br>by ${ovEsc(currentUser.name)}`:''}</div></header>
-  ${html}
-  <footer class="foot"><span>Facility Experience Quality Assurance</span><span>Scores are out of 100 · section scores out of 10 · – means no data</span></footer>
-</main>
-<script>window.addEventListener('load',function(){(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){window.print();},300);});});<\/script>
-</body></html>`);
-  w.document.close();
+<div class="bar">
+  <b>${ovEsc(title)}${note?' · '+ovEsc(note):''}</b>
+  <button type="button" id="save-pdf">Save as PDF</button>
+  <button type="button" class="ghost" onclick="window.print()">Print</button>
+  <button type="button" class="ghost" onclick="${sameTab?'location.reload()':'window.close()'}">${sameTab?'Back to the app':'Close'}</button>
+  <small id="bar-note">On iPhone or iPad, use <b>Save as PDF</b> — the file opens in the share sheet, where you can save it to Files, send it, or print it.</small>
+</div>
+<div id="docwrap"><div id="doc"><div id="sheets"></div></div></div>
+<div id="flow">${flow}</div>
+<script>
+var FIRST_HEAD=${JSON.stringify(`<div class="rule"></div>
+  <div class="brand"><img src="${ovEsc(logoUrl)}" alt="OSQA"><i></i>OSD · Facility Experience Quality Assurance</div>
+  <div class="head"><div><h1>${ovEsc(title)}</h1>${note?`<p class="lead">${ovEsc(note)}</p>`:''}
+    <div class="chips">${chips.map(([k,v])=>`<span class="chip"><b>${ovEsc(k)}</b>${ovEsc(v)}</span>`).join('')}</div></div>
+    <div class="meta">Generated ${ovEsc(generated)}${currentUser&&currentUser.name?`<br>by ${ovEsc(currentUser.name)}`:''}</div></div>`)};
+var RUN_HEAD=${JSON.stringify(`<div class="run">${ovEsc(title)}<span>${ovEsc(note||chips.map(([k,v])=>`${k}: ${v}`).join(' · '))}</span></div>`)};
+var DOC_NAME=${JSON.stringify(fileName)};
+function loadOnce(src){
+  return new Promise(function(res,rej){
+    var s=document.createElement('script');
+    s.src=src; s.onload=res; s.onerror=function(){ rej(new Error('Could not load '+src)); };
+    document.head.appendChild(s);
+  });
+}
+/** html2canvas draws an <img> of an SVG badly; the browser itself draws it correctly. */
+async function flattenLogo(){
+  var imgs=[].slice.call(document.querySelectorAll('.brand img'));
+  if(!imgs.length) return function(){};
+  var src=imgs[0].getAttribute('src');
+  try{
+    var im=new Image(); im.decoding='sync'; im.src=src; await im.decode();
+    var w=im.naturalWidth||300, h=im.naturalHeight||106, c=document.createElement('canvas');
+    c.width=w*3; c.height=h*3;
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    var png=c.toDataURL('image/png');
+    imgs.forEach(function(i){ i.setAttribute('src',png); });
+  }catch(err){ return function(){}; }
+  return function(){ imgs.forEach(function(i){ i.setAttribute('src',src); }); };
+}
+var readyFile=null;
+function saveFile(blob,name){
+  var url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); },60000);
+}
+// Safari on iPhone ignores window.print() when the site runs from the Home Screen, and there
+// is no share menu there either — so the page builds the PDF itself and hands the file to the
+// system share sheet, which can save it to Files, send it, or print it.
+async function savePdf(){
+  var btn=document.getElementById('save-pdf'), note=document.getElementById('bar-note'), label=btn.textContent;
+  if(readyFile){                                                     // second tap: the share sheet, on a fresh gesture
+    try{ await navigator.share({files:[readyFile],title:readyFile.name}); }
+    catch(err){ if(err&&err.name!=='AbortError') saveFile(readyFile,readyFile.name); }
+    return;
+  }
+  btn.disabled=true; btn.textContent='Preparing…';
+  var doc=document.getElementById('doc'), wrap=document.getElementById('docwrap');
+  var tf=doc.style.transform, ml=doc.style.marginLeft, wh=wrap.style.height, restoreLogo=null;
+  try{
+    if(!window.html2canvas) await loadOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    if(!window.jspdf) await loadOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height='';     // capture the paper at full size
+    restoreLogo=await flattenLogo();
+    var sheets=[].slice.call(document.querySelectorAll('.sheet'));
+    var pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'${portrait?'portrait':'landscape'}',compress:true});
+    for(var i=0;i<sheets.length;i++){
+      btn.textContent='Page '+(i+1)+' of '+sheets.length+'…';
+      var canvas=await window.html2canvas(sheets[i],{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,
+        width:sheets[i].offsetWidth,height:sheets[i].offsetHeight,windowWidth:sheets[i].offsetWidth});
+      if(i) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg',0.9),'JPEG',0,0,${W},${H},undefined,'FAST');
+      canvas.width=canvas.height=0;                                            // let the phone reclaim it
+    }
+    var blob=pdf.output('blob'), file=new File([blob],DOC_NAME,{type:'application/pdf'});
+    // iOS only opens the share sheet from a fresh tap, and building the file takes a few
+    // seconds — so the finished file waits behind a second tap instead of being refused.
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      readyFile=file;
+      label='Share / save file · '+Math.max(1,Math.round(blob.size/104857.6)/10)+' MB';
+      note.textContent='The file is ready. Tap “Share / save file” to save it to Files, send it, or print it.';
+    }else{
+      saveFile(blob,DOC_NAME);
+    }
+  }catch(err){
+    if(!err||err.name!=='AbortError') note.textContent='Could not build the PDF: '+((err&&err.message)||'unknown error')+'. Try Print instead.';
+  }finally{
+    if(typeof restoreLogo==='function') restoreLogo();
+    doc.style.transform=tf; doc.style.marginLeft=ml; wrap.style.height=wh;
+    btn.disabled=false; btn.textContent=label;
+  }
+}
+(function(){
+  var flow=document.getElementById('flow'), holder=document.getElementById('sheets'), sheets=[], body=null;
+  function sheet(first){
+    var s=document.createElement('section');
+    s.className='sheet';
+    s.innerHTML=(first?FIRST_HEAD:RUN_HEAD)+'<div class="body"></div><div class="foot"><span>Facility Experience Quality Assurance</span><span class="pno"></span></div>';
+    holder.appendChild(s); sheets.push(s);
+    body=s.querySelector('.body');
+    return s;
+  }
+  function used(){ var box=body.getBoundingClientRect(), last=body.lastElementChild; return last?last.getBoundingClientRect().bottom-box.top:0; }
+  function over(){ return used()>body.getBoundingClientRect().height-1; }
+  /** A table longer than the page runs on: the next page repeats its heading, nothing else. */
+  function shell(sec){
+    var c=sec.cloneNode(true), tb=c.querySelector('tbody');
+    if(tb) tb.innerHTML='';
+    return c;
+  }
+  function start(){
+    sheet(true);
+    [].slice.call(flow.children).forEach(function(sec){
+      if(sec.getAttribute('data-break')==='1'&&body.children.length) sheet(false);
+      var tb=sec.querySelector('tbody');
+      var rows=tb?[].slice.call(tb.rows):[];
+      if(tb) tb.innerHTML='';
+      body.appendChild(sec);
+      if(over()&&body.children.length>1){ body.removeChild(sec); sheet(false); body.appendChild(sec); }
+      var cur=sec, curBody=tb;
+      rows.forEach(function(r){
+        curBody.appendChild(r);
+        if(over()&&curBody.rows.length>1){                            // a row never straddles two pages
+          curBody.removeChild(r);
+          sheet(false);
+          cur=shell(cur); body.appendChild(cur);
+          curBody=cur.querySelector('tbody');
+          curBody.appendChild(r);
+        }
+      });
+    });
+    flow.parentNode.removeChild(flow);
+    [].forEach.call(document.querySelectorAll('.pno'),function(el,i){ el.textContent='Page '+(i+1)+' of '+sheets.length; });
+    fit();
+  }
+  // A phone cannot show a whole sheet at full size: the paper is scaled to the screen, not reflowed.
+  var doc=document.getElementById('doc'), wrap=document.getElementById('docwrap');
+  function fit(){
+    var avail=document.documentElement.clientWidth-10, w=doc.offsetWidth;
+    var z=Math.min(1,avail/w);
+    if(z<1){
+      doc.style.transform='scale('+z+')';
+      doc.style.marginLeft=Math.max(0,(avail-w*z)/2)+'px';
+      wrap.style.height=Math.ceil(doc.offsetHeight*z)+'px';
+    }else{
+      doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height='';
+    }
+  }
+  window.addEventListener('resize',fit);
+  window.addEventListener('beforeprint',function(){ doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height=''; });
+  window.addEventListener('afterprint',fit);
+  document.getElementById('save-pdf').addEventListener('click',savePdf);
+  // Pages are measured only once the web font and the pictures are in.
+  function ready(){ (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){ setTimeout(start,30); }); }
+  if(document.readyState==='complete') ready(); else window.addEventListener('load',ready);
+})();
+<\/script>
+</body></html>`;
+}
+
+/** The PDF opens as its own page — the only way iPhone and iPad can print or save it. */
+function exPdf(m,blocks){
+  openDocPage(()=>Promise.resolve(exDocHtml(m,blocks)),
+    {sameTab:()=>Promise.resolve(exDocHtml(m,blocks,{sameTab:true})),what:'export'});
   return true;
 }
 

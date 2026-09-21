@@ -269,6 +269,16 @@ async function listBuildingsBasic(env) {
  * could drift out of sync. ─────────────────────────────────── */
 
 const ASSIGNMENT_TYPES = new Set(['BOQI', 'EOQI']);
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** '' or null clears the deadline; anything else must be a real calendar date. */
+function dueDateOf(value) {
+  if (value == null || value === '') return { ok: true, value: null };
+  const text = String(value).trim();
+  if (!DATE_RE.test(text)) return { ok: false };
+  const d = new Date(text + 'T12:00:00Z');
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== text) return { ok: false };
+  return { ok: true, value: text };
+}
 
 async function completedAssignmentIds(env) {
   const { results } = await env.DB.prepare(
@@ -340,6 +350,8 @@ async function upsertAssignment(env, officer, body) {
   if (!buildingId || !auditorId || !quarter || !ASSIGNMENT_TYPES.has(type)) {
     return fail('buildingId, auditorId, quarter, and a valid type (BOQI/EOQI) are required', 400);
   }
+  const due = 'dueDate' in (body || {}) ? dueDateOf(body.dueDate) : null;
+  if (due && !due.ok) return fail('a deadline must be a date like 2026-09-30', 400);
   const assignee = await env.DB.prepare('SELECT * FROM qa_users WHERE id = ?1').bind(auditorId).first();
   const problem = assigneeProblem(officer, assignee);
   if (problem) return fail(problem[1], problem[0]);
@@ -354,11 +366,11 @@ async function upsertAssignment(env, officer, body) {
   }
 
   await env.DB.prepare(
-    `INSERT INTO assignments (building_id, auditor_id, quarter, type, assigned_by)
-     VALUES (?1, ?2, ?3, ?4, ?5)
+    `INSERT INTO assignments (building_id, auditor_id, quarter, type, assigned_by, due_date)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6)
      ON CONFLICT(building_id, quarter, type)
-     DO UPDATE SET auditor_id = excluded.auditor_id, assigned_by = excluded.assigned_by, updated_at = datetime('now')`,
-  ).bind(buildingId, auditorId, quarter, type, officer.id).run();
+     DO UPDATE SET auditor_id = excluded.auditor_id, assigned_by = excluded.assigned_by, updated_at = datetime('now')${due ? ', due_date = excluded.due_date' : ''}`,
+  ).bind(buildingId, auditorId, quarter, type, officer.id, due ? due.value : null).run();
 
   if ((!existing || existing.auditor_id !== auditorId) && auditorId !== officer.id) {
     await notify(
@@ -392,7 +404,7 @@ const QUARTER_RE = /^\d{4}-Q[1-4]$/;
 async function quarterBoard(env, quarter, type) {
   const [b, a, u, i] = await Promise.all([
     env.DB.prepare('SELECT id, location, division, area, name FROM buildings ORDER BY division, area, name').all(),
-    env.DB.prepare('SELECT id, building_id, auditor_id, quarter, type, assigned_by, created_at, updated_at FROM assignments').all(),
+    env.DB.prepare('SELECT id, building_id, auditor_id, quarter, type, assigned_by, due_date, created_at, updated_at FROM assignments').all(),
     env.DB.prepare('SELECT id, name, role, status, can_edit, can_delete, can_export, permissions FROM qa_users').all(),
     env.DB.prepare(
       `SELECT id, inspector, date, overall, created_at, CAST(json_extract(data, '$.assignmentId') AS INTEGER) AS assignment_id
@@ -425,6 +437,7 @@ async function quarterBoard(env, quarter, type) {
       auditorName: asg ? (users.get(asg.auditor_id)?.name || null) : null,
       assignedBy: asg ? (users.get(asg.assigned_by)?.name || null) : null,
       assignedAt: asg ? asg.updated_at : null,
+      dueDate: asg ? (asg.due_date || null) : null,
       status: !asg ? 'unassigned' : res ? 'completed' : 'pending',
       score: res ? res.score : null,
       completedAt: res ? res.completedAt : null,
@@ -500,6 +513,44 @@ async function assignmentSchedule(env, quarter, type) {
   });
 }
 
+/** The deadline for a set of buildings already assigned this quarter. */
+async function setAssignmentDue(env, officer, body) {
+  const quarter = String(body?.quarter || '').trim();
+  const type = body?.type;
+  const due = dueDateOf(body?.dueDate);
+  const ids = [...new Set((Array.isArray(body?.buildingIds) ? body.buildingIds : [])
+    .map(Number).filter((n) => Number.isInteger(n) && n > 0))];
+  if (!QUARTER_RE.test(quarter) || !ASSIGNMENT_TYPES.has(type) || !ids.length) {
+    return fail('quarter (YYYY-Qn), a valid type (BOQI/EOQI) and at least one building are required', 400);
+  }
+  if (!due.ok) return fail('a deadline must be a date like 2026-09-30', 400);
+  if (ids.length > 1000) return fail('too many buildings in one request', 400);
+
+  const { results } = await env.DB.prepare(
+    `SELECT a.id, a.building_id, a.auditor_id, b.name
+     FROM assignments a JOIN buildings b ON b.id = a.building_id
+     WHERE a.quarter = ?1 AND a.type = ?2 AND a.building_id IN (SELECT value FROM json_each(?3))`,
+  ).bind(quarter, type, JSON.stringify(ids)).all();
+  const rows = results || [];
+  if (!rows.length) return json({ updated: 0, skipped: ids.length, dueDate: due.value });
+
+  await env.DB.prepare(
+    `UPDATE assignments SET due_date = ?1, updated_at = datetime('now')
+     WHERE quarter = ?2 AND type = ?3 AND building_id IN (SELECT value FROM json_each(?4))`,
+  ).bind(due.value, quarter, type, JSON.stringify(rows.map((r) => r.building_id))).run();
+
+  // Tell each auditor once, not once per building.
+  const byAuditor = new Map();
+  for (const r of rows) byAuditor.set(r.auditor_id, (byAuditor.get(r.auditor_id) || 0) + 1);
+  await Promise.all([...byAuditor.entries()].filter(([id]) => id !== officer.id).map(([id, n]) => notify(
+    env, id, 'assignment',
+    due.value ? `Deadline ${due.value} for ${n} building${n === 1 ? '' : 's'}` : `Deadline removed for ${n} building${n === 1 ? '' : 's'}`,
+    `${quarter} · ${type} · set by ${officer.name}`, '#pg-auditor',
+  )));
+  await audit(env, officer, 'assignment.due', `${quarter}|${type}`, `${rows.length} buildings`, { dueDate: due.value });
+  return json({ updated: rows.length, skipped: ids.length - rows.length, dueDate: due.value });
+}
+
 /* Assign (or unassign) many buildings in one go. Uses json_each so the
  * whole set is one statement regardless of D1's bound-parameter limit.
  * Buildings already inspected for the period are left untouched. */
@@ -507,12 +558,14 @@ async function bulkAssign(env, officer, body) {
   const quarter = String(body?.quarter || '').trim();
   const type = body?.type;
   const auditorId = body?.auditorId || null;
+  const due = 'dueDate' in (body || {}) ? dueDateOf(body.dueDate) : null;
   const ids = [...new Set((Array.isArray(body?.buildingIds) ? body.buildingIds : [])
     .map(Number).filter((n) => Number.isInteger(n) && n > 0))];
   if (!QUARTER_RE.test(quarter) || !ASSIGNMENT_TYPES.has(type) || !ids.length) {
     return fail('quarter (YYYY-Qn), a valid type (BOQI/EOQI) and at least one building are required', 400);
   }
   if (ids.length > 1000) return fail('too many buildings in one request', 400);
+  if (due && !due.ok) return fail('a deadline must be a date like 2026-09-30', 400);
 
   let auditor = null;
   if (auditorId) {
@@ -535,23 +588,24 @@ async function bulkAssign(env, officer, body) {
     if (!buildingName.has(id)) { notFound += 1; continue; }
     const cur = existing.get(id);
     if (cur && completedIds.has(cur.id)) { skippedCompleted += 1; continue; }
-    if (auditor ? cur && cur.auditor_id === auditor.id : !cur) { unchanged += 1; continue; }
+    if (auditor ? cur && cur.auditor_id === auditor.id && !due : !cur) { unchanged += 1; continue; }
     change.push(id);
   }
 
   if (change.length && auditor) {
     await env.DB.prepare(
-      `INSERT INTO assignments (building_id, auditor_id, quarter, type, assigned_by)
-       SELECT CAST(value AS INTEGER), ?2, ?3, ?4, ?5 FROM json_each(?1) WHERE true
+      `INSERT INTO assignments (building_id, auditor_id, quarter, type, assigned_by, due_date)
+       SELECT CAST(value AS INTEGER), ?2, ?3, ?4, ?5, ?6 FROM json_each(?1) WHERE true
        ON CONFLICT(building_id, quarter, type)
-       DO UPDATE SET auditor_id = excluded.auditor_id, assigned_by = excluded.assigned_by, updated_at = datetime('now')`,
-    ).bind(JSON.stringify(change), auditor.id, quarter, type, officer.id).run();
+       DO UPDATE SET auditor_id = excluded.auditor_id, assigned_by = excluded.assigned_by,
+         updated_at = datetime('now')${due ? ', due_date = excluded.due_date' : ''}`,
+    ).bind(JSON.stringify(change), auditor.id, quarter, type, officer.id, due ? due.value : null).run();
     const names = change.map((id) => buildingName.get(id));
     const list = names.slice(0, 3).join(', ') + (names.length > 3 ? ` and ${names.length - 3} more` : '');
     if (auditor.id !== officer.id) await notify(
       env, auditor.id, 'assignment',
       change.length === 1 ? `New assignment: ${names[0]}` : `${change.length} new assignments`,
-      `${officer.name} assigned you ${list} for ${quarter} ${type}.`,
+      `${officer.name} assigned you ${list} for ${quarter} ${type}.${due && due.value ? ` Due ${due.value}.` : ''}`,
       '#pg-auditor',
     );
   } else if (change.length) {
@@ -592,7 +646,7 @@ async function auditorProfile(env, viewer, url) {
 
   const [a, i, team] = await Promise.all([
     env.DB.prepare(
-      `SELECT a.id, a.quarter, a.type, a.building_id, a.updated_at, b.name AS building_name, b.division, b.area, b.location, o.name AS assigned_by
+      `SELECT a.id, a.quarter, a.type, a.building_id, a.updated_at, a.due_date, b.name AS building_name, b.division, b.area, b.location, o.name AS assigned_by
        FROM assignments a JOIN buildings b ON b.id = a.building_id LEFT JOIN qa_users o ON o.id = a.assigned_by
        WHERE a.auditor_id = ?1 ORDER BY b.division, b.area, b.name`,
     ).bind(auditor.id).all(),
@@ -624,6 +678,7 @@ async function auditorProfile(env, viewer, url) {
     return {
       id: x.id, quarter: x.quarter, type: x.type, buildingId: x.building_id, buildingName: x.building_name,
       division: x.division, area: x.area, location: x.location, assignedBy: x.assigned_by, assignedAt: x.updated_at,
+      dueDate: x.due_date || null,
       status: r ? 'completed' : 'pending', score: r ? r.score : null, completedAt: r ? r.completedAt : null,
       inspectionId: r ? r.inspectionId : null, inspectionDate: r ? r.date : null,
     };
@@ -714,7 +769,7 @@ async function leaderOverview(env, url) {
 
   const [b, a, u, i] = await Promise.all([
     env.DB.prepare('SELECT id, location, division, area, name FROM buildings').all(),
-    env.DB.prepare('SELECT id, building_id, auditor_id, quarter, type, assigned_by, created_at, updated_at FROM assignments').all(),
+    env.DB.prepare('SELECT id, building_id, auditor_id, quarter, type, assigned_by, due_date, created_at, updated_at FROM assignments').all(),
     env.DB.prepare('SELECT id, name, role, status FROM qa_users').all(),
     env.DB.prepare('SELECT id, inspector, facility, division, date, type, overall, data, created_at FROM inspections ORDER BY id').all(),
   ]);
@@ -1221,6 +1276,10 @@ async function handleAssignments(request, env, url, path, user) {
   if (path === 'assignments' && method === 'POST') {
     if (!canManage) return fail('you do not have permission to assign buildings', 403);
     return upsertAssignment(env, user, await request.json());
+  }
+  if (path === 'assignments/due' && method === 'POST') {
+    if (!canManage) return fail('you do not have permission to set deadlines', 403);
+    return setAssignmentDue(env, user, await request.json());
   }
   if (path === 'assignments/bulk' && method === 'POST') {
     if (!canManage) return fail('you do not have permission to assign buildings', 403);
