@@ -16,6 +16,16 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <!-- Lucide icons via CDN -->
 <script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
+<script>
+/* Two libraries come from a CDN. If one cannot be reached — a weak signal in a plant room, a blocked
+   domain — the app must still open and work: icons simply stay blank and charts stay empty. */
+window.__cdnMissing=[];
+if(!window.lucide){ window.__cdnMissing.push('icons'); window.lucide={createIcons:function(){}}; }
+if(!window.Chart){
+  window.__cdnMissing.push('charts');
+  window.Chart=function(){ this.canvas=null; this.destroy=this.update=this.resize=function(){}; };
+}
+</script>
 <style>
 :root{
   /* Brand: dark blue #0033A0 and teal #26A8AB, blended in --brand; green marks good results */
@@ -24,6 +34,9 @@
   --brand:linear-gradient(135deg,#0033A0 0%,#0B5FAE 55%,#26A8AB 100%);
   --bg:#F2F5F8;--border:#C0C0C0;--text:#102040;--muted:#5F6369;
   --good:#00843D;--warn:#B26A00;--danger:#C0392B;
+  /* The bright brand teal is 2.9:1 against white — fine for lines and fills, too faint for words.
+     These carry text: teal ink on light surfaces, a deeper teal under white labels. */
+  --teal-ink:#0A7274;--teal-deep:#0E7C7F;--warn-ink:#8F5400;--good-ink:#007A38;
   --sw:268px;--rail:76px;--r:12px;--font:'Cairo',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -35,7 +48,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 /* SIDEBAR */
 #sidebar{width:var(--sw);min-width:var(--sw);background:linear-gradient(180deg,#001A55 0%,#0033A0 42%,#106F9F 78%,#26A8AB 100%);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;height:100dvh;overflow-x:hidden;overflow-y:auto;z-index:40;transition:width .22s ease,min-width .22s ease,transform .25s ease}
 #sb-head{background:linear-gradient(160deg,#001540 0%,#00297F 62%,#0C5E96 100%);padding:18px 16px 14px;border-bottom:2px solid var(--teal);display:flex;align-items:center;justify-content:space-between;gap:10px}
-#sb-head .eyebrow{font-size:.62rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:4px}
+#sb-head .eyebrow{font-size:.68rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:4px}
 #sb-head h1{font-size:.92rem;font-weight:900;line-height:1.35;color:#fff}
 /* Grouped destinations with icons. A group whose items are all hidden for this account
    hides its label too (refreshNav). Pages that belong together share one entry: Inspection
@@ -44,19 +57,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 #sb-nav{flex:1;padding:14px 10px;overflow-y:auto;display:grid;gap:16px;align-content:start}
 .nav-group{display:grid;gap:3px}
 .nav-group[hidden]{display:none}
-.nav-label{font-size:.58rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.45);padding:0 12px 3px}
+.nav-label{font-size:.68rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.45);padding:0 12px 3px}
 .ni{display:flex;align-items:center;gap:11px;padding:9px 12px;cursor:pointer;border-radius:9px;transition:background .13s,color .13s;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.76);text-decoration:none}
 .ni[hidden]{display:none}
 .ni svg{width:18px;height:18px;flex-shrink:0;opacity:.75;transition:opacity .13s}
 /* An account without edit rights has nothing to do on the scoring pages. */
-body.view-only .ni[data-page^="pg-s"]{display:none}
+body.view-only #inspection-link{display:none}
 /* ...and nothing that opens a record for editing */
 .ni:hover{background:rgba(255,255,255,.08);color:#fff}
 .ni:hover svg{opacity:1}
 .ni.active{background:rgba(255,255,255,.15);box-shadow:inset 3px 0 var(--teal-lt);color:#fff;font-weight:800}
 .ni.active svg{opacity:1;color:var(--teal-lt)}
 .ni .ns{margin-left:auto;font-size:.68rem;font-weight:800;background:rgba(255,255,255,.1);border-radius:20px;padding:2px 7px;min-width:30px;text-align:center}
-.ni.active .ns{background:var(--teal);color:#fff}
+.ni.active .ns{background:var(--teal-deep);color:#fff}
 .ni .ns:empty{display:none}
 .ni .ns-alert{background:#fab219;color:#1a1300}
 .sb-brand{display:flex;align-items:center;gap:11px}
@@ -75,11 +88,11 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
   display:flex;align-items:center;justify-content:center;font-style:normal;font-size:.7rem;font-weight:900;color:#fff;flex-shrink:0}
 .acct-meta{flex:1;min-width:0;display:grid;line-height:1.25}
 #acct-name{font-size:.76rem;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#acct-role{font-size:.64rem;color:var(--teal-lt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#acct-role{font-size:.68rem;color:var(--teal-lt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acct-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:7px;color:inherit;
   cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;transition:background .13s;flex-shrink:0;font-family:var(--font)}
 #acct-settings:hover{background:rgba(38,168,171,.35)}
-#acct-logout{padding:6px 9px;font-size:.66rem;font-weight:800}
+#acct-logout{padding:6px 9px;font-size:.68rem;font-weight:800}
 #acct-logout:hover{background:rgba(192,57,43,.35)}
 .ss-item{position:relative}
 
@@ -87,7 +100,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 #sec-switch{display:none}
 #insp-layout.on{display:grid;grid-template-columns:238px minmax(0,1fr);align-items:start}
 #insp-layout.on #sec-switch{display:block;position:sticky;top:54px;padding:24px 0 24px 24px;max-height:calc(100vh - 54px);overflow-y:auto}
-.ss-label{display:block;font-size:.62rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 10px 4px}
+.ss-label{display:block;font-size:.68rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 10px 4px}
 #ss-list{display:grid;gap:5px}
 .ss-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1px solid var(--border);
   border-radius:9px;padding:9px 11px;cursor:pointer;font-family:var(--font);color:var(--text);transition:border-color .13s,box-shadow .13s}
@@ -102,11 +115,11 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ss-overall{display:flex;align-items:baseline;gap:4px}
 .ss-overall b{font-size:1.7rem;font-weight:900;color:var(--royal);line-height:1}
 .ss-overall small{font-size:.74rem;color:var(--muted);font-weight:700}
-.ss-overall span{margin-left:auto;align-self:center;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:999px;color:#fff;background:#9fb3c8;text-transform:uppercase;letter-spacing:.04em}
+.ss-overall span{margin-left:auto;align-self:center;font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:999px;color:#fff;background:#9fb3c8;text-transform:uppercase;letter-spacing:.04em}
 .ss-head .ov-bar{margin:9px 0 4px}
 .ss-head>small{font-size:.68rem;color:var(--muted);font-weight:700}
 .ss-item b{font-size:.76rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ss-item small{font-size:.66rem;color:var(--muted);font-weight:600}
+.ss-item small{font-size:.68rem;color:var(--muted);font-weight:600}
 .ss-item.active{border-color:var(--teal);background:rgba(38,168,171,.08);box-shadow:inset 3px 0 var(--teal)}
 .ss-item.active b{color:var(--royal)}
 /* MAIN */
@@ -124,7 +137,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
   font-family:var(--font);font-size:.74rem;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:border-color .13s,color .13s}
 .pb-step:hover{border-color:var(--teal);color:var(--royal)}
 .pb-step i{width:22px;height:22px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:.68rem;font-weight:900}
-.pb-step small{font-weight:800;color:var(--teal);font-size:.7rem}
+.pb-step small{font-weight:800;color:var(--teal-ink);font-size:.7rem}
 .pb-step.done i{background:var(--good);color:#fff}
 .pb-step.active{border-color:var(--royal);color:var(--royal);background:rgba(0,51,160,.05)}
 .pb-step.active i{background:var(--royal);color:#fff}
@@ -143,12 +156,12 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 #pg-home{padding:0}
 .home-hero{background:linear-gradient(150deg,#001540 0%,#00246F 32%,#0A5C9E 70%,#26A8AB 100%);color:#fff;padding:30px 44px 26px;position:relative;overflow:hidden;border-bottom:4px solid var(--teal)}
 .home-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(38,168,171,.2) 0%,transparent 70%);pointer-events:none}
-.home-hero .ey{font-size:.65rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:5px}
+.home-hero .ey{font-size:.68rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:5px}
 .home-hero h2{font-size:1.65rem;font-weight:900;line-height:1.2;margin-bottom:4px}
 .home-hero h2 span{color:var(--teal)}
 .home-hero .sub{font-size:.82rem;color:rgba(255,255,255,.6);margin-bottom:0;max-width:560px}
 #pg-new .home-hero .sub{margin-bottom:22px}
-.home-hero .ey{font-size:.62rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:6px}
+.home-hero .ey{font-size:.68rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:6px}
 /* Tabs for pages that share one sidebar entry (Team: Overview / Assign & Track) */
 .page-tabs{display:flex;gap:6px;margin-top:18px;flex-wrap:wrap;position:relative}
 .page-tabs[hidden]{display:none}
@@ -170,7 +183,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .of-tap{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed var(--border);background:#fff;color:var(--royal);
   border-radius:999px;padding:6px 13px;font-family:var(--font);font-size:.76rem;font-weight:800;cursor:pointer;transition:background .12s,border-color .12s}
 .of-tap:hover{border-color:var(--teal);background:rgba(38,168,171,.08)}
-.of-tap.on{border-style:solid;border-color:var(--good);background:rgba(0,132,61,.1);color:var(--good)}
+.of-tap.on{border-style:solid;border-color:var(--good);background:rgba(0,132,61,.1);color:var(--good-ink)}
 .of-tap[disabled]{opacity:.6;cursor:default}
 /* Quarter schedule */
 .sch-aud{margin-bottom:14px}
@@ -178,6 +191,45 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .sch-aud-hd>div{min-width:0;flex:1}
 .sch-aud-hd b{display:block;font-size:.9rem;color:var(--royal-dk)}
 .sch-aud-hd small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}
+/* Fingers, not pointers: small round buttons keep their look but get a 44px target */
+@media(pointer:coarse),(max-width:820px){
+  .info-tip,.tool-x,#cmp-swap{position:relative}
+  .info-tip::after,.tool-x::after,#cmp-swap::after{content:'';position:absolute;inset:-9px}
+}
+/* Deadlines: the same chip wherever a due date is shown */
+.due{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.68rem;font-weight:800;white-space:nowrap;background:var(--bg);color:var(--royal-dk)}
+.due.soon{background:rgba(212,128,0,.13);color:var(--warn-ink)}
+.due.over{background:rgba(240,95,65,.18);color:#B4310F}
+.due.met{background:rgba(0,132,61,.1);color:var(--good-ink)}
+.due.late{background:rgba(240,95,65,.18);color:#B4310F}
+.of-due{border:1.5px solid var(--border);border-radius:7px;padding:4px 6px;font-family:var(--font);font-size:.72rem;font-weight:700;color:var(--text);background:#fff;
+  width:100%;min-width:0;max-width:152px}
+.of-due:focus{outline:none;border-color:var(--teal)}
+.of-due.over{border-color:#F05F41;color:#B4310F}
+.of-due.soon{border-color:var(--warn)}
+.of-bulk input[type=date]{border:none;border-radius:7px;padding:7px 10px;font-family:var(--font);font-size:.78rem;font-weight:700}
+.of-bulk .ofb-due{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:.68rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.86)}
+/* On a phone every schedule row becomes a card: nothing is cut off and nothing scrolls sideways */
+@media(max-width:760px){
+  #pg-schedule .ov-scroll{overflow-x:visible}
+  .sch-t,.sch-t tbody,.sch-t tr,.sch-t td{display:block;width:auto}
+  .sch-t thead{display:none}
+  .sch-t tbody{counter-reset:schrow}
+  .sch-t tr{counter-increment:schrow;padding:13px 16px;border-bottom:1px solid var(--bg)}
+  .sch-t tr:last-child{border-bottom:none}
+  .sch-t td{border:none;padding:3px 0;display:flex;gap:14px;align-items:baseline;justify-content:space-between;font-size:.78rem}
+  .sch-t td::before{content:attr(data-l);flex:0 0 auto;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .sch-t td b,.sch-t td small{white-space:normal;text-align:right}
+  .sch-t td small{display:block;font-size:.68rem}
+  .sch-t td.num{display:none}
+  .sch-t td.bld{display:block;padding:0 0 7px;text-align:left}
+  .sch-t td.bld::before{content:counter(schrow) '. ';color:var(--royal);font-size:.86rem;font-weight:900}
+  .sch-t td.bld b{font-size:.88rem;color:var(--royal-dk)}
+  .sch-t td.bld small{text-align:left;color:var(--muted)}
+  .sch-t td.ov-empty{display:block;text-align:center}
+  .sch-t td.ov-empty::before{content:''}
+  .sch-aud-hd{padding:12px 16px}
+}
 /* Home quick actions */
 #home-actions{padding:16px 44px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
 #home-actions:empty{display:none}
@@ -195,12 +247,12 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 #ad-stats .hs-card.clickable{cursor:pointer}
 .ad-form{padding:18px}
 .ad-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
-.ad-grid label{display:grid;gap:5px;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.ad-grid label{display:grid;gap:5px;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .ad-grid input,.ad-grid select{border:1.5px solid var(--border);border-radius:7px;padding:8px 10px;font-size:.84rem;font-family:var(--font);color:var(--text);
   background:#fff;outline:none;text-transform:none;letter-spacing:0;font-weight:600;min-width:0}
 .ad-grid input:focus,.ad-grid select:focus{border-color:var(--teal)}
 .ad-msg{margin-top:12px;padding:9px 12px;border-radius:8px;font-size:.78rem;font-weight:700}
-.ad-msg.ok{background:rgba(0,132,61,.1);color:var(--good)}
+.ad-msg.ok{background:rgba(0,132,61,.1);color:var(--good-ink)}
 .ad-msg.err{background:rgba(192,57,43,.1);color:var(--danger)}
 .ad-role{border:1.5px solid var(--border);border-radius:7px;padding:6px 8px;font-family:var(--font);font-size:.8rem;background:#fff;color:var(--text)}
 .ad-btn{border:1px solid var(--border);background:#fff;color:var(--royal);border-radius:7px;padding:5px 10px;font-family:var(--font);font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap}
@@ -208,18 +260,18 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ad-btn:disabled{opacity:.45;cursor:not-allowed}
 .ad-btn.danger{color:var(--danger);border-color:rgba(192,57,43,.3)}
 .ad-btn.danger:hover:not(:disabled){background:rgba(192,57,43,.07)}
-.ov-pill.active{background:rgba(0,132,61,.1);color:var(--good)}
+.ov-pill.active{background:rgba(0,132,61,.1);color:var(--good-ink)}
 .ov-pill.suspended{background:rgba(192,57,43,.1);color:var(--danger)}
-.ov-pill.setup{background:rgba(212,128,0,.12);color:var(--warn)}
+.ov-pill.setup{background:rgba(212,128,0,.12);color:var(--warn-ink)}
 .ad-who{display:flex;align-items:center;gap:10px}
 .ad-who i{width:32px;height:32px;border-radius:50%;background:var(--brand);color:#fff;font-style:normal;font-size:.68rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ad-pcount{font-weight:800;font-size:.78rem;color:var(--royal)}
 .ad-pcount.all{color:var(--good)}
-.ad-custom{display:inline-block;margin-left:6px;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:rgba(38,168,171,.14);color:#0C7B7D;padding:1px 7px;border-radius:999px;vertical-align:2px}
+.ad-custom{display:inline-block;margin-left:6px;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:rgba(38,168,171,.14);color:var(--teal-ink);padding:1px 7px;border-radius:999px;vertical-align:2px}
 .ad-online{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:800;color:var(--good);margin-right:6px}
 .ad-online::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--good)}
 .ad-pgroup{margin-bottom:10px}
-.ad-pgroup>span{display:block;font-size:.6rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:6px 0 2px}
+.ad-pgroup>span{display:block;font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:6px 0 2px}
 .ad-switch{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--bg);cursor:pointer;text-transform:none;letter-spacing:0}
 .ad-switch input{appearance:none;-webkit-appearance:none;width:36px;height:20px;border-radius:999px;background:var(--border);position:relative;flex-shrink:0;cursor:pointer;transition:background .15s;margin:1px 0 0}
 .ad-switch input::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
@@ -227,7 +279,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ad-switch input:checked::after{transform:translateX(16px)}
 .ad-switch input:disabled{opacity:.55;cursor:not-allowed}
 .ad-switch b{display:block;font-size:.82rem;color:var(--text)}
-.ad-switch b em{font-style:normal;font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--bg);padding:1px 6px;border-radius:5px;margin-left:4px;vertical-align:1px}
+.ad-switch b em{font-style:normal;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--bg);padding:1px 6px;border-radius:5px;margin-left:4px;vertical-align:1px}
 .ad-switch small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}
 .ad-locked{display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--muted);padding:8px 0}
 #ad-new-perms{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 24px;margin-bottom:14px}
@@ -243,7 +295,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ad-d-body{flex:1;overflow-y:auto;padding:6px 22px 26px}
 .ad-d-body section{padding:14px 0;border-bottom:1px solid var(--bg)}
 .ad-d-body section:last-child{border-bottom:none}
-.ad-d-body h4{font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--royal);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ad-d-body h4{font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--royal);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .ad-kv{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:.8rem}
 .ad-kv>span{width:118px;flex-shrink:0;color:var(--muted);font-weight:700;font-size:.74rem}
 .ad-kv>div{flex:1;min-width:0}
@@ -254,14 +306,14 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ad-log-details{font-size:.74rem;color:var(--muted);margin-top:1px}
 .ov-feed.ad-log li{padding-left:18px;padding-right:18px}
 .ad-d-body .ov-feed.ad-log li{padding-left:0;padding-right:0}
-.modal-box label{display:block;font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.modal-box label{display:block;font-size:.68rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 @media(max-width:780px){#home-actions{padding:14px 14px 0}.ad-form{padding:14px}}
 /* INSPECTION DETAILS — step 1 */
 #pg-new{background:var(--bg);padding-bottom:40px}
 #pg-new [hidden]{display:none!important}
 .in-wrap{max-width:1020px}
 .in-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;padding:18px}
-.in-grid label,.in-lbl{display:grid;gap:6px;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.in-grid label,.in-lbl{display:grid;gap:6px;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .in-wide{grid-column:1/-1}
 .in-grid input,.in-grid select{border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:.88rem;font-family:var(--font);color:var(--text);
   background:#fff;outline:none;text-transform:none;letter-spacing:0;font-weight:600;min-width:0;width:100%}
@@ -269,11 +321,11 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .in-grid .invalid,.in-types.invalid{border-color:var(--danger)!important;background:#fff7f7}
 .in-static{display:flex;align-items:center;gap:9px;min-height:40px;border:1.5px dashed var(--border);border-radius:8px;padding:6px 11px;font-size:.88rem;
   font-weight:700;color:var(--text);text-transform:none;letter-spacing:0}
-.in-static i{width:26px;height:26px;border-radius:50%;background:var(--royal);color:#fff;font-style:normal;font-size:.62rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.in-static small{font-size:.62rem;font-weight:800;color:#0C7B7D;background:rgba(38,168,171,.14);padding:1px 7px;border-radius:999px;text-transform:uppercase}
+.in-static i{width:26px;height:26px;border-radius:50%;background:var(--royal);color:#fff;font-style:normal;font-size:.68rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.in-static small{font-size:.68rem;font-weight:800;color:var(--teal-ink);background:rgba(38,168,171,.14);padding:1px 7px;border-radius:999px;text-transform:uppercase}
 .in-hint{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
 .in-hint.ok{color:var(--good)}
-.in-hint.warn{color:var(--warn)}
+.in-hint.warn{color:var(--warn-ink)}
 .in-types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border:1.5px solid transparent;border-radius:12px}
 .in-type{border:1.5px solid var(--border);background:#fff;border-radius:10px;padding:10px 12px;text-align:left;cursor:pointer;font-family:var(--font)}
 .in-type b{display:block;font-size:.88rem;color:var(--royal)}
@@ -312,8 +364,8 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
   display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:12px}
 .hs-card b{display:block;font-size:1.65rem;font-weight:900;color:var(--royal);line-height:1.1}
 .hs-card span{font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
-.sec-eyebrow{display:inline-flex;align-items:center;gap:6px;background:rgba(38,168,171,.14);color:#0C7B7D;
-  font-weight:800;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:4px 11px;border-radius:999px;margin-bottom:10px}
+.sec-eyebrow{display:inline-flex;align-items:center;gap:6px;background:rgba(38,168,171,.14);color:var(--teal-ink);
+  font-weight:800;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:4px 11px;border-radius:999px;margin-bottom:10px}
 
 /* Team Overview (Quality Leader) */
 #pg-overview{background:var(--bg);padding-bottom:40px}
@@ -328,7 +380,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ov-panel-hd small{font-size:.7rem;color:var(--muted);font-weight:600}
 .ov-scroll{overflow-x:auto}
 .ov-table{width:100%;border-collapse:collapse}
-.ov-table th{text-align:left;font-size:.64rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
+.ov-table th{text-align:left;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
   padding:9px 18px;border-bottom:1px solid var(--border);white-space:nowrap}
 .ov-table td{padding:10px 18px;border-bottom:1px solid var(--bg);font-size:.8rem;vertical-align:middle}
 .ov-table tr:last-child td{border-bottom:none}
@@ -341,9 +393,9 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ov-pct{display:flex;align-items:center;gap:8px;min-width:130px}
 .ov-pct span{font-size:.72rem;font-weight:800;color:var(--muted);min-width:34px;text-align:right}
 .ov-score{font-weight:900}
-.ov-pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.66rem;font-weight:800;white-space:nowrap}
-.ov-pill.completed{background:rgba(0,132,61,.1);color:var(--good)}
-.ov-pill.pending{background:rgba(212,128,0,.12);color:var(--warn)}
+.ov-pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.68rem;font-weight:800;white-space:nowrap}
+.ov-pill.completed{background:rgba(0,132,61,.1);color:var(--good-ink)}
+.ov-pill.pending{background:rgba(212,128,0,.12);color:var(--warn-ink)}
 .ov-pill.unassigned{background:var(--bg);color:var(--muted)}
 .ov-chart{padding:14px 18px;height:250px;position:relative}
 .ov-feed{list-style:none;margin:0;padding:0;max-height:380px;overflow-y:auto}
@@ -377,11 +429,11 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .au-sched{padding:18px}
 .au-months{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .au-months span{display:flex;align-items:center;gap:7px;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
-.au-months em{font-style:normal;font-size:.56rem;padding:1px 7px;border-radius:5px;color:#fff;background:var(--teal)}
+.au-months em{font-style:normal;font-size:.62rem;padding:1px 7px;border-radius:5px;color:#fff;background:var(--teal-deep)}
 .au-months em.EOQI{background:var(--royal)}
 .au-track{position:relative;height:10px;background:var(--bg);border-radius:999px;margin-top:26px}
 .au-track i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:linear-gradient(90deg,var(--teal),var(--royal))}
-.au-track b{position:absolute;top:-22px;transform:translateX(-50%);font-size:.6rem;font-weight:800;color:var(--royal);white-space:nowrap}
+.au-track b{position:absolute;top:-22px;transform:translateX(-50%);font-size:.62rem;font-weight:800;color:var(--royal);white-space:nowrap}
 .au-track b::after{content:'';position:absolute;left:50%;top:17px;width:2px;height:15px;background:var(--royal);transform:translateX(-50%)}
 .au-track-note{display:flex;justify-content:space-between;gap:8px;font-size:.7rem;color:var(--muted);margin:6px 0 16px;font-weight:600}
 .au-track-note strong{color:var(--royal)}
@@ -391,11 +443,11 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .au-phase-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
 .au-phase b{display:block;font-size:.84rem;color:var(--royal)}
 .au-phase small{display:block;font-size:.7rem;color:var(--muted);margin-bottom:6px}
-.au-state{font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
-.au-state.open{background:rgba(0,132,61,.1);color:var(--good)}
+.au-state{font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.au-state.open{background:rgba(0,132,61,.1);color:var(--good-ink)}
 .au-state.soon{background:rgba(0,51,160,.08);color:var(--royal)}
 .au-state.closed{background:var(--bg);color:var(--muted)}
-.au-type{display:inline-flex;align-items:center;justify-content:center;min-width:46px;font-size:.6rem;font-weight:900;letter-spacing:.04em;padding:3px 7px;border-radius:6px;color:#fff;background:var(--teal);flex-shrink:0}
+.au-type{display:inline-flex;align-items:center;justify-content:center;min-width:46px;font-size:.68rem;font-weight:900;letter-spacing:.04em;padding:3px 7px;border-radius:6px;color:#fff;background:var(--teal-deep);flex-shrink:0}
 .au-type.EOQI{background:var(--royal)}
 .au-list{display:grid;gap:8px}
 .au-group{display:flex;align-items:center;gap:8px;margin:12px 2px 2px;font-size:.72rem;font-weight:800;color:var(--royal)}
@@ -409,7 +461,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .au-main b{display:block;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .au-main small{display:block;font-size:.72rem;color:var(--muted)}
 .au-card .btn{padding:7px 14px;font-size:.76rem;flex-shrink:0}
-.au-progress{font-size:.68rem;font-weight:800;color:var(--teal);white-space:nowrap}
+.au-progress{font-size:.68rem;font-weight:800;color:var(--teal-ink);white-space:nowrap}
 .au-empty{background:#fff;border:1px dashed var(--border);border-radius:var(--r);padding:26px;text-align:center;color:var(--muted);font-size:.84rem}
 .ov-feed li.unread{background:rgba(38,168,171,.07)}
 .ov-feed li.clickable{cursor:pointer}
@@ -438,11 +490,51 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .of-card-hd small{display:block;font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .of-pct{font-size:1.3rem;font-weight:900;color:var(--royal)}
 .of-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px;text-align:center}
-.of-nums span{font-size:.58rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.of-nums span{font-size:.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .of-nums b{display:block;font-size:1rem;font-weight:900;color:var(--text)}
 .of-card-ft{margin-top:10px;padding-top:9px;border-top:1px solid var(--bg);font-size:.7rem;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px}
 .of-card-ft b{display:inline-flex;align-items:center;gap:2px;color:var(--royal);font-weight:800}
 .of-table .of-chk{width:38px;padding-right:0}
+.of-all-m{display:none}
+.of-v small{display:block}
+.m-only{display:none}
+/* An iPad is 768–1024 wide: the table has to fit without a sideways scroll, so it drops the Division column
+   into the building line and tightens its padding */
+@media(min-width:761px) and (max-width:1100px){
+  .of-table td,.of-table th{padding-left:10px;padding-right:10px}
+  .of-table td.col-div,.of-table th.col-div{display:none}
+  .of-table .m-only{display:inline}
+  .of-table .of-sel{min-width:150px}
+  .of-table .of-due{max-width:138px}
+}
+@media(max-width:760px){
+  #pg-officer .ov-scroll{overflow-x:visible}
+  .of-all-m{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--bg);font-size:.76rem;font-weight:700;color:var(--muted);cursor:pointer}
+  .of-all-m input{width:18px;height:18px;accent-color:var(--royal);flex:none}
+  .of-table,.of-table tbody,.of-table tr,.of-table td{display:block;width:auto}
+  .of-table thead{display:none}
+  .of-table tr{position:relative;padding:13px 16px 13px 50px;border-bottom:1px solid var(--bg)}
+  .of-table tr:last-child{border-bottom:none}
+  #pg-officer .of-table tr.selected{background:rgba(0,51,160,.06)}
+  .of-table td{border:none;padding:4px 0;display:flex;gap:14px;align-items:center;justify-content:space-between;font-size:.8rem;background:none}
+  #pg-officer .of-table tr.selected td{background:none}
+  .of-table td::before{content:attr(data-l);flex:0 0 auto;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .of-table td.of-chk{position:absolute;left:16px;top:17px;width:auto;padding:0;display:block}
+  .of-table td.of-chk::before,.of-table td.bld::before{content:none}
+  .of-table td.of-chk input{width:20px;height:20px}
+  .of-table td.bld{display:block;padding:0 0 7px}
+  .of-table td.bld b{white-space:normal;font-size:.9rem;color:var(--royal-dk)}
+  .of-table td.bld small{white-space:normal}
+  .of-table .of-v{min-width:0;display:flex;flex-direction:column;align-items:flex-end;text-align:right}
+  .of-table .of-v small{white-space:normal}
+  .of-table .of-sel{min-width:0;width:100%;max-width:230px}
+  .of-table .of-due{max-width:170px}
+  .of-table td.ov-empty{display:block;text-align:center}
+  .of-table td.ov-empty::before{content:none}
+  .of-table td.col-div,.of-table td.no-res{display:none}      /* the building line already says where it is; a result row only when there is one */
+  .of-table .m-only{display:inline}
+  .of-foot{padding:10px 16px}
+}
 .of-table input[type=checkbox],#of-check-all{width:16px;height:16px;accent-color:var(--royal);cursor:pointer}
 .of-sel{border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;font-family:var(--font);font-size:.78rem;color:var(--text);background:#fff;min-width:180px;outline:none}
 .of-sel:focus{border-color:var(--teal)}
@@ -468,11 +560,11 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .info-tip{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-family:Georgia,'Times New Roman',serif;
   font-style:italic;font-weight:700;font-size:.72rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0;
   margin-left:4px;vertical-align:middle;text-transform:none;letter-spacing:0;transition:background .13s,color .13s,border-color .13s}
-.info-tip:hover,.info-tip.on{border-color:var(--teal);background:var(--teal);color:#fff}
+.info-tip:hover,.info-tip.on{border-color:var(--teal-deep);background:var(--teal-deep);color:#fff}
 .tip-box{display:flex;gap:10px;align-items:flex-start;background:#eaf6fb;border:1px solid rgba(38,168,171,.45);border-radius:var(--r);padding:10px 12px;margin:0 0 12px;
   font-size:.8rem;color:#0b3a5c;line-height:1.55;font-weight:600;text-transform:none;letter-spacing:0;animation:tipIn .15s ease-out;width:100%}
 .tip-box[hidden]{display:none!important}
-.tip-box>i{font-family:Georgia,'Times New Roman',serif;font-weight:700;width:20px;height:20px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.72rem;margin-top:1px}
+.tip-box>i{font-family:Georgia,'Times New Roman',serif;font-weight:700;width:20px;height:20px;border-radius:50%;background:var(--teal-deep);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.72rem;margin-top:1px}
 .tip-box b{display:block;color:var(--royal);font-weight:800;margin-bottom:2px}
 .tip-box p{margin:0 0 3px}
 .tip-box ul{margin:2px 0 3px;padding-left:18px}
@@ -498,7 +590,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .lib-bar .rp-chips{flex-wrap:wrap}
 #lib-toggle{display:none}
 .lib-filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
-.lib-filters label{display:grid;gap:4px;font-size:.6rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.lib-filters label{display:grid;gap:4px;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .lib-filters select,.lib-filters input{border:1.5px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.8rem;font-family:var(--font);color:var(--text);background:#fff;font-weight:600;min-width:0;text-transform:none;letter-spacing:0}
 #lib-panel{transition:opacity .15s}
 #lib-panel.loading{opacity:.55}
@@ -515,14 +607,14 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
   background:conic-gradient(var(--c,#9fb3c8) calc(var(--p,0) * 1%),rgba(255,255,255,.18) 0)}
 .rv-head-ring>div{width:52px;height:52px;border-radius:50%;background:#02205f;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
 .rv-head-ring b{font-size:1.15rem;color:#fff}
-.rv-head-ring small{font-size:.5rem;color:var(--teal-lt);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.rv-head-ring small{font-size:.62rem;color:var(--teal-lt);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
 .ad-d-head .rv-head-close{margin-left:10px}
 .rv-status-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .rv-status .ad-note{flex-wrap:nowrap;align-items:flex-start;margin-top:10px}
 .rv-status .ad-note svg{flex-shrink:0;margin-top:2px}
 .rv-auditor{font-size:.8rem;color:var(--muted)}
 .of-review{display:block;margin-top:4px}
-.rv-mark-pill{font-size:.64rem}
+.rv-mark-pill{font-size:.68rem}
 .rv-decided{display:flex;align-items:flex-start;gap:11px;margin-top:12px;padding:12px 14px;border-radius:var(--r);border:1px solid var(--border);background:#fff}
 .rv-decided.approved{border-color:rgba(0,132,61,.45);background:#F1F8F3}
 .rv-decided.changes{border-color:rgba(178,106,0,.45);background:#FDF7EC}
@@ -537,7 +629,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .rv-change{padding:7px 13px;font-size:.76rem;flex-shrink:0}
 .rv-decided[hidden],.rv-form[hidden]{display:none}
 .rv-form{margin-top:12px;background:var(--bg);border-radius:10px;padding:12px}
-.rv-form label{display:block;font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.rv-form label{display:block;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
 .rv-form label small{text-transform:none;letter-spacing:0;font-weight:600}
 .rv-form textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-family:var(--font);font-size:.86rem;color:var(--text);background:#fff;resize:vertical;outline:none}
 .rv-form textarea:focus{border-color:var(--teal)}
@@ -558,7 +650,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .rv-sec summary::before{content:'›';color:var(--muted);font-weight:900;transition:transform .15s}
 .rv-sec[open] summary::before{transform:rotate(90deg)}
 .rv-sec-t{font-weight:800;font-size:.84rem;color:var(--royal);flex:1}
-.rv-fails{font-size:.66rem;font-weight:800;color:#b42318;background:rgba(192,57,43,.08);border-radius:999px;padding:1px 8px}
+.rv-fails{font-size:.68rem;font-weight:800;color:#b42318;background:rgba(192,57,43,.08);border-radius:999px;padding:1px 8px}
 .rv-sec-s{font-size:.78rem;color:var(--muted)}
 .rv-sec ul{list-style:none;margin:0;padding:0 12px 8px}
 .rv-item{display:grid;grid-template-columns:22px 1fr auto;gap:10px;padding:8px 0;border-top:1px solid var(--bg);font-size:.8rem;align-items:start}
@@ -566,12 +658,12 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .rv-item.yes .rv-mark{background:var(--good)}.rv-item.no .rv-mark{background:var(--danger)}
 .rv-item b{font-weight:700}
 .rv-item p{margin:3px 0 0;color:#344a66;background:var(--bg);border-radius:6px;padding:5px 8px;font-size:.78rem}
-.rv-item em{font-style:normal;font-size:.66rem;font-weight:800;color:var(--muted);white-space:nowrap}
+.rv-item em{font-style:normal;font-size:.68rem;font-weight:800;color:var(--muted);white-space:nowrap}
 .rv-item.no em{color:#b42318}
 .rv-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .rv-photos img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid var(--teal);cursor:zoom-in}
 .rv-notes{margin:0 12px 10px;background:#eaf6fb;border-radius:8px;padding:8px 10px;font-size:.78rem;color:#0b3a5c}
-.rv-notes b{display:block;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.rv-notes b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
 @media(max-width:780px){
   #lib-toggle{display:inline-flex}
   .lib-filters{display:none;grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -587,16 +679,16 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 /* Reports & Analytics (all roles) */
 #pg-reports [hidden]{display:none!important}
 .rp-ins-filters{padding:20px 44px 0;margin:0;gap:10px}
-.rp-ins-filters label{display:inline-flex;align-items:center;gap:8px;font-size:.66rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.rp-ins-filters label{display:inline-flex;align-items:center;gap:8px;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .ins-delta{display:flex;align-items:center;gap:4px;font-size:.72rem;font-weight:800;margin-top:5px}
 .ins-delta svg{width:13px;height:13px;flex-shrink:0}
 .ins-delta.up{color:#006300}.ins-delta.down{color:#b42318}.ins-delta.flat{color:var(--muted)}
 .ins-dc{font-weight:800;font-size:.78rem;white-space:nowrap}
 .ins-dc.up{color:#006300}.ins-dc.down{color:#b42318}.ins-dc.flat{color:var(--muted)}
 .ins-table{border-top:1px solid var(--bg)}
-.ins-table summary{cursor:pointer;padding:10px 18px;font-size:.74rem;font-weight:800;color:var(--teal)}
+.ins-table summary{cursor:pointer;padding:10px 18px;font-size:.74rem;font-weight:800;color:var(--teal-ink)}
 .ins-heat{width:100%;border-collapse:separate;border-spacing:2px;font-size:.78rem}
-.ins-heat th{font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:8px 6px;text-align:center;white-space:nowrap}
+.ins-heat th{font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:8px 6px;text-align:center;white-space:nowrap}
 .ins-heat th[scope=row]{text-align:left;text-transform:none;letter-spacing:0;font-size:.78rem;color:var(--text);padding-left:12px;min-width:120px}
 .ins-heat tfoot th[scope=row]{color:var(--royal)}
 .ins-heat td.hm{text-align:center;font-weight:800;padding:9px 4px;border-radius:6px;min-width:54px;font-variant-numeric:tabular-nums}
@@ -617,9 +709,9 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ins-fail small{font-size:.7rem;color:var(--muted)}
 .cmp-bar{padding:20px 44px 0;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
 .cmp-side{display:flex;gap:6px;align-items:flex-end;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;border-left:4px solid var(--c)}
-.cmp-side label{display:grid;gap:4px;font-size:.6rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.cmp-side label{display:grid;gap:4px;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .cmp-side select,.cmp-bar>label select{border:1.5px solid var(--border);border-radius:7px;padding:6px 9px;font-size:.8rem;font-family:var(--font);color:var(--text);background:#fff;font-weight:600;text-transform:none;letter-spacing:0}
-.cmp-bar>label{display:grid;gap:4px;font-size:.6rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.cmp-bar>label{display:grid;gap:4px;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .cmp-arrow{color:var(--muted);font-weight:600}
 #cmp-stats{grid-template-columns:repeat(auto-fit,minmax(165px,1fr))}
 #cmp-stats .hs-card b{font-size:1.3rem;white-space:nowrap}
@@ -632,7 +724,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .modal-box .sr-check{display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:.82rem;font-weight:700;color:var(--text);margin:0 0 14px}
 .modal-box .sr-check input{width:16px;height:16px;margin:0;accent-color:var(--teal)}
 .cmp-top{padding:20px 44px 0;display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center}
-.cmp-top .rp-lbl,.cmp-quick .rp-lbl{font-size:.64rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.cmp-top .rp-lbl,.cmp-quick .rp-lbl{font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .cmp-quick{display:flex;gap:2px 4px;flex-wrap:wrap;align-items:center;margin-left:auto}
 .cmp-quick .rp-link{border:1px solid var(--border);border-radius:999px;background:#fff;padding:4px 11px;font-size:.72rem}
 .cmp-quick .rp-link:hover{border-color:var(--teal)}
@@ -647,13 +739,21 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .page-export{margin-left:auto;display:inline-flex;align-items:center;gap:7px;border:none;background:#fff;color:var(--royal);padding:6px 16px;border-radius:999px;font-family:var(--font);font-size:.8rem;font-weight:800;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .page-export:hover{background:var(--teal-lt)}
 .tool-x{margin-left:6px;width:27px;height:27px;flex-shrink:0;border-radius:50%;border:1px solid var(--border);background:#fff;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;vertical-align:middle;transition:color .12s,border-color .12s}
-@media(hover:hover){.tool-x:hover{color:var(--teal);border-color:var(--teal)}}
+@media(hover:hover){.tool-x:hover{color:var(--teal-ink);border-color:var(--teal)}}
 .tool-x:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .ex-btn{margin-left:auto;display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--border);background:#fff;color:var(--royal);padding:6px 14px;border-radius:999px;font-family:var(--font);font-size:.78rem;font-weight:800;cursor:pointer}
 .ex-btn:hover{border-color:var(--teal)}
 .modal-box.ex-box{width:560px;max-height:92vh;overflow:auto;padding:24px}
 .ex-hd{display:flex;align-items:center;gap:10px}.ex-hd h3{margin:0}
 .ex-box .msub{margin-bottom:14px}
+.modal-box .ex-opt{display:flex;align-items:flex-start;gap:10px;margin:14px 0 0;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;
+  cursor:pointer;background:#fff;text-transform:none;letter-spacing:0;color:var(--text)}
+.modal-box .ex-opt[hidden]{display:none}
+.modal-box .ex-opt:hover{border-color:var(--teal)}
+.modal-box .ex-opt:has(input:checked){border-color:var(--royal);background:#f3f6fd}
+.ex-opt input{width:16px!important;height:16px;margin:2px 0 0!important;accent-color:var(--royal);flex:none}
+.ex-opt b{display:block;font-size:.8rem;font-weight:800;color:var(--royal-dk)}
+.ex-opt small{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:2px;line-height:1.35}
 .ex-formats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .modal-box .ex-fmt,.modal-box .ex-row{text-transform:none;letter-spacing:0}
 .modal-box .ex-fmt{position:relative;display:grid;gap:6px;margin:0;color:var(--text);font-size:.8rem;border:1.5px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:border-color .12s,background .12s}
@@ -665,7 +765,7 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 .ex-fmt b{display:block;font-size:.88rem;color:var(--text)}
 .ex-fmt small{display:block;font-size:.7rem;color:var(--muted);line-height:1.35}
 .ex-parts{margin-top:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.ex-parts-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);font-size:.66rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.ex-parts-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 #ex-list{max-height:280px;overflow:auto}
 .modal-box .ex-row{display:flex!important;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--bg);cursor:pointer;font-size:.82rem;font-weight:700;color:var(--text);text-transform:none;letter-spacing:0;margin:0}
 .ex-row:first-child{border-top:none}
@@ -677,19 +777,19 @@ body.view-only .ni[data-page^="pg-s"]{display:none}
 #rp-stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 .rp-panel-wrap{padding:20px 44px 0}
 .rp-filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px;padding:16px 18px}
-.rp-filters label{display:grid;gap:5px;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.rp-filters label{display:grid;gap:5px;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .rp-filters select,.rp-filters input{border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;font-size:.8rem;font-family:var(--font);
   color:var(--text);background:#fff;outline:none;text-transform:none;letter-spacing:0;font-weight:600;min-width:0}
 .rp-filters select:focus,.rp-filters input:focus{border-color:var(--teal)}
 .rp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--bg)}
-.rp-bar .rp-lbl{font-size:.64rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.rp-bar .rp-lbl{font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .rp-chips{display:inline-flex;background:var(--bg);border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap}
 .rp-chip{border:none;background:transparent;padding:6px 12px;border-radius:999px;font-family:var(--font);font-size:.74rem;font-weight:700;
   color:var(--muted);cursor:pointer;transition:background .13s,color .13s}
 .rp-chip:hover{color:var(--royal)}
 .rp-chip.active{background:var(--royal);color:#fff}
 .rp-count{margin-left:auto;font-size:.74rem;color:var(--muted);font-weight:700}
-.rp-link{background:none;border:none;color:var(--teal);font-family:var(--font);font-size:.74rem;font-weight:800;cursor:pointer;padding:4px 6px}
+.rp-link{background:none;border:none;color:var(--teal-ink);font-family:var(--font);font-size:.74rem;font-weight:800;cursor:pointer;padding:4px 6px}
 .rp-bands{padding:14px 44px 0;display:flex;gap:10px;flex-wrap:wrap}
 .rp-band{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 14px 6px 10px;
   font-size:.76rem;font-weight:800;color:var(--text);cursor:pointer;font-family:var(--font)}
@@ -724,14 +824,14 @@ body.no-export #btn-pdf,body.no-export #btn-pdf-edit,body.no-export #save-notice
 .sp-head{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--border);border-bottom:3px solid var(--teal);border-radius:var(--r);padding:16px 18px;margin-bottom:14px}
 .si-icon{width:48px;height:48px;border-radius:12px;background:var(--royal);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sp-title{flex:1;min-width:0}
-.sp-title small{display:block;font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.sp-title small{display:block;font-size:.68rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-ink)}
 .sp-title h2{font-size:1.2rem;font-weight:900;color:var(--royal);line-height:1.25}
 .sdesc{font-size:.74rem;color:var(--muted);margin-top:2px}
 .sp-score{flex-shrink:0;min-width:132px;text-align:right}
 .sp-score b{font-size:1.7rem;font-weight:900;color:var(--royal);line-height:1}
 .sp-score span{font-size:.8rem;color:var(--muted);font-weight:700}
 .sp-score .ov-bar{margin:7px 0 4px}
-.sp-score small{display:block;font-size:.66rem;color:var(--muted);font-weight:700}
+.sp-score small{display:block;font-size:.68rem;color:var(--muted);font-weight:700}
 
 .val-alert{display:none;background:#fff5f5;border:1px solid rgba(192,57,43,.3);border-left:4px solid var(--danger);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:.82rem;color:#7a0000}
 .val-alert.show{display:block}
@@ -755,7 +855,7 @@ body.no-export #btn-pdf,body.no-export #btn-pdf-edit,body.no-export #save-notice
 .sb{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:8px;border:none;background:transparent;font-family:var(--font);
   font-size:.76rem;font-weight:800;color:var(--muted);cursor:pointer;transition:background .13s,color .13s;white-space:nowrap}
 .sb svg{width:15px;height:15px}
-.sb em{font-style:normal;font-size:.64rem;background:rgba(0,0,0,.06);border-radius:5px;padding:0 5px}
+.sb em{font-style:normal;font-size:.68rem;background:rgba(0,0,0,.06);border-radius:5px;padding:0 5px}
 html:not([data-itype="EOQI"]) .sb-w{display:none}
 html:not([data-itype="EOQI"]) .sb em{font-size:.78rem;background:none;padding:0}
 .sb:hover{color:var(--text);background:#fff}
@@ -773,7 +873,7 @@ html:not([data-itype="EOQI"]) .sb em{font-size:.78rem;background:none;padding:0}
 .photo-btns{display:flex;gap:6px}
 .ph-btn{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 11px;border-radius:8px;font-size:.74rem;font-weight:800;cursor:pointer;
   border:1.5px solid var(--border);color:var(--royal);background:#fff;font-family:var(--font);transition:border-color .13s,color .13s}
-.ph-btn:hover{border-color:var(--teal);color:#0C7B7D}
+.ph-btn:hover{border-color:var(--teal);color:var(--teal-ink)}
 .ph-btn svg{flex-shrink:0}
 .ph-btn input{display:none}
 .ph-thumbs{display:flex;flex-wrap:wrap;gap:7px;padding:0 14px 12px 52px}
@@ -781,10 +881,10 @@ html:not([data-itype="EOQI"]) .sb em{font-size:.78rem;background:none;padding:0}
 .ptw{position:relative;display:inline-block}
 .pt-img{width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid var(--teal);cursor:pointer;display:block;transition:transform .13s}
 .pt-img:hover{transform:scale(1.06)}
-.pt-rm{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--danger);color:#fff;font-size:.6rem;font-weight:900;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pt-rm{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--danger);color:#fff;font-size:.62rem;font-weight:900;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
 .sn{margin-top:14px;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
-.sn label{display:flex;align-items:center;gap:6px;font-size:.66rem;font-weight:800;color:var(--royal);margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em}
+.sn label{display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:800;color:var(--royal);margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em}
 .sn label small{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:600}
 .sn textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:.84rem;color:var(--text);resize:vertical;min-height:60px;outline:none;background:var(--bg);font-family:var(--font);transition:border-color .14s}
 .sn textarea:focus{border-color:var(--teal);background:#fff}
@@ -810,7 +910,7 @@ html:not([data-itype="EOQI"]) .sb em{font-size:.78rem;background:none;padding:0}
 .btn{padding:10px 22px;border-radius:7px;font-size:.85rem;font-weight:700;border:none;cursor:pointer;transition:transform .12s,box-shadow .12s;display:flex;align-items:center;gap:7px;font-family:var(--font)}
 .btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.13)}
 .btn:active{transform:translateY(0)}
-.bt{background:var(--teal);color:#fff}
+.bt{background:var(--teal-deep);color:#fff}
 .br{background:var(--royal);color:#fff}
 .bo{background:transparent;color:var(--royal);border:2px solid var(--border)}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
@@ -821,14 +921,14 @@ html:not([data-itype="EOQI"]) .sb em{font-size:.78rem;background:none;padding:0}
 .sc-head-main{flex:1;min-width:260px;position:relative}
 .sc-header-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
 .sc-hf{display:flex;flex-direction:column;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:9px;padding:6px 12px;min-width:110px}
-.sc-hf .sc-hl{font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.55);font-weight:700}
+.sc-hf .sc-hl{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.55);font-weight:700}
 .sc-hf .sc-hv{font-size:.86rem;font-weight:800;color:#fff}
 .sc-ring{--p:0;--c:var(--teal);width:138px;height:138px;border-radius:50%;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;
   background:conic-gradient(var(--c) calc(var(--p) * 1%),rgba(255,255,255,.14) 0)}
 .sc-ring>div{width:112px;height:112px;border-radius:50%;background:#02205f;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .sc-ring b{font-size:2.3rem;font-weight:900;line-height:1;color:#fff}
 .sc-ring small{font-size:.68rem;color:rgba(255,255,255,.55);font-weight:700}
-.sc-ring span{margin-top:4px;background:var(--c);color:var(--on,#fff);border-radius:999px;padding:1px 10px;font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.sc-ring span{margin-top:4px;background:var(--c);color:var(--on,#fff);border-radius:999px;padding:1px 10px;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
 #sc-stats{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 .sc-scale{display:flex;gap:10px;flex-wrap:wrap}
 .sc-band{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 14px 6px 8px;font-size:.76rem;font-weight:800}
@@ -838,6 +938,23 @@ html:not([data-itype="EOQI"]) .sb em{font-size:.78rem;background:none;padding:0}
 .sc-scale-note{margin-top:10px;font-size:.8rem;color:var(--muted)}
 .sc-scale-note b{color:var(--text)}
 .sc-table td .ov-bar{min-width:120px}
+/* On a phone each section is a two-line row — name and grade, then answered, score and the bar — so nothing scrolls sideways */
+@media(max-width:760px){
+  #pg-scorecard .ov-scroll{overflow-x:visible}
+  .sc-table,.sc-table tbody,.sc-table tr,.sc-table td{display:block;width:auto}
+  .sc-table thead{display:none}
+  .sc-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--bg)}
+  .sc-table tr:last-child{border-bottom:none}
+  #pg-scorecard .sc-table td{padding:0;border:none;font-size:.78rem}
+  .sc-table td:nth-child(1){grid-column:1;grid-row:1}
+  .sc-table td:nth-child(1) b{white-space:normal;font-size:.86rem;color:var(--royal-dk)}
+  .sc-table td:nth-child(5){grid-column:2;grid-row:1;justify-self:end}
+  .sc-table td:nth-child(2){grid-column:1;grid-row:2;color:var(--muted);font-weight:700}
+  .sc-table td:nth-child(2)::before{content:'Answered '}
+  .sc-table td:nth-child(3){grid-column:2;grid-row:2;justify-self:end}
+  .sc-table td:nth-child(4){grid-column:1/-1;grid-row:3;margin-top:5px}
+  .sc-table td .ov-bar{min-width:0}
+}
 .sc-callout{display:flex;gap:10px;align-items:flex-start;border:1px solid;border-radius:var(--r);padding:12px 16px;font-size:.82rem;margin-bottom:12px;line-height:1.5}
 .sc-callout svg{flex-shrink:0;margin-top:2px}
 .sc-callout strong{display:block;margin-bottom:2px}
@@ -937,7 +1054,11 @@ body.nav-rail #acct-row{justify-content:center}
   .pb-step{font-size:0;padding:3px}
   .pb-step i{font-size:.68rem}
   .pb-step small{display:none}
-  #pb-progress{order:5;max-width:none;flex-basis:100%}
+  /* Row one: menu, where you are, the bell. Row two, on the inspection pages: the three steps and the progress bar. */
+  #pbar .pb-right{order:3;margin-left:auto}
+  #pbar .pb-steps{order:4}
+  #pb-progress{order:5;max-width:none;flex:1 1 0;min-width:96px;margin-left:0}
+  #pb-progress:not([hidden])~.pb-right{margin-left:auto}
   #insp-layout.on{display:block}
   #insp-layout.on #sec-switch{position:static;padding:14px 13px 0;max-height:none}
   #ss-list{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px}
@@ -961,7 +1082,7 @@ body.nav-rail #acct-row{justify-content:center}
   .ov-tools{width:100%;justify-content:space-between}
   .ov-tools .rp-chips{max-width:100%;overflow-x:auto;flex-wrap:nowrap}
   .rp-filters{grid-template-columns:1fr}
-  .rp-filters label{font-size:.66rem}
+  .rp-filters label{font-size:.68rem}
   .rp-bar{align-items:flex-start}
   .rp-chips{overflow-x:auto;max-width:100%;flex-wrap:nowrap;scrollbar-width:none}
   .rp-chip{flex:0 0 auto}
@@ -984,10 +1105,10 @@ body.nav-rail #acct-row{justify-content:center}
 .cx-hd b{width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;font-size:.68rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .cx-hd .rp-link{margin-left:auto;text-transform:none;letter-spacing:0}
 .cx-fields{display:grid;gap:9px}
-.cx-fields label{display:grid;gap:4px;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.cx-fields label{display:grid;gap:4px;font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .cx-fields select{border:1.5px solid var(--border);border-radius:8px;padding:7px 9px;font-size:.8rem;font-family:var(--font);color:var(--text);background:#fff;font-weight:600;text-transform:none;letter-spacing:0}
 .cx-dims{flex-wrap:wrap}
-.cx-group-t{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 5px}
+.cx-group-t{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 5px}
 .cx-group-t:first-child{margin-top:0}
 .cx-opt{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.8rem;font-weight:600;color:var(--text);cursor:pointer;text-transform:none;letter-spacing:0}
 .cx-opt input{width:15px;height:15px;accent-color:var(--royal);flex-shrink:0;margin:0}
@@ -1104,7 +1225,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
    well, a short word ("Saving…", "Offline") when it is not. */
 @media(max-width:780px){
   #sync-chip.ok{display:none}
-  #sync-chip{padding:3px 9px;font-size:.66rem}
+  #sync-chip{padding:3px 9px;font-size:.68rem}
   #sync-chip .sc-full{display:none}
   #sync-chip .sc-short{display:inline}
 }
@@ -1117,15 +1238,15 @@ html[data-pointer=mouse] .ph-cam{display:none}
 #notif-bell-wrap{position:relative;flex-shrink:0}
 #notif-bell{position:relative;background:var(--bg);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;
   display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:border-color .13s,color .13s}
-#notif-bell:hover{border-color:var(--teal);color:var(--teal)}
+#notif-bell:hover{border-color:var(--teal);color:var(--teal-ink)}
 #notif-badge[hidden]{display:none}
-#notif-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;
+#notif-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:.62rem;font-weight:800;
   min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 3px}
 #notif-panel{position:absolute;top:40px;right:0;width:320px;max-width:88vw;max-height:420px;overflow-y:auto;background:#fff;
   border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 40px -12px rgba(0,32,112,.25);z-index:30}
 .notif-panel-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bg);
   font-weight:800;font-size:.82rem;color:var(--royal);position:sticky;top:0;background:#fff}
-.notif-panel-head button{background:none;border:none;color:var(--teal);font-size:.72rem;font-weight:700;cursor:pointer;font-family:var(--font)}
+.notif-panel-head button{background:none;border:none;color:var(--teal-ink);font-size:.72rem;font-weight:700;cursor:pointer;font-family:var(--font)}
 .notif-item{padding:12px 16px;border-bottom:1px solid var(--bg);cursor:pointer;transition:background .12s}
 .notif-item:hover{background:var(--bg)}
 .notif-item.unread{background:rgba(38,168,171,.07)}
@@ -1302,9 +1423,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <div class="ov-panel-hd">Details <small id="in-mode">New inspection</small></div>
         <div class="in-grid">
           <label>Auditor<div class="in-static" id="in-inspector">–</div></label>
-          <label>Date<input type="date" id="meta-date"></label>
+          <label>Date<input type="date" lang="en-GB" id="meta-date"></label>
           <label class="in-wide">Building
-            <input id="meta-facility" list="in-buildings" placeholder="Start typing to search the buildings list…" autocomplete="off">
+            <input id="meta-facility" list="in-buildings" placeholder="Type to search the buildings list…" autocomplete="off">
             <span class="in-hint" id="in-bld-hint">Pick from the list so reports can link it to its division and area.</span>
           </label>
           <datalist id="in-buildings"></datalist>
@@ -1399,7 +1520,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="ov-section">
       <div class="ov-grid2">
         <div>
-          <div class="hist-hdr"><div><span class="sec-eyebrow">Schedule</span><h3><svg data-lucide="calendar-range" width="18" height="18"></svg> Quarter Schedule <button type="button" class="info-tip" data-tip="au-schedule" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
+          <div class="hist-hdr"><div><span class="sec-eyebrow">Timeline</span><h3><svg data-lucide="calendar-range" width="18" height="18"></svg> Quarter Timeline <button type="button" class="info-tip" data-tip="au-schedule" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
           <div class="ov-panel" id="au-schedule"></div>
         </div>
         <div>
@@ -1462,13 +1583,13 @@ html[data-pointer=mouse] .ph-cam{display:none}
     </div>
 
     <div class="hist-filters ov-filters">
-      <select id="ov-quarter"><option value="all">All quarters</option></select>
-      <select id="ov-type">
+      <select id="ov-quarter" aria-label="Quarter"><option value="all">All quarters</option></select>
+      <select id="ov-type" aria-label="Inspection type">
         <option value="all">All types</option>
         <option value="BOQI">BOQI — Beginning of Quarter</option>
         <option value="EOQI">EOQI — End of Quarter</option>
       </select>
-      <select id="ov-division"><option value="all">All divisions</option></select>
+      <select id="ov-division" aria-label="Division"><option value="all">All divisions</option></select>
       <span class="ov-updated" id="ov-updated"></span><button type="button" class="info-tip" data-tip="ov-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
     </div>
 
@@ -1522,7 +1643,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <span id="ov-b-count">Buildings</span>
           <div class="ov-tools">
             <input type="text" id="ov-b-search" placeholder="Search building or auditor…">
-            <select id="ov-b-status">
+            <select id="ov-b-status" aria-label="Building status">
               <option value="all">All statuses</option>
               <option value="completed">Completed</option>
               <option value="pending">Pending</option>
@@ -1547,12 +1668,12 @@ html[data-pointer=mouse] .ph-cam{display:none}
     </div>
 
     <div class="hist-filters ov-filters">
-      <select id="of-quarter"></select>
-      <select id="of-type">
+      <select id="of-quarter" aria-label="Quarter"></select>
+      <select id="of-type" aria-label="Inspection type">
         <option value="BOQI">BOQI — Beginning of Quarter</option>
         <option value="EOQI">EOQI — End of Quarter</option>
       </select>
-      <select id="of-division"><option value="">All divisions</option></select>
+      <select id="of-division" aria-label="Division"><option value="">All divisions</option></select>
       <span class="of-live" id="of-live"><i></i><span id="of-updated">Connecting…</span></span><button type="button" class="info-tip" data-tip="of-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
       <button class="rp-link" id="of-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
     </div>
@@ -1590,22 +1711,23 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <select id="of-quick" class="of-quick" aria-label="Quick assign to"><option value="">Quick assign: off</option></select>
           <button class="rp-link" id="of-copy-last" title="Give the same auditors the buildings they had last quarter"><svg data-lucide="copy" width="13" height="13" style="vertical-align:-2px"></svg> Copy last quarter</button>
           <input type="text" id="of-search" placeholder="Search building or auditor…">
-          <select id="of-area"><option value="">All areas</option></select>
-          <select id="of-status">
+          <select id="of-area" aria-label="Area"><option value="">All areas</option></select>
+          <select id="of-status" aria-label="Status">
             <option value="">All statuses</option>
             <option value="unassigned">Unassigned</option>
             <option value="assigned">Assigned</option>
             <option value="pending">Pending</option>
             <option value="completed">Completed</option>
           </select>
-          <select id="of-auditor-filter"><option value="">All auditors</option></select>
+          <select id="of-auditor-filter" aria-label="Auditor"><option value="">All auditors</option></select>
         </div>
       </div>
       <div class="ov-panel" style="margin-bottom:0">
+        <label class="of-all-m"><input type="checkbox" id="of-check-all-m"> Select every building shown that can still change</label>
         <div class="ov-scroll"><table class="ov-table of-table">
           <thead><tr>
             <th class="of-chk"><input type="checkbox" id="of-check-all" title="Select every building shown that can still change"></th>
-            <th>Building</th><th>Division / Area</th><th>Auditor</th><th>Status</th><th>Result</th>
+            <th>Building</th><th class="col-div">Division / Area</th><th>Auditor</th><th>Deadline</th><th>Status</th><th>Result</th>
           </tr></thead>
           <tbody id="of-rows"></tbody>
         </table></div>
@@ -1614,7 +1736,10 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="of-bulk" id="of-bulk" hidden>
         <b id="of-sel-count">0 selected</b>
         <select id="of-bulk-auditor" aria-label="Auditor for selected buildings"></select>
+        <label class="ofb-due"><span>Deadline</span><input type="date" lang="en-GB" id="of-bulk-due" aria-label="Deadline for the selected buildings" title="Deadline for the selected buildings"></label>
         <button class="btn bt" id="of-bulk-assign">Assign</button>
+        <button class="btn bo" style="background:#fff" id="of-bulk-due-set" title="Give the selected buildings this deadline — leave the date empty to remove it">
+          <svg data-lucide="calendar-clock" width="13" height="13"></svg> Set deadline</button>
         <button class="btn bo" style="background:#fff" id="of-bulk-distribute" title="Split the selection across active auditors, lightest workload first, keeping each area together">
           <svg data-lucide="shuffle" width="13" height="13"></svg> Distribute evenly</button>
         <button class="btn bo" style="background:#fff" id="of-bulk-unassign">Unassign</button>
@@ -1655,8 +1780,8 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="ov-section">
       <div class="hist-hdr"><div><span class="sec-eyebrow">Full list</span><h3><svg data-lucide="list" width="18" height="18"></svg> All assigned buildings</h3></div>
         <span class="ov-updated" id="sch-all-note"></span></div>
-      <div class="ov-panel"><div class="ov-scroll"><table class="ov-table" id="sch-all-table">
-        <thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Auditor</th><th>Status</th><th>Result</th></tr></thead>
+      <div class="ov-panel"><div class="ov-scroll"><table class="ov-table sch-t" id="sch-all-table">
+        <thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Auditor</th><th>Deadline</th><th>Status</th><th>Result</th></tr></thead>
         <tbody id="sch-all-rows"></tbody></table></div></div>
     </div>
   </div>
@@ -1762,7 +1887,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="ov-section">
       <div class="lib-search">
         <svg data-lucide="search" width="20" height="20"></svg>
-        <input type="search" id="lib-q" placeholder="Search building, auditor, division, area or report number…" autocomplete="off" aria-label="Search reports">
+        <input type="search" id="lib-q" placeholder="Search building, auditor, area, report #…" autocomplete="off" aria-label="Search reports">
         <label class="lib-check"><input type="checkbox" id="lib-comments"> Also search comments &amp; notes</label>
       </div>
       <div class="lib-bar">
@@ -1779,8 +1904,8 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <label>Area<select id="lib-area"><option value="">All areas</option></select></label>
         <label>Auditor<select id="lib-auditor"><option value="">All auditors</option></select></label>
         <label>Rating<select id="lib-rating"><option value="">All ratings</option><option>Excellent</option><option>Good</option><option>Acceptable</option><option>Poor</option><option>Critical</option></select></label>
-        <label>From<input type="date" id="lib-from"></label>
-        <label>To<input type="date" id="lib-to"></label>
+        <label>From<input type="date" lang="en-GB" id="lib-from"></label>
+        <label>To<input type="date" lang="en-GB" id="lib-to"></label>
         <label>Sort<select id="lib-sort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="low">Lowest score</option><option value="high">Highest score</option><option value="building">Building A–Z</option></select></label>
       </div>
       <div class="ov-panel" id="lib-panel">
@@ -1859,7 +1984,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="ov-section">
         <div class="ov-grid2">
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Buildings</span><h3><svg data-lucide="triangle-alert" width="18" height="18"></svg> Need Attention <button type="button" class="info-tip" data-tip="ins-attention" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Buildings</span><h3><svg data-lucide="trending-down" width="18" height="18"></svg> Lowest Scores <button type="button" class="info-tip" data-tip="ins-attention" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
               <thead><tr><th>Building</th><th>Latest score</th><th>Change</th><th>Rating</th></tr></thead>
               <tbody id="ins-attention"></tbody>
@@ -1900,8 +2025,8 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <label>Building<select id="rp-building"><option value="">All buildings</option></select></label>
           <label>Auditor<select id="rp-inspector"><option value="">All auditors</option></select></label>
           <label>Rating<select id="rp-rating"><option value="">All ratings</option><option>Excellent</option><option>Good</option><option>Acceptable</option><option>Poor</option><option>Critical</option></select></label>
-          <label>From<input type="date" id="rp-from"></label>
-          <label>To<input type="date" id="rp-to"></label>
+          <label>From<input type="date" lang="en-GB" id="rp-from"></label>
+          <label>To<input type="date" lang="en-GB" id="rp-to"></label>
           <label>Search<input type="text" id="rp-search" placeholder="Building or auditor…"></label>
         </div>
         <div class="rp-bar">
@@ -1978,7 +2103,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="hist-hdr">
         <div><span class="sec-eyebrow">Detail</span><h3><svg data-lucide="list" width="18" height="18"></svg> Matching Inspections <button type="button" class="info-tip" data-tip="rp-detail" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         <div class="ov-tools">
-          <select id="rp-sort">
+          <select id="rp-sort" aria-label="Sort reports">
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
             <option value="high">Highest score</option>
@@ -2016,15 +2141,15 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="cmp-bar">
         <div class="cmp-side" style="--c:#0033A0">
           <label class="cmp-pick">Period A<select id="cmp-a"></select></label>
-          <label class="cmp-date">From<input type="date" id="cmp-a-from"></label>
-          <label class="cmp-date">To<input type="date" id="cmp-a-to"></label>
+          <label class="cmp-date">From<input type="date" lang="en-GB" id="cmp-a-from"></label>
+          <label class="cmp-date">To<input type="date" lang="en-GB" id="cmp-a-to"></label>
           <label>Type<select id="cmp-a-type"><option value="">All types</option><option value="BOQI">BOQI</option><option value="EOQI">EOQI</option><option value="Follow-up">Follow-up</option></select></label>
         </div>
         <button class="rp-link" id="cmp-swap" title="Swap A and B" aria-label="Swap periods"><svg data-lucide="arrow-left-right" width="16" height="16"></svg></button>
         <div class="cmp-side" style="--c:#eb6834">
           <label class="cmp-pick">Period B<select id="cmp-b"></select></label>
-          <label class="cmp-date">From<input type="date" id="cmp-b-from"></label>
-          <label class="cmp-date">To<input type="date" id="cmp-b-to"></label>
+          <label class="cmp-date">From<input type="date" lang="en-GB" id="cmp-b-from"></label>
+          <label class="cmp-date">To<input type="date" lang="en-GB" id="cmp-b-to"></label>
           <label>Type<select id="cmp-b-type"><option value="">All types</option><option value="BOQI">BOQI</option><option value="EOQI">EOQI</option><option value="Follow-up">Follow-up</option></select></label>
         </div>
         <label>Division<select id="cmp-division"><option value="">All divisions</option></select></label>
@@ -2300,6 +2425,10 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="ex-parts-hd"><span id="ex-parts-title">Include</span><button type="button" class="rp-link" id="ex-all">Select all</button></div>
       <div id="ex-list"></div>
     </div>
+    <label class="ex-opt" id="ex-results-row" hidden>
+      <input type="checkbox" id="ex-results" checked>
+      <span><b>Scores and inspection dates</b><small>Off gives the plan only: buildings, who inspects them, the deadline and whether they are done.</small></span>
+    </label>
     <p class="msub" id="ex-msg" hidden style="color:var(--danger);margin:10px 0 0"></p>
     <div class="mbtns" style="margin-top:16px">
       <button class="btn br" type="button" id="ex-go"><svg data-lucide="download" width="16" height="16"></svg> <span id="ex-go-label">Download</span></button>
@@ -2595,7 +2724,7 @@ function applyScoreWording(){
     b.title=eoqi?(v==='0'?'Not compliant (0)':`Compliant (${v})`):`Score ${v}`;
   });
   document.querySelectorAll('.cmt-wrap input').forEach(i=>{
-    i.placeholder=eoqi?'Add a comment — required when not compliant':'Add a comment — required when the score is 0';
+    i.placeholder=eoqi?'Comment — required if not compliant':'Comment — required if scored 0';
   });
   document.querySelectorAll('.cmt-required-hint').forEach(h=>{
     h.textContent=eoqi?'A comment is required when an item is not compliant.':'A comment is required when an item scores 0.';
@@ -2646,7 +2775,7 @@ function buildSections(){
         </div>
         <div class="ci-body">
           <div class="cmt-wrap">
-            <input type="text" id="cmt-${si}-${ii}" placeholder="Add a comment — required when not compliant" spellcheck="true"
+            <input type="text" id="cmt-${si}-${ii}" placeholder="Comment — required if not compliant" spellcheck="true"
               oninput="curState().comments[${si}][${ii}]=this.value;currentReportSaved=false;updatePDFButton();checkSpell(this.value,${si},${ii},this);updateCommentHint(${si},${ii})">
             <div class="cmt-required-hint" id="hint-${si}-${ii}">A comment is required when an item is not compliant.</div>
           </div>
@@ -2725,10 +2854,12 @@ function hashToPage(hash){
 }
 /** "#pg-auditor/<id>" → "<id>" (which auditor's profile is open). */
 function hashParam(hash){ return (hash||'').replace(/^#/,'').split('/')[1]||null; }
+/** The scoring pages: Inspection (pg-new), the ten sections and the score card. Not pg-schedule, which only shares the prefix. */
+function isInspectionPage(pageId){ return pageId==='pg-new'||pageId==='pg-scorecard'||/^pg-s\d$/.test(pageId); }
 /** Pages this account may not open, so a hand-typed hash can't reach them either. */
 function pageAllowed(pageId){
   if(!currentUser) return true;              // permissions not loaded yet
-  if(pageId==='pg-new'||pageId.startsWith('pg-s')) return hasPerm('inspect');
+  if(isInspectionPage(pageId)) return hasPerm('inspect');
   if(pageId==='pg-auditor') return !auId||auId===currentUser.id?ASSIGNEE_ROLES.includes(currentUser.role)||hasPerm('profiles'):hasPerm('profiles');
   if(pageId==='pg-overview') return hasPerm('team');
   if(pageId==='pg-officer') return hasPerm('assign');
@@ -2760,7 +2891,7 @@ function nav(pageId){
   if(pageId==='pg-schedule') loadSchedule();
   if(pageId==='pg-admin') loadAdmin();
   updateTopBar(pageId);
-  if(pageId.startsWith('pg-s')) syncFormToState();
+  if(/^pg-s\d$/.test(pageId)) syncFormToState();
   // pushState rather than location.hash: pages carry the same id as their hash, and assigning the
   // hash would make the browser jump to that element (under the sticky top bar).
   const wanted=pageId==='pg-auditor'&&auId?`pg-auditor/${auId}`:pageId==='pg-admin'&&adTab!=='users'?`pg-admin/${adTab}`:pageId==='pg-reports'&&rpTab!=='insights'?`pg-reports/${rpTab}`:pageId==='pg-library'&&rvId?`pg-library/${rvId}`:pageId;
@@ -3076,7 +3207,7 @@ function updateScoreCard(){
       <td>${x.answered}/${x.items}</td>
       <td><b>${x.total}</b>/${x.max}</td>
       <td><div class="ov-bar"><i style="width:${x.pct}%;background:${g.color}"></i></div></td>
-      <td>${x.answered?`<span class="ov-pill" style="background:${g.color}1a;color:${g.color}">${g.label}</span>`:'<span class="ov-pill unassigned">Not started</span>'}</td>
+      <td>${x.answered?`<span class="ov-pill" style="background:${g.soft};color:${g.ink}">${g.label}</span>`:'<span class="ov-pill unassigned">Not started</span>'}</td>
     </tr>`;
   }).join('');
   rows.onclick=e=>{ const tr=e.target.closest('tr[data-sec]'); if(tr) nav('pg-s'+tr.dataset.sec); };
@@ -3580,7 +3711,7 @@ async function loadHome(){
       const g=r.overall!=null?grade(r.overall):null;
       const ds=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'–';
       return `<div class="hist-card" data-report="${r.id}" tabindex="0" role="button" title="Open this report">
-        <div class="hc-score" style="background:${g?g.color:'#9fb3c8'}">${r.overall??'–'}</div>
+        <div class="hc-score" style="background:${g?g.color:'#9fb3c8'};color:${g?g.on:'#102040'}">${r.overall??'–'}</div>
         <div class="hc-info"><div class="hc-title">${ovEsc(r.building)}${r.division?' — '+ovEsc(r.division):''}</div>
           <div class="hc-meta">${ovEsc(r.auditor||'—')} · ${ds}${r.type?' · '+ovEsc(r.type):''}</div></div>
         ${libStatusPill(r.status)}
@@ -4018,10 +4149,24 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
  * gesture) and then pointed at the finished document.
  */
 async function openInspectionReport(report,{autoPrint=false}={}){
-  // /report.html gives the window an address of its own — Safari on iPhone and iPad will not
-  // print a document written into about:blank, which is why printing did nothing there.
+  return openDocPage(()=>buildInspectionReportHtml(report,{autoPrint}),
+    {sameTab:()=>buildInspectionReportHtml(report,{autoPrint,sameTab:true}),what:'report'});
+}
+
+/**
+ * Every printable document in the app — the inspection report and the exports — opens the
+ * same way: a window opened on the click itself (Safari on iPhone and iPad allows nothing
+ * else), pointed at /report so it has a real address of its own, and handed the finished
+ * document by message. about:blank cannot be printed on iOS, which is why this detour exists.
+ */
+async function openDocPage(build,{sameTab,what='document'}={}){
   const pw=window.open('/report','_blank');
-  if(!pw) return askToOpenReport(report,{autoPrint});     // pop-ups are blocked — Safari does this by default
+  if(!pw){                                                // pop-ups blocked — Safari does this by default
+    let html;
+    try{ html=await (sameTab||build)(); }
+    catch(err){ showToast(`Could not build the ${what}. `+(err&&err.message||''),true); return false; }
+    return askToOpenDoc(html,what);
+  }
   let html=null, ready=false, sent=false;
   const send=()=>{
     if(sent||!ready||html==null) return;
@@ -4036,13 +4181,13 @@ async function openInspectionReport(report,{autoPrint=false}={}){
   window.addEventListener('message',onMessage);
   setTimeout(()=>window.removeEventListener('message',onMessage),60000);
   try{
-    html=await buildInspectionReportHtml(report,{autoPrint});
+    html=await build();
     send();
     return true;
   }catch(err){
     window.removeEventListener('message',onMessage);
     try{ pw.close(); }catch{}
-    showToast('Could not build the report. '+(err&&err.message||''),true);
+    showToast(`Could not build the ${what}. `+(err&&err.message||''),true);
     return false;
   }
 }
@@ -4052,16 +4197,13 @@ async function openInspectionReport(report,{autoPrint=false}={}){
  * one tap opens it as its own page, where Print and Share work the way the phone expects.
  * Back returns to the app.
  */
-async function askToOpenReport(report,{autoPrint=false}={}){
-  let html;
-  try{ html=await buildInspectionReportHtml(report,{autoPrint,sameTab:true}); }
-  catch(err){ showToast('Could not build the report. '+(err&&err.message||''),true); return false; }
+function askToOpenDoc(html,what='document'){
   const wrap=document.createElement('div');
   wrap.className='rpt-ask';
   wrap.innerHTML=`<div class="rpt-ask-box">
-      <b>Open the report</b>
-      <p>Your browser blocked the new window, so the report opens in this tab. Print or share it from there, then tap <b>Back to the app</b>.</p>
-      <div class="rpt-ask-row"><button type="button" class="btn bt" data-a="go"><svg data-lucide="external-link" width="15" height="15"></svg> Open report</button>
+      <b>Open the ${ovEsc(what)}</b>
+      <p>Your browser blocked the new window, so the ${ovEsc(what)} opens in this tab. Print or share it from there, then tap <b>Back to the app</b>.</p>
+      <div class="rpt-ask-row"><button type="button" class="btn bt" data-a="go"><svg data-lucide="external-link" width="15" height="15"></svg> Open ${ovEsc(what)}</button>
       <button type="button" class="btn bo" data-a="cancel">Cancel</button></div>
     </div>`;
   document.body.appendChild(wrap);
@@ -4268,6 +4410,7 @@ function initAuditorProfile(){
     else if(t.dataset.jump==='next'){ const s=document.getElementById('assign-quarter'); s.value=auNextQuarter(auData.quarter); loadAuditorProfile(); }
   });
   setInterval(()=>{
+    if(!appIsOpen()) return;
     if(document.getElementById('pg-auditor').classList.contains('active')&&document.visibilityState==='visible') loadAuditorProfile({quiet:true});
   },60000);
 }
@@ -4426,7 +4569,7 @@ function auCard(x,{carried=false}={}){
       <span class="au-type ${x.type}">${x.type}</span>
       <div class="au-main"><b>${ovEsc(x.buildingName)}</b><small>${ovEsc(meta)}</small>
         <small>Completed ${x.inspectionDate?ovEsc(x.inspectionDate):''}${x.completedAt?` · ${timeAgo(x.completedAt)}`:''}</small></div>
-      ${g?`<span class="ov-pill" style="background:${g.color}1a;color:${g.color}">${x.score} · ${g.label}</span>`:''}
+      ${g?`<span class="ov-pill" style="background:${g.soft};color:${g.ink}">${x.score} · ${g.label}</span>`:''}
       ${x.review?reviewMark(x.review):''}
       ${x.inspectionId?`<button class="ad-btn" data-view="${x.inspectionId}">View report</button>`:''}
     </div>`;
@@ -4436,6 +4579,7 @@ function auCard(x,{carried=false}={}){
     <span class="au-type ${x.type}">${x.type}</span>
     <div class="au-main"><b>${ovEsc(x.buildingName)}</b><small>${ovEsc(meta)}</small>
       <small>${carried?`${x.quarter} · `:''}${x.assignedBy?`Assigned by ${ovEsc(x.assignedBy)} · `:''}${x.assignedAt?timeAgo(x.assignedAt):''}</small></div>
+    ${x.dueDate?`<span class="due ${dueState(x).cls}" title="Deadline ${ovEsc(dueFmt(x.dueDate))}">${ovEsc(dueFmt(x.dueDate))} · ${ovEsc(dueState(x).note)}</span>`:''}
     ${resuming?`<span class="au-progress">${auAnsweredPct()}% answered</span>`:''}
     ${self?`<button class="btn bt" data-start="${x.id}">${resuming?'Continue':'Start inspection'} <svg data-lucide="arrow-right" width="14" height="14"></svg></button>`
       :'<span class="ov-pill pending">Pending</span>'}
@@ -4693,7 +4837,7 @@ document.getElementById('notif-alerts').addEventListener('click',async e=>{
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ pollNotifications(); } else scheduleNotifPoll(); });
 window.addEventListener('focus',()=>pollNotifications());
 window.addEventListener('online',()=>pollNotifications());
-setInterval(()=>{ if(document.visibilityState==='visible') refreshReviewBadge(); },60000);
+setInterval(()=>{ if(appIsOpen()&&document.visibilityState==='visible') refreshReviewBadge(); },60000);
 syncAlertsButton();
 loadNotifications();
 pollNotifications();
@@ -4707,6 +4851,40 @@ function ovPct(done,total){
   return `<div class="ov-pct"><div class="ov-bar"><i style="width:${p}%"></i></div><span>${p}%</span></div>`;
 }
 function ovScore(v){ return v==null?'<span style="color:var(--muted)">–</span>':`<span class="ov-score" style="color:${grade(v).ink}">${v}</span>`; }
+
+/* ── Deadlines ─────────────────────────────────────────────────
+ * A deadline is a plain calendar date (YYYY-MM-DD) set by whoever assigns the quarter.
+ * Everyone then reads the same chip: when it falls, how long is left, and — once the
+ * inspection is in — whether it was met. Dates are compared as text, never in UTC, so a
+ * deadline never shifts by a day because of the phone's time zone. */
+/** The report or export can take over this tab when pop-ups are blocked; the app's pollers must then stand down. */
+function appIsOpen(){ return !!document.getElementById('pbar'); }
+function dueToday(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function dueDays(date,from){ return Math.round((Date.parse(date+'T12:00:00Z')-Date.parse((from||dueToday())+'T12:00:00Z'))/86400000); }
+function dueFmt(date){
+  const d=new Date(date+'T12:00:00'), o={day:'2-digit',month:'short'};
+  if(d.getFullYear()!==new Date().getFullYear()) o.year='numeric';
+  return d.toLocaleDateString('en-GB',o);
+}
+function dueDayWord(n){ return `${n} day${n===1?'':'s'}`; }
+function dueState(row){
+  const date=row&&row.dueDate;
+  if(!date) return null;
+  if(row.status==='completed'){
+    const late=row.inspectionDate&&row.inspectionDate>date;
+    return {date,cls:late?'late':'met',text:dueFmt(date),note:late?`${dueDayWord(dueDays(row.inspectionDate,date))} late`:'Met'};
+  }
+  const left=dueDays(date);
+  if(left<0) return {date,cls:'over',text:dueFmt(date),note:`${dueDayWord(-left)} overdue`};
+  if(left===0) return {date,cls:'soon',text:dueFmt(date),note:'Due today'};
+  return {date,cls:left<=7?'soon':'',text:dueFmt(date),note:`${dueDayWord(left)} left`};
+}
+function dueChip(row){
+  const s=dueState(row);
+  return s?`<span class="due ${s.cls}">${ovEsc(s.text)}</span><small>${ovEsc(s.note)}</small>`
+    :'<span style="color:var(--muted)">—</span>';
+}
+function dueOverdue(rows){ return rows.filter(b=>{ const s=dueState(b); return s&&(s.cls==='over'||s.cls==='late'); }).length; }
 function ovSetOptions(sel,values,allLabel){
   const cur=sel.value;
   sel.innerHTML=`<option value="all">${allLabel}</option>`+values.map(v=>`<option value="${ovEsc(v)}">${ovEsc(v)}</option>`).join('');
@@ -4955,7 +5133,9 @@ function initOfficer(){
       return;
     }
     const sel=e.target.closest('select[data-building]');
-    if(sel) ofAssignOne(Number(sel.dataset.building),sel.value,sel);
+    if(sel){ ofAssignOne(Number(sel.dataset.building),sel.value,sel); return; }
+    const day=e.target.closest('input[data-due]');
+    if(day) ofSetDue([Number(day.dataset.due)],day.value,day).then(()=>loadOfficer({quiet:true}));
   });
   rowsEl.addEventListener('click',e=>{
     const tap=e.target.closest('[data-quick]');
@@ -4968,16 +5148,17 @@ function initOfficer(){
   document.getElementById('of-copy-last').addEventListener('click',ofCopyLastQuarter);
   // A refresh never re-draws the table under an open auditor picker; it catches up on blur.
   rowsEl.addEventListener('focusout',()=>setTimeout(()=>{ if(ofRowsStale&&!rowsEl.contains(document.activeElement)) renderOfRows(); },0));
-  document.getElementById('of-check-all').addEventListener('change',e=>{
+  ['of-check-all','of-check-all-m'].forEach(id=>document.getElementById(id).addEventListener('change',e=>{
     ofFilteredRows().filter(b=>b.status!=='completed').forEach(b=>e.target.checked?ofSelected.add(b.buildingId):ofSelected.delete(b.buildingId));
     renderOfRows();
-  });
+  }));
   document.getElementById('of-bulk-assign').addEventListener('click',()=>ofRunBulk('assign'));
   document.getElementById('of-bulk-distribute').addEventListener('click',()=>ofRunBulk('distribute'));
   document.getElementById('of-bulk-unassign').addEventListener('click',()=>ofRunBulk('unassign'));
   document.getElementById('of-bulk-clear').addEventListener('click',()=>{ ofSelected.clear(); renderOfRows(); });
+  document.getElementById('of-bulk-due-set').addEventListener('click',()=>ofRunBulk('due'));
 
-  setInterval(()=>{ if(ofOnPage()&&document.visibilityState==='visible') loadOfficer({quiet:true}); },30000);
+  setInterval(()=>{ if(appIsOpen()&&ofOnPage()&&document.visibilityState==='visible') loadOfficer({quiet:true}); },30000);
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&ofOnPage()) loadOfficer({quiet:true}); });
 }
 
@@ -5122,10 +5303,11 @@ function ofFilteredRows(){
 function renderOfRows(fresh=[]){
   if(!ofData) return;
   const rowsEl=document.getElementById('of-rows');
-  if(rowsEl.contains(document.activeElement)&&document.activeElement.tagName==='SELECT'){ ofRowsStale=true; return; }
+  const focus=document.activeElement;
+  if(rowsEl.contains(focus)&&(focus.tagName==='SELECT'||focus.type==='date')){ ofRowsStale=true; return; }
   ofRowsStale=false;
   const rows=ofFilteredRows(), counts=ofCounts(), active=ofActiveAuditors(), freshSet=new Set(fresh);
-  const label={completed:'Completed',pending:'Pending',unassigned:'Unassigned'};
+  const label={completed:'Completed',pending:'Pending',unassigned:'Unassigned'}, canSetDue=hasPerm('assign');
   rowsEl.innerHTML=rows.length?rows.map(b=>{
     const done=b.status==='completed', picked=ofSelected.has(b.buildingId);
     const held=b.auditorId&&!active.some(a=>a.id===b.auditorId)?`<option value="${ovEsc(b.auditorId)}" selected disabled>${ovEsc(b.auditorName||'Unknown')} (not available)</option>`:'';
@@ -5140,15 +5322,20 @@ function renderOfRows(fresh=[]){
           <option value="">— Unassigned —</option>${held}
           ${active.map(a=>`<option value="${ovEsc(a.id)}"${a.id===b.auditorId?' selected':''}>${ovEsc(assigneeLabel(a))} (${counts.get(a.id)||0})</option>`).join('')}
         </select>${b.assignedBy?`<small>by ${ovEsc(b.assignedBy)} · ${timeAgo(b.assignedAt)}</small>`:''}`;
+    const due=dueState(b);
+    const dueCell=done||!canSetDue?dueChip(b)
+      :!b.auditorId?'<span style="color:var(--muted)">—</span><small>Assign it first</small>'
+      :`<input type="date" lang="en-GB" class="of-due${due&&due.cls?' '+due.cls:''}" data-due="${b.buildingId}" value="${ovEsc(b.dueDate||'')}" aria-label="Deadline for ${ovEsc(b.name)}">${due?`<small>${ovEsc(due.note)}</small>`:''}`;
     return `<tr class="${picked?'selected':''}${freshSet.has(b.buildingId)?' flash':''}">
       <td class="of-chk">${done?'':`<input type="checkbox" data-check="${b.buildingId}"${picked?' checked':''} aria-label="Select ${ovEsc(b.name)}">`}</td>
-      <td><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
-      <td>${ovEsc(b.division)}<small>${ovEsc(b.area)}</small></td>
-      <td>${auditorCell}</td>
-      <td><span class="ov-pill ${b.status}">${label[b.status]}</span></td>
-      <td>${done?`${b.inspectionId?`<button class="rp-link" style="padding:0" onclick="openReport(${b.inspectionId})" title="Open the report">${ovScore(b.score)}</button>`:ovScore(b.score)}${b.review?`<small class="of-review">${reviewMark(b.review)}</small>`:''}<small>${ovEsc(b.inspectionDate||'')}${b.inspector?' · '+ovEsc(b.inspector):''}</small>`:'<span style="color:var(--muted)">–</span>'}</td>
+      <td class="bld"><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}<span class="m-only"> · ${ovEsc(b.division)} · ${ovEsc(b.area)}</span></small></td>
+      <td data-l="Division" class="col-div"><div class="of-v">${ovEsc(b.division)}<small>${ovEsc(b.area)}</small></div></td>
+      <td data-l="Auditor"><div class="of-v">${auditorCell}</div></td>
+      <td data-l="Deadline"><div class="of-v">${dueCell}</div></td>
+      <td data-l="Status"><span class="ov-pill ${b.status}">${label[b.status]}</span></td>
+      <td data-l="Result"${done?'':' class="no-res"'}><div class="of-v">${done?`${b.inspectionId?`<button class="rp-link" style="padding:0" onclick="openReport(${b.inspectionId})" title="Open the report">${ovScore(b.score)}</button>`:ovScore(b.score)}${b.review?`<small class="of-review">${reviewMark(b.review)}</small>`:''}<small>${ovEsc(b.inspectionDate||'')}${b.inspector?' · '+ovEsc(b.inspector):''}</small>`:'<span style="color:var(--muted)">–</span>'}</div></td>
     </tr>`;
-  }).join(''):'<tr><td colspan="6" class="ov-empty">No buildings match these filters.</td></tr>';
+  }).join(''):'<tr><td colspan="7" class="ov-empty">No buildings match these filters.</td></tr>';
   const scopedTotal=ofData.buildings.filter(b=>!ofVal('of-division')||b.division===ofVal('of-division')).length;
   document.getElementById('of-count').textContent=`${rows.length} of ${scopedTotal} buildings shown${ofSelected.size?` · ${ofSelected.size} selected`:''}`;
   ofSyncCheckAll(); ofUpdateQuick(); ofUpdateBulk();
@@ -5156,10 +5343,13 @@ function renderOfRows(fresh=[]){
 }
 function ofSyncCheckAll(){
   const ids=ofFilteredRows().filter(b=>b.status!=='completed').map(b=>b.buildingId);
-  const n=ids.filter(id=>ofSelected.has(id)).length, box=document.getElementById('of-check-all');
-  box.checked=!!ids.length&&n===ids.length;
-  box.indeterminate=n>0&&n<ids.length;
-  box.disabled=!ids.length;
+  const n=ids.filter(id=>ofSelected.has(id)).length;
+  ['of-check-all','of-check-all-m'].forEach(id=>{
+    const box=document.getElementById(id);
+    box.checked=!!ids.length&&n===ids.length;
+    box.indeterminate=n>0&&n<ids.length;
+    box.disabled=!ids.length;
+  });
 }
 function ofUpdateQuick(){
   const sel=document.getElementById('of-quick'), counts=ofCounts();
@@ -5205,6 +5395,21 @@ async function ofAssignOne(buildingId,auditorId,el){
   await loadOfficer({quiet:true});
 }
 
+/** The deadline for one or more buildings. An empty date removes it. */
+async function ofSetDue(buildingIds,dueDate,el){
+  if(el) el.disabled=true;
+  try{
+    const res=await fetch('/api/assignments/due',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({quarter:ofVal('of-quarter'),type:ofVal('of-type'),buildingIds,dueDate:dueDate||null})});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'Could not save the deadline.');
+    const many=buildingIds.length>1?`${d.updated} building${d.updated===1?'':'s'}`:'Deadline';
+    showToast(dueDate?`${many} due ${dueFmt(dueDate)}`:`${buildingIds.length>1?many+' — d':'D'}eadline removed`);
+    return d;
+  }catch(err){ showToast(err.message,true); return null; }
+  finally{ if(el) el.disabled=false; }
+}
+
 /** The quarter before this one, same type — the usual starting point for a new quarter. */
 function ofPreviousQuarter(q){
   const m=/^(\d{4})-Q([1-4])$/.exec(q||'');
@@ -5240,9 +5445,11 @@ async function ofCopyLastQuarter(){
   finally{ btn.disabled=false; }
 }
 
-async function ofBulk(auditorId,buildingIds){
+async function ofBulk(auditorId,buildingIds,dueDate){
+  const body={quarter:ofVal('of-quarter'),type:ofVal('of-type'),auditorId:auditorId||null,buildingIds};
+  if(dueDate) body.dueDate=dueDate;
   const res=await fetch('/api/assignments/bulk',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({quarter:ofVal('of-quarter'),type:ofVal('of-type'),auditorId:auditorId||null,buildingIds})});
+    body:JSON.stringify(body)});
   const data=await res.json().catch(()=>({}));
   if(!res.ok) throw new Error(data.error||'Could not save the change.');
   return data;
@@ -5270,16 +5477,23 @@ async function ofRunBulk(action){
   const plural=n=>`${n} building${n===1?'':'s'}`;
   try{
     if(action==='assign'){
-      const aud=ofVal('of-bulk-auditor');
+      const aud=ofVal('of-bulk-auditor'), due=ofVal('of-bulk-due');
       if(!aud){ showToast('Choose an auditor first.',true); return; }
       buttons.forEach(b=>b.disabled=true);
-      const r=await ofBulk(aud,ids);
-      showToast(`Assigned ${plural(r.changed)}${r.unchanged?` · ${r.unchanged} already theirs`:''}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
+      const r=await ofBulk(aud,ids,due);
+      showToast(`Assigned ${plural(r.changed)}${due?` · due ${dueFmt(due)}`:''}${r.unchanged?` · ${r.unchanged} already theirs`:''}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
     }else if(action==='unassign'){
       if(!confirm(`Unassign ${plural(ids.length)}? They go back to the unassigned list.`)) return;
       buttons.forEach(b=>b.disabled=true);
       const r=await ofBulk(null,ids);
       showToast(`Unassigned ${plural(r.changed)}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
+    }else if(action==='due'){
+      const due=ofVal('of-bulk-due');
+      if(!due&&!confirm(`Remove the deadline from ${plural(ids.length)}?`)) return;
+      buttons.forEach(b=>b.disabled=true);
+      const r=await ofSetDue(ids,due);
+      if(!r) return;
+      if(r.skipped) showToast(`${plural(r.updated)} updated · ${r.skipped} not assigned yet`,!r.updated);
     }else if(action==='distribute'){
       const plan=ofPlanDistribution(ids);
       if(!plan){ showToast('There are no active auditors to distribute to.',true); return; }
@@ -5631,7 +5845,7 @@ function renderRpDetail(list=rpFilter()){
       <td>${ovEsc(x.type||'—')}</td>
       <td>${ovEsc(x.inspector||'—')}</td>
       <td>${ovScore(x.overall)}</td>
-      <td>${g?`<span class="ov-pill" style="background:${g.color}1a;color:${g.color}">${g.label}</span>`:'–'}</td>
+      <td>${g?`<span class="ov-pill" style="background:${g.soft};color:${g.ink}">${g.label}</span>`:'–'}</td>
     </tr>`;
   }).join(''):'<tr><td colspan="7" class="ov-empty">No inspections match these filters.</td></tr>';
   const more=document.getElementById('rp-more');
@@ -5651,7 +5865,7 @@ const TIPS={
   'ins-heat':['Section heatmap',['Each cell is the average score (out of 10) of one checklist section, for a division — or for an area once you pick a division — in the chosen quarter.','Colours follow the rating scale: red = poor or critical, grey = acceptable, blue = good or excellent. “All” is every division together; “Overall” is the full score ÷ 10.','Click a cell to open those inspections in Report Builder.']],
   'ins-board':['Ranking',['Divisions (or areas) sorted by this quarter’s average score.','<b>Change</b> — difference from last quarter’s average. <b>Coverage</b> — buildings inspected ÷ buildings in the list. <b>Weakest section</b> — the section with the lowest average.','Click a division to see its areas.']],
   'ins-fail':['Most often not compliant',['Checklist items marked “not compliant” most often this quarter. The % is not-compliant answers ÷ all answers for that item.','Only reports scored item by item count here — imported overall scores are left out.']],
-  'ins-attention':['Buildings that need attention',['Buildings with the lowest latest score this quarter. <b>Change</b> compares with the same building’s latest score last quarter.','Click a building to see all its inspections.']],
+  'ins-attention':['Lowest-scoring buildings',['The buildings with the lowest latest score this quarter — the ones to look at first, whatever their rating. <b>Change</b> compares with the same building’s latest score last quarter.','Click a building to see all its inspections.']],
   'ins-movers':['Biggest movers',['Buildings with both a BOQI and an EOQI this quarter, ranked by how much the score changed between the beginning and the end of the quarter.']],
   'rp-filters':['Filters, grouping and saved reports',['Every filter you set must match (for example CAOSD + EOQI + Q3). <b>Group by</b> decides how the summary, chart and table below are split.','<b>Save report</b> keeps this exact setup to reopen later; tick “share” to make it visible to everyone who can use Analytics.']],
   'rp-summary':['Summary table',['Each row is one group of the matching inspections.','<ul><li><b>Average / Min / Max</b> — of the overall score.</li><li><b>Std dev</b> — how spread out the scores are: small = consistent, large = uneven.</li><li><b>Rating mix</b> — share of each rating.</li><li><b>BOQI → EOQI</b> — the two averages inside the group and the change.</li></ul>','Click a row to drill down (division → area → building).']],
@@ -5670,14 +5884,14 @@ const TIPS={
   'ov-team':['Officers and auditors',['Auditors (and anyone holding buildings): buildings assigned, how many are done and their average score on completed work. Officers: assignments they made and how many are complete.','Click a person to open their profile.']],
   'ov-area':['By area',['Buildings, assignments, completion and average score for each area.']],
   'ov-building':['By building',['Every building with its status for the filters: <b>Unassigned</b>, <b>Pending</b> (assigned, not inspected yet) or <b>Completed</b>, plus its number of inspections and latest score.']],
-  'sch-tables':['The quarter schedule',['Every building assigned for the chosen quarter and type. The first part gives each auditor a table of their own; the list underneath is the same buildings together, by division and area.','<b>Pending</b> means assigned but not inspected yet, <b>Completed</b> means the report is in — open it by tapping the score.','Export gives you the whole schedule or any single auditor\u2019s table, as PDF or Excel.']],
+  'sch-tables':['The quarter schedule',['Every building assigned for the chosen quarter and type. The first part gives each auditor a table of their own; the list underneath is the same buildings together, by division and area.','<b>Pending</b> means assigned but not inspected yet, <b>Completed</b> means the report is in — open it by tapping the score.','The <b>deadline</b> is set by whoever assigns the quarter. It turns amber in the last week and red once it passes; on a finished building it says whether it was met.','Export gives you the whole schedule or any single auditor\u2019s table, as PDF (one auditor per A4 page) or Excel.']],
   'of-kpis':['Assign & Track cards',['For the chosen quarter and type: <b>Assigned</b> = buildings with someone assigned; <b>Completion</b> = completed ÷ assigned; <b>Pending</b> = assigned but not inspected; <b>Unassigned</b> = still need someone.','Click a card to filter the buildings table. The page refreshes itself every 30 seconds.']],
   'of-team':['Team progress',['One card per person holding buildings this quarter: completion %, assigned / done / pending, average score of completed buildings and when they last submitted. Click a card to show only their buildings.']],
   'of-area':['Progress by area',['How many buildings in each area are assigned, and how many of those are completed.']],
   'of-activity':['Recent activity',['The latest assignments and completed inspections for this quarter.']],
-  'of-buildings':['Assigning buildings',['Choose a person for each building, or tick several and use <b>Assign</b> or <b>Distribute evenly</b> (spreads them across auditors, lightest workload first, keeping each area together).','Buildings that were already inspected are locked. Click a score to open that report.']],
+  'of-buildings':['Assigning buildings',['Choose a person for each building, or tick several and use <b>Assign</b> or <b>Distribute evenly</b> (spreads them across auditors, lightest workload first, keeping each area together).','Set a <b>deadline</b> on any assigned building — one date at a time, or a date for everything you have ticked. Leave the date empty and press <b>Set deadline</b> to remove it.','Buildings that were already inspected are locked. Click a score to open that report.']],
   'au-carried':['Still open from earlier quarters',['Buildings assigned in a previous quarter that were never inspected. They still count as open work.']],
-  'au-schedule':['Quarter schedule',['Key dates for the quarter and how much of this person’s work is done against them.']],
+  'au-schedule':['Quarter timeline',['Key dates for the quarter and how much of this person’s work is done against them.']],
   'au-quality':['Quality of work',['Across all quarters: inspections completed out of those assigned, the average score of completed work, and the average time from assignment to submission.','The chart shows the average score per quarter (hover for assigned and completed counts); the section chart shows their average per section out of 10.']],
   'sc-scale':['Rating scale',['The five rating bands used everywhere in the system. The highlighted band is where this inspection’s overall score falls.']],
   'sc-sections':['Results by section',['Each section’s score out of 10, how many of its items are answered, and its grade. Click a section to go back and change it.']],
@@ -6043,7 +6257,7 @@ async function loadSchedule(){
     if(req!==schReq) return;
     document.getElementById('sch-note').textContent='';
     document.getElementById('sch-by-auditor').innerHTML=`<div class="ov-empty">${ovEsc(err.message)}</div>`;
-    document.getElementById('sch-all-rows').innerHTML=`<tr><td colspan="6" class="ov-empty">${ovEsc(err.message)}</td></tr>`;
+    document.getElementById('sch-all-rows').innerHTML=`<tr><td colspan="7" class="ov-empty">${ovEsc(err.message)}</td></tr>`;
   }
 }
 const SCH_STATUS={completed:'Completed',pending:'Pending',unassigned:'Unassigned'};
@@ -6059,11 +6273,14 @@ function renderSchedule(){
   const shown=only?assigned.filter(b=>b.auditorId===only):assigned;
   const t=schData.totals;
   const tile=(icon,value,label,note)=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b>${value}</b><span>${label}</span>${note?`<small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px">${note}</small>`:''}</div>`;
+  const dated=assigned.filter(b=>b.dueDate), overdue=dueOverdue(assigned);
+  const nextDue=assigned.filter(b=>b.dueDate&&b.status!=='completed').map(b=>b.dueDate).sort()[0];
   document.getElementById('sch-stats').innerHTML=
     tile('building-2',`${t.assigned}/${t.buildings}`,'Buildings assigned',`${t.unassigned} still unassigned`)+
     tile('users',t.auditors,'Auditors','with buildings this quarter')+
     tile('circle-check',t.completed,'Completed',`${t.assigned-t.completed} still to inspect`)+
-    tile('calendar-range',`${schData.quarter}`,'Quarter',schData.type);
+    tile('calendar-clock',overdue||(nextDue?dueFmt(nextDue):'—'),overdue?'Past deadline':'Next deadline',
+      overdue?`of ${dated.length} with a deadline`:dated.length?`${dated.length} of ${t.assigned} have a deadline`:'No deadline set yet');
 
   // A table of its own for every auditor.
   const auditors=schData.auditors.filter(a=>!only||a.id===only);
@@ -6073,21 +6290,26 @@ function renderSchedule(){
       <div class="sch-aud-hd"><i class="of-av">${ovEsc(ofInitials(a.name))}</i>
         <div><b>${ovEsc(a.name)}</b><small>${a.count} building${a.count===1?'':'s'} · ${a.completed} completed · ${a.count-a.completed} to go</small></div>
         <button class="tool-x rp-export" data-ex-ctx="schedule" data-ex-block="aud-${ovEsc(a.id)}" title="Export this auditor's table"><svg data-lucide="download" width="14" height="14"></svg></button></div>
-      <div class="ov-scroll"><table class="ov-table"><thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Status</th><th>Result</th></tr></thead>
-        <tbody>${rows.map((b,i)=>`<tr><td>${i+1}</td><td><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
-          <td>${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
-          <td><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
-          <td>${schResult(b)}</td></tr>`).join('')}</tbody></table></div></div>`;
+      <div class="ov-scroll"><table class="ov-table sch-t"><thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Deadline</th><th>Status</th><th>Result</th></tr></thead>
+        <tbody>${rows.length?rows.map((b,i)=>`<tr><td class="num">${i+1}</td>
+          <td class="bld" data-l="Building"><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
+          <td data-l="Division">${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
+          <td data-l="Deadline">${dueChip(b)}</td>
+          <td data-l="Status"><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
+          <td data-l="Result">${schResult(b)}</td></tr>`).join('')
+          :'<tr><td colspan="6" class="ov-empty">Nothing assigned yet.</td></tr>'}</tbody></table></div></div>`;
   }).join(''):'<div class="ov-panel"><div class="ov-empty">No buildings assigned for this quarter and type yet.</div></div>';
 
   // And one list of the same buildings together.
   const all=[...shown].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name));
   document.getElementById('sch-all-rows').innerHTML=all.length?all.map((b,i)=>`<tr>
-    <td>${i+1}</td><td><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
-    <td>${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
-    <td>${ovEsc(b.auditorName||'—')}</td>
-    <td><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
-    <td>${schResult(b)}</td></tr>`).join(''):'<tr><td colspan="6" class="ov-empty">Nothing assigned yet.</td></tr>';
+    <td class="num">${i+1}</td>
+    <td class="bld" data-l="Building"><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
+    <td data-l="Division">${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
+    <td data-l="Auditor">${ovEsc(b.auditorName||'—')}</td>
+    <td data-l="Deadline">${dueChip(b)}</td>
+    <td data-l="Status"><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
+    <td data-l="Result">${schResult(b)}</td></tr>`).join(''):'<tr><td colspan="7" class="ov-empty">Nothing assigned yet.</td></tr>';
   document.getElementById('sch-all-note').textContent=`${all.length} building${all.length===1?'':'s'}${only?' · filtered to one auditor':''}`;
   document.getElementById('sch-note').textContent=`${schData.quarter} · ${schData.type}`;
   schView={assigned,auditors:schData.auditors,totals:t,only};
@@ -6096,25 +6318,41 @@ function renderSchedule(){
 /** The schedule exports as it reads: a sheet per auditor, then the whole list. */
 function exModelSchedule(){
   if(!schView||!schData) return null;
-  const head=['#','Building','Location','Division','Area','Status','Score','Inspected on','Auditor'];
-  const row=(b,i)=>[i+1,b.name,b.location,b.division,b.area,SCH_STATUS[b.status],b.score,b.inspectionDate,b.auditorName];
+  const head=['#','Building','Location','Division','Area','Deadline','Status','Score','Inspected on','Auditor'];
+  const row=(b,i)=>[i+1,b.name,b.location,b.division,b.area,b.dueDate||null,SCH_STATUS[b.status],b.score,b.inspectionDate,b.auditorName];
   const sheetName=n=>String(n||'Auditor').replace(/[\\/?*\[\]:]/g,' ').slice(0,28);
-  const blocks=[{id:'summary',label:'Summary',sheet:'Summary',
+  const blocks=[{id:'summary',label:'Summary',sheet:'Summary',pdfTable:true,
     kpis:[{label:'Quarter',value:`${schData.quarter} · ${schData.type}`},{label:'Buildings assigned',value:`${schView.totals.assigned} of ${schView.totals.buildings}`},
-      {label:'Auditors',value:schView.totals.auditors},{label:'Completed',value:schView.totals.completed}],
-    table:{head:['Auditor','Buildings','Completed','Still to inspect'],
-      rows:schView.auditors.map(a=>[a.name,a.count,a.completed,a.count-a.completed])}}];
+      {label:'Auditors',value:schView.totals.auditors},{label:'Completed',value:schView.totals.completed},
+      {label:'Past deadline',value:dueOverdue(schView.assigned)}],
+    table:{head:['Auditor','Buildings','Completed','Still to inspect','Past deadline','Next deadline'],
+      rows:schView.auditors.map(a=>{
+        const mine=schView.assigned.filter(b=>b.auditorId===a.id);
+        const next=mine.filter(b=>b.dueDate&&b.status!=='completed').map(b=>b.dueDate).sort()[0]||null;
+        return [a.name,a.count,a.completed,a.count-a.completed,dueOverdue(mine),next];
+      })}}];
   schView.auditors.forEach(a=>{
     const rows=schView.assigned.filter(b=>b.auditorId===a.id)
       .sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name));
+    const next=rows.filter(b=>b.dueDate&&b.status!=='completed').map(b=>b.dueDate).sort()[0];
     blocks.push({id:`aud-${a.id}`,label:`${a.name} · ${rows.length} building${rows.length===1?'':'s'}`,sheet:sheetName(a.name),
-      table:{head:head.slice(0,8),rows:rows.map((b,i)=>row(b,i).slice(0,8))}});
+      pdfBreak:true,
+      // Exported on its own it is that auditor's schedule for this quarter — nothing else.
+      docTitle:'Quarter schedule',docNote:a.name,file:`quarter-schedule-${schData.quarter}-${schData.type}-${a.name}`,
+      docContext:[['Auditor',a.name],['Quarter',schData.quarter],['Type',schData.type],
+        ['Buildings',String(rows.length)],...(next?[['Next deadline',dueFmt(next)]]:[])],
+      table:{head:head.slice(0,9),rows:rows.map((b,i)=>row(b,i).slice(0,9)),
+        // On paper: the columns that fit an A4 page without shrinking the type.
+        pdfCols:[0,1,3,4,5,6,7,8],pdfHead:head,resultCols:[7,8]}});
   });
-  blocks.push({id:'all',label:'All assigned buildings',sheet:'All buildings',
-    table:{head,rows:[...schView.assigned].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name)).map(row)}});
+  blocks.push({id:'all',label:'All assigned buildings',sheet:'All buildings',pdfBreak:true,
+    table:{head,rows:[...schView.assigned].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name)).map(row),
+      pdfCols:[0,1,3,5,6,7,9],pdfHead:head,resultCols:[7,8]}});
+  const withDue=schView.assigned.filter(b=>b.dueDate).length;
   return {title:'Quarter schedule',file:`schedule-${schData.quarter}-${schData.type}`,
-    note:`${schData.quarter} · ${schData.type}`,
-    context:[['Quarter',schData.quarter],['Type',schData.type],['Buildings assigned',`${schView.totals.assigned} of ${schView.totals.buildings}`],['Auditors',String(schView.totals.auditors)]],
+    note:`${schData.quarter} · ${schData.type}`,pdfPage:'portrait',
+    context:[['Quarter',schData.quarter],['Type',schData.type],['Buildings assigned',`${schView.totals.assigned} of ${schView.totals.buildings}`],
+      ['Auditors',String(schView.totals.auditors)],['With a deadline',`${withDue} of ${schView.totals.assigned}`]],
     blocks};
 }
 
@@ -6154,7 +6392,7 @@ function rpOpenBuilder(cfg){
 // ── shared helpers ──
 // Brand-led series, checked for colour blindness: the closest pair still reads 8.3 apart in OKLab.
 const VIZ_SERIES=['#0033A0','#26A8AB','#84BD00','#B4436C','#7A5C00','#2E2E2E'];
-const VIZ_INK={primary:'#102040',secondary:'#5F6369',muted:'#8A9096',grid:'#E3E6E9',axis:'#C0C0C0',good:'#00843D',bad:'#B42318'};
+const VIZ_INK={primary:'#102040',secondary:'#5F6369',muted:'#6B7178',grid:'#E3E6E9',axis:'#C0C0C0',good:'#00843D',bad:'#B42318'};
 function rpDivisionList(){ return [...new Set((rpData?.buildings||[]).map(b=>b.division).filter(Boolean))].sort((a,b)=>a.localeCompare(b)); }
 function divisionColor(div){ const i=rpDivisionList().indexOf(div); return i>=0&&i<VIZ_SERIES.length?VIZ_SERIES[i]:VIZ_INK.muted; }
 function prevQuarter(q){ const m=/^(\d{4})-Q([1-4])$/.exec(q||''); if(!m) return null; let y=+m[1], n=+m[2]-1; if(!n){ n=4; y--; } return `${y}-Q${n}`; }
@@ -6402,7 +6640,7 @@ function renderInsights(){
       <td><b>${ovEsc(x.building)}</b><small>${ovEsc([x.division,x.area].filter(Boolean).join(' · ')||'Not linked')}</small></td>
       <td>${ovScore(x.overall)}<small>${ovEsc(x.type||'')} · ${ovEsc(x.date)}</small></td>
       <td>${deltaCell(p&&typeof p.overall==='number'?x.overall-p.overall:null)}</td>
-      <td><span class="ov-pill" style="background:${g.color}1a;color:${g.color}">${g.label}</span></td>
+      <td><span class="ov-pill" style="background:${g.soft};color:${g.ink}">${g.label}</span></td>
     </tr>`; }).join(''):'<tr><td colspan="4" class="ov-empty">No scored inspections in this period.</td></tr>';
 
   const inQ=periodTest(Q), moversBase=rpData.inspections.filter(x=>inQ(x)&&(!div||x.division===div)&&typeof x.overall==='number');
@@ -7105,7 +7343,7 @@ function exModelInsights(){
           rows:v.board.map(r=>[r.k,r.n,r.avg,r.delta,r.covered,r.total,r.total?Math.round(r.covered/r.total*100):null,r.weakest?r.weakest[0]:null,r.weakest?r.weakest[1]:null])}},
       {id:'fail',label:'Most often not compliant',sheet:'Not compliant',
         table:{head:['Checklist item','Section','Not compliant','Inspections','Not compliant (%)'],rows:v.failing.map(i=>[SECTIONS[i.si].items[i.ii],SECTIONS[i.si].title,i.fails,i.n,Math.round(i.rate*100)])}},
-      {id:'attention',label:'Buildings that need attention',sheet:'Need attention',
+      {id:'attention',label:'Lowest-scoring buildings',sheet:'Lowest scores',
         table:{head:['Building','Division','Area','Latest score','Rating','Type','Date',`Change vs ${v.P}`],
           rows:v.latest.map(({x,prev:p})=>[x.building,x.division,x.area,x.overall,grade(x.overall).label,x.type,x.date,p&&typeof p.overall==='number'?r1(x.overall-p.overall):null])}},
       {id:'movers',label:'Biggest movers · BOQI → EOQI',sheet:'Movers BOQI to EOQI',
@@ -7239,8 +7477,9 @@ function exModelOfficer(){
       table:{head:['Area','Division','Buildings','Assigned','Completed','Completion (%)'],
         rows:v.areas.map(g=>[g.area,g.division,g.buildings,g.assigned,g.completed,pct(g.completed,g.assigned)])}},
     {id:'buildings',label:'Buildings',sheet:'Buildings',
-      table:{head:['Building','Location','Division','Area','Status','Auditor','Score','Completed'],
-        rows:ofFilteredRows().map(b=>[b.name,b.location,b.division,b.area,b.status,b.auditorName,b.score??null,b.completedAt||null])}},
+      table:{head:['Building','Location','Division','Area','Status','Auditor','Deadline','Score','Completed'],
+        rows:ofFilteredRows().map(b=>[b.name,b.location,b.division,b.area,b.status,b.auditorName,b.dueDate||null,b.score??null,b.completedAt||null]),
+        resultCols:[7,8]}},
     {id:'activity',label:'Recent activity',sheet:'Activity',defaults:{pdf:false},
       table:{head:['When','Who','Action','Building','Auditor','Score'],
         rows:v.activity.map(e=>[e.at,e.actor||'',e.kind==='completed'?'Submitted':'Assigned',e.building||'',e.auditor||e.auditorName||'',e.score??null])}},
@@ -7383,7 +7622,12 @@ async function openExport(ctx,only){
   if(model&&only){
     const block=model.blocks.find(b=>b.id===only);
     if(!block){ closeModal('modal-export'); showToast('Nothing to export here yet.',true); return; }
-    model={...model,title:`${model.title} · ${block.label}`,file:`${model.file}-${only}`,blocks:[block]};
+    model={...model,
+      title:block.docTitle||`${model.title} · ${block.label}`,
+      note:block.docNote!==undefined?block.docNote:model.note,
+      context:block.docContext||model.context,
+      file:block.file||`${model.file}-${only}`,
+      blocks:[block]};
   }
   if(!model){ closeModal('modal-export'); showToast('Nothing to export yet — wait for the data to load.',true); return; }
   exModel=model;
@@ -7391,6 +7635,25 @@ async function openExport(ctx,only){
   lucide.createIcons();
 }
 function exChart(b){ const c=typeof b.chart==='function'?b.chart():b.chart?rpCharts[b.chart]:null; return c&&c.canvas?c:null; }
+/** Parts that can be exported with or without the inspection results. */
+function exHasResults(m){ return !!m&&m.blocks.some(b=>b.table&&b.table.resultCols&&b.table.resultCols.length); }
+/** The same export with the score and inspection-date columns taken out. */
+function exStripResults(blocks){
+  return blocks.map(b=>{
+    const t=b.table;
+    if(!t||!t.resultCols||!t.resultCols.length) return b;
+    const drop=new Set(t.resultCols), keep=t.head.map((_,i)=>i).filter(i=>!drop.has(i));
+    const table={...t,head:keep.map(i=>t.head[i]),rows:t.rows.map(r=>keep.map(i=>r[i]))};
+    if(t.pdfHead) table.pdfHead=keep.map(i=>t.pdfHead[i]);
+    if(t.pdfCols) table.pdfCols=t.pdfCols.filter(i=>!drop.has(i)).map(i=>keep.indexOf(i));
+    delete table.resultCols;
+    return {...b,table};
+  });
+}
+function exWantsResults(){
+  const box=document.getElementById('ex-results');
+  return !box||document.getElementById('ex-results-row').hidden||box.checked;
+}
 function exVisual(){ return exModel.blocks.filter(b=>exChart(b)||b.image); }
 function exRender(){
   const m=exModel, visual=exVisual(), list=document.getElementById('ex-list'), all=document.getElementById('ex-all');
@@ -7419,6 +7682,7 @@ function exRender(){
     all.hidden=false;
     exSyncAll();
   }
+  document.getElementById('ex-results-row').hidden=exFmt==='png'||!exHasResults(m);
   document.getElementById('ex-go-label').textContent=exFmt==='pdf'?'Create PDF':exFmt==='xlsx'?'Download Excel':'Download image';
   document.getElementById('ex-go').disabled=false;
   document.getElementById('ex-msg').hidden=true;
@@ -7444,7 +7708,8 @@ async function exRun(){
   }
   const ids=[...list.querySelectorAll('input:checked')].map(i=>i.value);
   if(!ids.length) return fail('Choose at least one part to include.');
-  const blocks=m.blocks.filter(b=>ids.includes(b.id));
+  const chosen=m.blocks.filter(b=>ids.includes(b.id));
+  const blocks=exWantsResults()?chosen:exStripResults(chosen);
   if(exFmt==='pdf'){
     if(exPdf(m,blocks)) closeModal('modal-export');
     else fail('Your browser blocked the new window. Allow pop-ups for this site, then try again.');
@@ -7541,10 +7806,27 @@ async function exPng(m,blocks){
 }
 
 // ── PDF: a print-ready page (landscape A4) in a new window; "Save as PDF" keeps text sharp and searchable ──
-function exPdf(m,blocks){
-  const w=window.open('','_blank');
-  if(!w) return false;
-  const cell=v=>v==null||v===''?'–':ovEsc(String(v));
+/**
+ * The export as a printable A4 document, in the same hand as the inspection report:
+ * the document owns the paper (no page margin, so the browser prints no file name, date
+ * or address of its own), paginates itself, repeats a table's heading on every page it
+ * runs onto, and carries the same toolbar — Save as PDF works on iPhone and iPad, where
+ * printing a page written into about:blank does nothing.
+ */
+function exDocHtml(m,blocks,{sameTab=false}={}){
+  // A part exported on its own (an auditor's table, say) already speaks for itself: the
+  // model carries its heading and its facts, so the part is not announced a second time.
+  const solo=blocks.length===1&&!!(blocks[0].docTitle||blocks[0].docContext);
+  const title=m.title, note=m.note||'', chips=m.context||[];
+  const fileName=exSlug(m.file)+'-'+exDate()+'.pdf';
+  const portrait=m.pdfPage==='portrait';
+  const W=portrait?210:297, H=portrait?297:210;
+  const logoUrl=new URL('/osqa-logo.svg',location.origin).href;
+  const cell=v=>{
+    if(v==null||v==='') return '–';
+    const text=String(v);
+    return ovEsc(/^\d{4}-\d{2}-\d{2}$/.test(text)?new Date(text+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):text);
+  };
   const table=t=>{
     const cols=t.pdfCols||t.head.map((_,i)=>i), head=t.pdfHead||t.head, numeric=i=>t.rows.some(r=>typeof r[i]==='number');
     const body=t.rows.map(r=>`<tr>${cols.map(i=>{ const v=r[i], c=t.heat&&i>0&&typeof v==='number'?heatColor(v):null;
@@ -7552,64 +7834,245 @@ function exPdf(m,blocks){
     return `<table${t.heat?' class="heat"':''}><thead><tr>${cols.map(i=>`<th${numeric(i)?' class="n"':''}>${ovEsc(head[i])}</th>`).join('')}</tr></thead>
       <tbody>${body||`<tr><td colspan="${cols.length}" class="empty">Nothing to show for these filters.</td></tr>`}</tbody></table>`;
   };
-  const html=blocks.map(b=>{
-    if(b.kpis) return `<section class="block"><h2>${ovEsc(b.label)}</h2><div class="kpis">${b.kpis.map(k=>`<div class="kpi"><span>${ovEsc(k.label)}</span><b>${cell(k.value)}</b>${k.sub?`<small>${ovEsc(k.sub)}</small>`:''}</div>`).join('')}</div></section>`;
-    const img=exChart(b)?exChartCanvas(exChart(b)).toDataURL('image/png'):'';
-    return `<section class="block"><h2>${ovEsc(b.label)}</h2>${img?`<figure><img src="${img}" alt="${ovEsc(b.label)}"></figure>`:''}${b.table?table(b.table):''}</section>`;
+  // The foot explains only what this page contains: a scale when scores are printed, and what
+  // a dash means when at least one cell is empty. The dash is always in brackets.
+  const printed=blocks.filter(b=>b.table).map(b=>{ const t=b.table, cols=t.pdfCols||t.head.map((_,i)=>i); return {t,cols,head:t.pdfHead||t.head}; });
+  const scored=printed.some(p=>p.cols.some(i=>/score|average/i.test(p.head[i]||'')));
+  const sectioned=blocks.some(b=>/section/i.test(b.label||''));
+  const anyBlank=printed.some(p=>p.t.rows.some(r=>p.cols.some(i=>r[i]==null||r[i]==='')));
+  const legend=[scored?`Scores are out of 100${sectioned?' · section scores out of 10':''}`:'',anyBlank?'(– means no data)':''].filter(Boolean).join(' ');
+  // Each part goes into the flow whole; the layout below cuts it into pages.
+  const flow=blocks.map(b=>{
+    const heading=solo?'':`<h2>${ovEsc(b.label)}</h2>`;
+    const cards=b.kpis?`<div class="kpis">${b.kpis.map(k=>`<div class="kpi"><span>${ovEsc(k.label)}</span><b>${cell(k.value)}</b>${k.sub?`<small>${ovEsc(k.sub)}</small>`:''}</div>`).join('')}</div>`:'';
+    const img=!b.kpis&&exChart(b)?exChartCanvas(exChart(b)).toDataURL('image/png'):'';
+    // Cards already say what a "Measure / Value" table would repeat; a part asks for both.
+    const rows=b.table&&(!b.kpis||b.pdfTable)?table(b.table):'';
+    return `<section class="blk"${b.pdfBreak?' data-break="1"':''}>${heading}${cards}${img?`<figure><img src="${img}" alt="${ovEsc(b.label)}"></figure>`:''}${rows}</section>`;
   }).join('');
-  const generated=new Date().toLocaleString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  w.document.write(`<!DOCTYPE html><html lang="en" dir="ltr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${ovEsc(exSlug(m.file)+'-'+exDate())}</title>
+
+  return `<!DOCTYPE html><html lang="en" dir="ltr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${ovEsc(fileName.replace(/\.pdf$/,''))}</title>
+<link rel="icon" type="image/svg+xml" href="/osqa-icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#002070;--deep:#102040;--teal:#0033A0;--mist:#8CFEE3;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369}
+:root{--ink:#002070;--deep:#102040;--royal:#0033A0;--teal:#26A8AB;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369;
+  --pad-x:12mm;--pad-t:11mm;--pad-b:9mm}
 *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-@page{size:A4 landscape;margin:11mm 12mm 13mm;@bottom-right{content:"Page " counter(page) " of " counter(pages);font-family:Cairo,Arial,sans-serif;font-size:8pt;color:#69727E}}
-html,body{margin:0;background:#fff;color:var(--deep);font-family:Cairo,Arial,sans-serif;font-size:9.5pt;line-height:1.4}
-.bar{position:sticky;top:0;z-index:2;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 18px;background:var(--ink);color:#fff;font-size:13px}
-.bar button{font:700 13px Cairo,Arial,sans-serif;background:#fff;color:var(--ink);border:0;border-radius:7px;padding:8px 16px;cursor:pointer}
-.bar button.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)}
-.doc{max-width:273mm;margin:0 auto;padding:18px 16px 30px}
-.head{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;border-top:6px solid var(--teal);padding-top:10px;margin-bottom:16px}
-.kicker{display:flex;align-items:center;gap:10px;color:var(--teal);font-size:8pt;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
-.kicker img{height:26px;width:auto;display:block}
-.kicker i{width:1px;height:18px;background:var(--line)}
-h1{margin:2px 0 7px;color:var(--ink);font-size:21pt;letter-spacing:-.02em;line-height:1.15}
-.chips{display:flex;flex-wrap:wrap;gap:5px}.chip{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:8.5pt;background:var(--paper)}.chip b{color:var(--muted);font-weight:700;margin-right:5px}
-.lead{margin:7px 0 0;color:var(--muted);font-size:8.5pt}
-.meta{text-align:right;color:var(--muted);font-size:8.5pt;white-space:nowrap}
-.block{margin:0 0 16px}
-h2{font-size:12pt;color:var(--ink);margin:0 0 7px;padding-bottom:4px;border-bottom:1.5px solid var(--line);break-after:avoid;page-break-after:avoid}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(42mm,1fr));gap:8px}
-.kpi{border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:8px;padding:8px 11px;break-inside:avoid}
-.kpi span{display:block;font-size:7.5pt;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
-.kpi b{display:block;font-size:16pt;color:var(--ink);line-height:1.25}
-.kpi small{font-size:8pt;color:var(--muted)}
-figure{margin:0 0 8px;border:1px solid var(--line);border-radius:8px;padding:8px;break-inside:avoid;page-break-inside:avoid}
-figure img{display:block;width:100%;max-height:118mm;object-fit:contain}
-table{width:100%;border-collapse:collapse;font-size:8.5pt}
-thead{display:table-header-group}
-th{background:var(--ink);color:#fff;text-align:left;font-size:7.5pt;font-weight:700;letter-spacing:.03em;padding:5px 7px;vertical-align:bottom}
+/* The document owns the paper: no page margin means no browser header, footer or URL. */
+@page{size:A4 ${portrait?'portrait':'landscape'};margin:0}
+html,body{margin:0;padding:0;background:#fff;color:var(--deep);font-family:Cairo,Arial,sans-serif;font-size:10pt;line-height:1.4}
+.sheet{width:${W}mm;height:${H}mm;padding:var(--pad-t) var(--pad-x) var(--pad-b);overflow:hidden;display:flex;flex-direction:column;background:#fff;break-after:page;page-break-after:always}
+.sheet:last-child{break-after:auto;page-break-after:auto}
+.body{flex:1;min-height:0;overflow:hidden}
+#flow{position:absolute;left:-9999px;top:0;width:${W-24}mm}
+
+.bar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px;background:#0A1B3D;color:#fff;font-size:13px}
+.bar b{font-weight:800;margin-right:auto;font-size:13px}
+.bar button{font:inherit;font-weight:800;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:#26A8AB;color:#04263A}
+.bar button[disabled]{opacity:.6;cursor:default}
+.bar button.ghost{background:rgba(255,255,255,.14);color:#fff}
+.bar small{opacity:.7;width:100%;font-size:11px}
+@media screen{body{background:#E9EDF1;padding-bottom:10px}.sheet{margin:0 auto 10px;box-shadow:0 1px 5px rgba(16,32,64,.2)}}
+@media print{.bar{display:none!important}body{background:#fff}.sheet{margin:0;box-shadow:none}}
+#doc{width:${W}mm;margin:0 auto;transform-origin:top left}
+@media print{#doc{transform:none!important;width:auto}#docwrap{height:auto!important}}
+
+.rule{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--royal),var(--teal));flex:none}
+.brand{display:flex;align-items:center;gap:12px;margin-top:12px;color:var(--royal);font-weight:900;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;flex:none}
+.brand img{display:block;height:30px;width:auto}.brand i{width:1px;height:20px;background:var(--line);display:block}
+.head{flex:none;display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin:9px 0 12px}
+h1{margin:0;color:var(--ink);font-size:26px;line-height:1.1;letter-spacing:-.03em}
+h1 span{color:var(--royal)}
+.lead{margin:6px 0 0;color:var(--muted);font-size:11px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:9px;background:var(--paper);font-weight:700}
+.chip b{color:var(--muted);font-weight:800;margin-right:5px;text-transform:uppercase;letter-spacing:.06em}
+.foot{flex:none;display:flex;justify-content:space-between;align-items:baseline;gap:12px;color:var(--muted);font-size:8.5px;font-weight:700;border-top:1px solid var(--line);padding-top:5px;margin-top:8px}
+.foot .legend{flex:1;text-align:center;font-weight:600}
+
+.blk{margin:0 0 12px}
+.blk:last-child{margin-bottom:0}
+h2{font-size:13px;color:var(--ink);margin:0 0 7px;padding-bottom:4px;border-bottom:1.5px solid var(--line)}
+h2 small{float:right;color:var(--muted);font-size:9px;font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(38mm,1fr));gap:7px}
+.kpi{border:1px solid var(--line);border-left:4px solid var(--royal);border-radius:8px;padding:7px 10px;background:var(--paper)}
+.kpi span{display:block;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.kpi b{display:block;font-size:17px;color:var(--ink);line-height:1.25}
+.kpi small{font-size:8.5px;color:var(--muted)}
+figure{margin:0 0 8px;border:1px solid var(--line);border-radius:8px;padding:8px}
+figure img{display:block;width:100%;max-height:${portrait?'120mm':'105mm'};object-fit:contain}
+table{width:100%;border-collapse:collapse;font-size:9px;table-layout:auto}
+th{background:var(--ink);color:#fff;text-align:left;font-size:8px;font-weight:800;letter-spacing:.03em;padding:5px 7px;vertical-align:bottom}
+th:first-child{border-radius:5px 0 0 0}th:last-child{border-radius:0 5px 0 0}
 td{padding:4px 7px;border-bottom:1px solid var(--line);vertical-align:top}
-tr{break-inside:avoid;page-break-inside:avoid}
 tbody tr:nth-child(even) td:not(.hm){background:var(--paper)}
 .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 table.heat td.hm{text-align:center;font-weight:800;border:2px solid #fff}
 .empty{color:var(--muted);font-style:italic;text-align:center}
-.foot{margin-top:12px;display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:7.5pt;border-top:1px solid var(--line);padding-top:6px}
-@media print{.bar{display:none}.doc{max-width:none;padding:0}}
 </style></head><body>
-<div class="bar"><span>In the print window, choose <b>Save as PDF</b> as the destination.</span><span><button type="button" onclick="window.print()">Save as PDF</button> <button type="button" class="ghost" onclick="window.close()">Close</button></span></div>
-<main class="doc">
-  <header class="head"><div><div class="kicker"><img src="${ovEsc(new URL('/osqa-logo.svg',location.origin).href)}" alt="OSQA"><i></i>OSD Facility Experience · Quality Assurance</div><h1>${ovEsc(m.title)}</h1>
-    <div class="chips">${m.context.map(([k,v])=>`<span class="chip"><b>${ovEsc(k)}</b>${ovEsc(v)}</span>`).join('')}</div>${m.note?`<p class="lead">${ovEsc(m.note)}</p>`:''}</div>
-    <div class="meta">Generated ${ovEsc(generated)}${currentUser?.name?`<br>by ${ovEsc(currentUser.name)}`:''}</div></header>
-  ${html}
-  <footer class="foot"><span>Facility Experience Quality Assurance</span><span>Scores are out of 100 · section scores out of 10 · – means no data</span></footer>
-</main>
-<script>window.addEventListener('load',function(){(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){window.print();},300);});});<\/script>
-</body></html>`);
-  w.document.close();
+<div class="bar">
+  <b>${ovEsc(title)}${note?' · '+ovEsc(note):''}</b>
+  <button type="button" id="save-pdf">Save as PDF</button>
+  <button type="button" class="ghost" onclick="window.print()">Print</button>
+  <button type="button" class="ghost" onclick="${sameTab?'location.reload()':'window.close()'}">${sameTab?'Back to the app':'Close'}</button>
+  <small id="bar-note">On iPhone or iPad, use <b>Save as PDF</b> — the file opens in the share sheet, where you can save it to Files, send it, or print it.</small>
+</div>
+<div id="docwrap"><div id="doc"><div id="sheets"></div></div></div>
+<div id="flow">${flow}</div>
+<script>
+var FIRST_HEAD=${JSON.stringify(`<div class="rule"></div>
+  <div class="brand"><img src="${ovEsc(logoUrl)}" alt="OSQA"><i></i>OSD · Facility Experience Quality Assurance</div>
+  <div class="head"><div><h1>${ovEsc(title)}</h1>${note?`<p class="lead">${ovEsc(note)}</p>`:''}
+    <div class="chips">${chips.map(([k,v])=>`<span class="chip"><b>${ovEsc(k)}</b>${ovEsc(v)}</span>`).join('')}</div></div></div>`)};
+var DOC_NAME=${JSON.stringify(fileName)};
+var LEGEND=${JSON.stringify(legend?`<span class="legend">${ovEsc(legend)}</span>`:'<span></span>')};
+function loadOnce(src){
+  return new Promise(function(res,rej){
+    var s=document.createElement('script');
+    s.src=src; s.onload=res; s.onerror=function(){ rej(new Error('Could not load '+src)); };
+    document.head.appendChild(s);
+  });
+}
+/** html2canvas draws an <img> of an SVG badly; the browser itself draws it correctly. */
+async function flattenLogo(){
+  var imgs=[].slice.call(document.querySelectorAll('.brand img'));
+  if(!imgs.length) return function(){};
+  var src=imgs[0].getAttribute('src');
+  try{
+    var im=new Image(); im.decoding='sync'; im.src=src; await im.decode();
+    var w=im.naturalWidth||300, h=im.naturalHeight||106, c=document.createElement('canvas');
+    c.width=w*3; c.height=h*3;
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    var png=c.toDataURL('image/png');
+    imgs.forEach(function(i){ i.setAttribute('src',png); });
+  }catch(err){ return function(){}; }
+  return function(){ imgs.forEach(function(i){ i.setAttribute('src',src); }); };
+}
+var readyFile=null;
+function saveFile(blob,name){
+  var url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); },60000);
+}
+// Safari on iPhone ignores window.print() when the site runs from the Home Screen, and there
+// is no share menu there either — so the page builds the PDF itself and hands the file to the
+// system share sheet, which can save it to Files, send it, or print it.
+async function savePdf(){
+  var btn=document.getElementById('save-pdf'), note=document.getElementById('bar-note'), label=btn.textContent;
+  if(readyFile){                                                     // second tap: the share sheet, on a fresh gesture
+    try{ await navigator.share({files:[readyFile],title:readyFile.name}); }
+    catch(err){ if(err&&err.name!=='AbortError') saveFile(readyFile,readyFile.name); }
+    return;
+  }
+  btn.disabled=true; btn.textContent='Preparing…';
+  var doc=document.getElementById('doc'), wrap=document.getElementById('docwrap');
+  var tf=doc.style.transform, ml=doc.style.marginLeft, wh=wrap.style.height, restoreLogo=null;
+  try{
+    if(!window.html2canvas) await loadOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    if(!window.jspdf) await loadOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height='';     // capture the paper at full size
+    restoreLogo=await flattenLogo();
+    var sheets=[].slice.call(document.querySelectorAll('.sheet'));
+    var pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'${portrait?'portrait':'landscape'}',compress:true});
+    for(var i=0;i<sheets.length;i++){
+      btn.textContent='Page '+(i+1)+' of '+sheets.length+'…';
+      var canvas=await window.html2canvas(sheets[i],{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,
+        width:sheets[i].offsetWidth,height:sheets[i].offsetHeight,windowWidth:sheets[i].offsetWidth});
+      if(i) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg',0.9),'JPEG',0,0,${W},${H},undefined,'FAST');
+      canvas.width=canvas.height=0;                                            // let the phone reclaim it
+    }
+    var blob=pdf.output('blob'), file=new File([blob],DOC_NAME,{type:'application/pdf'});
+    // iOS only opens the share sheet from a fresh tap, and building the file takes a few
+    // seconds — so the finished file waits behind a second tap instead of being refused.
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      readyFile=file;
+      label='Share / save file · '+Math.max(1,Math.round(blob.size/104857.6)/10)+' MB';
+      note.textContent='The file is ready. Tap “Share / save file” to save it to Files, send it, or print it.';
+    }else{
+      saveFile(blob,DOC_NAME);
+    }
+  }catch(err){
+    if(!err||err.name!=='AbortError') note.textContent='Could not build the PDF: '+((err&&err.message)||'unknown error')+'. Try Print instead.';
+  }finally{
+    if(typeof restoreLogo==='function') restoreLogo();
+    doc.style.transform=tf; doc.style.marginLeft=ml; wrap.style.height=wh;
+    btn.disabled=false; btn.textContent=label;
+  }
+}
+(function(){
+  var flow=document.getElementById('flow'), holder=document.getElementById('sheets'), sheets=[], body=null;
+  function sheet(first){
+    var s=document.createElement('section');
+    s.className='sheet';
+    s.innerHTML=(first?FIRST_HEAD:'')+'<div class="body"></div><div class="foot"><span>Facility Experience Quality Assurance</span>'+LEGEND+'<span class="pno"></span></div>';
+    holder.appendChild(s); sheets.push(s);
+    body=s.querySelector('.body');
+    return s;
+  }
+  function used(){ var box=body.getBoundingClientRect(), last=body.lastElementChild; return last?last.getBoundingClientRect().bottom-box.top:0; }
+  function over(){ return used()>body.getBoundingClientRect().height-1; }
+  /** A table longer than the page runs on: the next page repeats its heading, nothing else. */
+  function shell(sec){
+    var c=sec.cloneNode(true), tb=c.querySelector('tbody');
+    if(tb) tb.innerHTML='';
+    return c;
+  }
+  function start(){
+    sheet(true);
+    [].slice.call(flow.children).forEach(function(sec){
+      if(sec.getAttribute('data-break')==='1'&&body.children.length) sheet(false);
+      var tb=sec.querySelector('tbody');
+      var rows=tb?[].slice.call(tb.rows):[];
+      if(tb) tb.innerHTML='';
+      body.appendChild(sec);
+      if(over()&&body.children.length>1){ body.removeChild(sec); sheet(false); body.appendChild(sec); }
+      var cur=sec, curBody=tb;
+      rows.forEach(function(r){
+        curBody.appendChild(r);
+        if(over()&&curBody.rows.length>1){                            // a row never straddles two pages
+          curBody.removeChild(r);
+          sheet(false);
+          cur=shell(cur); body.appendChild(cur);
+          curBody=cur.querySelector('tbody');
+          curBody.appendChild(r);
+        }
+      });
+    });
+    flow.parentNode.removeChild(flow);
+    [].forEach.call(document.querySelectorAll('.pno'),function(el,i){ el.textContent='Page '+(i+1)+' of '+sheets.length; });
+    fit();
+  }
+  // A phone cannot show a whole sheet at full size: the paper is scaled to the screen, not reflowed.
+  var doc=document.getElementById('doc'), wrap=document.getElementById('docwrap');
+  function fit(){
+    var avail=document.documentElement.clientWidth-10, w=doc.offsetWidth;
+    var z=Math.min(1,avail/w);
+    if(z<1){
+      doc.style.transform='scale('+z+')';
+      doc.style.marginLeft=Math.max(0,(avail-w*z)/2)+'px';
+      wrap.style.height=Math.ceil(doc.offsetHeight*z)+'px';
+    }else{
+      doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height='';
+    }
+  }
+  window.addEventListener('resize',fit);
+  window.addEventListener('beforeprint',function(){ doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height=''; });
+  window.addEventListener('afterprint',fit);
+  document.getElementById('save-pdf').addEventListener('click',savePdf);
+  // Pages are measured only once the web font and the pictures are in.
+  function ready(){ (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){ setTimeout(start,30); }); }
+  if(document.readyState==='complete') ready(); else window.addEventListener('load',ready);
+})();
+<\/script>
+</body></html>`;
+}
+
+/** The PDF opens as its own page — the only way iPhone and iPad can print or save it. */
+function exPdf(m,blocks){
+  openDocPage(()=>Promise.resolve(exDocHtml(m,blocks)),
+    {sameTab:()=>Promise.resolve(exDocHtml(m,blocks,{sameTab:true})),what:'export'});
   return true;
 }
 
@@ -8187,6 +8650,7 @@ function adRenderAudit(){
     if(!user.canEdit) document.getElementById('start-insp-btn')?.remove();
     document.body.classList.toggle('no-delete',!user.canDelete);
     document.body.classList.toggle('view-only',!user.canEdit);
+    if(window.__cdnMissing&&window.__cdnMissing.length&&!window.__cdnSaid){ window.__cdnSaid=true; showToast(`Some ${window.__cdnMissing.join(' and ')} could not load — check your connection and reload the page.`,true); }
     refreshNav();
     useAccountInspector();
     refreshReviewBadge();
