@@ -574,7 +574,7 @@ body.view-only #inspection-link{display:none}
 .ov-panel>.tip-box{margin:10px 14px;width:auto}
 .hist-filters+.tip-box{margin:12px 44px 0;width:auto}
 @keyframes tipIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
-@media(pointer:coarse){.info-tip{width:26px;height:26px;font-size:.8rem}}
+@media(pointer:coarse){.info-tip{width:24px;height:24px;min-height:0;font-size:.78rem}.tool-x{width:24px;height:24px}}
 @media(max-width:780px){.hist-filters+.tip-box{margin:12px 14px 0}}
 
 /* Inspection Reports (search · open · review) */
@@ -1145,7 +1145,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,te
 @media(pointer:coarse){
   /* 16px keeps iOS from zooming the page in when a field is tapped; page styles set smaller sizes, hence !important */
   input,select,textarea{font-size:16px!important}
-  .rp-link,.info-tip,.ex-btn,.page-export{min-height:38px;display:inline-flex;align-items:center;justify-content:center}
+  .rp-link,.ex-btn,.page-export{min-height:38px;display:inline-flex;align-items:center;justify-content:center}
   .ph-btn{min-height:40px}
   .hs-card.clickable,.ov-table .clickable td{padding-top:12px;padding-bottom:12px}
 }
@@ -2009,7 +2009,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
             </table></div></div>
           </div>
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Checklist</span><h3><svg data-lucide="circle-x" width="18" height="18"></svg> Most Often Not Compliant <button type="button" class="info-tip" data-tip="ins-fail" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Checklist</span><h3><svg data-lucide="circle-x" width="18" height="18"></svg> Most Often Scored 0 <button type="button" class="info-tip" data-tip="ins-fail" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><ul class="ins-fail" id="ins-fail"></ul></div>
           </div>
         </div>
@@ -5748,7 +5748,7 @@ function renderReports(){
     tile('activity',st.sd??'–','Std deviation',note('σ — how spread out scores are'))+
     tile('arrow-up-circle',st.max??'–','Highest',best?note(ovEsc(best.building)):'')+
     tile('arrow-down-circle',st.min??'–','Lowest',worst?note(ovEsc(worst.building)):'')+
-    tile('building-2',`${covered}/${inScope.length}`,'Buildings covered',`<div class="ov-bar" style="margin-top:10px"><i style="width:${inScope.length?Math.round(covered/inScope.length*100):0}%"></i></div>`);
+    tile('building-2',`${covered}/${inScope.length}`,'Buildings inspected',`<div class="ov-bar" style="margin-top:10px"><i style="width:${inScope.length?Math.round(covered/inScope.length*100):0}%"></i></div>`);
 
   // Rating bands (counts ignore the rating filter so every band stays clickable)
   const bandBase=rpFilter({ignoreRating:true}), rating=rpVal('rp-rating');
@@ -5895,11 +5895,11 @@ const TIPS={
   'home-kpis':['What these numbers are',['Reports on file, average, highest and lowest score count every saved report in the system (not just the list below). Under the highest and lowest score is the building they were given to, with its division and area — tap the card to open that report.','“Reports in” counts reports dated in the current quarter. The list shows the six newest reports — open one to review it, or search them all in Inspection Reports.']],
   'cx-report':['Building your own report',['The four steps on the left decide everything: <b>1</b> which inspections are counted, <b>2</b> what one row stands for, <b>3</b> which columns are measured, <b>4</b> which parts appear.','The page you see <em>is</em> the report — Export gives you exactly these parts and columns as PDF, Excel or an image, nothing else.','<ul><li><b>Buildings in list</b>, <b>Coverage</b> — only for rows that are divisions, areas or buildings; they count the buildings on file, inspected or not.</li><li><b>BOQI / EOQI / Change</b> — averages of each type, and end minus beginning.</li><li><b>Sections</b> — the average of that section, out of 10.</li></ul>','“Save setup” keeps the whole arrangement under a name; share it and the rest of the team sees the same report.']],
   'lib-status':['Review status and search',['<b>Needs review</b>: saved and not yet reviewed. <b>Updated — review again</b>: edited after a decision. <b>Changes requested</b>: sent back to the auditor. <b>Approved</b>: accepted.','Search looks at the building, auditor, division, area and report number. Tick “Also search comments & notes” to look inside what auditors wrote.']],
-  'ins-kpis':['Summary cards',['For the chosen period (a quarter or a whole year), type and division:','<ul><li><b>Inspections</b> — reports saved.</li><li><b>Average score</b> — mean overall score out of 100.</li><li><b>Buildings covered</b> — buildings in the list with at least one inspection ÷ all buildings.</li><li><b>Good or excellent</b> — share scoring 81 or more.</li><li><b>Below acceptable</b> — reports scoring 70 or less.</li></ul>','Arrows compare with the period before — the previous quarter, or the previous year. While a year is still in progress it is compared with the same quarters of the year before. Green is better, red is worse.']],
+  'ins-kpis':['Summary cards',['For the chosen period (a quarter or a whole year), type and division:','<ul><li><b>Inspections</b> — reports saved.</li><li><b>Average score</b> — mean overall score out of 100.</li><li><b>Buildings inspected</b> — buildings in the list with at least one inspection ÷ all buildings.</li><li><b>Good or Excellent</b> — share scoring 81 or more.</li><li><b>Poor or Critical</b> — reports scoring 70 or less.</li></ul>','Arrows compare with the period before — the previous quarter, or the previous year. While a year is still in progress it is compared with the same quarters of the year before. Green is better, red is worse.']],
   'ins-trend':['Average score by quarter',['The average overall score for each of the last 8 quarters — one line per division, or the selected division next to all divisions.','Hover a point to see how many inspections it is based on. “View as table” shows the same numbers.']],
   'ins-heat':['Section heatmap',['Each cell is the average score (out of 10) of one checklist section, for a division — or for an area once you pick a division — in the chosen quarter.','Colours follow the rating scale: red = poor or critical, grey = acceptable, blue = good or excellent. “All” is every division together; “Overall” is the full score ÷ 10.','Click a cell to open those inspections in Report Builder.']],
   'ins-board':['Ranking',['Divisions (or areas) sorted by this quarter’s average score.','<b>Change</b> — difference from last quarter’s average. <b>Coverage</b> — buildings inspected ÷ buildings in the list. <b>Weakest section</b> — the section with the lowest average.','Click a division to see its areas.']],
-  'ins-fail':['Most often not compliant',['Checklist items marked “not compliant” most often this quarter. The % is not-compliant answers ÷ all answers for that item.','Only reports scored item by item count here — imported overall scores are left out.']],
+  'ins-fail':['Most often scored 0',['Checklist items that scored 0 most often this quarter. The % is 0-scores ÷ all answers for that item.','Only reports scored item by item count here — imported overall scores are left out.']],
   'ins-attention':['Lowest-scoring buildings',['The buildings with the lowest latest score this quarter — the ones to look at first, whatever their rating. <b>Change</b> compares with the same building’s latest score last quarter.','Click a building to see all its inspections.']],
   'ins-movers':['Biggest movers',['Buildings with both a BOQI and an EOQI this quarter, ranked by how much the score changed between the beginning and the end of the quarter.']],
   'rp-filters':['Filters, grouping and saved reports',['Every filter you set must match (for example CAOSD + EOQI + Q3). <b>Group by</b> decides how the summary, chart and table below are split.','<b>Save report</b> keeps this exact setup to reopen later; tick “share” to make it visible to everyone who can use Analytics.']],
@@ -6376,12 +6376,12 @@ function exModelSchedule(){
       docTitle:'Quarter schedule',docNote:a.name,file:`quarter-schedule-${schData.quarter}-${schData.type}-${a.name}`,
       docContext:[['Auditor',a.name],['Quarter',schData.quarter],['Type',schData.type],
         ['Buildings',String(rows.length)],...(next?[['Next deadline',dueFmt(next)]]:[])],
-      table:{head:head.slice(0,9),rows:rows.map((b,i)=>row(b,i).slice(0,9)),
+      table:{head:head.slice(0,9),bands:{7:100},rows:rows.map((b,i)=>row(b,i).slice(0,9)),
         // On paper: the columns that fit an A4 page without shrinking the type.
         pdfCols:[0,1,3,4,5,6,7,8],pdfHead:head,resultCols:[7,8]}});
   });
   blocks.push({id:'all',label:'All assigned buildings',sheet:'All buildings',pdfBreak:true,
-    table:{head,rows:[...schView.assigned].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name)).map(row),
+    table:{head,bands:{7:100},rows:[...schView.assigned].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name)).map(row),
       pdfCols:[0,1,3,5,6,7,9],pdfHead:head,resultCols:[7,8]}});
   const withDue=schView.assigned.filter(b=>b.dueDate).length;
   return {title:'Quarter schedule',file:`schedule-${schData.quarter}-${schData.type}`,
@@ -6574,9 +6574,9 @@ function renderInsights(){
     ?`<div class="ov-empty" style="grid-column:1/-1">No inspections in ${ovEsc(Q||'this period')} for these filters.</div>`
     :tile('file-text',A.n,'Inspections',insDelta(hasPrev?A.n-B.n:null,{vs:pLabel,neutral:true,digits:0}))+
      tile('trending-up',A.avg==null?'–':r1(A.avg),'Average score',insDelta(hasPrev&&A.avg!=null&&B.avg!=null?r1(A.avg)-r1(B.avg):null,{vs:pLabel}),A.avg!=null?grade(A.avg).ink:'')+
-     tile('building-2',A.coverage==null?'–':`${Math.round(A.coverage)}%`,'Buildings covered',insDelta(hasPrev&&A.coverage!=null&&B.coverage!=null?Math.round(A.coverage)-Math.round(B.coverage):null,{vs:pLabel,unit:' pts',digits:0})+`<div class="ov-bar" style="margin-top:8px"><i style="width:${Math.round(A.coverage||0)}%"></i></div>`)+
-     tile('award',A.goodShare==null?'–':`${Math.round(A.goodShare)}%`,'Good or excellent',insDelta(hasPrev&&A.goodShare!=null&&B.goodShare!=null?Math.round(A.goodShare)-Math.round(B.goodShare):null,{vs:pLabel,unit:' pts',digits:0}))+
-     tile('triangle-alert',A.low,'Below acceptable',insDelta(hasPrev?A.low-B.low:null,{vs:pLabel,inverse:true,digits:0}),A.low?'#b42318':'');
+     tile('building-2',A.coverage==null?'–':`${Math.round(A.coverage)}%`,'Buildings inspected',insDelta(hasPrev&&A.coverage!=null&&B.coverage!=null?Math.round(A.coverage)-Math.round(B.coverage):null,{vs:pLabel,unit:' pts',digits:0})+`<div class="ov-bar" style="margin-top:8px"><i style="width:${Math.round(A.coverage||0)}%"></i></div>`)+
+     tile('award',A.goodShare==null?'–':`${Math.round(A.goodShare)}%`,'Good or Excellent',insDelta(hasPrev&&A.goodShare!=null&&B.goodShare!=null?Math.round(A.goodShare)-Math.round(B.goodShare):null,{vs:pLabel,unit:' pts',digits:0}))+
+     tile('triangle-alert',A.low,'Poor or Critical',insDelta(hasPrev?A.low-B.low:null,{vs:pLabel,inverse:true,digits:0}),A.low?'#b42318':'');
 
   // Trend: average per quarter, one line per division (or the chosen division against all divisions)
   const endQ=isYear?(qs.find(q=>q.startsWith(Q+'-'))||`${Q}-Q4`):Q;
@@ -6660,7 +6660,7 @@ function renderInsights(){
   document.getElementById('ins-fail').innerHTML=failing.length?failing.map(i=>`<li>
       <div class="ins-fail-top"><b>${ovEsc(SECTIONS[i.si].items[i.ii])}</b><span>${Math.round(i.rate*100)}%</span></div>
       <div class="ins-fail-bar"><i style="width:${Math.max(3,Math.round(i.rate*100))}%"></i></div>
-      <small>${ovEsc(SECTIONS[i.si].title)} · not compliant in ${i.fails} of ${i.n} inspections</small>
+      <small>${ovEsc(SECTIONS[i.si].title)} · scored 0 in ${i.fails} of ${i.n} inspections</small>
     </li>`).join(''):'<li class="ov-empty" style="display:block">No non-compliant items recorded in this period.</li>';
 
   // Buildings needing attention (lowest latest score in the period) and biggest movers (BOQI → EOQI)
@@ -6830,9 +6830,9 @@ function renderCompare(){
   document.getElementById('cmp-stats').innerHTML=
     tile('file-text','Inspections',sa.n,sb.n,insDelta(sb.n-sa.n,{vs,neutral:true,digits:0}))+
     tile('trending-up','Average score',sa.avg,sb.avg,insDelta(sa.avg!=null&&sb.avg!=null?sb.avg-sa.avg:null,{vs}))+
-    tile('building-2','Buildings covered',sa.cov,sb.cov,insDelta(sa.cov!=null&&sb.cov!=null?sb.cov-sa.cov:null,{vs,unit:' pts',digits:0}),'%')+
-    tile('award','Good or excellent',sa.good,sb.good,insDelta(sa.good!=null&&sb.good!=null?sb.good-sa.good:null,{vs,unit:' pts',digits:0}),'%')+
-    tile('triangle-alert','Below acceptable',sa.low,sb.low,insDelta(LA.length||LB.length?sb.low-sa.low:null,{vs,inverse:true,digits:0}));
+    tile('building-2','Buildings inspected',sa.cov,sb.cov,insDelta(sa.cov!=null&&sb.cov!=null?sb.cov-sa.cov:null,{vs,unit:' pts',digits:0}),'%')+
+    tile('award','Good or Excellent',sa.good,sb.good,insDelta(sa.good!=null&&sb.good!=null?sb.good-sa.good:null,{vs,unit:' pts',digits:0}),'%')+
+    tile('triangle-alert','Poor or Critical',sa.low,sb.low,insDelta(LA.length||LB.length?sb.low-sa.low:null,{vs,inverse:true,digits:0}));
 
   const bySection=cmpDim==='section';
   cmpRows=cmpSortRows(cmpGroupRows(cmpDim,LA,LB),cmpDim);
@@ -6857,7 +6857,7 @@ function renderCompare(){
       plugins:{tooltip:{callbacks:{label:c=>{ const r=chartRows[c.dataIndex], v=c.raw; return v==null?null:`${v}  ${c.dataset.label} · ${c.datasetIndex?r.nB:r.nA} ${bySection?'scored':'inspections'}`; }}}}}),
   });
   document.getElementById('cmp-chart-note').textContent=cmpRows.length>chartRows.length?`First ${chartRows.length} of ${cmpRows.length} in the table order`:'';
-  cmpView={A,B,vs,sa,sb,LA,LB,div,limit,chartCount:chartRows.length};
+  cmpView={A,B,vs,sa,sb,LA,LB,div,limit,chartCount:chartRows.length,nb:scopeBuildings.length};
   lucide.createIcons();
 }
 
@@ -7067,8 +7067,8 @@ const CX_METRICS=[
     ['change','Change (EOQI − BOQI)',g=>{ const a=cxTypeAvg(g,'BOQI'), b=cxTypeAvg(g,'EOQI'); return a!=null&&b!=null?r1(b-a):null; }],
   ]],
   ['Ratings',[
-    ['good','Good or excellent (%)',g=>cxShare(g,v=>v>=81),{unit:'%'}],
-    ['low','Below acceptable (%)',g=>cxShare(g,v=>v<71),{unit:'%'}],
+    ['good','Good or Excellent (%)',g=>cxShare(g,v=>v>=81),{unit:'%'}],
+    ['low','Poor or Critical (%)',g=>cxShare(g,v=>v<71),{unit:'%'}],
     ...RP_BANDS.map(b=>['band_'+b,b,g=>g.list.filter(x=>rpBandOf(x)===b).length]),
   ]],
   ['Sections (out of 10)',SECTIONS.map((sec,i)=>['sec_'+i,sec.title,g=>{
@@ -7324,7 +7324,7 @@ function exModelCustom(){
   if(cx.parts.includes('table')) blocks.push({id:'table',label:`By ${v.dim.label.toLowerCase()}`,sheet:`By ${v.dim.label.toLowerCase()}`,
     table:{head,rows:[...v.rows.map(fmtRow),fmtRow({...v.total,key:'All'})]}});
   if(cx.parts.includes('list')) blocks.push({id:'list',label:'Inspections',sheet:'Inspections',
-    table:{head:['Report ID','Date','Quarter','Type','Building','Division','Area','Auditor','Score','Rating'],
+    table:{head:['Report no.','Date','Quarter','Type','Building','Division','Area','Auditor','Score','Rating'],bands:{8:100},
       rows:rpSorted(v.list).map(x=>[x.id,x.date,x.quarter,x.type,x.building,x.division,x.area,x.inspector,x.overall,rpBandOf(x)])}});
   return {title:'Custom report',file:`custom-report-${exSlug(cxTitle())}`,note:cxTitle(),context:cxContext(),blocks};
 }
@@ -7335,6 +7335,14 @@ function exModelCustom(){
 // those same blocks, so the numbers in a download always match the page.
 // ═══════════════════════════════════════════════════════════
 function exDate(){ return new Date().toISOString().slice(0,10); }
+/** A server timestamp (UTC) as a day on this device's calendar. */
+function exLocalDay(text){
+  const u=exLocalStamp(text); if(!u) return text;
+  const p=n=>String(n).padStart(2,'0');
+  return `${u.getFullYear()}-${p(u.getMonth()+1)}-${p(u.getDate())}`;
+}
+/** "pending" → "Pending": statuses read the way they do on the screen. */
+function exCap(s){ return s==null||s===''?s:String(s).charAt(0).toUpperCase()+String(s).slice(1); }
 function exSlug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'export'; }
 function exSel(id){ const el=document.getElementById(id); return el&&el.value?(el.tagName==='SELECT'?el.options[el.selectedIndex].textContent.trim():el.value.trim()):''; }
 function exDelta(diff,vs,unit='',digits=1){
@@ -7353,36 +7361,50 @@ function exDownload(name,blob){
 function exModelInsights(){
   const v=insView;
   if(!v||!v.Q) return null;
-  const A=v.A, B=v.hasPrev?v.B:null, pct=x=>x==null?null:Math.round(x);
-  const kpiRows=[
-    ['Inspections',A.n,B?B.n:null,B?A.n-B.n:null],
-    ['Average score',r1(A.avg),B?r1(B.avg):null,B&&A.avg!=null&&B.avg!=null?r1(r1(A.avg)-r1(B.avg)):null],
-    ['Buildings covered (%)',pct(A.coverage),B?pct(B.coverage):null,B&&A.coverage!=null&&B.coverage!=null?pct(A.coverage)-pct(B.coverage):null],
-    ['Good or excellent (%)',pct(A.goodShare),B?pct(B.goodShare):null,B&&A.goodShare!=null&&B.goodShare!=null?pct(A.goodShare)-pct(B.goodShare):null],
-    ['Below acceptable',A.low,B?B.low:null,B?A.low-B.low:null],
+  const A=v.A, B=v.hasPrev?v.B:null, pct=x=>x==null?null:Math.round(x), both=(a,b)=>a!=null&&b!=null;
+  // measure · what it counts · this period · the period before · change — each number in its own format
+  const kpi=[
+    ['Inspections','reports saved',A.n,B?B.n:null,B?A.n-B.n:null,'int','din'],
+    ['Average score','points out of 100',r1(A.avg),B?r1(B.avg):null,B&&both(A.avg,B.avg)?r1(r1(A.avg)-r1(B.avg)):null,'n1','d1',100],
+    ['Buildings inspected','% of the buildings in the list',pct(A.coverage),B?pct(B.coverage):null,B&&both(A.coverage,B.coverage)?pct(A.coverage)-pct(B.coverage):null,'pct','d1'],
+    ['Good or Excellent','% of scored inspections (81–100)',pct(A.goodShare),B?pct(B.goodShare):null,B&&both(A.goodShare,B.goodShare)?pct(A.goodShare)-pct(B.goodShare):null,'pct','d1'],
+    ['Poor or Critical','inspections scoring below 71',A.low,B?B.low:null,B?A.low-B.low:null,'int','dir'],
   ];
   const units=['','',' pts',' pts',''], digits=[0,1,0,0,0];
-  const cards=kpiRows.map((r,i)=>({label:r[0].replace(' (%)',''),value:r[1]==null?'–':i===2||i===3?`${r[1]}%`:r[1],sub:exDelta(r[3],v.P,units[i],digits[i])}));
-  const dim=v.div?'Area':'Division', h=v.heat;
+  const cards=kpi.map((r,i)=>({label:r[0],value:r[2]==null?'–':i===2||i===3?`${r[2]}%`:r[2],sub:exDelta(r[4],v.P,units[i],digits[i])}));
+  const dim=v.div?'Area':'Division', h=v.heat, avgBand=100;
+  const chg=`Change vs ${v.P} (points)`;
   return {title:'Insights',file:`insights-${v.Q}`,
+    blurb:`How ${v.div?'the areas of '+v.div:'the divisions'} are performing in ${v.Q}, compared with ${v.P}.`,
     context:[['Period',v.Q],['Compared with',v.P],['Type',v.type||'All types'],['Division',v.div||'All divisions']],
+    glossary:[['Buildings inspected','Buildings in the list that have at least one inspection in the period, as a share of all buildings.'],
+      ['Good or Excellent','Inspections scoring 81 or more, as a share of the inspections that were scored.'],
+      ['Poor or Critical','Inspections scoring below 71: rated Poor (51–70) or Critical (0–50).']],
     blocks:[
-      {id:'kpis',label:'Key numbers',sheet:'Key numbers',kpis:cards,table:{head:['Measure',v.Q,v.P,'Change'],rows:kpiRows}},
-      {id:'trend',label:`Average score by quarter · ${dim}`,sheet:'Trend by quarter',chart:'insTrend',
-        table:{head:['Quarter',...v.series.map(s=>s.label)],rows:v.quarters.map((q,i)=>[q,...v.series.map(s=>s.points[i].avg)])}},
-      {id:'heat',label:`Section scores by ${dim.toLowerCase()} (out of 10)`,sheet:'Section heatmap',image:()=>exHeatCanvas(h),
+      {id:'kpis',label:'Key numbers',sheet:'Key numbers',desc:'The five headline numbers for the period, next to the period before.',note:'Change = this period minus the period before · ▲ up ▼ down',
+        kpis:cards,
+        table:{head:['Measure','What it counts',v.Q,v.P,'Change'],
+          rows:kpi.map(r=>[r[0],r[1],{v:r[2],f:r[5],band:r[7]},{v:r[3],f:r[5],band:r[7]},{v:r[4],f:r[6]}])}},
+      {id:'trend',label:`Average score by quarter · ${dim}`,sheet:'Trend by quarter',desc:`Average score of each ${dim.toLowerCase()}, quarter by quarter.`,note:'Average score out of 100',chart:'insTrend',
+        table:{head:['Quarter',...v.series.map(s=>s.label)],rows:v.quarters.map((q,i)=>[q,...v.series.map(s=>s.points[i].avg)]),
+          fmt:['t',...v.series.map(()=>'n1')],bands:Object.fromEntries(v.series.map((_,i)=>[i+1,avgBand]))}},
+      {id:'heat',label:`Section scores by ${dim.toLowerCase()} (out of 10)`,sheet:'Section heatmap',desc:`Average score of each section, for each ${dim.toLowerCase()}.`,note:'Section scores out of 10',image:()=>exHeatCanvas(h),
         table:{head:[h.label,...h.cols,'Overall'],pdfHead:[h.label,...h.cols.map(sectionShort),'Overall'],heat:true,
+          fmt:['t',...h.cols.map(()=>'n1'),'n1'],bands:Object.fromEntries([...h.cols.map((_,i)=>[i+1,10]),[h.cols.length+1,10]]),
           rows:[...h.rows,'__all'].map(r=>[r==='__all'?'All':r,...h.cols.map(c=>h.cell(r,c)),h.cell(r,'__overall')])}},
-      {id:'board',label:v.div?`Areas in ${v.div}`:'Divisions ranked',sheet:'Ranking',
-        table:{head:['Name','Inspections','Average',`Change vs ${v.P}`,'Buildings inspected','Buildings in list','Coverage (%)','Weakest section','Weakest (/10)'],
+      {id:'board',label:v.div?`Areas in ${v.div}`:'Divisions ranked',sheet:'Ranking',desc:`${dim}s ranked by average score, with how many buildings they inspected and their weakest section.`,note:'Average score out of 100',
+        table:{head:[dim,'Inspections','Average score',chg,'Buildings inspected','Total buildings','Coverage (%)','Weakest section','Weakest section score (out of 10)'],
+          fmt:['t','int','n1','d1','int','int','pct','t','n1'],bands:{2:100,8:10},
           rows:v.board.map(r=>[r.k,r.n,r.avg,r.delta,r.covered,r.total,r.total?Math.round(r.covered/r.total*100):null,r.weakest?r.weakest[0]:null,r.weakest?r.weakest[1]:null])}},
-      {id:'fail',label:'Most often not compliant',sheet:'Not compliant',
-        table:{head:['Checklist item','Section','Not compliant','Inspections','Not compliant (%)'],rows:v.failing.map(i=>[SECTIONS[i.si].items[i.ii],SECTIONS[i.si].title,i.fails,i.n,Math.round(i.rate*100)])}},
-      {id:'attention',label:'Lowest-scoring buildings',sheet:'Lowest scores',
-        table:{head:['Building','Division','Area','Latest score','Rating','Type','Date',`Change vs ${v.P}`],
+      {id:'fail',label:'Most often scored 0',sheet:'Scored 0',desc:'The checklist items that scored 0 in the largest share of inspections.',
+        table:{head:['Checklist item','Section','Times scored 0','Inspections','Share of inspections (%)'],fmt:['t','t','int','int','pct'],
+          rows:v.failing.map(i=>[SECTIONS[i.si].items[i.ii],SECTIONS[i.si].title,i.fails,i.n,Math.round(i.rate*100)])}},
+      {id:'attention',label:'Lowest-scoring buildings',sheet:'Lowest scores',desc:'The buildings with the lowest latest score in the period — the ones to look at first.',note:'Score out of 100',
+        table:{head:['Building','Division','Area','Latest score','Rating','Type','Date',chg],fmt:['t','t','t','n1','t','t','date','d1'],bands:{3:100},
           rows:v.latest.map(({x,prev:p})=>[x.building,x.division,x.area,x.overall,grade(x.overall).label,x.type,x.date,p&&typeof p.overall==='number'?r1(x.overall-p.overall):null])}},
-      {id:'movers',label:'Biggest movers · BOQI → EOQI',sheet:'Movers BOQI to EOQI',
-        table:{head:['Building','Division','Area','Quarter','BOQI','EOQI','Change'],rows:v.movers.map(m=>[m.x.building,m.x.division,m.x.area,m.x.quarter,m.from,m.to,m.d])}},
+      {id:'movers',label:'Biggest movers · BOQI → EOQI',sheet:'Movers BOQI to EOQI',desc:'Buildings whose score moved most between their beginning-of-quarter and end-of-quarter inspection.',note:'Score out of 100',
+        table:{head:['Building','Division','Area','Quarter','BOQI score','EOQI score','Change (points)'],fmt:['t','t','t','t','n1','n1','d1'],bands:{4:100,5:100},
+          rows:v.movers.map(m=>[m.x.building,m.x.division,m.x.area,m.x.quarter,m.from,m.to,m.d])}},
     ]};
 }
 function exModelBuilder(){
@@ -7395,22 +7417,43 @@ function exModelBuilder(){
   if(rpVal('rp-saved')) context.unshift(['Saved report',exSel('rp-saved')]);
   context.push(['Grouped by',cfg.label]);
   const bands=RP_BANDS.map(b=>[b,v.list.filter(x=>rpBandOf(x)===b).length]), scored=bands.reduce((n,[,c])=>n+c,0);
-  return {title:'Report Builder',file:`report-builder-by-${rpGroup}`,context,blocks:[
-    {id:'kpis',label:'Key numbers',sheet:'Key numbers',
+  const subHead=cfg.sub?(rpGroup==='area'?'Division':'Division · Area'):null, sc=subHead?1:0;   // the extra column shifts the rest by one
+  const groupHead=[cfg.label,...(subHead?[subHead]:[]),'Inspections','Scored inspections','Average score',...RP_BANDS,'BOQI average','EOQI average','EOQI − BOQI (points)'];
+  const iAvg=2+sc+1, iBoqi=3+sc+RP_BANDS.length+1;
+  return {title:'Report Builder',file:`report-builder-by-${rpGroup}`,context,
+    blurb:`The inspections that match the filters, grouped by ${cfg.label.toLowerCase()}.`,
+    glossary:[['Buildings inspected','Buildings in the filtered scope that have at least one inspection, out of all buildings in that scope.'],
+      ['Scored inspections','Inspections that have an overall score (imported scores count; empty ones do not).'],
+      ['Rating columns','The number of inspections that fall in each rating band.'],
+      ['EOQI − BOQI','End-of-quarter average minus beginning-of-quarter average, for buildings where both exist.']],
+    blocks:[
+    {id:'kpis',label:'Key numbers',sheet:'Key numbers',desc:'The headline numbers for the filtered inspections.',
       kpis:[{label:'Inspections',value:v.list.length,sub:`${st.n} scored`},{label:'Average score',value:st.avg??'–',sub:st.avg!=null?grade(st.avg).label:''},
-        {label:'Std deviation',value:st.sd??'–',sub:'How spread out scores are'},{label:'Highest',value:st.max??'–',sub:v.best?.building||''},
-        {label:'Lowest',value:st.min??'–',sub:v.worst?.building||''},{label:'Buildings covered',value:`${v.covered}/${v.inScope.length}`,sub:v.inScope.length?`${Math.round(v.covered/v.inScope.length*100)}%`:''}],
-      table:{head:['Measure','Value','Note'],rows:[['Inspections',v.list.length,`${st.n} scored`],['Average score',st.avg,st.avg!=null?grade(st.avg).label:null],['Std deviation',st.sd,null],
-        ['Highest',st.max,v.best?.building],['Lowest',st.min,v.worst?.building],['Buildings covered',v.covered,`of ${v.inScope.length} buildings`]]}},
-    {id:'bands',label:'Rating mix',table:{head:['Rating','Inspections','Share (%)'],rows:bands.map(([b,c])=>[b,c,scored?Math.round(c/scored*100):null])}},
-    {id:'summary',label:`By ${cfg.label.toLowerCase()}`,sheet:`By ${cfg.label.toLowerCase()}`,chart:'group',
-      table:{head:[cfg.label,'Details','Inspections','Scored','Average','Min','Max','Std dev',...RP_BANDS,'BOQI avg','EOQI avg','EOQI − BOQI'],pdfCols:[0,2,4,5,6,7,13,14,15],
-        rows:v.groups.map(g=>[g.key,g.sub,g.count,g.n,g.avg,g.min,g.max,g.n>1?g.sd:null,...RP_BANDS.map(b=>g.bands[b]),g.boqi,g.eoqi,g.delta])}},
-    {id:'trend',label:rpTrend==='each'?'Every scored inspection over time':`Average score by ${rpTrend}`,sheet:'Over time',chart:'trend',
-      table:{head:rpTrend==='each'?['Date','Building','Score']:[rpTrend==='month'?'Month':'Quarter','Inspections','Average'],rows:v.trendRows}},
-    {id:'sections',label:'Average by section (out of 10)',sheet:'By section',chart:'section',table:{head:['Section','Average (/10)','Scored'],rows:v.secs}},
-    {id:'detail',label:'Matching inspections',sheet:'Inspections',defaults:{pdf:sorted.length<=150},
-      table:{head:['Report ID','Date','Quarter','Type','Building','Location','Division','Area','Auditor','Score','Rating',...titles.map(t=>`${t} (/10)`)],pdfCols:[1,4,6,3,8,9,10],
+        {label:'Highest',value:st.max??'–',sub:v.best?.building||''},{label:'Lowest',value:st.min??'–',sub:v.worst?.building||''},
+        {label:'Buildings inspected',value:`${v.covered}/${v.inScope.length}`,sub:v.inScope.length?`${Math.round(v.covered/v.inScope.length*100)}%`:''}],
+      table:{head:['Measure','Value','Note'],rows:[
+        ['Inspections',{v:v.list.length,f:'int'},`${st.n} scored`],
+        ['Average score',{v:st.avg,f:'n1',band:100},st.avg!=null?grade(st.avg).label:null],
+        ['Highest score',{v:st.max,f:'n1',band:100},v.best?.building],['Lowest score',{v:st.min,f:'n1',band:100},v.worst?.building],
+        ['Buildings inspected',{v:v.covered,f:'int'},`of ${v.inScope.length} buildings`]]}},
+    {id:'bands',label:'Rating mix',desc:'How many inspections fall in each rating band.',
+      table:{head:['Rating','Inspections','Share of scored inspections (%)'],fmt:['t','int','pct'],rows:bands.map(([b,c])=>[b,c,scored?Math.round(c/scored*100):null])}},
+    {id:'summary',label:`By ${cfg.label.toLowerCase()}`,sheet:`By ${cfg.label.toLowerCase()}`,desc:`One row per ${cfg.label.toLowerCase()}: how many inspections, the average score and the rating mix.`,note:'Score out of 100 · the rating columns count inspections',chart:'group',
+      table:{head:groupHead,
+        fmt:['t',...(subHead?['t']:[]),'int','int','n1',...RP_BANDS.map(()=>'int'),'n1','n1','d1'],bands:{[iAvg]:100,[iBoqi]:100,[iBoqi+1]:100},
+        pdfCols:[0,1+sc,3+sc,iBoqi,iBoqi+1,iBoqi+2],
+        rows:v.groups.map(g=>[g.key,...(subHead?[g.sub]:[]),g.count,g.n,g.avg,...RP_BANDS.map(b=>g.bands[b]),g.boqi,g.eoqi,g.delta])}},
+    {id:'stats',label:'Score spread',sheet:'Statistics',desc:'The lowest score, highest score and spread (standard deviation) for each group.',defaults:{pdf:false,xlsx:false},
+      table:{head:[cfg.label,'Lowest score','Highest score','Score spread (standard deviation)'],fmt:['t','n1','n1','n1'],bands:{1:100,2:100},
+        rows:v.groups.map(g=>[g.key,g.min,g.max,g.n>1?g.sd:null])}},
+    {id:'trend',label:rpTrend==='each'?'Every scored inspection over time':`Average score by ${rpTrend}`,sheet:'Over time',desc:'How the score moves over time.',chart:'trend',
+      table:{head:rpTrend==='each'?['Date','Building','Score']:[rpTrend==='month'?'Month':'Quarter','Inspections','Average score'],
+        fmt:rpTrend==='each'?['date','t','n1']:['t','int','n1'],bands:{2:100},rows:v.trendRows}},
+    {id:'sections',label:'Average by section (out of 10)',sheet:'By section',desc:'The average score of each of the ten sections.',chart:'section',
+      table:{head:['Section','Average score (out of 10)','Inspections scored'],fmt:['t','n1','int'],bands:{1:10},rows:v.secs}},
+    {id:'detail',label:'Matching inspections',sheet:'Inspections',desc:'Every inspection that matches the filters, with its section scores.',note:'Scores out of 100 · section scores out of 10',defaults:{pdf:sorted.length<=150},
+      table:{head:['Report no.','Date','Quarter','Type','Building','Location','Division','Area','Auditor','Score','Rating',...titles.map(t=>`${t} (out of 10)`)],
+        fmt:['t','date','t','t','t','t','t','t','t','int','t',...titles.map(()=>'n1')],bands:{9:100,...Object.fromEntries(titles.map((_,i)=>[11+i,10]))},pdfCols:[1,4,6,3,8,9,10],
         rows:sorted.map(x=>{ const sec=new Map(x.sections.map(s=>[s.title,s.score==null?null:rpRound(s.score/s.max*10)]));
           return [x.id,x.date,x.quarter,x.type,x.building,x.location,x.division,x.area,x.inspector,x.overall,rpBandOf(x),...titles.map(t=>sec.get(t)??null)]; })}},
   ]};
@@ -7418,20 +7461,44 @@ function exModelBuilder(){
 function exModelCompare(){
   const v=cmpView;
   if(!v) return null;
-  const d=(a,b)=>a!=null&&b!=null?r1(b-a):null;
-  const kr=[['Inspections',v.sa.n,v.sb.n,v.sb.n-v.sa.n],['Average score',v.sa.avg,v.sb.avg,d(v.sa.avg,v.sb.avg)],['Buildings covered (%)',v.sa.cov,v.sb.cov,d(v.sa.cov,v.sb.cov)],
-    ['Good or excellent (%)',v.sa.good,v.sb.good,d(v.sa.good,v.sb.good)],['Below acceptable',v.sa.low,v.sb.low,v.LA.length||v.LB.length?v.sb.low-v.sa.low:null]];
+  if(v.A===v.B) throw new Error('Period A and period B are the same, so nothing can change between them. Choose two different periods to compare.');
+  const A=v.A, B=v.B, d=(a,b)=>a!=null&&b!=null?r1(b-a):null;
+  const kpi=[
+    ['Inspections','reports saved',v.sa.n,v.sb.n,v.sb.n-v.sa.n,'int','din'],
+    ['Average score','points out of 100',v.sa.avg,v.sb.avg,d(v.sa.avg,v.sb.avg),'n1','d1',100],
+    ['Buildings inspected',`% of the ${v.nb} buildings in scope`,v.sa.cov,v.sb.cov,d(v.sa.cov,v.sb.cov),'pct','d1'],
+    ['Good or Excellent','% of scored inspections (81–100)',v.sa.good,v.sb.good,d(v.sa.good,v.sb.good),'pct','d1'],
+    ['Poor or Critical','inspections scoring below 71',v.sa.low,v.sb.low,v.LA.length||v.LB.length?v.sb.low-v.sa.low:null,'int','dir'],
+  ];
   const units=['','',' pts',' pts',''], digits=[0,1,0,0,0];
-  const cards=kr.map((r,i)=>{ const u=i===2||i===3?'%':''; return {label:r[0].replace(' (%)',''),value:`${r[1]??'–'}${r[1]!=null?u:''} → ${r[2]??'–'}${r[2]!=null?u:''}`,sub:exDelta(r[3],v.vs,units[i],digits[i])}; });
+  const cards=kpi.map((r,i)=>{ const u=i===2||i===3?'%':''; return {label:r[0],value:`${r[2]??'–'}${r[2]!=null?u:''} → ${r[3]??'–'}${r[3]!=null?u:''}`,sub:exDelta(r[4],v.vs,units[i],digits[i])}; });
   const dims=cmpDims().sort((a,b)=>(b===cmpDim)-(a===cmpDim));
-  return {title:'Compare periods',file:`compare-${v.A}-vs-${v.B}`,note:'A is the starting point. Change = B − A.',
-    context:[['A',v.A],['B',v.B],['Division',v.div||'All divisions']],
+  const sortBy=exSel('cmp-sort')||'';
+  return {title:'Compare periods',file:`compare-${A}-vs-${B}`,
+    blurb:'How each group scored in period A compared with period B. Change = B minus A.',
+    context:[['Period A',A],['Period B',B],['Division',v.div||'All divisions'],['Sorted by',sortBy]].filter(([,x])=>x!==''),
+    glossary:[['Period A / B','A is the starting point and B is the period being compared with it.'],
+      ['Buildings inspected','Buildings in scope that have at least one inspection in the period, as a share of all of them.'],
+      ['Good or Excellent','Inspections scoring 81 or more, as a share of the inspections that were scored.'],
+      ['Poor or Critical','Inspections scoring below 71: rated Poor (51–70) or Critical (0–50).'],
+      ['Small sample','Fewer than 3 inspections in one of the periods — the average can move a lot on one report.']],
     blocks:[
-      {id:'kpis',label:'Key numbers · A → B',sheet:'Key numbers',kpis:cards,table:{head:['Measure',`A · ${v.A}`,`B · ${v.B}`,'Change (B − A)'],rows:kr}},
+      {id:'kpis',label:'Key numbers',sheet:'Key numbers',desc:'The five headline numbers, period A next to period B.',note:`Change = ${B} minus ${A} · ▲ up ▼ down`,
+        kpis:cards,
+        table:{head:['Measure','What it counts',A,B,'Change'],rows:kpi.map(r=>[r[0],r[1],{v:r[2],f:r[5],band:r[7]},{v:r[3],f:r[5],band:r[7]},{v:r[4],f:r[6]}])}},
       ...dims.map(dim=>{
-        const rows=cmpSortRows(cmpGroupRows(dim,v.LA,v.LB),dim), n=dim==='section'?'scored':'inspections';
-        return {id:'dim-'+dim,label:`By ${cmpDimLabel(dim).toLowerCase()}${dim==='section'?' (out of 10)':''}`,chart:dim===cmpDim?'cmp':null,defaults:{pdf:dim===cmpDim},
-          table:{head:[cmpDimLabel(dim),`A · ${n}`,'A · average',`B · ${n}`,'B · average','Change (B − A)'],rows:rows.map(r=>[r.key,r.nA,r.a,r.nB,r.b,r.d])}};
+        const rows=cmpSortRows(cmpGroupRows(dim,v.LA,v.LB),dim), sect=dim==='section', n=sect?'Inspections scored':'Inspections', scale=sect?10:100;
+        const avg=sect?'Average (out of 10)':'Average score';
+        // when every row is a small sample, saying so on each one tells nobody anything
+        const allSmall=rows.length>0&&rows.every(r=>r.nA&&r.nB&&Math.min(r.nA,r.nB)<3);
+        const note=r=>!r.nA&&r.nB?`Only in ${B}`:r.nA&&!r.nB?`Only in ${A}`:!allSmall&&Math.min(r.nA,r.nB)<3?'Small sample':null;
+        const flagged=rows.some(r=>note(r));
+        return {id:'dim-'+dim,label:`By ${cmpDimLabel(dim).toLowerCase()}${sect?' (out of 10)':''}`,sheet:`By ${cmpDimLabel(dim).toLowerCase()}`,
+          desc:`${cmpDimLabel(dim)} by ${cmpDimLabel(dim).toLowerCase()}: ${A} next to ${B}, and the change.`,note:`Change = ${B} minus ${A} · ${sect?'section scores out of 10':'scores out of 100'}`,
+          chart:dim===cmpDim?'cmp':null,defaults:{pdf:dim===cmpDim},
+          table:{head:[cmpDimLabel(dim),`${A} · ${n}`,`${A} · ${avg}`,`${B} · ${n}`,`${B} · ${avg}`,sect?'Change (points out of 10)':'Change (points)',...(flagged?['Note']:[])],
+            fmt:['t','int','n1','int','n1','d1',...(flagged?['t']:[])],bands:{2:scale,4:scale},
+            rows:rows.map(r=>[r.key,r.nA,r.a,r.nB,r.b,r.d,...(flagged?[note(r)]:[])])}};
       }),
     ]};
 }
@@ -7440,7 +7507,7 @@ function exModelQuality(){
   if(!v||!dqIssues) return null;
   const c=v.counts, q=v.latestQ||'the latest quarter';
   const of=kind=>dqIssues.filter(i=>i.issue===kind).map(i=>[i.x?.date,i.x?.quarter,i.x?.type,i.x?.building,i.x?.division,i.x?.inspector,i.detail]);
-  const head=['Date','Quarter','Type','Building as recorded','Division','Auditor','Detail'];
+  const head=['Date','Quarter','Type','Building name as entered','Division','Auditor','Detail'];
   return {title:'Data Quality',file:'data-quality',context:[['Latest quarter with data',v.latestQ||'—']],blocks:[
     {id:'kpis',label:'Checks',sheet:'Checks',
       kpis:[{label:'Not linked to a building',value:c.unlinked},{label:'Possible duplicates',value:c.dups},{label:'Incomplete scoring',value:c.incomplete},
@@ -7477,7 +7544,7 @@ function exModelOverview(){
           rows:d.byDivision.map(x=>[x.division,x.buildings,x.assignments,x.completed,pct(x.completed,x.assignments),x.inspections,x.avgScore])}},
       {id:'auditors',label:'Auditors',sheet:'Auditors',
         table:{head:['Auditor','Role','Status','Assigned','Completed','Pending','Completion (%)','Average'],
-          rows:d.auditors.map(x=>[x.name,roleShort(x.role)||'Auditor',x.status,x.assigned,x.completed,x.assigned-x.completed,pct(x.completed,x.assigned),x.avgScore])}},
+          rows:d.auditors.map(x=>[x.name,roleShort(x.role)||'Auditor',exCap(x.status),x.assigned,x.completed,x.assigned-x.completed,pct(x.completed,x.assigned),x.avgScore])}},
       {id:'officers',label:'Officers',sheet:'Officers',
         table:{head:['Officer','Role','Assignments made','Completed','Completion (%)'],
           rows:d.officers.map(x=>[x.name,roleShort(x.role)||'Officer',x.assignmentsMade,x.completed,pct(x.completed,x.assignmentsMade)])}},
@@ -7486,7 +7553,7 @@ function exModelOverview(){
           rows:d.byArea.map(x=>[x.area,x.division,x.buildings,x.assignments,x.completed,pct(x.completed,x.assignments),x.inspections,x.avgScore])}},
       {id:'buildings',label:'Buildings',sheet:'Buildings',
         table:{head:['Building','Location','Division','Area','Auditor','Status','Inspections','Latest score','Latest date'],
-          rows:ovFilteredBuildings().map(x=>[x.name,x.location,x.division,x.area,x.auditorName,x.status,x.inspections,x.lastScore,x.lastDate])}},
+          bands:{7:100},rows:ovFilteredBuildings().map(x=>[x.name,x.location,x.division,x.area,x.auditorName,exCap(x.status),x.inspections,x.lastScore,x.lastDate])}},
       {id:'activity',label:'Recent activity',sheet:'Activity',defaults:{pdf:false},
         table:{head:['When','Who','Action','Building','Target','Quarter','Type','Score'],
           rows:d.activity.map(x=>[x.at,x.actor,x.kind==='assignment'?'Assigned':'Submitted',x.building,x.target||'',x.quarter,x.type,x.score??null])}},
@@ -7506,14 +7573,14 @@ function exModelOfficer(){
         ['Pending',v.kpis.pending],['Unassigned',v.kpis.total-v.kpis.assigned],['Average score',v.kpis.avg]]}},
     {id:'team',label:'Team progress',sheet:'Team progress',
       table:{head:['Auditor','Role','Status','Assigned','Completed','Pending','Completion (%)','Average','Last submitted'],
-        rows:v.team.map(a=>[a.name,roleShort(a.role)||'Auditor',a.status,a.assigned,a.completed,a.assigned-a.completed,pct(a.completed,a.assigned),
+        rows:v.team.map(a=>[a.name,roleShort(a.role)||'Auditor',exCap(a.status),a.assigned,a.completed,a.assigned-a.completed,pct(a.completed,a.assigned),
           a.scores.length?Math.round(a.scores.reduce((t,n)=>t+n,0)/a.scores.length):null,a.last])}},
     {id:'areas',label:'Progress by area',sheet:'By area',
       table:{head:['Area','Division','Buildings','Assigned','Completed','Completion (%)'],
         rows:v.areas.map(g=>[g.area,g.division,g.buildings,g.assigned,g.completed,pct(g.completed,g.assigned)])}},
     {id:'buildings',label:'Buildings',sheet:'Buildings',
       table:{head:['Building','Location','Division','Area','Status','Auditor','Deadline','Score','Completed'],
-        rows:ofFilteredRows().map(b=>[b.name,b.location,b.division,b.area,b.status,b.auditorName,b.dueDate||null,b.score??null,b.completedAt||null]),
+        bands:{7:100},rows:ofFilteredRows().map(b=>[b.name,b.location,b.division,b.area,exCap(b.status),b.auditorName,b.dueDate||null,b.score??null,b.completedAt||null]),
         resultCols:[7,8]}},
     {id:'activity',label:'Recent activity',sheet:'Activity',defaults:{pdf:false},
       table:{head:['When','Who','Action','Building','Auditor','Score'],
@@ -7525,8 +7592,8 @@ function exModelAuditor(){
   if(!d) return null;
   const p=d.performance, pct=(a,b)=>b?Math.round(a/b*100):null;
   const done=d.assignments.filter(x=>x.status==='completed');
-  const row=x=>[x.buildingName,x.division,x.area,x.type,x.status,x.score??null,x.completedAt||x.inspectionDate||null,x.quarter];
-  const head=['Building','Division','Area','Type','Status','Score','Completed at','Quarter'];
+  const row=x=>[x.buildingName,x.division,x.area,x.type,exCap(x.status),x.score??null,x.completedAt?exLocalDay(x.completedAt):(x.inspectionDate||null),x.quarter];
+  const head=['Building','Division','Area','Type','Status','Score','Completed on','Quarter'];
   return {title:`Auditor · ${d.auditor.name}`,file:`auditor-${exSlug(d.auditor.name)}-${d.quarter}`,
     context:[['Auditor',d.auditor.name],['Quarter',d.quarter]],
     blocks:[
@@ -7539,8 +7606,8 @@ function exModelAuditor(){
         table:{head:['Quarter','Assigned','Completed','Average'],rows:(p?.byQuarter||[]).map(x=>[x.quarter,x.assigned,x.completed,x.avgScore])}},
       {id:'sections',label:'Average by section',sheet:'By section',chart:()=>auCharts.sec,
         table:{head:['Section','Average (/10)'],rows:(p?.sections||[]).map(x=>[x.title,x.avg])}},
-      {id:'buildings',label:'Buildings this quarter',sheet:'Buildings',table:{head,rows:d.assignments.map(row)}},
-      {id:'carried',label:'Still open from earlier quarters',sheet:'Carried over',table:{head,rows:d.carriedOver.map(row)}},
+      {id:'buildings',label:'Buildings this quarter',sheet:'Buildings',table:{head,bands:{5:100},rows:d.assignments.map(row)}},
+      {id:'carried',label:'Still open from earlier quarters',sheet:'Carried over',table:{head,bands:{5:100},rows:d.carriedOver.map(row)}},
     ]};
 }
 
@@ -7568,7 +7635,7 @@ async function exModelLibrary(){
         {label:'Needs review',value:count(['pending','resubmitted'])},{label:'Changes requested',value:count(['changes'])},{label:'Approved',value:count(['approved'])}],
       table:{head:['Measure','Value'],rows:[['Reports',rows.length],['Average score',scored.length?r1(rpMean(scored)):null],['Needs review',count(['pending','resubmitted'])],['Changes requested',count(['changes'])],['Approved',count(['approved'])]]}},
     {id:'list',label:'Reports',
-      table:{head:['Report ID','Date','Quarter','Type','Building','Division','Area','Location','Auditor','Score','Rating','Review status','Last decision by','Last decision at','Last comment'],pdfCols:[1,4,5,3,8,9,10,11],
+      table:{head:['Report no.','Date','Quarter','Type','Building','Division','Area','Location','Auditor','Score','Rating','Review status','Last decision by','Last decision at','Last comment'],bands:{9:100},pdfCols:[1,4,5,3,8,9,10,11],
         rows:rows.map(r=>[r.id,r.date,r.quarter,r.type,r.building,r.division,r.area,r.location,r.auditor,r.overall,r.overall!=null?grade(r.overall).label:null,(LIB_STATUS[r.status]||[])[0],r.lastDecision?.by,r.lastDecision?.at,r.lastDecision?.comment])}},
     {id:'items',label:'Every checklist item of these reports',sheet:'Checklist items',formats:['xlsx'],defaults:{xlsx:false},hint:'one row per item',
       load:async()=>{
@@ -7576,7 +7643,7 @@ async function exModelLibrary(){
         const d=await res.json().catch(()=>({}));
         if(!res.ok) throw new Error(d.error||'Could not load the checklist items.');
         const items=(d.items||[]).sort((a,b)=>order.get(a.id)-order.get(b.id)||a.si-b.si||a.ii-b.ii);
-        return {head:['Report ID','Date','Building','Division','Type','Auditor','Report score','Section','Item no.','Checklist item','Item score','Comment','Photos'],
+        return {head:['Report no.','Date','Building','Division','Type','Auditor','Report score','Section','Item no.','Checklist item','Item score','Comment','Photos'],bands:{6:100},
           rows:items.map(i=>{ const r=byId.get(i.id)||{}, label=i.item||SECTIONS.find(x=>x.title===i.section)?.items[i.ii]||null; // older reports may not store the item text
             return [i.id,r.date,r.building,r.division,r.type,r.auditor,r.overall,i.section,i.ii+1,label,i.score,i.comment,i.photos||null]; })};
       }},
@@ -7679,6 +7746,8 @@ function exStripResults(blocks){
     if(!t||!t.resultCols||!t.resultCols.length) return b;
     const drop=new Set(t.resultCols), keep=t.head.map((_,i)=>i).filter(i=>!drop.has(i));
     const table={...t,head:keep.map(i=>t.head[i]),rows:t.rows.map(r=>keep.map(i=>r[i]))};
+    if(t.fmt) table.fmt=keep.map(i=>t.fmt[i]);
+    if(t.bands){ table.bands={}; keep.forEach((old,k)=>{ if(t.bands[old]) table.bands[k]=t.bands[old]; }); }
     if(t.pdfHead) table.pdfHead=keep.map(i=>t.pdfHead[i]);
     if(t.pdfCols) table.pdfCols=t.pdfCols.filter(i=>!drop.has(i)).map(i=>keep.indexOf(i));
     delete table.resultCols;
@@ -7860,12 +7929,29 @@ function exDocHtml(m,blocks,{sameTab=false}={}){
   const cell=v=>{
     if(v==null||v==='') return '–';
     const text=String(v);
+    if(EX_STAMP.test(text)){ const u=exLocalStamp(text); if(u) return ovEsc(u.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})); }
     return ovEsc(/^\d{4}-\d{2}-\d{2}$/.test(text)?new Date(text+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):text);
   };
+  // a number as the sheet shows it: ▲ 3.5, 64%, 78.4 — with the colour of a change that is better or worse
+  const shown=(raw,i,t)=>{
+    const o=raw&&typeof raw==='object'&&!Array.isArray(raw)&&'v' in raw?raw:{v:raw}, v=o.v, f=o.f||(t.fmt&&t.fmt[i])||'';
+    if(typeof v!=='number'||!Number.isFinite(v)) return {html:cell(v),cls:'',style:''};
+    let html, cls='', style='';
+    if(/^d/.test(f)){
+      html=v===0?'–':`${v>0?'▲':'▼'} ${Math.abs(Math.round(v*10)/10)}`;
+      if(v!==0&&!/n$/.test(f)){ const better=/r$/.test(f)?v<0:v>0; cls=better?' up':' down'; }
+    }else if(f==='pct') html=v+'%';
+    else if(f==='int') html=v.toLocaleString('en-GB');
+    else if(f==='n1'||(!f&&!Number.isInteger(v))) html=(Math.round(v*10)/10).toFixed(1);
+    else html=String(v);
+    const scale=o.band||(t.bands&&t.bands[i]);
+    if(scale){ const g=grade(scale===10?v*10:v); style=`background:${g.soft};color:${g.ink};font-weight:800`; }
+    return {html,cls,style};
+  };
   const table=t=>{
-    const cols=t.pdfCols||t.head.map((_,i)=>i), head=t.pdfHead||t.head, numeric=i=>t.rows.some(r=>typeof r[i]==='number');
-    const body=t.rows.map(r=>`<tr>${cols.map(i=>{ const v=r[i], c=t.heat&&i>0&&typeof v==='number'?heatColor(v):null;
-      return `<td class="${numeric(i)?'n':''}${c?' hm':''}"${c?` style="background:${c[0]};color:${c[1]}"`:''}>${cell(v)}</td>`; }).join('')}</tr>`).join('');
+    const cols=t.pdfCols||t.head.map((_,i)=>i), head=t.pdfHead||t.head, numeric=i=>t.rows.some(r=>typeof exV(r[i])==='number');
+    const body=t.rows.map(r=>`<tr>${cols.map(i=>{ const v=exV(r[i]), c=t.heat&&i>0&&typeof v==='number'?heatColor(v):null, x=c?null:shown(r[i],i,t);
+      return `<td class="${numeric(i)?'n':''}${c?' hm':''}${x?x.cls:''}"${c?` style="background:${c[0]};color:${c[1]}"`:x&&x.style?` style="${x.style}"`:''}>${c?cell(v):x.html}</td>`; }).join('')}</tr>`).join('');
     return `<table${t.heat?' class="heat"':''}><thead><tr>${cols.map(i=>`<th${numeric(i)?' class="n"':''}>${ovEsc(head[i])}</th>`).join('')}</tr></thead>
       <tbody>${body||`<tr><td colspan="${cols.length}" class="empty">Nothing to show for these filters.</td></tr>`}</tbody></table>`;
   };
@@ -7946,6 +8032,7 @@ tbody tr:nth-child(even) td:not(.hm){background:var(--paper)}
 .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 table.heat td.hm{text-align:center;font-weight:800;border:2px solid #fff}
 .empty{color:var(--muted);font-style:italic;text-align:center}
+td.up{color:#007A38;font-weight:800}td.down{color:#CB3010;font-weight:800}
 </style></head><body>
 <div class="bar">
   <b>${ovEsc(title)}${note?' · '+ovEsc(note):''}</b>
@@ -8143,20 +8230,73 @@ async function exZip(files){ // [{name, data: Uint8Array}] → Uint8Array
 const EX_XML_BAD=new RegExp('[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\uFFFE\\uFFFF]','g');
 function exXmlEsc(v){ return String(v).replace(EX_XML_BAD,'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]); }
 function exColName(i){ let s=''; for(i++;i>0;i=Math.floor((i-1)/26)) s=String.fromCharCode(65+(i-1)%26)+s; return s; }
+/** The value inside a table cell, whether it is written plainly or as {v, f, band}. */
+const exV=x=>x&&typeof x==='object'&&!Array.isArray(x)&&'v' in x?x.v:x;
+const EX_DATE=/^(\d{4})-(\d{2})-(\d{2})$/, EX_STAMP=/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/;
+/** What the server stores as UTC, shown on this device's clock. */
+function exLocalStamp(text){
+  const m=EX_STAMP.exec(text); if(!m) return null;
+  const u=new Date(Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+(m[6]||0)));
+  return Number.isNaN(u.getTime())?null:u;
+}
+/** Number formats for tables: what a column or cell may ask for with fmt / f. d* are changes: ▲ ▼ and a colour; n = no colour, r = up is bad. */
+const EX_FMT={int:'#,##0',n1:'0.0',pct:'0"%"',date:'dd mmm yyyy',datetime:'dd mmm yyyy hh:mm',
+  d1:'[Color10]"▲ "0.0;[Red]"▼ "0.0;"–"',d1n:'"▲ "0.0;"▼ "0.0;"–"',d1r:'[Red]"▲ "0.0;[Color10]"▼ "0.0;"–"',
+  di:'[Color10]"▲ "#,##0;[Red]"▼ "#,##0;"–"',din:'"▲ "#,##0;"▼ "#,##0;"–"',dir:'[Red]"▲ "#,##0;[Color10]"▼ "#,##0;"–"'};
+/** Which kind a column is: what it asked for, or what its values are. */
+function exKind(t,ci){
+  const asked=t.fmt&&t.fmt[ci];
+  if(asked) return asked;                       // 't' means "leave it as it is" — a report number is not a quantity
+  const vals=t.rows.slice(0,400).map(r=>exV(r[ci])).filter(v=>v!=null&&v!=='');
+  if(!vals.length) return 't';
+  if(vals.every(v=>typeof v==='number')) return /\(%\)|%$/.test(t.head[ci])?'pct':vals.every(Number.isInteger)?'int':'n1';
+  if(vals.every(v=>typeof v==='string'&&EX_STAMP.test(v))) return 'datetime';
+  if(vals.every(v=>typeof v==='string'&&EX_DATE.test(v))) return 'date';
+  return 't';
+}
 async function exXlsx(m,blocks){
   const NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main', REL='http://schemas.openxmlformats.org/officeDocument/2006/relationships', XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-  const STYLE={header:1,date:2,title:3,muted:4,label:5};
+  const NAVY='172C67', INK='002070', ROYAL='0033A0', MUTED='5F6369', LINE='E3E6E9', WHITE='FFFFFF';
+  const enc=new TextEncoder();
+
+  // ── looks: a cell says what it looks like, and the workbook stores each look once ──
+  const fonts=[], fills=[], borders=[], numFmts=[], xfs=[];
+  const put=(list,xml)=>{ let i=list.indexOf(xml); if(i<0){ i=list.length; list.push(xml); } return i; };
+  put(fonts,'<font><sz val="11"/><name val="Calibri"/><family val="2"/></font>');
+  put(fills,'<fill><patternFill patternType="none"/></fill>'); put(fills,'<fill><patternFill patternType="gray125"/></fill>');
+  put(borders,'<border><left/><right/><top/><bottom/><diagonal/></border>');
+  put(xfs,'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>');
+  const BUILTIN={'0':1,'#,##0':3};
+  const fmtId=code=>code==null?0:(code in BUILTIN?BUILTIN[code]:164+put(numFmts,code));
+  const looks=new Map();
+  const look=o=>{
+    const key=JSON.stringify(o); if(looks.has(key)) return looks.get(key);
+    const f=put(fonts,`<font>${o.b?'<b/>':''}${o.i?'<i/>':''}<sz val="${o.sz||11}"/>${o.color?`<color rgb="FF${o.color}"/>`:''}<name val="Calibri"/><family val="2"/></font>`);
+    const fl=o.fill?put(fills,`<fill><patternFill patternType="solid"><fgColor rgb="FF${o.fill}"/><bgColor indexed="64"/></patternFill></fill>`):0;
+    const bd=o.line?put(borders,`<border><left/><right/><top/><bottom style="thin"><color rgb="FF${o.line}"/></bottom><diagonal/></border>`):0;
+    const al=`<alignment${o.h?` horizontal="${o.h}"`:''} vertical="${o.v||'center'}"${o.wrap?' wrapText="1"':''}${o.indent?` indent="${o.indent}"`:''}/>`;
+    const x=put(xfs,`<xf numFmtId="${fmtId(o.fmt)}" fontId="${f}" fillId="${fl}" borderId="${bd}" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">${al}</xf>`);
+    looks.set(key,x); return x;
+  };
+
+  // ── cells ──
   const strings=[], stringIndex=new Map(); let stringRefs=0;
   const str=v=>{ const t=String(v).slice(0,32000); stringRefs++; if(!stringIndex.has(t)){ stringIndex.set(t,strings.length); strings.push(t); } return stringIndex.get(t); };
-  const cellXml=(ref,raw)=>{
-    const o=raw&&typeof raw==='object'?raw:{v:raw}, v=o.v, s=o.s?STYLE[o.s]||0:0, sa=s?` s="${s}"`:'';
-    if(v==null||v===''||(typeof v==='number'&&!Number.isFinite(v))) return '';
+  const cellXml=(ref,c)=>{
+    if(!c) return '';
+    const v=c[0], x=c[1]||0, sa=x?` s="${x}"`:'';
+    if(v==null||v===''||(typeof v==='number'&&!Number.isFinite(v))) return x?`<c r="${ref}"${sa}/>`:'';
     if(typeof v==='number') return `<c r="${ref}"${sa}><v>${v}</v></c>`;
-    const iso=!o.s&&/^(\d{4})-(\d{2})-(\d{2})$/.exec(v), day=iso?new Date(Date.UTC(+iso[1],+iso[2]-1,+iso[3])):null;
-    if(day&&day.getUTCMonth()===+iso[2]-1&&day.getUTCDate()===+iso[3]) return `<c r="${ref}" s="${STYLE.date}"><v>${(day-Date.UTC(1899,11,30))/86400000}</v></c>`;
     return `<c r="${ref}" t="s"${sa}><v>${str(v)}</v></c>`;
   };
-  const used=new Set(['about']);
+  const serialOf=(text,kind)=>{
+    if(kind==='datetime'){ const u=exLocalStamp(text); return u?Date.UTC(u.getFullYear(),u.getMonth(),u.getDate(),u.getHours(),u.getMinutes(),u.getSeconds())/86400000+25569:null; }
+    const d=EX_DATE.exec(text); if(!d) return null;
+    const day=new Date(Date.UTC(+d[1],+d[2]-1,+d[3]));
+    return day.getUTCMonth()===+d[2]-1&&day.getUTCDate()===+d[3]?day.getTime()/86400000+25569:null;
+  };
+
+  const used=new Set(['read me']);
   const sheetName=l=>{
     const base=String(l).replace(/[\[\]:*?\/\\]/g,' ').replace(/^'+|'+$/g,'').replace(/\s+/g,' ').trim().slice(0,31)||'Sheet';
     let n=base, i=2;
@@ -8164,49 +8304,105 @@ async function exXlsx(m,blocks){
     used.add(n.toLowerCase());
     return n;
   };
-  const tables=blocks.filter(b=>b.table).map(b=>({name:sheetName(b.sheet||b.label),b}));
-  const about=[[{v:m.title,s:'title'}],[{v:'OSD Facility Experience Quality Assurance',s:'muted'}],[],
-    [{v:'Generated',s:'label'},{v:new Date().toLocaleString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}),s:'text'}],
-    ...(currentUser?.name?[[{v:'By',s:'label'},{v:currentUser.name,s:'text'}]]:[]),
-    ...m.context.map(([k,v])=>[{v:k,s:'label'},{v:String(v),s:'text'}]),
-    ...(m.note?[[{v:'Note',s:'label'},{v:m.note,s:'text'}]]:[]),
-    [],[{v:'Sheets',s:'label'}],
-    ...tables.map(t=>[{v:t.name,s:'text'},{v:`${t.b.table.rows.length} row${t.b.table.rows.length===1?'':'s'}`,s:'text'}]),
-    [],[{v:'Scores are out of 100 and section scores out of 10. An empty cell means there is no data.',s:'muted'}]];
-  const sheets=[{name:'About',rows:about,widths:[28,70],table:false},
-    ...tables.map(t=>({name:t.name,rows:[t.b.table.head.map(h=>({v:h,s:'header'})),...t.b.table.rows],table:true}))];
-  const width=sh=>sh.rows.reduce((n,r)=>Math.max(n,r.length),1); // reduce, not spread: item exports can have 100k+ rows
-  const lastCell=sh=>exColName(width(sh)-1)+Math.max(1,sh.rows.length);
-  const sheetXml=(sh,idx)=>{
-    const ncols=width(sh);
-    const widths=sh.widths||Array.from({length:ncols},(_,c)=>{
-      let wd=9;
-      sh.rows.slice(0,500).forEach((r,ri)=>{ const x=r[c], v=x&&typeof x==='object'?x.v:x; if(v==null||v==='') return;
-        const len=typeof v==='number'?String(v).length:/^\d{4}-\d{2}-\d{2}$/.test(v)?10:String(v).length;
-        wd=Math.max(wd,ri===0&&sh.table?Math.min(len,28)+4:len+2); });
-      return Math.min(wd,60);
+  const localNow=new Date().toLocaleString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  // ── one sheet per table: a title, what it is filtered to, a line on how to read it, then the table ──
+  const tableSheet=b=>{
+    const t=b.table, ncol=t.head.length, kinds=t.head.map((_,ci)=>exKind(t,ci));
+    const ctx=b.contextLine||(m.context||[]).map(([k,v])=>`${k}: ${v}`).join('  ·  ');
+    const rows=[];
+    rows.push({ht:26,cells:[[b.docTitle||b.label,look({b:true,sz:14,color:INK})]]});
+    rows.push({ht:16,cells:[[ctx,look({sz:10,color:MUTED})]]});
+    rows.push({ht:16,cells:[[b.note||'',look({sz:10,i:true,color:MUTED})]]});
+    const widths=t.head.map((h,ci)=>{
+      const k=kinds[ci]; let w=k==='date'?14:k==='datetime'?18:k==='t'?10:11;
+      w=Math.max(w,Math.min(Math.ceil(String(h).length/2)+3,22));
+      t.rows.slice(0,300).forEach(r=>{ const v=exV(r[ci]); if(v==null||v==='') return;
+        const len=typeof v==='number'?String(Math.round(v*10)/10).length+(k[0]==='d'&&k!=='date'&&k!=='datetime'?3:0):String(v).length;
+        w=Math.max(w,Math.min(len+2,k==='t'?58:24)); });
+      return w;
     });
-    const last=lastCell(sh);
-    const rows=sh.rows.map((r,ri)=>`<row r="${ri+1}"${ri===0&&sh.table?' ht="32" customHeight="1"':''}>${r.map((x,ci)=>cellXml(exColName(ci)+(ri+1),x)).join('')}</row>`).join('');
-    return XML+`<worksheet xmlns="${NS}" xmlns:r="${REL}"><dimension ref="A1:${last}"/><sheetViews><sheetView rightToLeft="0" workbookViewId="0"${idx===0?' tabSelected="1"':''}>`+
-      (sh.table?'<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A2" sqref="A2"/>':'')+
-      `</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${widths.map((wd,i)=>`<col min="${i+1}" max="${i+1}" width="${wd}" customWidth="1"/>`).join('')}</cols>`+
-      `<sheetData>${rows}</sheetData>${sh.table&&sh.rows.length>1?`<autoFilter ref="A1:${last}"/>`:''}</worksheet>`;
+    const lines=Math.max(1,...t.head.map((h,ci)=>Math.ceil(String(h).length/Math.max(6,widths[ci]-1))));
+    rows.push({ht:Math.max(30,15*Math.min(lines,3)+8),cells:t.head.map((h,ci)=>[h,look({b:true,color:WHITE,fill:NAVY,h:kinds[ci]==='t'?'left':'center',wrap:true})])});
+    t.rows.forEach(r=>{
+      rows.push({cells:t.head.map((_,ci)=>{
+        const raw=r[ci], o=raw&&typeof raw==='object'&&!Array.isArray(raw)&&'v' in raw?raw:{v:raw};
+        const kind=o.f||kinds[ci];
+        let v=o.v;
+        if(typeof v==='string'&&(kind==='date'||kind==='datetime')){ const s=serialOf(v,kind); if(s!=null) v=s; }
+        const scale=o.band||(t.bands&&t.bands[ci]);
+        const look_={line:LINE,h:kind==='t'?'left':'center',wrap:kind==='t',fmt:EX_FMT[kind]||null};
+        if(scale&&typeof v==='number'){ const g=grade(scale===10?v*10:v); look_.fill=g.soft.slice(1); look_.color=g.ink.slice(1); look_.b=true; }
+        return [v,look(look_)];
+      })});
+    });
+    return {name:sheetName(b.sheet||b.label),rows,widths,header:4,dataRows:t.rows.length,table:true,tab:NAVY};
+  };
+
+  // ── "Read me": what the file is, what each sheet shows, and what the words mean ──
+  const readMe=tables=>{
+    const rows=[], A=look({b:true,color:MUTED,v:'top',sz:10}), V=look({wrap:true,v:'top'});
+    const H=look({b:true,sz:12,color:ROYAL,line:ROYAL}), HT=look({b:true,color:WHITE,fill:NAVY,h:'left'});
+    const P=(cells,ht)=>rows.push({ht,cells});
+    P([[m.title,look({b:true,sz:18,color:INK})]],30);
+    P([['OSD Facility Experience Quality Assurance',look({sz:10,color:MUTED})]],16);
+    P([]);
+    if(m.blurb||m.note){ P([['What this shows',A],[m.blurb||m.note,V]]); }
+    (m.context||[]).forEach(([k,v])=>P([[k,A],[String(v),V]]));
+    P([['Created',A],[localNow+(currentUser&&currentUser.name?' · by '+currentUser.name:''),V]]);
+    P([]);
+    P([['Sheets',H],['',H]],20);
+    tables.forEach(sh=>P([[sh.name,look({b:true,color:INK,v:'top'})],[sh.desc||'',V]]));
+    P([]);
+    P([['How to read it',H],['',H]],20);
+    const words=[...(m.glossary||[]),
+      ['Score','Each report scores out of 100: its ten section scores (each out of 10) added together.'],
+      ['Change','Later period minus earlier period. ▲ is up, ▼ is down, a dash means no change; green is better and red is worse where that is clear.'],
+      ['BOQI / EOQI','Beginning of Quarter Inspection / End of Quarter Inspection.'],
+      ['Empty cell','There is no data for it. It is not zero.']];
+    words.forEach(([k,d])=>P([[k,look({b:true,color:INK,v:'top'})],[d,V]]));
+    P([]);
+    P([['Rating',H],['',H]],20);
+    ['Excellent','Good','Acceptable','Poor','Critical'].forEach(name=>{
+      const b=BANDS[name];
+      P([[name,look({b:true,fill:b.fill.slice(1),color:b.on.slice(1),h:'left'})],[`${b.range} · ${b.note}`,V]]);
+    });
+    return {name:'Read me',rows,widths:[26,96],header:0,table:false,tab:'26A8AB'};
+  };
+
+  const tables=blocks.filter(b=>b.table).map(b=>{ const sh=tableSheet(b); sh.desc=b.desc||b.label; return sh; });
+  const sheets=[readMe(tables),...tables];
+
+  const sheetXml=(sh,idx)=>{
+    const ncols=sh.widths.length;
+    const width=Math.max(ncols,...sh.rows.map(r=>r.cells.length));
+    const lastRow=sh.rows.length, lastCol=exColName(Math.max(ncols,1)-1);
+    const rowsXml=sh.rows.map((r,ri)=>`<row r="${ri+1}"${r.ht?` ht="${r.ht}" customHeight="1"`:''}>${r.cells.map((c,ci)=>cellXml(exColName(ci)+(ri+1),c)).join('')}</row>`).join('');
+    const pane=sh.table?`<pane ySplit="${sh.header}" topLeftCell="A${sh.header+1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A${sh.header+1}" sqref="A${sh.header+1}"/>`:'';
+    return XML+`<worksheet xmlns="${NS}" xmlns:r="${REL}"><sheetPr><tabColor rgb="FF${sh.tab}"/><pageSetUpPr fitToPage="1"/></sheetPr>`+
+      `<dimension ref="A1:${exColName(width-1)}${Math.max(1,lastRow)}"/><sheetViews><sheetView showGridLines="0" workbookViewId="0"${idx===0?' tabSelected="1"':''}>${pane}</sheetView></sheetViews>`+
+      `<sheetFormatPr defaultRowHeight="15"/><cols>${sh.widths.map((wd,i)=>`<col min="${i+1}" max="${i+1}" width="${wd}" customWidth="1"/>`).join('')}</cols>`+
+      `<sheetData>${rowsXml}</sheetData>${sh.table&&sh.dataRows>0?`<autoFilter ref="A${sh.header}:${lastCol}${lastRow}"/>`:''}`+
+      `<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`;
   };
   const sheetFiles=sheets.map(sheetXml);
-  const filters=sheets.map((sh,i)=>{
-    if(!sh.table||sh.rows.length<2) return '';
-    const [,col,row]=/^([A-Z]+)(\d+)$/.exec(lastCell(sh));
-    return `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">${exXmlEsc(`'${sh.name.replace(/'/g,"''")}'!$A$1:$${col}$${row}`)}</definedName>`;
+  const names=sheets.map((sh,i)=>{
+    if(!sh.table) return '';
+    const q=exXmlEsc(`'${sh.name.replace(/'/g,"''")}'`), lastCol=exColName(sh.widths.length-1), lastRow=sh.rows.length;
+    return (sh.dataRows>0?`<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">${q}!$A$${sh.header}:$${lastCol}$${lastRow}</definedName>`:'')+
+      `<definedName name="_xlnm.Print_Titles" localSheetId="${i}">${q}!$${sh.header}:$${sh.header}</definedName>`;
   }).join('');
-  const n=sheets.length, enc=new TextEncoder();
+  const n=sheets.length;
+  const stylesXml=XML+`<styleSheet xmlns="${NS}">${numFmts.length?`<numFmts count="${numFmts.length}">${numFmts.map((c,i)=>`<numFmt numFmtId="${164+i}" formatCode="${exXmlEsc(c)}"/>`).join('')}</numFmts>`:''}`+
+    `<fonts count="${fonts.length}">${fonts.join('')}</fonts><fills count="${fills.length}">${fills.join('')}</fills><borders count="${borders.length}">${borders.join('')}</borders>`+
+    `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xfs.length}">${xfs.join('')}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
   const files=[
     ['[Content_Types].xml',XML+`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],
     ['_rels/.rels',XML+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL}/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>`],
     ['docProps/core.xml',XML+`<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${exXmlEsc(m.title)}</dc:title><dc:creator>${exXmlEsc(currentUser?.name||'OSD Facility Experience QA')}</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString().replace(/\.\d+Z$/,'Z')}</dcterms:created></cp:coreProperties>`],
-    ['xl/workbook.xml',XML+`<workbook xmlns="${NS}" xmlns:r="${REL}"><sheets>${sheets.map((sh,i)=>`<sheet name="${exXmlEsc(sh.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets>${filters?`<definedNames>${filters}</definedNames>`:''}</workbook>`],
+    ['xl/workbook.xml',XML+`<workbook xmlns="${NS}" xmlns:r="${REL}"><sheets>${sheets.map((sh,i)=>`<sheet name="${exXmlEsc(sh.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets>${names?`<definedNames>${names}</definedNames>`:''}</workbook>`],
     ['xl/_rels/workbook.xml.rels',XML+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_,i)=>`<Relationship Id="rId${i+1}" Type="${REL}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${n+1}" Type="${REL}/styles" Target="styles.xml"/><Relationship Id="rId${n+2}" Type="${REL}/sharedStrings" Target="sharedStrings.xml"/></Relationships>`],
-    ['xl/styles.xml',XML+`<styleSheet xmlns="${NS}"><numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts><fonts count="5"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="16"/><color rgb="FF172C67"/><name val="Calibri"/><family val="2"/></font><font><sz val="10"/><color rgb="FF69727E"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><color rgb="FF172C67"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF172C67"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`],
+    ['xl/styles.xml',stylesXml],
     ...sheetFiles.map((x,i)=>[`xl/worksheets/sheet${i+1}.xml`,x]),
     ['xl/sharedStrings.xml',XML+`<sst xmlns="${NS}" count="${stringRefs}" uniqueCount="${strings.length}">${strings.map(t=>`<si><t xml:space="preserve">${exXmlEsc(t)}</t></si>`).join('')}</sst>`],
   ];
