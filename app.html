@@ -163,7 +163,7 @@ body.view-only #inspection-link{display:none}
 #pg-new .home-hero .sub{margin-bottom:22px}
 .home-hero .ey{font-size:.68rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:6px}
 /* Tabs for pages that share one sidebar entry (Team: Overview / Assign & Track) */
-.page-tabs{display:flex;gap:6px;margin-top:18px;flex-wrap:wrap;position:relative}
+.page-tabs{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;position:relative}
 .page-tabs[hidden]{display:none}
 .page-tab{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:rgba(255,255,255,.82);padding:6px 16px 6px 12px;border-radius:999px;
   font-family:var(--font);font-size:.76rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:background .13s}
@@ -171,12 +171,12 @@ body.view-only #inspection-link{display:none}
 .page-tab.active{background:#fff;color:var(--royal);border-color:#fff}
 .page-tab svg{width:14px;height:14px}
 /* Team pages: the tabs and Export sit together on one row, never wrapping */
-.hero-actions{display:flex;align-items:center;gap:6px;margin-top:18px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.hero-actions{display:flex;align-items:center;gap:8px;margin-top:18px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .hero-actions::-webkit-scrollbar{display:none}
 .hero-actions .page-tabs{margin-top:0;flex-wrap:nowrap}
 .hero-actions .page-tab,.hero-actions .page-export{flex:none;white-space:nowrap}
 .hero-actions .page-export{margin-left:0}
-@media(max-width:420px){.hero-actions{gap:5px}.hero-actions .page-tabs{gap:5px}.hero-actions .page-tab,.hero-actions .page-export{padding:6px 11px;font-size:.72rem}}
+@media(max-width:420px){.hero-actions{gap:8px}.hero-actions .page-tabs{gap:8px}.hero-actions .page-tab,.hero-actions .page-export{padding:6px 11px;font-size:.72rem}}
 /* Quick assign: pick an auditor once, then one tap per building */
 .of-quick{max-width:220px}
 .of-quick.on{border-color:var(--teal);box-shadow:0 0 0 2px rgba(38,168,171,.16);font-weight:800;color:var(--royal-dk)}
@@ -725,7 +725,7 @@ body.view-only #inspection-link{display:none}
 .modal-box .sr-check input{width:16px;height:16px;margin:0;accent-color:var(--teal)}
 .cmp-top{padding:20px 44px 0;display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center}
 .cmp-top .rp-lbl,.cmp-quick .rp-lbl{font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.cmp-quick{display:flex;gap:2px 4px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.cmp-quick{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
 .cmp-quick .rp-link{border:1px solid var(--border);border-radius:999px;background:#fff;padding:4px 11px;font-size:.72rem}
 .cmp-quick .rp-link:hover{border-color:var(--teal)}
 .cmp-side input[type=date]{border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;font-size:.8rem;font-family:var(--font);color:var(--text);background:#fff;font-weight:600;min-width:0}
@@ -1181,6 +1181,40 @@ html[data-pointer=mouse] .ph-cam{display:none}
   .rp-chip,.page-tab{min-height:38px}
   .rp-filters select,.rp-filters input,.hist-filters select,.hist-filters input{min-height:40px}
   .of-sel{min-height:40px}
+}
+
+/* ── Spacing and touch comfort ─────────────────────────────────────────────────────────────
+   One rhythm for every row of controls: neighbours sit 8px apart, groups 12px. On anything a
+   finger drives — phones, iPads, small windows — every button is at least 40px tall, and the
+   small round or text-only ones (ⓘ, ×, "Mark all read") keep their look but get a larger hit area. */
+@media(pointer:coarse),(max-width:1024px){
+  .rp-link{min-height:40px;padding:8px 12px}
+  .ad-btn{min-height:38px;padding:7px 14px}
+  .rp-chip,.page-tab,.pb-step,.page-export{min-height:40px}
+  .ov-tools select,.ov-tools input,.of-due,.rp-bar select,.rp-bar input{min-height:40px}
+  .of-bulk .btn,.of-bulk select,.of-bulk input[type=date]{min-height:42px}
+  #notif-bell,#rv-close,#ad-d-close{min-width:40px;min-height:40px}
+  .au-back{min-height:40px;padding-top:8px;padding-bottom:8px}
+  #notif-panel .notif-panel-head button{min-height:36px;padding:8px 10px}
+  .tip-close{position:relative}
+  .tip-close::after{content:'';position:absolute;inset:-12px}
+  /* the two scoring buttons are what an inspector taps hundreds of times: tall, and apart */
+  .ss{gap:6px;padding:4px}
+  .sb{height:44px}
+  .cmt-wrap input[type=text]{height:42px}
+}
+/* On a phone the segmented filters open up into separate pills that wrap with room between them */
+@media(max-width:820px){
+  .rp-chips{display:flex;background:transparent;padding:0;gap:8px;border-radius:0}
+  .rp-chip{background:#fff;border:1px solid var(--border);padding:8px 14px}
+  .rp-chip.active{background:var(--royal);border-color:var(--royal);color:#fff}
+  .rp-bar{row-gap:12px}
+}
+/* A phone on its side is only ~390px tall: the sticky bars give some of it back */
+@media(orientation:landscape) and (max-height:480px) and (pointer:coarse){
+  #pbar{min-height:46px;padding-top:4px;padding-bottom:4px}
+  .sp-foot{bottom:6px;margin-top:10px;padding:6px 10px}
+  .of-bulk{bottom:6px;padding:8px 12px}
 }
 
 
@@ -3837,10 +3871,11 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
       /* Screen: the sheets sit on a desk, with the toolbar above them. Print: only the sheets. */
       .bar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px;background:#0A1B3D;color:#fff;font-size:13px}
       .bar b{font-weight:800;margin-right:auto;font-size:13px}
-      .bar button{font:inherit;font-weight:800;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:#26A8AB;color:#04263A}
+      .bar button{font:inherit;font-weight:800;border:0;border-radius:8px;padding:8px 14px;min-height:40px;cursor:pointer;background:#26A8AB;color:#04263A}
       .bar button[disabled]{opacity:.6;cursor:default}
       .bar button.ghost{background:rgba(255,255,255,.14);color:#fff}
       .bar small{opacity:.7;width:100%;font-size:11px}
+      @media(max-width:600px){.bar b{flex:0 0 100%;margin:0}.bar button{flex:1 1 auto}}
       @media screen{body{background:#E9EDF1}.sheet{margin:0 auto 10px;box-shadow:0 1px 5px rgba(16,32,64,.2)}
         body{padding-bottom:10px}}
       @media print{.bar{display:none!important}body{background:#fff}.sheet{margin:0;box-shadow:none}}
@@ -7869,10 +7904,11 @@ html,body{margin:0;padding:0;background:#fff;color:var(--deep);font-family:Cairo
 
 .bar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px;background:#0A1B3D;color:#fff;font-size:13px}
 .bar b{font-weight:800;margin-right:auto;font-size:13px}
-.bar button{font:inherit;font-weight:800;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:#26A8AB;color:#04263A}
+.bar button{font:inherit;font-weight:800;border:0;border-radius:8px;padding:8px 14px;min-height:40px;cursor:pointer;background:#26A8AB;color:#04263A}
 .bar button[disabled]{opacity:.6;cursor:default}
 .bar button.ghost{background:rgba(255,255,255,.14);color:#fff}
 .bar small{opacity:.7;width:100%;font-size:11px}
+      @media(max-width:600px){.bar b{flex:0 0 100%;margin:0}.bar button{flex:1 1 auto}}
 @media screen{body{background:#E9EDF1;padding-bottom:10px}.sheet{margin:0 auto 10px;box-shadow:0 1px 5px rgba(16,32,64,.2)}}
 @media print{.bar{display:none!important}body{background:#fff}.sheet{margin:0;box-shadow:none}}
 #doc{width:${W}mm;margin:0 auto;transform-origin:top left}
