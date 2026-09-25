@@ -125,7 +125,15 @@ body.view-only #inspection-link{display:none}
 /* MAIN */
 #main{flex:1;min-width:0;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(135deg,#F7FAFB 0%,var(--bg) 52%,#F4F8F9 100%)}
 #pbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(38,168,171,.35);
-  padding:8px 28px;display:flex;align-items:center;gap:14px;min-height:54px}
+  padding:8px 28px;display:flex;align-items:center;gap:8px 14px;min-height:54px;flex-wrap:wrap}
+/* Between a phone and a wide screen the inspection bar is crowded: the steps keep their numbers,
+   and the connection chip stays quiet while all is well, so the bell never slides off the edge */
+@media(min-width:781px) and (max-width:1279px){
+  #pbar:has(#pb-steps:not([hidden])) .pb-step{font-size:0;padding:3px;gap:0}
+  #pbar:has(#pb-steps:not([hidden])) .pb-step i{font-size:.68rem}
+  #pbar:has(#pb-steps:not([hidden])) .pb-step small{display:none}
+  #pbar:has(#pb-steps:not([hidden])) #sync-chip.ok{display:none}
+}
 #pb-title{display:flex;align-items:center;gap:10px;min-width:0;color:var(--royal);font-weight:800;font-size:.9rem;white-space:nowrap}
 #pb-ic{width:30px;height:30px;border-radius:8px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 #pb-ic svg{width:16px;height:16px}
@@ -191,6 +199,12 @@ body.view-only #inspection-link{display:none}
 .sch-aud-hd>div{min-width:0;flex:1}
 .sch-aud-hd b{display:block;font-size:.9rem;color:var(--royal-dk)}
 .sch-aud-hd small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}
+/* iPhone/iPad Safari sizes a date field to its content and lets it run past its card */
+@supports(-webkit-touch-callout:none){
+  input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;min-height:42px;background-color:#fff;text-align:left}
+  input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+  .of-bulk input[type=date]{display:inline-block;width:auto;min-width:140px}
+}
 /* Fingers, not pointers: small round buttons keep their look but get a 44px target */
 @media(pointer:coarse),(max-width:820px){
   .info-tip,.tool-x,#cmp-swap{position:relative}
@@ -369,6 +383,8 @@ body.view-only #inspection-link{display:none}
 
 /* Team Overview (Quality Leader) */
 #pg-overview{background:var(--bg);padding-bottom:40px}
+.page>.ov-filters{padding:20px 44px 0;margin:0}
+@media(max-width:780px){.page>.ov-filters{padding-left:14px;padding-right:14px}}
 #pg-overview .ov-filters{padding:20px 44px 0;margin:0}
 .ov-updated{margin-left:auto;font-size:.72rem;color:var(--muted);font-weight:600}
 .ov-stats{padding:16px 44px 4px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
@@ -1054,8 +1070,13 @@ body.nav-rail #acct-row{justify-content:center}
   .pb-step{font-size:0;padding:3px}
   .pb-step i{font-size:.68rem}
   .pb-step small{display:none}
-  /* Row one: menu, where you are, the bell. Row two, on the inspection pages: the three steps and the progress bar. */
+  /* Row one: menu, where you are, refresh and the bell. Row two, on the inspection pages: the three steps and the progress bar.
+     The title takes what is left of row one and shortens itself (the "› sub-page" goes first), so the buttons never drop a line. */
+  #pb-title{flex:1 1 0;min-width:min(46vw,180px);overflow:hidden}
+  #pb-name{min-width:0;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+  #pb-sub{min-width:0;flex-shrink:1}
   #pbar .pb-right{order:3;margin-left:auto}
+  @media(max-width:360px){#pb-sub{display:none}#pb-name{flex-shrink:1}}
   #pbar .pb-steps{order:4}
   #pb-progress{order:5;max-width:none;flex:1 1 0;min-width:96px;margin-left:0}
   #pb-progress:not([hidden])~.pb-right{margin-left:auto}
@@ -1193,7 +1214,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
   .rp-chip,.page-tab,.pb-step,.page-export{min-height:40px}
   .ov-tools select,.ov-tools input,.of-due,.rp-bar select,.rp-bar input{min-height:40px}
   .of-bulk .btn,.of-bulk select,.of-bulk input[type=date]{min-height:42px}
-  #notif-bell,#rv-close,#ad-d-close{min-width:40px;min-height:40px}
+  #notif-bell,#app-refresh,#rv-close,#ad-d-close{min-width:40px;min-height:40px}
   .au-back{min-height:40px;padding-top:8px;padding-bottom:8px}
   #notif-panel .notif-panel-head button{min-height:36px;padding:8px 10px}
   .tip-close{position:relative}
@@ -1273,6 +1294,11 @@ html[data-pointer=mouse] .ph-cam{display:none}
 #notif-bell{position:relative;background:var(--bg);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;
   display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:border-color .13s,color .13s}
 #notif-bell:hover{border-color:var(--teal);color:var(--teal-ink)}
+#app-refresh{background:var(--bg);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;flex-shrink:0;padding:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:border-color .13s,color .13s}
+#app-refresh:hover{border-color:var(--teal);color:var(--teal-ink)}
+#app-refresh.spin svg{animation:app-spin .8s linear infinite}
+@keyframes app-spin{to{transform:rotate(360deg)}}
 #notif-badge[hidden]{display:none}
 #notif-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:.62rem;font-weight:800;
   min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 3px}
@@ -1360,6 +1386,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     </div>
     <div class="pb-right">
     <div id="sync-chip" class="syncing">Connecting…</div>
+    <button type="button" id="app-refresh" title="Refresh" aria-label="Refresh"><svg data-lucide="refresh-cw" width="16" height="16"></svg></button>
     <div id="notif-bell-wrap">
       <button id="notif-bell" title="Notifications">
         <svg data-lucide="bell" width="16" height="16"></svg>
@@ -4354,6 +4381,7 @@ function resetForm(){
 // INIT
 // ═══════════════════════════════════════════════════════════
 document.querySelectorAll('.ni[data-page]').forEach(n=>n.addEventListener('click',()=>nav(n.dataset.page)));
+document.getElementById('app-refresh').addEventListener('click',refreshApp);
 document.getElementById('pb-steps').addEventListener('click',e=>{
   const step=e.target.closest('.pb-step');
   if(step) nav(step.dataset.step==='sections'?lastSection:step.dataset.step); // Sections reopens the last one you had open
@@ -4892,6 +4920,13 @@ function ovScore(v){ return v==null?'<span style="color:var(--muted)">–</span>
  * Everyone then reads the same chip: when it falls, how long is left, and — once the
  * inspection is in — whether it was met. Dates are compared as text, never in UTC, so a
  * deadline never shifts by a day because of the phone's time zone. */
+/** Refresh: the whole app again, on the same page. Unsubmitted inspection work lives only in this tab, so ask first. */
+function refreshApp(){
+  const answered=typeof auAnsweredPct==='function'?auAnsweredPct():0;
+  if(answered>0&&!currentReportSaved&&!confirm('You have an inspection in progress that has not been submitted. Refreshing will clear it.\n\nRefresh anyway?')) return;
+  document.getElementById('app-refresh').classList.add('spin');
+  location.reload();
+}
 /** The report or export can take over this tab when pop-ups are blocked; the app's pollers must then stand down. */
 function appIsOpen(){ return !!document.getElementById('pbar'); }
 function dueToday(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
