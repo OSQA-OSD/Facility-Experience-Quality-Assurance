@@ -16,5 +16,15 @@
       "database_id": "a8696c63-e928-4f6f-a75a-8c806e94a1b2",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  // Nightly backup, kept outside the database (see runBackup in worker.js).
+  "kv_namespaces": [
+    { "binding": "BACKUPS", "id": "f3cb2a897aff46b8bd545a33983784e5" }
+  ],
+  // 23:30 UTC = 02:30 in Riyadh.
+  "triggers": { "crons": ["30 23 * * *"] }
+  // Photo storage for the long run. Once R2 is switched on for the account and the bucket
+  // exists (npx wrangler r2 bucket create facility-qa-photos), add:
+  //   "r2_buckets": [ { "binding": "PHOTOS", "bucket_name": "facility-qa-photos" } ]
+  // New photos then go to R2, and the nightly run moves the ones in the database there.
 }
