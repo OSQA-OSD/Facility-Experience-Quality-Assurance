@@ -123,15 +123,28 @@ body.view-only #inspection-link{display:none}
 .ss-item.active{border-color:var(--teal);background:rgba(38,168,171,.08);box-shadow:inset 3px 0 var(--teal)}
 .ss-item.active b{color:var(--royal)}
 /* MAIN */
-#main{flex:1;min-width:0;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(135deg,#F7FAFB 0%,var(--bg) 52%,#F4F8F9 100%)}
+#main{flex:1;min-width:0;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:transparent}
+/* The page ground: soft royal and teal light that drifts slowly behind the cards. It sits in one
+   layer of its own that only moves (no repaint), so it costs next to nothing on a phone. */
+body{background:linear-gradient(135deg,#F7FAFB 0%,var(--bg) 52%,#F2F7F8 100%)}
+body::before,body::after{content:'';position:fixed;z-index:-1;pointer-events:none;will-change:transform}
+body::before{inset:-30%;background:
+  radial-gradient(30% 34% at 22% 26%,rgba(38,168,171,.30),transparent 70%),
+  radial-gradient(28% 32% at 80% 18%,rgba(0,51,160,.17),transparent 70%),
+  radial-gradient(32% 36% at 72% 78%,rgba(140,254,227,.42),transparent 70%);
+  animation:auraA 46s ease-in-out infinite alternate}
+body::after{inset:-30%;background:
+  radial-gradient(26% 30% at 30% 76%,rgba(11,95,174,.14),transparent 70%),
+  radial-gradient(24% 28% at 62% 44%,rgba(38,168,171,.14),transparent 70%);
+  animation:auraB 62s ease-in-out infinite alternate}
+@keyframes auraA{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}50%{transform:translate3d(5%,-4%,0) rotate(7deg) scale(1.08)}100%{transform:translate3d(-4%,5%,0) rotate(-5deg) scale(1.03)}}
+@keyframes auraB{0%{transform:translate3d(0,0,0) rotate(0deg)}100%{transform:translate3d(-6%,-5%,0) rotate(-9deg)}}
+@media print{body::before,body::after{display:none}}
 #pbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(38,168,171,.35);
   padding:8px 28px;display:flex;align-items:center;gap:8px 14px;min-height:54px;flex-wrap:wrap}
 /* Between a phone and a wide screen the inspection bar is crowded: the steps keep their numbers,
    and the connection chip stays quiet while all is well, so the bell never slides off the edge */
 @media(min-width:781px) and (max-width:1279px){
-  #pbar:has(#pb-steps:not([hidden])) .pb-step{font-size:0;padding:3px;gap:0}
-  #pbar:has(#pb-steps:not([hidden])) .pb-step i{font-size:.68rem}
-  #pbar:has(#pb-steps:not([hidden])) .pb-step small{display:none}
   #pbar:has(#pb-steps:not([hidden])) #sync-chip.ok{display:none}
 }
 #pb-title{display:flex;align-items:center;gap:10px;min-width:0;color:var(--royal);font-weight:800;font-size:.9rem;white-space:nowrap}
@@ -149,6 +162,18 @@ body.view-only #inspection-link{display:none}
 .pb-step.done i{background:var(--good);color:#fff}
 .pb-step.active{border-color:var(--royal);color:var(--royal);background:rgba(0,51,160,.05)}
 .pb-step.active i{background:var(--royal);color:#fff}
+/* Below a wide screen the steps are numbered dots — no pill drawn around them (it read as a ring inside a ring).
+   The button itself stays full size and transparent, so it is still easy to tap. */
+@media(max-width:1279px){
+  .pb-steps{gap:4px}
+  .pb-steps .pb-step{border:none;background:none;padding:0;gap:0;font-size:0;min-width:34px;min-height:34px;justify-content:center;border-radius:50%}
+  .pb-steps .pb-step i{width:28px;height:28px;font-size:.76rem;border:1.5px solid var(--border);background:#fff;color:var(--muted)}
+  .pb-steps .pb-step small{display:none}
+  .pb-steps .pb-step.done i{background:var(--good);border-color:var(--good);color:#fff}
+  .pb-steps .pb-step.active{background:none}
+  .pb-steps .pb-step.active i{background:var(--royal);border-color:var(--royal);color:#fff}
+  .pb-steps .pb-sep{width:12px}
+}
 .pb-sep{width:16px;height:2px;background:var(--border);border-radius:2px;flex-shrink:0}
 #pb-progress{flex:1;display:flex;align-items:center;gap:10px;min-width:110px;max-width:320px;margin-left:auto}
 .pb-right{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0}
@@ -164,6 +189,13 @@ body.view-only #inspection-link{display:none}
 #pg-home{padding:0}
 .home-hero{background:linear-gradient(150deg,#001540 0%,#00246F 32%,#0A5C9E 70%,#26A8AB 100%);color:#fff;padding:30px 44px 26px;position:relative;overflow:hidden;border-bottom:4px solid var(--teal)}
 .home-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(38,168,171,.2) 0%,transparent 70%);pointer-events:none}
+/* The banners breathe: two glows in the brand teal drift across the gradient, slowly */
+.home-hero::before{width:360px;height:360px;top:-120px;right:-80px;background:radial-gradient(circle,rgba(38,168,171,.34) 0%,transparent 68%);animation:heroGlowA 18s ease-in-out infinite alternate;will-change:transform}
+.home-hero::after{content:'';position:absolute;left:-120px;bottom:-190px;width:420px;height:420px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(140,254,227,.16) 0%,transparent 66%);animation:heroGlowB 24s ease-in-out infinite alternate;will-change:transform}
+.home-hero>*{position:relative;z-index:1}
+@keyframes heroGlowA{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(-38vw,70px,0) scale(1.25)}}
+@keyframes heroGlowB{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(30vw,-60px,0) scale(.85)}}
 .home-hero .ey{font-size:.68rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:5px}
 .home-hero h2{font-size:1.65rem;font-weight:900;line-height:1.2;margin-bottom:4px}
 .home-hero h2 span{color:var(--teal)}
@@ -332,6 +364,31 @@ body.view-only #inspection-link{display:none}
 .in-grid input,.in-grid select{border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:.88rem;font-family:var(--font);color:var(--text);
   background:#fff;outline:none;text-transform:none;letter-spacing:0;font-weight:600;min-width:0;width:100%}
 .in-grid input:focus,.in-grid select:focus{border-color:var(--teal)}
+/* Pick-or-type lists (makeCombo) */
+.cb{position:relative;display:block}
+.cb>input{width:100%;padding-right:42px!important}
+.modal-box .cb>input{margin-bottom:0}
+.modal-box .cb{margin-bottom:14px}
+.cb-btn{position:absolute;right:3px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;background:none;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;padding:0}
+.cb-btn:hover{color:var(--royal);background:rgba(0,51,160,.05)}
+.cb-btn svg{transition:transform .18s}
+.cb.open .cb-btn svg{transform:rotate(180deg)}
+.cb.open .cb-btn{color:var(--teal-ink)}
+.cb-list{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:70;margin:0;padding:6px;list-style:none;background:#fff;
+  border:1px solid rgba(0,51,160,.14);border-radius:12px;box-shadow:0 18px 40px -14px rgba(0,32,112,.35);max-height:340px;overflow-y:auto;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;text-transform:none;letter-spacing:0;font-weight:400;animation:cbIn .14s ease-out}
+.cb-list[hidden]{display:none}
+@keyframes cbIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.cb-group{position:sticky;top:-6px;z-index:1;background:#fff;padding:9px 10px 5px;font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-ink);border-bottom:1px solid var(--bg)}
+.cb-opt{display:flex;flex-direction:column;justify-content:center;gap:1px;min-height:44px;padding:7px 10px;border-radius:8px;cursor:pointer}
+.cb-opt b{font-size:.88rem;font-weight:700;color:var(--text);line-height:1.3}
+.cb-opt small{font-size:.74rem;font-weight:600;color:var(--muted);line-height:1.3}
+.cb-opt:hover,.cb-opt.on{background:rgba(38,168,171,.1)}
+.cb-opt.sel{background:rgba(0,51,160,.06);box-shadow:inset 3px 0 0 var(--royal)}
+.cb-opt.sel b{color:var(--royal)}
+.cb-opt mark{background:rgba(38,168,171,.24);color:inherit;border-radius:3px;padding:0 1px}
+.cb-empty{padding:12px 10px;font-size:.82rem;color:var(--muted)}
 .in-grid .invalid,.in-types.invalid{border-color:var(--danger)!important;background:#fff7f7}
 .in-static{display:flex;align-items:center;gap:9px;min-height:40px;border:1.5px dashed var(--border);border-radius:8px;padding:6px 11px;font-size:.88rem;
   font-weight:700;color:var(--text);text-transform:none;letter-spacing:0}
@@ -362,7 +419,7 @@ body.view-only #inspection-link{display:none}
 
 /* History */
 /* Home overview cards — same language as the landing page */
-#home-stats{padding:24px 44px 4px;background:var(--bg);display:grid;
+#home-stats{padding:24px 44px 4px;background:transparent;display:grid;
   grid-template-columns:repeat(6,minmax(0,1fr));gap:16px}
 #home-stats .hs-card{grid-column:span 2}
 #home-stats .hs-card.hs-wide{grid-column:span 3}
@@ -659,6 +716,17 @@ body.view-only #inspection-link{display:none}
 .rpt-ask-row{display:flex;gap:9px;flex-wrap:wrap}
 .rpt-ask-row .btn{padding:9px 15px;font-size:.82rem;display:inline-flex;align-items:center;gap:6px}
 .rv-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0;border-bottom:1px solid var(--bg)}
+.ad-bk-panel{padding:16px 18px}
+.ad-bk-status .sc-callout{margin:0}
+.sc-callout.ok{background:rgba(0,132,61,.08);border-color:rgba(0,132,61,.3)}
+.ad-bk-how{margin:14px 0 0;padding-left:18px;display:grid;gap:7px;font-size:.8rem;color:var(--text)}
+.ad-bk-how b{color:var(--royal-dk)}
+.ad-bk-progress{margin-top:14px}
+.ad-bk-progress>div{height:8px;background:var(--bg);border-radius:99px;overflow:hidden}
+.ad-bk-progress i{display:block;height:100%;width:0;background:var(--royal);transition:width .2s}
+.ad-bk-progress small{display:block;margin-top:6px;font-size:.74rem;color:var(--muted)}
+.ad-bk-progress small .ad-btn{margin:0 4px}
+.rv-h4-note{font-size:.7rem;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0;margin-left:6px}
 .rv-actions .btn{padding:8px 14px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px}
 .rv-sec{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
 .rv-sec summary{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;list-style:none;background:#fff}
@@ -762,6 +830,13 @@ body.view-only #inspection-link{display:none}
 .modal-box.ex-box{width:560px;max-height:92vh;overflow:auto;padding:24px}
 .ex-hd{display:flex;align-items:center;gap:10px}.ex-hd h3{margin:0}
 .ex-box .msub{margin-bottom:14px}
+.pw-rules{list-style:none;margin:2px 0 10px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+.pw-rules li{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;color:var(--muted);text-transform:none;letter-spacing:0}
+.pw-rules li::before{content:'';width:14px;height:14px;border-radius:50%;border:1.5px solid #b8c0c8;flex:none;box-sizing:border-box}
+.pw-rules li.ok{color:var(--good-ink)}
+.pw-rules li.ok::before{border-color:var(--good-ink);background:var(--good-ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/12px no-repeat}
+@media(max-width:360px){.pw-rules{grid-template-columns:1fr}}
+.ad-pw{display:flex;gap:8px;align-items:stretch}.ad-pw input{flex:1;min-width:0}
 .modal-box .ex-opt{display:flex;align-items:flex-start;gap:10px;margin:14px 0 0;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;
   cursor:pointer;background:#fff;text-transform:none;letter-spacing:0;color:var(--text)}
 .modal-box .ex-opt[hidden]{display:none}
@@ -818,7 +893,7 @@ body.view-only #inspection-link{display:none}
 @media(max-width:780px){.rp-panel-wrap,.rp-bands{padding-left:14px;padding-right:14px}.rp-count{margin-left:0}
   .rp-filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:14px}}
 
-#history-section{padding:24px 44px 40px;background:var(--bg)}
+#history-section{padding:24px 44px 40px;background:transparent}
 #history-section h3{font-size:1rem;font-weight:800;color:var(--royal);margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .hist-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
 .hist-filters select,.hist-filters input{border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;font-size:.8rem;color:var(--text);background:#fff;outline:none;font-family:var(--font);min-width:130px}
@@ -1067,9 +1142,6 @@ body.nav-rail #acct-row{justify-content:center}
 }
 @media(max-width:780px){
   #pbar{padding:8px 12px;flex-wrap:wrap;gap:8px}
-  .pb-step{font-size:0;padding:3px}
-  .pb-step i{font-size:.68rem}
-  .pb-step small{display:none}
   /* Row one: menu, where you are, refresh and the bell. Row two, on the inspection pages: the three steps and the progress bar.
      The title takes what is left of row one and shortens itself (the "› sub-page" goes first), so the buttons never drop a line. */
   #pb-title{flex:1 1 0;min-width:min(46vw,180px);overflow:hidden}
@@ -1091,10 +1163,11 @@ body.nav-rail #acct-row{justify-content:center}
 @media (min-width:901px) and (max-width:1199px){
   #pbar{padding-left:20px;padding-right:20px}
   .home-hero{padding-left:30px;padding-right:30px}
-  #home-actions,.rp-panel-wrap,.rp-bands,#history-section{padding-left:30px;padding-right:30px}
+  #home-actions,.rp-panel-wrap,.rp-bands,#history-section,#home-stats{padding-left:30px;padding-right:30px}
   .ov-section{padding-left:30px;padding-right:30px}
 }
 @media(max-width:780px){
+  #home-stats{padding:18px 14px 4px}
   #pbar{box-shadow:0 2px 12px rgba(0,32,112,.08)}
   .page-tabs{margin-top:14px}
   .hist-card{align-items:flex-start;padding:12px;gap:10px}
@@ -1112,7 +1185,7 @@ body.nav-rail #acct-row{justify-content:center}
   html{font-size:14px}
   .home-hero{padding:22px 14px}
   .home-hero h2{font-size:1.42rem}
-  #home-actions,.rp-panel-wrap,.rp-bands,#history-section{padding-left:12px;padding-right:12px}
+  #home-actions,.rp-panel-wrap,.rp-bands,#history-section,#home-stats{padding-left:12px;padding-right:12px}
   .ov-section{padding-left:12px;padding-right:12px}
   .hist-filters select,.hist-filters input{width:100%;min-width:0}
   .app-toast{right:12px;bottom:12px;left:12px;max-width:none}
@@ -1159,6 +1232,8 @@ body.nav-rail #acct-row{justify-content:center}
 .ins-heat thead th{position:sticky;top:0;z-index:2;background:#fff}
 /* Keyboard focus is always visible */
 a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
+/* …except text fields and lists: an outline around a border reads as a ring inside a ring */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus,select:focus,textarea:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(38,168,171,.18)}
 
 /* ── Device awareness ──────────────────────────────────────
    Phones, tablets and desktops get the same app: safe areas on notched iPhones,
@@ -1486,10 +1561,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <label>Auditor<div class="in-static" id="in-inspector">–</div></label>
           <label>Date<input type="date" lang="en-GB" id="meta-date"></label>
           <label class="in-wide">Building
-            <input id="meta-facility" list="in-buildings" placeholder="Type to search the buildings list…" autocomplete="off">
+            <input id="meta-facility" placeholder="Tap to choose, or type to search…" autocomplete="off" autocapitalize="characters" spellcheck="false">
             <span class="in-hint" id="in-bld-hint">Pick from the list so reports can link it to its division and area.</span>
           </label>
-          <datalist id="in-buildings"></datalist>
           <label>Division
             <select id="meta-division">
               <option value="">Select division…</option>
@@ -1568,7 +1642,6 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <span class="ov-updated" id="au-updated"></span>
       <button class="rp-link" id="au-reports" hidden><svg data-lucide="bar-chart-3" width="13" height="13" style="vertical-align:-2px"></svg> Analytics</button>
       <button class="rp-link" id="au-manage" hidden><svg data-lucide="clipboard-list" width="13" height="13" style="vertical-align:-2px"></svg> Manage assignments</button>
-      <button class="rp-link" id="au-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
     </div>
 
     <div class="ov-stats" id="au-stats"></div>
@@ -1736,7 +1809,6 @@ html[data-pointer=mouse] .ph-cam{display:none}
       </select>
       <select id="of-division" aria-label="Division"><option value="">All divisions</option></select>
       <span class="of-live" id="of-live"><i></i><span id="of-updated">Connecting…</span></span><button type="button" class="info-tip" data-tip="of-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
-      <button class="rp-link" id="of-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
     </div>
 
     <div class="ov-stats" id="of-stats"></div>
@@ -1828,7 +1900,6 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <select id="sch-auditor" aria-label="Auditor"><option value="">All auditors</option></select>
       <span class="ov-updated" id="sch-note"></span>
       <button type="button" class="info-tip" data-tip="sch-tables" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
-      <button class="rp-link" id="sch-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
     </div>
 
     <div class="ov-stats" id="sch-stats"></div>
@@ -1856,6 +1927,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <button class="page-tab active" data-tab="users"><svg data-lucide="users" width="14" height="14"></svg>Users &amp; Permissions</button>
         <button class="page-tab" data-tab="buildings"><svg data-lucide="building-2" width="14" height="14"></svg>Buildings</button>
         <button class="page-tab" data-tab="audit"><svg data-lucide="scroll-text" width="14" height="14"></svg>Audit Log</button>
+        <button class="page-tab" data-tab="backup"><svg data-lucide="database-backup" width="14" height="14"></svg>Backup &amp; Archive</button>
       </div>
     </div>
 
@@ -1881,7 +1953,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
             <div class="ad-grid">
               <label>Full name<input id="ad-name" type="text" required></label>
               <label>Username<input id="ad-username" type="text" required pattern="[A-Za-z0-9._\-]{3,40}" title="3–40 letters, numbers, dot, dash or underscore"></label>
-              <label>Temporary password<input id="ad-password" type="text" minlength="8" required></label>
+              <label>Temporary password<span class="ad-pw"><input id="ad-password" type="text" minlength="8" required autocomplete="off" spellcheck="false"><button type="button" class="btn bo" id="ad-gen" title="Make a strong temporary password">Generate</button></span><ul class="pw-rules" data-for="ad-password" aria-live="polite"><li data-rule="len">8 or more characters</li><li data-rule="upper">An uppercase letter</li><li data-rule="lower">A lowercase letter</li><li data-rule="symbol">A symbol (! @ # $ % …)</li></ul></label>
               <label>Role<select id="ad-role"></select></label>
             </div>
             <div id="ad-new-perms"></div>
@@ -1919,6 +1991,39 @@ html[data-pointer=mouse] .ph-cam{display:none}
           </table></div>
           <div class="of-foot" id="ad-b-count"></div>
         </div>
+      </div>
+    </div>
+
+    <div id="ad-backup" hidden>
+      <div class="ov-stats" id="ad-bk-stats"></div>
+      <div class="ov-section">
+        <div class="hist-hdr">
+          <div><span class="sec-eyebrow">Kept for good</span><h3><svg data-lucide="shield-check" width="18" height="18"></svg> Backups</h3></div>
+          <div class="ov-tools">
+            <button class="btn bo" type="button" id="ad-bk-run"><svg data-lucide="database-backup" width="14" height="14"></svg> Back up now</button>
+            <button class="btn br" type="button" id="ad-bk-download"><svg data-lucide="download" width="14" height="14"></svg> Download full copy</button>
+          </div>
+        </div>
+        <div class="ov-panel ad-bk-panel">
+          <div id="ad-bk-status" class="ad-bk-status"></div>
+          <ul class="ad-bk-how">
+            <li><b>Nothing is ever thrown away.</b> Every saved state of every report is kept as a numbered version; deleting a report moves it to the archive below; photos are stored once and never removed.</li>
+            <li><b>The database</b> keeps itself, and Cloudflare can put it back to any minute of the last 30 days.</li>
+            <li><b>Every night at 02:30</b> a backup is written outside the database: every version once, the audit and review history, and a copy of the accounts, buildings and assignments (30 days of nightly copies, and the first of every month kept for good).</li>
+            <li><b>Download full copy</b> saves everything — photos included — as one file on this device. Keep one somewhere safe from time to time; it loads straight back into a new database.</li>
+          </ul>
+          <div class="ad-bk-progress" id="ad-bk-progress" hidden><div><i id="ad-bk-bar"></i></div><small id="ad-bk-note"></small></div>
+        </div>
+      </div>
+      <div class="ov-section">
+        <div class="hist-hdr">
+          <div><span class="sec-eyebrow">Archive</span><h3><svg data-lucide="archive" width="18" height="18"></svg> Deleted reports</h3></div>
+          <span class="ov-updated" id="ad-arch-note"></span>
+        </div>
+        <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
+          <thead><tr><th>Building</th><th>Type · date</th><th>Auditor</th><th>Score</th><th>Deleted</th><th></th></tr></thead>
+          <tbody id="ad-arch-rows"></tbody>
+        </table></div></div>
       </div>
     </div>
 
@@ -2459,10 +2564,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <p class="msub" id="mb-sub"></p>
     <form id="mb-form" autocomplete="off">
       <label for="mb-name">Building name</label><input id="mb-name" required>
-      <label for="mb-division">Division</label><input id="mb-division" list="mb-divisions" required>
-      <label for="mb-area">Area</label><input id="mb-area" list="mb-areas" required>
-      <label for="mb-location">Location</label><input id="mb-location" list="mb-locations" required>
-      <datalist id="mb-divisions"></datalist><datalist id="mb-areas"></datalist><datalist id="mb-locations"></datalist>
+      <label for="mb-division">Division</label><input id="mb-division" required autocomplete="off">
+      <label for="mb-area">Area</label><input id="mb-area" required autocomplete="off">
+      <label for="mb-location">Location</label><input id="mb-location" required autocomplete="off">
       <p class="msub" id="mb-msg" style="display:none;color:var(--danger)"></p>
       <div class="mbtns">
         <button class="btn bt" type="submit">Save building</button>
@@ -2519,9 +2623,10 @@ html[data-pointer=mouse] .ph-cam{display:none}
 <div class="modal-bg" id="modal-change-pw">
   <div class="modal-box">
     <h3>Change Password</h3>
-    <p class="msub">Update the password for your account.</p>
+    <p class="msub">Update the password for your account. Your other devices will be signed out.</p>
     <input type="password" id="pw-current" placeholder="Current password" autocomplete="current-password">
-    <input type="password" id="pw-new" placeholder="New password (min 8 characters)" autocomplete="new-password">
+    <input type="password" id="pw-new" placeholder="New password" autocomplete="new-password">
+    <ul class="pw-rules" data-for="pw-new" aria-live="polite"><li data-rule="len">8 or more characters</li><li data-rule="upper">An uppercase letter</li><li data-rule="lower">A lowercase letter</li><li data-rule="symbol">A symbol (! @ # $ % …)</li></ul>
     <input type="password" id="pw-confirm" placeholder="Confirm new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitChangePassword()">
     <p class="msub" id="pw-msg" style="display:none;color:var(--danger)"></p>
     <div class="mbtns">
@@ -2959,11 +3064,21 @@ function nav(pageId){
   if(location.hash!=='#'+wanted) window.history.pushState(null,'','#'+wanted);
   document.getElementById('main').scrollTo(0,0);
 }
-// On first load the browser still scrolls to the element named in the URL; undo that jump.
-window.addEventListener('load',()=>{
-  const page=document.querySelector('.page.active'), main=document.getElementById('main');
-  if(page&&main.scrollTop&&Math.abs(page.getBoundingClientRect().top)<2) main.scrollTo(0,0);
-});
+// On arrival the browser scrolls to the element named in the address — the page itself — and
+// WebKit (iPhone, iPad, Safari) does it late, after load, sliding the banner under the top bar.
+// Until the person scrolls, taps or types, a freshly opened page stays at its top.
+if('scrollRestoration' in history) history.scrollRestoration='manual';
+(function holdTopOnArrival(){
+  const main=document.getElementById('main'), until=Date.now()+5000;
+  let touched=false;
+  ['wheel','touchstart','pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{ touched=true; },{once:true,passive:true,capture:true}));
+  const hold=()=>{
+    if(touched||Date.now()>until){ main.removeEventListener('scroll',hold); return; }
+    if(main.scrollTop) main.scrollTop=0;
+  };
+  main.addEventListener('scroll',hold,{passive:true});
+  hold();
+})();
 window.addEventListener('popstate',()=>window.dispatchEvent(new HashChangeEvent('hashchange')));
 window.addEventListener('hashchange',()=>{
   const pid=hashToPage(location.hash);
@@ -3401,6 +3516,106 @@ function useAccountInspector(){
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 // ═══════════════════════════════════════════════════════════
+// PICK-OR-TYPE LISTS
+// ═══════════════════════════════════════════════════════════
+// A native <datalist> shows only as keyboard suggestions on iPhone and iPad, so these lists are
+// drawn by the page: tap the field or its arrow to see every option, type to narrow it down.
+// options() returns [{value, sub?, group?}]; picking fills the field and fires input + change.
+let cbOpenNow=null;                                    // only one list is open at a time
+function makeCombo(input,{options}){
+  const wrap=document.createElement('div');
+  wrap.className='cb';
+  input.parentNode.insertBefore(wrap,input); wrap.appendChild(input);
+  const id=input.id+'-cb';
+  input.removeAttribute('list');
+  Object.entries({role:'combobox','aria-autocomplete':'list','aria-expanded':'false','aria-controls':id,autocomplete:'off'}).forEach(([k,v])=>input.setAttribute(k,v));
+  const btn=document.createElement('button');
+  btn.type='button'; btn.className='cb-btn'; btn.tabIndex=-1; btn.setAttribute('aria-label','Show the list');
+  btn.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  const list=document.createElement('ul');
+  list.className='cb-list'; list.id=id; list.setAttribute('role','listbox'); list.hidden=true;
+  wrap.append(btn,list);
+  let shown=[], active=-1, filtering=false;
+  const mark=(text,q)=>{ const t=String(text), i=q?t.toLowerCase().indexOf(q):-1;
+    return i<0?ovEsc(t):ovEsc(t.slice(0,i))+'<mark>'+ovEsc(t.slice(i,i+q.length))+'</mark>'+ovEsc(t.slice(i+q.length)); };
+  function render(){
+    const all=options()||[], q=filtering?input.value.trim().toLowerCase():'', cur=input.value.trim().toLowerCase();
+    shown=q?all.filter(o=>`${o.value} ${o.sub||''} ${o.group||''}`.toLowerCase().includes(q)):all;
+    if(active>=shown.length) active=shown.length-1;
+    let group=null, html='';
+    shown.forEach((o,i)=>{
+      if(o.group&&o.group!==group){ group=o.group; html+=`<li class="cb-group" role="presentation">${ovEsc(group)}</li>`; }
+      const sel=String(o.value).toLowerCase()===cur;
+      html+=`<li role="option" id="${id}-${i}" data-i="${i}" class="cb-opt${i===active?' on':''}${sel?' sel':''}" aria-selected="${sel}"><b>${mark(o.value,q)}</b>${o.sub?`<small>${mark(o.sub,q)}</small>`:''}</li>`;
+    });
+    list.innerHTML=html||`<li class="cb-empty" role="presentation">${all.length?`Nothing matches “${ovEsc(input.value.trim())}”`:'Loading the list…'}</li>`;
+    if(active>=0) input.setAttribute('aria-activedescendant',`${id}-${active}`); else input.removeAttribute('aria-activedescendant');
+  }
+  // Room below the field, above the on-screen keyboard. On a phone with too little of it the
+  // field is scrolled up under the top bar first, so the list is never hidden behind the keys.
+  function fit(){
+    const vv=window.visualViewport, bottom=vv?vv.offsetTop+vv.height:innerHeight;
+    let r=input.getBoundingClientRect();
+    if(bottom-r.bottom<230&&innerWidth<=780){
+      const scroller=input.closest('#main');
+      const top=(document.getElementById('pbar')?.getBoundingClientRect().bottom||0)+34;
+      if(scroller&&r.top>top){ scroller.scrollTop+=r.top-top; r=input.getBoundingClientRect(); }
+    }
+    list.style.maxHeight=Math.round(Math.max(170,Math.min(340,bottom-r.bottom-16)))+'px';
+  }
+  function open(){
+    render();
+    if(!list.hidden) return;
+    if(cbOpenNow&&cbOpenNow!==api) cbOpenNow.close();
+    cbOpenNow=api;
+    list.hidden=false; wrap.classList.add('open'); input.setAttribute('aria-expanded','true');
+    fit();
+    list.querySelector('.cb-opt.sel')?.scrollIntoView({block:'center'});
+  }
+  function close(){
+    if(list.hidden) return;
+    list.hidden=true; wrap.classList.remove('open'); input.setAttribute('aria-expanded','false');
+    input.removeAttribute('aria-activedescendant'); active=-1; filtering=false;
+  }
+  function pick(i){
+    const o=shown[i];
+    if(!o) return;
+    input.value=o.value;
+    close();
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  function move(step){
+    if(list.hidden){ open(); return; }
+    if(!shown.length) return;
+    active=(active+step+shown.length)%shown.length;
+    render();
+    document.getElementById(`${id}-${active}`)?.scrollIntoView({block:'nearest'});
+  }
+  input.addEventListener('focus',()=>{ filtering=false; open(); });
+  input.addEventListener('click',()=>{ if(list.hidden){ filtering=false; open(); } });
+  input.addEventListener('input',e=>{ if(!e.isTrusted) return; filtering=true; active=-1; open(); });
+  input.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){ e.preventDefault(); move(1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); move(-1); }
+    else if(e.key==='Enter'&&!list.hidden&&active>=0){ e.preventDefault(); pick(active); }
+    else if(e.key==='Escape'&&!list.hidden){ e.preventDefault(); close(); }
+    else if(e.key==='Tab') close();
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>{ if(!wrap.contains(document.activeElement)) close(); },150));
+  // Taps on the arrow or the list keep the field's focus (and the keyboard) where they are.
+  btn.addEventListener('mousedown',e=>e.preventDefault());
+  btn.addEventListener('click',e=>{ e.preventDefault(); if(list.hidden){ filtering=false; open(); } else close(); });
+  list.addEventListener('mousedown',e=>e.preventDefault());
+  // preventDefault also stops the surrounding <label> from passing the tap on to the field
+  list.addEventListener('click',e=>{ e.preventDefault(); const li=e.target.closest('[data-i]'); if(li) pick(Number(li.dataset.i)); });
+  document.addEventListener('pointerdown',e=>{ if(!wrap.contains(e.target)) close(); });
+  window.visualViewport?.addEventListener('resize',()=>{ if(!list.hidden) fit(); });
+  const api={open,close,refresh:()=>{ if(!list.hidden) render(); }};
+  return api;
+}
+
+// ═══════════════════════════════════════════════════════════
 // INSPECTION DETAILS (step 1)
 // ═══════════════════════════════════════════════════════════
 function inVal(id){ return document.getElementById(id).value.trim(); }
@@ -3412,10 +3627,22 @@ async function inLoadBuildings(){
     const res=await fetch('/api/buildings');
     if(res.ok){
       inBuildings=(await res.json()).buildings||[];
-      document.getElementById('in-buildings').innerHTML=inBuildings.map(b=>`<option value="${ovEsc(b.name)}">${ovEsc(b.division)} · ${ovEsc(b.area)}</option>`).join('');
+      inCombo?.refresh();
     }
   }catch{}
   return inBuildings||[];
+}
+/** The buildings list for the Building field: grouped by division — the chosen division first —
+ *  with each building's area and location underneath. */
+let inCombo=null;
+const IN_DIVISION_ORDER=['CAOSD','NPOSD','OOSD','SAOSD','NAOSD','RYOSD'];
+function inBuildingOptions(){
+  if(!inBuildings){ inLoadBuildings(); return []; }
+  const chosen=document.getElementById('meta-division').value;
+  const rank=d=>d===chosen?-1:(IN_DIVISION_ORDER.indexOf(d)+1||99);
+  return inBuildings.slice()
+    .sort((a,b)=>rank(a.division)-rank(b.division)||String(a.division).localeCompare(b.division)||a.name.localeCompare(b.name,undefined,{numeric:true}))
+    .map(b=>({value:b.name,sub:[b.area,b.location].filter(Boolean).join(' · '),group:b.division}));
 }
 function inMatchBuilding(){
   const v=inVal('meta-facility').toLowerCase();
@@ -3425,6 +3652,7 @@ function initInspectionDetails(){
   if(inReady) return;
   inReady=true;
   const fac=document.getElementById('meta-facility');
+  inCombo=makeCombo(fac,{options:inBuildingOptions});
   fac.addEventListener('input',()=>{ inOnBuilding({final:false}); inMarkChanged(); });
   fac.addEventListener('change',()=>inOnBuilding({final:true}));
   document.getElementById('meta-division').addEventListener('change',e=>{ e.target.classList.remove('invalid'); inMarkChanged(); });
@@ -3563,7 +3791,7 @@ function buildRecord(overrideType){
     id:Date.now(),inspector:activeInspector,facility,division,date,
     type:typeVal,typeLabel,overall,filename,assignmentId:currentAssignmentId,
     sections:SECTIONS.map((sec,si)=>({
-      title:sec.title,lucide:sec.lucide,score:getSecScore(si).total,max:sec.max,
+      title:sec.title,lucide:sec.lucide,score:getSecScore(si).total,max:sec.max,mode:sec.scoringMode,
       items:sec.items.map((item,ii)=>({
         label:item,score:curState().scores[si][ii],
         comment:curState().comments[si][ii],
@@ -3577,17 +3805,17 @@ function buildRecord(overrideType){
 // ═══════════════════════════════════════════════════════════
 // SAVE / UPDATE / EOQI  (cloud)
 // ═══════════════════════════════════════════════════════════
-// The whole report, photos included, is stored as one row. D1 rejects a row past a few
-// megabytes with SQLITE_TOOBIG, so the size is checked here -- a clear message beats a
-// failed save after a long inspection.
-const RECORD_SIZE_LIMIT=3.5*1024*1024;
+// Photos travel with the report and the server files each one separately, so the saved report
+// stays small. The upload itself still has a sensible ceiling -- a clear message beats a failed
+// save after a long inspection.
+const RECORD_SIZE_LIMIT=12*1024*1024;
 function recordSize(record){ return JSON.stringify(record).length; }
 function countPhotos(record){
   return (record.sections||[]).reduce((n,sec)=>n+(sec.items||[]).reduce((m,it)=>m+((it.photos||[]).length),0),0);
 }
 function tooLargeMessage(record){
   const mb=(recordSize(record)/1024/1024).toFixed(1);
-  return `This report is ${mb} MB — too large to save (limit is 3.5 MB).\n\n`+
+  return `This report is ${mb} MB — too large to save (limit is 12 MB).\n\n`+
     `It currently holds ${countPhotos(record)} photos. Remove a few of the largest ones and save again.`;
 }
 
@@ -4402,7 +4630,7 @@ updateScoreCardActionBar();
 {
   const initialPageId=hashToPage(location.hash);
   if(initialPageId==='pg-auditor') auId=hashParam(location.hash);
-  if(initialPageId==='pg-admin') adTab=['buildings','audit'].includes(hashParam(location.hash))?hashParam(location.hash):'users';
+  if(initialPageId==='pg-admin') adTab=['buildings','audit','backup'].includes(hashParam(location.hash))?hashParam(location.hash):'users';
   if(initialPageId==='pg-reports') rpTab=rpTabValid(hashParam(location.hash))?hashParam(location.hash):'insights';
   if(initialPageId!=='pg-home') nav(initialPageId);
   else updateTopBar('pg-home');
@@ -4439,7 +4667,6 @@ function initAuditorProfile(){
   sel.value=cur;
   sel.addEventListener('change',()=>loadAuditorProfile());
   document.getElementById('au-switch').addEventListener('change',e=>openAuditorProfile(e.target.value));
-  document.getElementById('au-refresh').addEventListener('click',()=>loadAuditorProfile());
   document.getElementById('au-back').addEventListener('click',()=>nav(document.getElementById('team-link').dataset.page));
   document.getElementById('au-reports').addEventListener('click',()=>auData&&openReportsForInspector(auData.auditor.name));
   document.getElementById('au-manage').addEventListener('click',()=>{
@@ -5168,7 +5395,6 @@ function initOfficer(){
   document.getElementById('of-division').addEventListener('change',()=>{ document.getElementById('of-area').value=''; ofSave(); renderOfficer(); });
   document.getElementById('of-search').addEventListener('input',()=>renderOfRows());
   ['of-area','of-status','of-auditor-filter'].forEach(id=>document.getElementById(id).addEventListener('change',()=>renderOfficer()));
-  document.getElementById('of-refresh').addEventListener('click',()=>loadOfficer());
 
   const toTable=()=>document.getElementById('of-table-section').scrollIntoView({behavior:'smooth',block:'start'});
   document.getElementById('of-stats').addEventListener('click',e=>{
@@ -6045,6 +6271,8 @@ function initLibrary(){
       if(form){ form.hidden=false; document.getElementById('rv-comment')?.focus(); e.target.closest('#rv-change').hidden=true; }
       return;
     }
+    const ver=e.target.closest('[data-ver]');
+    if(ver&&rvId){ openReportVersion(rvId,Number(ver.dataset.ver)); return; }
     const b=e.target.closest('[data-rv]');
     if(b) rvAction(b.dataset.rv);
     const img=e.target.closest('img[data-photo]');
@@ -6167,7 +6395,11 @@ function renderReportPanel(){
   ring.style.setProperty('--p',s.overall??0); ring.style.setProperty('--c',g?g.color:'#9fb3c8');
   document.getElementById('rv-score').textContent=s.overall??'–';
   document.getElementById('rv-grade').textContent=g?g.label:'—';
-  const canEdit=hasPerm('inspect')&&(s.own||currentUser?.role==='quality_admin');
+  const isAdmin=currentUser?.role==='quality_admin';
+  // An approved report is locked: only an administrator changes or removes it.
+  const locked=s.status==='approved'&&!isAdmin;
+  const canEdit=hasPerm('inspect')&&(s.own||isAdmin)&&!locked;
+  const canDelete=isAdmin||(hasPerm('delete')&&s.own&&!locked);
   // A decision is the report's state, not a button waiting to be pressed again. A plain comment never changes it.
   const decided=reviews.find(v=>v.decision!=='comment')||null;
   const mine=!!(decided&&currentUser&&decided.byId===currentUser.id);
@@ -6229,11 +6461,44 @@ function renderReportPanel(){
       ${hasPerm('export')?'<button class="btn bo" data-rv="print"><svg data-lucide="printer" width="15" height="15"></svg> Print report</button>':''}
       ${canEdit?'<button class="btn bo" data-rv="edit"><svg data-lucide="pencil" width="15" height="15"></svg> Edit report</button>':''}
       <button class="rp-link" data-rv="link"><svg data-lucide="link" width="14" height="14" style="vertical-align:-3px"></svg> Copy link</button>
-      ${hasPerm('delete')?'<button class="rp-link" data-rv="delete" style="color:var(--danger);margin-left:auto"><svg data-lucide="trash-2" width="14" height="14" style="vertical-align:-3px"></svg> Delete report</button>':''}
+      ${canDelete?'<button class="rp-link" data-rv="delete" style="color:var(--danger);margin-left:auto"><svg data-lucide="archive" width="14" height="14" style="vertical-align:-3px"></svg> Delete report</button>':''}
     </div>
+    ${locked&&s.own?'<p class="ad-note"><svg data-lucide="lock" width="14" height="14"></svg>Approved and locked. If something needs to change, ask an administrator.</p>':''}
     <section><h4>Checklist</h4>${sections||'<p class="ad-note">This report has no section scores (for example, imported trial data).</p>'}</section>
-    <section><h4>Review history</h4><ul class="ov-feed ad-log">${history}</ul></section>`;
+    <section><h4>Review history</h4><ul class="ov-feed ad-log">${history}</ul></section>
+    <section><h4>Version history <small class="rv-h4-note">every saved state is kept</small></h4><ul class="ov-feed ad-log" id="rv-versions"><li class="ov-empty" style="display:block">Loading…</li></ul></section>`;
   lucide.createIcons();
+  loadReportVersions(r.id);
+}
+const VERSION_WORDS={submitted:'submitted the report','before-history':'saved the report (before history was kept)',edited:'saved changes',deleted:'deleted the report — moved to the archive',restored:'restored it from the archive'};
+async function loadReportVersions(id){
+  const box=document.getElementById('rv-versions');
+  try{
+    const res=await fetch(`/api/inspections/${id}/versions`,{cache:'no-store'});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'Could not load the history.');
+    if(rvId!==id||!box.isConnected) return;
+    const list=d.versions||[];
+    box.innerHTML=list.length?list.map((v,i)=>{
+      const c=v.changes||{}, bits=[c.scores?`${c.scores} score${c.scores===1?'':'s'}`:'',c.comments?`${c.comments} comment${c.comments===1?'':'s'}`:'',c.photos?`photos on ${c.photos} item${c.photos===1?'':'s'}`:''].filter(Boolean);
+      const at=v.at?new Date(v.at.replace(' ','T')+'Z'):null;
+      return `<li><span class="dot" style="background:${v.reason==='deleted'?'var(--danger)':v.reason==='edited'?'var(--royal)':'var(--good)'}"><svg data-lucide="${v.reason==='edited'?'pencil':v.reason==='deleted'?'archive':v.reason==='restored'?'rotate-ccw':'file-check'}" width="12" height="12"></svg></span>
+        <div><b>Version ${v.version}${i===0?' · current':''}</b> — ${ovEsc(v.by||'Unknown')} ${VERSION_WORDS[v.reason]||v.reason}
+          <div class="ad-log-details">Score ${v.overall??'–'}${bits.length?' · changed '+bits.join(', '):''}</div>
+          <small>${at&&!isNaN(at)?at.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}${hasPerm('export')?` · <button class="rp-link" style="padding:0;min-height:0" data-ver="${v.version}">Open this version</button>`:''}</small></div></li>`;
+    }).join(''):'<li class="ov-empty" style="display:block">This report was saved before history was kept; its next change starts the record.</li>';
+    lucide.createIcons({nodes:[box]});
+  }catch(err){ if(box.isConnected) box.innerHTML=`<li class="ov-empty" style="display:block">${ovEsc(err.message)}</li>`; }
+}
+async function openReportVersion(id,version){
+  try{
+    const res=await fetch(`/api/inspections/${id}/versions/${version}`,{cache:'no-store'});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'Could not open that version.');
+    const r=d.record;
+    printInspectionReport({inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,type:r.type,typeLabel:r.typeLabel||r.type,overall:r.overall,approvedBy:'',
+      filename:`${(r.filename||`${r.date||'inspection'}_${r.type||'Inspection'}_${r.facility||'facility'}.pdf`).replace(/\.pdf$/i,'')}_v${version}.pdf`,sections:r.sections||[]});
+  }catch(err){ showToast(err.message,true); }
 }
 /**
  * A decision changes the report's status everywhere it is shown. The row in view takes the
@@ -6265,10 +6530,10 @@ async function rvAction(act){
   }
   if(act==='edit'){ closeReport(); return editInspection({stopPropagation(){}},r.id,r); }
   if(act==='delete'){
-    if(!confirm(`Delete the report for ${s.building} (${s.date})? This cannot be undone.`)) return;
+    if(!confirm(`Delete the report for ${s.building} (${s.date})?\n\nIt moves to the archive with all its versions and photos, and an administrator can restore it.`)) return;
     try{
       await dbDelete(r.id);
-      showToast('Report deleted'); closeReport();
+      showToast('Report moved to the archive'); closeReport();
       if(document.getElementById('pg-library').classList.contains('active')) loadLibrary();
       if(document.getElementById('pg-home').classList.contains('active')) loadHome();
       refreshReviewBadge(); rpData=null;
@@ -6306,7 +6571,6 @@ function schInit(){
   ['sch-quarter','sch-type','sch-auditor'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{
     if(id==='sch-auditor') renderSchedule(); else loadSchedule();
   }));
-  document.getElementById('sch-refresh').addEventListener('click',()=>loadSchedule());
 }
 async function loadSchedule(){
   schInit();
@@ -8501,7 +8765,7 @@ function adPermCatalog(){
   ];
 }
 function adPermLabel(key){ for(const [,items] of adPermCatalog()) for(const [k,l] of items) if(k===key) return l; return key; }
-function adTabLabel(tab){ return {users:'Users & Permissions',buildings:'Buildings',audit:'Audit Log'}[tab]||''; }
+function adTabLabel(tab){ return {users:'Users & Permissions',buildings:'Buildings',audit:'Audit Log',backup:'Backup & Archive'}[tab]||''; }
 
 function initAdmin(){
   if(adReady) return;
@@ -8575,13 +8839,116 @@ function initAdmin(){
   document.getElementById('ad-a-filter').addEventListener('click',e=>{ const c=e.target.closest('[data-v]'); if(c){ adAuditFilter=c.dataset.v; adRenderAudit(); } });
   document.getElementById('ad-a-search').addEventListener('input',adRenderAudit);
   document.getElementById('ad-a-more').addEventListener('click',()=>adLoadAudit({more:true}));
+  document.getElementById('ad-bk-run').addEventListener('click',adRunBackup);
+  document.getElementById('ad-bk-download').addEventListener('click',adDownloadBackup);
+  document.getElementById('ad-bk-status').addEventListener('click',e=>{ if(e.target.closest('#ad-bk-photos')) adMovePhotos(e.target.closest('#ad-bk-photos')); });
+  document.getElementById('ad-arch-rows').addEventListener('click',e=>{ const b=e.target.closest('[data-restore]'); if(b) adRestore(Number(b.dataset.restore),b); });
+}
+
+// ── Backup & archive ──
+function adBytes(n){ return n>=1e9?(n/1e9).toFixed(1)+' GB':n>=1e6?(n/1e6).toFixed(1)+' MB':n>=1e3?Math.round(n/1e3)+' KB':(n||0)+' B'; }
+async function adLoadBackup(){
+  try{
+    const [st,ar]=await Promise.all([adRequest('/api/admin/backup',{cache:'no-store'},'Could not read the backup status.'),adRequest('/api/admin/archive',{cache:'no-store'},'Could not read the archive.')]);
+    const c=st.counts||{}, last=st.last, ok=st.lastOk;
+    const tile=(icon,value,label,note)=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b>${value}</b><span>${label}</span>${note?`<small style="display:block;color:var(--muted);font-size:.72rem;margin-top:4px">${note}</small>`:''}</div>`;
+    document.getElementById('ad-bk-stats').innerHTML=
+      tile('file-text',c.reports??0,'Reports',`${c.archived??0} in the archive`)+
+      tile('history',c.versions??0,'Saved versions','every change kept')+
+      tile('image',c.photos??0,'Photos',adBytes(c.photoBytes))+
+      tile('scroll-text',c.auditRows??0,'Audit entries','who did what, and when');
+    const age=ok?Math.round((Date.now()-Date.parse(ok.finishedAt))/3600000):null;
+    const fresh=ok&&age<=30;
+    document.getElementById('ad-bk-status').innerHTML=!st.storage.backups
+      ?`<div class="sc-callout warn"><svg data-lucide="triangle-alert" width="17" height="17"></svg><div><b>Backup storage is not connected.</b> The database still keeps itself; nightly copies start once the storage is linked.</div></div>`
+      :ok?`<div class="sc-callout ${fresh?'ok':'warn'}"><svg data-lucide="${fresh?'circle-check':'triangle-alert'}" width="17" height="17"></svg><div><b>${fresh?'Backed up':'The last backup is more than a day old'}</b> — ${new Date(ok.finishedAt).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})} (${ok.trigger}).
+          ${ok.reports} reports, ${ok.archived} archived, ${ok.photos} photos on file.${ok.versionsWaiting?` ${ok.versionsWaiting} versions still to copy — the next run continues.`:''}
+          ${st.storage.photos?'<br><small>Photos are kept in photo storage (Cloudflare R2), built to keep files for good.</small>':`<br><small>Photos are kept inside the database (${adBytes(c.photoBytesInDb)} so far) and in the full copy you download. To keep years of photos, switch on Cloudflare R2 photo storage for this account.</small>`}</div></div>`
+      :`<div class="sc-callout warn"><svg data-lucide="clock" width="17" height="17"></svg><div><b>No backup has finished yet.</b> The first runs tonight at 02:30, or press “Back up now”.</div></div>`;
+    // reports saved before history began: their photos filed and their current state recorded as version 1
+    const older=Math.max(c.legacyReports||0,c.withoutHistory||0), dbPhotos=st.storage.photos&&c.photoBytesInDb>0;
+    if(older||dbPhotos) document.getElementById('ad-bk-status').innerHTML+=`<div class="sc-callout warn" style="margin-top:8px"><svg data-lucide="history" width="17" height="17"></svg><div><b>${older?`${older} report${older===1?' was':'s were'} saved before history began.`:'Some photos are still inside the database.'}</b> They are safe; bringing them in ${older?'records each one as version 1, files its photos, and adds it to the nightly backup':'moves them to photo storage'}. The nightly backup does a few at a time.<br><button class="ad-btn" type="button" id="ad-bk-photos" style="margin-top:8px"><svg data-lucide="history" width="13" height="13" style="vertical-align:-2px"></svg> Bring them in now</button></div></div>`;
+    if(last&&!last.ok) document.getElementById('ad-bk-status').innerHTML+=`<div class="sc-callout warn" style="margin-top:8px"><svg data-lucide="circle-x" width="17" height="17"></svg><div><b>The last attempt failed</b> (${ovEsc(last.finishedAt||'')}): ${ovEsc(last.error||'unknown error')}</div></div>`;
+    const rows=ar.reports||[];
+    document.getElementById('ad-arch-note').textContent=`${rows.length} report${rows.length===1?'':'s'}`;
+    document.getElementById('ad-arch-rows').innerHTML=rows.length?rows.map(x=>`<tr>
+      <td><b>${ovEsc(x.building)}</b><small>${ovEsc(x.division||'')}</small></td>
+      <td>${ovEsc(x.type||'—')}<small>${ovEsc(x.date||'')}</small></td>
+      <td>${ovEsc(x.auditor||'—')}</td><td>${ovScore(x.overall)}</td>
+      <td>${ovEsc(x.deletedBy||'—')}<small>${x.deletedAt?new Date(x.deletedAt.replace(' ','T')+'Z').toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}</small></td>
+      <td><button class="ad-btn" data-restore="${x.id}"><svg data-lucide="rotate-ccw" width="13" height="13" style="vertical-align:-2px"></svg> Restore</button></td></tr>`).join('')
+      :'<tr><td colspan="6" class="ov-empty">No deleted reports. Anything deleted appears here and can be restored.</td></tr>';
+    lucide.createIcons({nodes:[document.getElementById('ad-backup')]});
+  }catch(err){ showToast(err.message,true); }
+}
+async function adRunBackup(){
+  const b=document.getElementById('ad-bk-run'); b.disabled=true;
+  try{ const r=await adRequest('/api/admin/backup/run',{method:'POST'},'The backup did not finish.'); showToast(`Backup finished in ${r.seconds}s`); }
+  catch(err){ showToast(err.message,true); }
+  finally{ b.disabled=false; adLoadBackup(); }
+}
+async function adMovePhotos(btn){
+  btn.disabled=true; let prev=Infinity, versions=0;
+  try{
+    for(;;){
+      const r=await adRequest('/api/admin/maintenance/photos',{method:'POST'},'Could not bring the older reports in.');
+      versions+=r.baselines; const left=r.reportsLeft+r.photosInDatabase;
+      btn.textContent=`Working… ${left} left`;
+      if(!left&&!r.baselines) break;
+      if(left>=prev&&!r.baselines&&!r.moved&&!r.toStorage) break;       // nothing moved: stop rather than loop
+      prev=left;
+    }
+    showToast(`Done — ${versions} report${versions===1?'':'s'} added to the history`);
+  }catch(err){ showToast(err.message,true); }
+  adLoadBackup();
+}
+async function adRestore(id,btn){
+  if(!confirm('Put this report back where it was? It returns with all its versions, reviews and photos.')) return;
+  btn.disabled=true;
+  try{ await adRequest(`/api/admin/archive/${id}/restore`,{method:'POST'},'Could not restore the report.'); showToast('Report restored'); rpData=null; }
+  catch(err){ showToast(err.message,true); }
+  adLoadBackup();
+}
+/** The full copy: every table, page by page, written as SQL that loads straight back into
+ *  a database made from the same migrations (npx wrangler d1 execute <db> --file <this file>). */
+async function adDownloadBackup(){
+  const btn=document.getElementById('ad-bk-download'), box=document.getElementById('ad-bk-progress'), bar=document.getElementById('ad-bk-bar'), note=document.getElementById('ad-bk-note');
+  const tables=['buildings','qa_users','assignments','inspections','inspection_versions','inspection_archive','inspection_reviews','photo_blobs','notifications','saved_reports','audit_log','system_state'];
+  const q=v=>v==null?'NULL':typeof v==='number'?String(v):`'${String(v).replace(/'/g,"''")}'`;
+  const parts=[`-- Facility Experience QA — full copy, ${new Date().toISOString()}\n-- Load into a database built from the same migrations:\n--   npx wrangler d1 execute <database> --remote --file <this file>\nPRAGMA defer_foreign_keys = ON;\n`];
+  btn.disabled=true; box.hidden=false; bar.style.width='0%';
+  try{
+    for(let t=0;t<tables.length;t++){
+      const table=tables[t]; let after='', done=0, total=null, first=true;
+      parts.push(`\n-- ${table}\n`);
+      for(;;){
+        const d=await adRequest(`/api/admin/export?table=${table}&after=${encodeURIComponent(after)}${t===0&&first?'&start=1':''}`,{cache:'no-store'},`Could not read ${table}.`);
+        first=false; total=d.total;
+        for(const row of d.rows){ const cols=Object.keys(row); parts.push(`INSERT OR REPLACE INTO ${table} (${cols.join(', ')}) VALUES (${cols.map(k=>q(row[k])).join(', ')});\n`); }
+        done+=d.rows.length;
+        note.textContent=`${table}: ${done} of ${total}`;
+        bar.style.width=Math.round(((t+(total?done/total:1))/tables.length)*100)+'%';
+        if(d.next==null) break;
+        after=d.next;
+      }
+    }
+    const blob=new Blob(parts,{type:'application/sql'}), name=`facility-qa-full-copy-${new Date().toISOString().slice(0,10)}.sql`;
+    bar.style.width='100%';
+    // Building the copy takes a while, and browsers drop a download that no longer follows a tap:
+    // the file is saved from its own button.
+    note.innerHTML=`Ready — ${adBytes(blob.size)}. <button class="ad-btn" type="button" id="ad-bk-save"><svg data-lucide="download" width="13" height="13" style="vertical-align:-2px"></svg> Save the file</button> Keep it somewhere safe.`;
+    lucide.createIcons({nodes:[note]});
+    document.getElementById('ad-bk-save').onclick=()=>exDownload(name,blob);
+  }catch(err){ note.textContent=err.message; showToast(err.message,true); }
+  finally{ btn.disabled=false; }
 }
 
 async function loadAdmin(){
   initAdmin();
   document.querySelectorAll('#ad-tabs [data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===adTab));
-  ['users','buildings','audit'].forEach(t=>{ document.getElementById('ad-'+t).hidden=t!==adTab; });
+  ['users','buildings','audit','backup'].forEach(t=>{ document.getElementById('ad-'+t).hidden=t!==adTab; });
   updateTopBar('pg-admin');
+  if(adTab==='backup') return adLoadBackup();
   if(adTab==='buildings') return adLoadBuildings();
   if(adTab==='audit') return adLoadAudit();
   return adLoadUsers();
@@ -8662,6 +9029,7 @@ function adToggleCreate(open){
     document.getElementById('ad-form').reset();
     document.getElementById('ad-msg').hidden=true;
     adRenderNewPerms();
+    const pw=document.getElementById('ad-password'); pw.value=makeTempPassword(); pw.dispatchEvent(new Event('input'));
     document.getElementById('ad-name').focus();
   }
 }
@@ -8673,7 +9041,10 @@ function adRenderNewPerms(){
 async function adCreate(e){
   e.preventDefault();
   const submit=document.getElementById('ad-submit'), msg=document.getElementById('ad-msg');
-  msg.hidden=true; submit.disabled=true;
+  msg.hidden=true;
+  const weak=pwProblem(document.getElementById('ad-password').value);
+  if(weak){ msg.textContent='Temporary password: '+weak; msg.className='ad-msg err'; msg.hidden=false; return; }
+  submit.disabled=true;
   try{
     const name=document.getElementById('ad-name').value.trim();
     await adRequest('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
@@ -8744,8 +9115,10 @@ async function adPost(url,done){
   await adLoadUsers();
 }
 async function adResetPassword(u){
-  const pw=prompt(`New temporary password for ${u.name} (at least 8 characters). They will be signed out and must choose a new one:`);
+  const pw=prompt(`New temporary password for ${u.name}. A strong one is filled in — keep it or type your own (8+ characters, uppercase, lowercase and a symbol). They will be signed out and must choose their own:`,makeTempPassword());
   if(!pw) return;
+  const weak=pwProblem(pw);
+  if(weak){ showToast(weak,true); return; }
   try{
     await adRequest(`/api/admin/users/${encodeURIComponent(u.id)}/reset-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})},'Could not reset the password.');
     showToast(`Temporary password set for ${u.name}`);
@@ -8793,19 +9166,28 @@ function adRenderBuildings(){
       </td></tr>`).join(''):'<tr><td colspan="5" class="ov-empty">No buildings match.</td></tr>';
   lucide.createIcons();
 }
+let adBuildingCombos=null;
 function adOpenBuilding(b){
   adEditingBuilding=b;
   const list=adBuildings||[];
-  const opts=key=>[...new Set(list.map(x=>x[key]))].sort().map(v=>`<option value="${ovEsc(v)}">`).join('');
-  document.getElementById('mb-divisions').innerHTML=opts('division');
-  document.getElementById('mb-areas').innerHTML=opts('area');
-  document.getElementById('mb-locations').innerHTML=opts('location');
+  if(!adBuildingCombos){
+    // each list offers what is already in use; areas and locations follow the division typed above
+    const uniq=(key,keep=()=>true)=>[...new Set((adBuildings||[]).filter(keep).map(x=>x[key]).filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(v=>({value:v}));
+    const inDiv=x=>{ const d=document.getElementById('mb-division').value.trim().toLowerCase(); return !d||String(x.division).toLowerCase()===d; };
+    adBuildingCombos=[
+      makeCombo(document.getElementById('mb-division'),{options:()=>uniq('division')}),
+      makeCombo(document.getElementById('mb-area'),{options:()=>{ const o=uniq('area',inDiv); return o.length?o:uniq('area'); }}),
+      makeCombo(document.getElementById('mb-location'),{options:()=>{ const o=uniq('location',inDiv); return o.length?o:uniq('location'); }}),
+    ];
+  }
   document.getElementById('mb-title').textContent=b?'Edit building':'Add building';
   document.getElementById('mb-sub').textContent=b
     ?'Renaming a building also changes how older, unassigned inspections are matched to it in Reports.'
     :'New buildings can be assigned right away in Assign & Track.';
   ['name','division','area','location'].forEach(k=>{ document.getElementById('mb-'+k).value=b?b[k]:''; });
   document.getElementById('mb-msg').style.display='none';
+  adBuildingCombos.forEach(c=>c.close());
   document.getElementById('modal-building').classList.add('open');
   document.getElementById('mb-name').focus();
 }
@@ -8949,13 +9331,35 @@ document.getElementById('acct-settings').addEventListener('click',()=>{
   document.getElementById('modal-change-pw').classList.add('open');
 });
 document.getElementById('modal-change-pw').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-change-pw');});
+/* The password rule, the same one the server enforces: 8+ characters, an uppercase letter,
+   a lowercase letter and a symbol. */
+const PW_RULES={len:p=>p.length>=8,upper:p=>/[A-Z]/.test(p),lower:p=>/[a-z]/.test(p),symbol:p=>/[^A-Za-z0-9]/.test(p)};
+function pwProblem(p){
+  const miss=[]; if(!PW_RULES.len(p)) miss.push('at least 8 characters'); if(!PW_RULES.upper(p)) miss.push('an uppercase letter');
+  if(!PW_RULES.lower(p)) miss.push('a lowercase letter'); if(!PW_RULES.symbol(p)) miss.push('a symbol');
+  return miss.length?`Password needs ${miss.join(', ')}.`:null;
+}
+function makeTempPassword(){
+  const sets=['ABCDEFGHJKLMNPQRSTUVWXYZ','abcdefghijkmnpqrstuvwxyz','23456789','!@#$%&*?'], all=sets.join(''), r=n=>crypto.getRandomValues(new Uint32Array(1))[0]%n;
+  const chars=sets.map(set=>set[r(set.length)]); while(chars.length<12) chars.push(all[r(all.length)]);
+  for(let i=chars.length-1;i>0;i--){ const j=r(i+1); [chars[i],chars[j]]=[chars[j],chars[i]]; }
+  return chars.join('');
+}
+document.querySelectorAll('.pw-rules').forEach(list=>{
+  const input=document.getElementById(list.dataset.for); if(!input) return;
+  const paint=()=>list.querySelectorAll('[data-rule]').forEach(li=>li.classList.toggle('ok',PW_RULES[li.dataset.rule](input.value)));
+  input.addEventListener('input',paint); input.addEventListener('change',paint); paint();
+});
+document.getElementById('ad-gen')?.addEventListener('click',()=>{ const i=document.getElementById('ad-password'); i.value=makeTempPassword(); i.dispatchEvent(new Event('input')); });
+
 async function submitChangePassword(){
   const current=document.getElementById('pw-current').value;
   const next=document.getElementById('pw-new').value;
   const confirm=document.getElementById('pw-confirm').value;
   const msg=document.getElementById('pw-msg');
   msg.style.display='none';
-  if(next.length<8){ msg.textContent='New password must be at least 8 characters.'; msg.style.display='block'; return; }
+  const weak=pwProblem(next);
+  if(weak){ msg.textContent=weak; msg.style.display='block'; return; }
   if(next!==confirm){ msg.textContent='New passwords do not match.'; msg.style.display='block'; return; }
   try{
     const res=await fetch('/api/auth/change-password',{
@@ -8966,7 +9370,8 @@ async function submitChangePassword(){
     const data=await res.json();
     if(!res.ok) throw new Error(data.error||'Could not update password.');
     closeModal('modal-change-pw');
-    alert('Password updated successfully.');
+    ['pw-current','pw-new','pw-confirm'].forEach(id=>{ document.getElementById(id).value=''; });
+    showToast(data.signedOutElsewhere?`Password updated — ${data.signedOutElsewhere} other device${data.signedOutElsewhere===1?' was':'s were'} signed out`:'Password updated');
   }catch(err){
     msg.textContent=err.message;
     msg.style.display='block';

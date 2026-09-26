@@ -7,6 +7,7 @@ import {
   hashPassword, verifyPassword, createSession, destroySession, getUserFromRequest,
   readCookie, sessionCookieHeader, clearCookieHeader, isLocked,
   registerFailedAttempt, clearFailedAttempts, SESSION_COOKIE, MAX_FAILED_ATTEMPTS,
+  passwordProblem, revokeSessions, sha256Hex,
 } from './auth.js';
 
 // API answers describe live data, so no browser may keep a copy — Safari in particular will
@@ -37,9 +38,36 @@ function rowToRecord(row) {
 }
 
 /** Front-end record -> column values */
+/** The score is worked out here from the answers, the same way the form does, so a saved
+ *  report's score always matches its items. Sections marked '02' score 0 or 2 per item. */
+const TWO_POINT_SECTIONS = new Set(['food & concession', 'miscellaneous']);
+function scoreReport(body) {
+  if (!Array.isArray(body?.sections) || !body.sections.length) return { overall: null };
+  let total = 0;
+  for (const sec of body.sections) {
+    if (!sec || typeof sec !== 'object' || !Array.isArray(sec.items)) return { error: 'a section of this report could not be read' };
+    const perItem = sec.mode === '02' || (sec.mode !== '01' && TWO_POINT_SECTIONS.has(normName(sec.title))) ? 2 : 1;
+    const max = Number(sec.max) > 0 ? Number(sec.max) : 10;
+    let sum = 0;
+    for (const it of sec.items) {
+      const v = it && typeof it === 'object' ? it.score : null;
+      if (v == null) continue;
+      if (!Number.isInteger(v) || v < 0 || v > perItem) return { error: `“${String(sec.title || 'a section')}” has a score that is not allowed` };
+      sum += v;
+    }
+    const raw = sec.items.length * perItem;
+    sec.score = raw ? Math.round((sum / raw) * max * 10) / 10 : 0;
+    total += sec.score;
+  }
+  return { overall: Math.round(total) };
+}
+
 function recordToRow(rec) {
   const { id, inspector, facility, division, date, type, typeLabel,
-          overall, filename, ...rest } = rec;
+          overall: sentOverall, filename, ...rest } = rec;
+  const scored = rest.trialImport ? { overall: sentOverall ?? null } : scoreReport(rest);
+  if (scored.error) return { error: scored.error };
+  const overall = scored.overall ?? sentOverall;
   return {
     id,
     inspector: inspector ?? '',
@@ -51,47 +79,213 @@ function recordToRow(rec) {
     overall: overall ?? null,
     filename: filename ?? '',
     data: JSON.stringify(rest ?? {}),
+    body: rest ?? {},
   };
 }
 
-async function listInspections(env, limit = 500) {
-  const { results } = await env.DB
-    .prepare('SELECT * FROM inspections ORDER BY id DESC LIMIT ?1')
-    .bind(limit)
-    .all();
-  return (results || []).map(rowToRecord);
-}
 
 // Selecting a record's assignment without breaking on a row whose JSON is invalid.
 const AID_SQL = "CASE WHEN json_valid(data) THEN CAST(json_extract(data, '$.assignmentId') AS INTEGER) END";
 
 async function insertInspection(env, user, rec) {
   const r = recordToRow(rec);
-  if (r.id == null || !Number.isSafeInteger(Number(r.id))) return fail('id is required', 400);
+  if (r.error) return fail(r.error, 400);
+  if (r.id == null || !Number.isSafeInteger(Number(r.id)) || Number(r.id) <= 0) return fail('id is required', 400);
   const assignmentId = Number(rec?.assignmentId) > 0 ? Number(rec.assignmentId) : null;
 
   // The same submission arriving twice (a double tap, a retried request) is kept once.
   const same = await env.DB.prepare('SELECT id FROM inspections WHERE id = ?1').bind(r.id).first();
   if (same) return json({ ok: true, id: r.id, alreadySaved: true });
+  const archived = await env.DB.prepare('SELECT id FROM inspection_archive WHERE id = ?1').bind(r.id).first();
+  if (archived) return fail('this report number belongs to an archived report — start a new inspection', 409);
+
+  // Who the report belongs to comes from the session, never from the form: an auditor always
+  // files under their own account. Only an administrator may record it for someone else.
+  const who = await reportOwner(env, user, r.inspector);
+  r.inspector = who.name;
+
+  if (assignmentId) {
+    const asg = await env.DB.prepare('SELECT auditor_id FROM assignments WHERE id = ?1').bind(assignmentId).first();
+    if (!asg) return fail('that assignment no longer exists — reopen it from My Assignments', 400);
+    if (user.role !== ADMIN_ROLE && asg.auditor_id !== user.id) return fail('this building is assigned to someone else', 403);
+  }
 
   const existing = await findExistingSubmission(env, r, assignmentId, null);
   if (existing) return json({ error: duplicateMessage(existing), existing }, 409);
 
+  const stored = await storeReportPhotos(env, r.body, Number(r.id));
+  if (stored.error) return fail(stored.error, 400);
+  r.data = stored.data;
+
   try {
     await env.DB.prepare(
       `INSERT INTO inspections
-         (id, inspector, facility, division, date, type, type_label, overall, filename, data)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`
+         (id, inspector, facility, division, date, type, type_label, overall, filename, data, inspector_id, created_by)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`
     ).bind(r.id, r.inspector, r.facility, r.division, r.date,
-           r.type, r.type_label, r.overall, r.filename, r.data).run();
+           r.type, r.type_label, r.overall, r.filename, r.data, who.id, user.id).run();
   } catch (err) {
     if (/UNIQUE|PRIMARY KEY/i.test(String(err?.message))) return json({ ok: true, id: r.id, alreadySaved: true });
     throw err;
   }
 
+  await saveVersion(env, Number(r.id), 'submitted', user, { ...r, inspector_id: who.id });
+  await audit(env, user, 'inspection.create', String(r.id), `${r.facility} · ${r.date}${r.type ? ' ' + r.type : ''}`,
+    `Submitted${who.id !== user.id ? ` for ${who.name}` : ''} · score ${r.overall ?? '–'}`);
   await notifySubmission(env, user, r, assignmentId);
   return json({ ok: true, id: r.id }, 201);
 }
+
+/** The account a report is filed under. Non-admins: always themselves. Admins: the active
+ *  account whose name they chose, or themselves. */
+async function reportOwner(env, user, requestedName) {
+  if (user.role !== ADMIN_ROLE) return { id: user.id, name: user.name };
+  const wanted = normName(requestedName);
+  if (!wanted || wanted === normName(user.name)) return { id: user.id, name: user.name };
+  const { results } = await env.DB.prepare("SELECT id, name FROM qa_users WHERE status = 'active'").all();
+  const match = (results || []).filter((u) => normName(u.name) === wanted);
+  return match.length === 1 ? { id: match[0].id, name: match[0].name } : { id: null, name: String(requestedName).trim().slice(0, 120) };
+}
+
+/* ── Photos: stored once each, by content ────────────────────────────────────────────
+ * A report arrives with its photos inline (data: URLs straight from the camera). Each photo
+ * is checked (JPEG, PNG, WebP or HEIC only — never SVG, which can carry script), stored once
+ * under the SHA-256 of its contents, and replaced in the report by its address. The same photo
+ * in ten versions of a report is stored one time, reports stay small, and nothing the app does
+ * ever deletes a photo. */
+const PHOTO_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+const PHOTO_ADDR = /^\/api\/photos\/([0-9a-f]{64})$/;
+const MAX_PHOTO_BASE64 = 1_900_000; // ~1.4 MB of image, under D1's 2 MB row limit; the app sends ~0.2–0.6 MB JPEGs
+
+const b64ToBytes = (b64) => { const bin = atob(b64), out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i += 1) out[i] = bin.charCodeAt(i); return out; };
+function bytesToB64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+const photoKey = (sha) => `photos/${sha}`;
+
+/** Takes the report body (object or JSON text), files new photos, returns the body with addresses.
+ *  With photo storage (R2, binding PHOTOS) switched on, the image goes there and the database
+ *  keeps only its record; without it, the database keeps the image too. */
+async function storeReportPhotos(env, body, inspectionId) {
+  let data = body;
+  if (typeof body === 'string' || body == null) {
+    try { data = JSON.parse(body || '{}'); } catch { return { error: 'the report could not be read' }; }
+  }
+  const fresh = new Map(), refs = new Set();
+  for (const sec of Array.isArray(data.sections) ? data.sections : []) {
+    for (const item of Array.isArray(sec?.items) ? sec.items : []) {
+      if (!item || typeof item !== 'object' || !Array.isArray(item.photos)) continue;
+      const out = [];
+      for (const p of item.photos) {
+        if (typeof p !== 'string') return { error: 'a photo in this report could not be read' };
+        const inline = /^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/i.exec(p);
+        if (inline) {
+          let mime = inline[1].toLowerCase();
+          if (mime === 'image/jpg') mime = 'image/jpeg';
+          if (!PHOTO_MIME.has(mime)) return { error: `photos must be JPEG, PNG, WebP or HEIC (one is ${mime})` };
+          const b64 = inline[2].replace(/\s+/g, '');
+          if (b64.length > MAX_PHOTO_BASE64) return { error: 'one photo is larger than 1.4 MB — take it again or choose a smaller one' };
+          const sha = await sha256Hex(b64);
+          fresh.set(sha, { mime, b64 });
+          out.push(`/api/photos/${sha}`);
+          continue;
+        }
+        const addr = PHOTO_ADDR.exec(p);
+        if (addr) { refs.add(addr[1]); out.push(p); continue; }
+        return { error: 'a photo in this report is not in a supported format' };
+      }
+      item.photos = out;
+    }
+  }
+  if (fresh.size) {
+    // a photo already on file (the same picture saved twice) is not stored again
+    const { results } = await env.DB.prepare('SELECT id FROM photo_blobs WHERE id IN (SELECT value FROM json_each(?1))')
+      .bind(JSON.stringify([...fresh.keys()])).all();
+    for (const x of results || []) fresh.delete(x.id);
+  }
+  const stmts = [];
+  for (const [sha, { mime, b64 }] of fresh) {
+    let kept = b64;
+    if (env.PHOTOS) { await env.PHOTOS.put(photoKey(sha), b64ToBytes(b64), { httpMetadata: { contentType: mime } }); kept = ''; }
+    stmts.push(env.DB.prepare('INSERT OR IGNORE INTO photo_blobs (id, mime, bytes, data, first_inspection_id) VALUES (?1, ?2, ?3, ?4, ?5)')
+      .bind(sha, mime, Math.floor(b64.length * 3 / 4), kept, inspectionId || null));
+  }
+  for (let i = 0; i < stmts.length; i += 10) await env.DB.batch(stmts.slice(i, i + 10));
+  const known = [...refs].filter((sha) => !fresh.has(sha));
+  if (known.length) {
+    const { results } = await env.DB.prepare('SELECT id FROM photo_blobs WHERE id IN (SELECT value FROM json_each(?1))')
+      .bind(JSON.stringify(known)).all();
+    const have = new Set((results || []).map((x) => x.id));
+    if (known.some((sha) => !have.has(sha))) return { error: 'a photo in this report is missing — add it again' };
+  }
+  return { data: JSON.stringify(data), stored: fresh.size };
+}
+
+async function servePhoto(env, sha) {
+  if (!/^[0-9a-f]{64}$/.test(sha)) return fail('not found', 404);
+  const row = await env.DB.prepare('SELECT mime, data FROM photo_blobs WHERE id = ?1').bind(sha).first();
+  if (!row) return fail('not found', 404);
+  let body;
+  if (row.data) body = b64ToBytes(row.data);
+  else {
+    const obj = env.PHOTOS ? await env.PHOTOS.get(photoKey(sha)) : null;
+    if (!obj) return fail('this photo is in photo storage, which is not connected', 503);
+    body = obj.body;
+  }
+  return new Response(body, { headers: {
+    'Content-Type': PHOTO_MIME.has(row.mime) ? row.mime : 'application/octet-stream',
+    'Cache-Control': 'private, max-age=31536000, immutable',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Security-Policy': "default-src 'none'; sandbox",
+  } });
+}
+
+/* ── History: every saved state of a report, numbered ───────────────────────────────── */
+async function saveVersion(env, id, reason, user, r, savedAt = null) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { v } = await env.DB.prepare('SELECT COALESCE(MAX(version), 0) AS v FROM inspection_versions WHERE inspection_id = ?1').bind(id).first();
+    try {
+      await env.DB.prepare(
+        `INSERT INTO inspection_versions
+           (inspection_id, version, reason, inspector, inspector_id, facility, division, date, type, type_label, overall, filename, data, saved_by_id, saved_by_name, saved_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, COALESCE(?16, datetime('now')))`,
+      ).bind(id, v + 1, reason, r.inspector ?? '', r.inspector_id ?? null, r.facility ?? '', r.division ?? '', r.date ?? '',
+        r.type ?? '', r.type_label ?? '', r.overall ?? null, r.filename ?? '', r.data || '{}',
+        user?.id ?? null, user?.name ?? null, savedAt).run();
+      return v + 1;
+    } catch (err) {
+      if (!/UNIQUE/i.test(String(err?.message))) throw err;       // two saves at once: take the next number
+    }
+  }
+  return null;
+}
+
+/** Every report saved before history existed gets its current state recorded as version 1, in
+ *  one statement. Reports that still carry photos inline wait until those photos are filed. */
+async function recordBaselines(env) {
+  const res = await env.DB.prepare(
+    `INSERT OR IGNORE INTO inspection_versions
+       (inspection_id, version, reason, inspector, inspector_id, facility, division, date, type, type_label, overall, filename, data, saved_by_id, saved_by_name, saved_at)
+     SELECT id, 1, 'before-history', inspector, inspector_id, facility, division, date, type, type_label, overall, filename, data,
+            inspector_id, inspector, COALESCE(updated_at, created_at, datetime('now'))
+     FROM inspections i
+     WHERE instr(i.data, '"data:image/') = 0 AND NOT EXISTS (SELECT 1 FROM inspection_versions v WHERE v.inspection_id = i.id)
+     LIMIT 1000`,
+  ).run();
+  return res.meta?.changes || 0;
+}
+
+/** Reports saved before history existed get their current state recorded as version 1 the
+ *  first time anything happens to them, so the first change is never the first thing on file. */
+async function ensureFirstVersion(env, row) {
+  const has = await env.DB.prepare('SELECT 1 AS x FROM inspection_versions WHERE inspection_id = ?1 LIMIT 1').bind(row.id).first();
+  if (has) return;
+  const stored = await storeReportPhotos(env, row.data, row.id);
+  if (stored.data && stored.data !== row.data) {
+    await env.DB.prepare('UPDATE inspections SET data = ?2 WHERE id = ?1').bind(row.id, stored.data).run();
+    row.data = stored.data;
+  }
+  await saveVersion(env, row.id, 'before-history', { id: row.inspector_id || null, name: row.inspector || null }, row, row.updated_at || row.created_at);
+}
+
 
 /** A report already on file for the same assignment, or for the same building, type and quarter
  *  (one BOQI and one EOQI per building each quarter). Imported trial scores never block a real report. */
@@ -156,28 +350,43 @@ async function notifySubmission(env, user, r, assignmentId) {
 }
 
 async function updateInspection(env, user, id, rec) {
-  const row = await env.DB.prepare(
-    `SELECT id, inspector, facility, division, date, type, type_label, overall, created_at, updated_at, ${AID_SQL} AS aid FROM inspections WHERE id = ?1`,
-  ).bind(id).first();
+  const row = await env.DB.prepare('SELECT * FROM inspections WHERE id = ?1').bind(id).first();
   if (!row) return fail('record not found', 404);
   const ctx = await libraryContext(env);
-  const before = libraryRow(row, ctx);
+  const before = libraryRow({ ...row, aid: jsonAid(row.data) }, ctx);
   if (user.role !== ADMIN_ROLE && !isOwnReport(user, before)) return fail('you can only edit your own reports', 403);
+  if (user.role !== ADMIN_ROLE && before.status === 'approved') {
+    return fail('this report is approved and locked — ask an administrator if it needs to change', 403);
+  }
 
   const r = recordToRow(rec);
+  if (r.error) return fail(r.error, 400);
+  // The owner never changes on an edit, except when an administrator says so.
+  let ownerId = row.inspector_id || null;
+  if (user.role === ADMIN_ROLE) { const who = await reportOwner(env, user, r.inspector); r.inspector = who.name; ownerId = who.id ?? ownerId; }
+  else r.inspector = row.inspector;
   const assignmentId = Number(rec?.assignmentId) > 0 ? Number(rec.assignmentId) : null;
   const existing = await findExistingSubmission(env, r, assignmentId, id);
   if (existing) return json({ error: duplicateMessage(existing), existing }, 409);
+
+  const stored = await storeReportPhotos(env, r.body, id);
+  if (stored.error) return fail(stored.error, 400);
+  r.data = stored.data;
+  await ensureFirstVersion(env, row);
 
   const res = await env.DB.prepare(
     `UPDATE inspections SET
        inspector = ?2, facility = ?3, division = ?4, date = ?5,
        type = ?6, type_label = ?7, overall = ?8, filename = ?9,
-       data = ?10, updated_at = datetime('now')
+       data = ?10, inspector_id = ?11, updated_at = datetime('now')
      WHERE id = ?1`
   ).bind(id, r.inspector, r.facility, r.division, r.date,
-         r.type, r.type_label, r.overall, r.filename, r.data).run();
+         r.type, r.type_label, r.overall, r.filename, r.data, ownerId).run();
   if (!res.meta.changes) return fail('record not found', 404);
+
+  const version = await saveVersion(env, id, 'edited', user, { ...r, inspector_id: ownerId });
+  const moved = typeof row.overall === 'number' && typeof r.overall === 'number' && row.overall !== r.overall ? ` · score ${row.overall} → ${r.overall}` : '';
+  await audit(env, user, 'inspection.update', String(id), `${r.facility} · ${r.date}${r.type ? ' ' + r.type : ''}`, `Saved as version ${version}${moved}`);
 
   // The first save after "changes requested" tells that reviewer the report is ready again.
   const decision = ctx.decision.get(id);
@@ -186,17 +395,300 @@ async function updateInspection(env, user, id, rec) {
     await notify(env, decision.reviewer_id, 'resubmission', `Updated for review: ${before.building}`,
       `${user.name} made the requested changes${before.type ? ` to the ${before.type}` : ''}. Ready to review again.`, `#pg-library/${id}`);
   }
+  return json({ ok: true, id, version });
+}
+
+const jsonAid = (text) => { try { const a = JSON.parse(text || '{}').assignmentId; return a == null ? null : Number(a); } catch { return null; } };
+
+/** Deleting never destroys a report: it moves to the archive, with every version, review and
+ *  photo still on file, and an administrator can put it back. */
+async function deleteInspection(env, user, id) {
+  const row = await env.DB.prepare('SELECT * FROM inspections WHERE id = ?1').bind(id).first();
+  if (!row) return fail('record not found', 404);
+  if (user.role !== ADMIN_ROLE) {
+    const ctx = await libraryContext(env);
+    const summary = libraryRow({ ...row, aid: jsonAid(row.data) }, ctx);
+    if (!isOwnReport(user, summary)) return fail('you can only delete your own reports — an administrator can remove others', 403);
+    if (summary.status === 'approved') return fail('this report is approved and locked — ask an administrator', 403);
+  }
+  await ensureFirstVersion(env, row);
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT OR REPLACE INTO inspection_archive
+         (id, inspector, inspector_id, facility, division, date, type, type_label, overall, filename, data, created_by, created_at, updated_at, deleted_by_id, deleted_by_name)
+       SELECT id, inspector, inspector_id, facility, division, date, type, type_label, overall, filename, data, created_by, created_at, updated_at, ?2, ?3
+       FROM inspections WHERE id = ?1`,
+    ).bind(id, user.id, user.name),
+    env.DB.prepare('DELETE FROM inspections WHERE id = ?1').bind(id),
+  ]);
+  await saveVersion(env, id, 'deleted', user, row);
+  await audit(env, user, 'inspection.delete', String(id), `${row.facility} · ${row.date}`,
+    `Moved to the archive · inspection by ${row.inspector}`);
+  return json({ ok: true, id, archived: true });
+}
+
+async function restoreInspection(env, user, id) {
+  const row = await env.DB.prepare('SELECT * FROM inspection_archive WHERE id = ?1').bind(id).first();
+  if (!row) return fail('that report is not in the archive', 404);
+  const live = await env.DB.prepare('SELECT id FROM inspections WHERE id = ?1').bind(id).first();
+  if (live) return fail('a report with this number is already live', 409);
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO inspections (id, inspector, inspector_id, facility, division, date, type, type_label, overall, filename, data, created_by, created_at, updated_at)
+       SELECT id, inspector, inspector_id, facility, division, date, type, type_label, overall, filename, data, created_by, created_at, updated_at
+       FROM inspection_archive WHERE id = ?1`,
+    ).bind(id),
+    env.DB.prepare('DELETE FROM inspection_archive WHERE id = ?1').bind(id),
+  ]);
+  await saveVersion(env, id, 'restored', user, row);
+  await audit(env, user, 'inspection.restore', String(id), `${row.facility} · ${row.date}`, `Restored from the archive (deleted by ${row.deleted_by_name || 'unknown'} on ${row.deleted_at})`);
   return json({ ok: true, id });
 }
 
-async function deleteInspection(env, user, id) {
-  const row = await env.DB.prepare('SELECT facility, date, inspector FROM inspections WHERE id = ?1').bind(id).first();
-  const res = await env.DB.prepare('DELETE FROM inspections WHERE id = ?1').bind(id).run();
-  if (!res.meta.changes) return fail('record not found', 404);
-  await env.DB.prepare('DELETE FROM inspection_reviews WHERE inspection_id = ?1').bind(id).run();
-  await audit(env, user, 'inspection.delete', String(id), row ? `${row.facility} · ${row.date}` : `#${id}`,
-    row ? `Inspection by ${row.inspector}` : null);
-  return json({ ok: true, id });
+async function listArchive(env) {
+  const { results } = await env.DB.prepare(
+    `SELECT id, inspector, facility, division, date, type, overall, deleted_at, deleted_by_name,
+            (SELECT COUNT(*) FROM inspection_versions v WHERE v.inspection_id = a.id) AS versions
+     FROM inspection_archive a ORDER BY deleted_at DESC LIMIT 500`,
+  ).all();
+  return json({ reports: (results || []).map((x) => ({ id: x.id, auditor: x.inspector, building: x.facility, division: x.division,
+    date: x.date, type: x.type, overall: x.overall, deletedAt: x.deleted_at, deletedBy: x.deleted_by_name, versions: x.versions })) });
+}
+
+/** The saved states of one report, newest first, with what changed from the one before. */
+async function listVersions(env, id) {
+  const { results } = await env.DB.prepare(
+    `SELECT version, reason, inspector, facility, date, type, overall, saved_by_name, saved_at, data
+     FROM inspection_versions WHERE inspection_id = ?1 ORDER BY version`,
+  ).bind(id).all();
+  const rows = results || [];
+  const items = (text) => {
+    const m = new Map();
+    try { (JSON.parse(text || '{}').sections || []).forEach((s, si) => (s.items || []).forEach((it, ii) => {
+      if (it && typeof it === 'object') m.set(`${si}.${ii}`, [it.score ?? null, String(it.comment || ''), (it.photos || []).length]);
+    })); } catch { /* unreadable versions still list */ }
+    return m;
+  };
+  let prev = null;
+  const out = rows.map((r) => {
+    const cur = items(r.data);
+    let scores = 0, comments = 0, photos = 0;
+    if (prev) for (const [k, [sc, cm, ph]] of cur) {
+      const o = prev.get(k) || [null, '', 0];
+      if (o[0] !== sc) scores += 1;
+      if (o[1] !== cm) comments += 1;
+      if (o[2] !== ph) photos += 1;
+    }
+    prev = cur;
+    return { version: r.version, reason: r.reason, by: r.saved_by_name, at: r.saved_at, overall: r.overall,
+      building: r.facility, date: r.date, type: r.type, auditor: r.inspector, changes: { scores, comments, photos } };
+  });
+  return json({ versions: out.reverse() });
+}
+
+async function getVersion(env, id, version) {
+  const row = await env.DB.prepare('SELECT * FROM inspection_versions WHERE inspection_id = ?1 AND version = ?2').bind(id, version).first();
+  if (!row) return fail('that version was not found', 404);
+  return json({ record: { ...rowToRecord({ ...row, id }), version: row.version, reason: row.reason, savedBy: row.saved_by_name, savedAt: row.saved_at } });
+}
+
+/* ── Keeping everything: backups, the archive and the full export ─────────────────────
+ *
+ * Three independent copies protect the reports:
+ *  1. The database itself (Cloudflare D1): replicated storage, and Cloudflare can put it back
+ *     to any minute of the last 30 days ("Time Travel").
+ *  2. An automatic backup every night, kept outside the database (Workers KV, binding BACKUPS).
+ *     History in this app only ever grows, so the backup only ever adds: every saved version
+ *     of every report is written once and never again, the audit log and review history are
+ *     added in blocks, and the small tables that do change (accounts, buildings, assignments…)
+ *     are copied whole each night, one copy per day for 30 days and one per month for good.
+ *     Photos live in photo storage (R2, binding PHOTOS) once it is switched on, and in the
+ *     database until then.
+ *  3. The full export an administrator downloads from Admin Control: every table, photos
+ *     included, as one SQL file that loads straight back into a database.
+ */
+const BACKUP_TABLES = {                // table → primary key used to page through it
+  buildings: 'id', qa_users: 'id', assignments: 'id', inspections: 'id', inspection_reviews: 'id',
+  inspection_versions: 'id', inspection_archive: 'id', photo_blobs: 'id', notifications: 'id',
+  audit_log: 'id', saved_reports: 'id', system_state: 'key',
+};
+
+async function setState(env, key, value) {
+  await env.DB.prepare(`INSERT INTO system_state (key, value, updated_at) VALUES (?1, ?2, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).bind(key, JSON.stringify(value)).run();
+}
+async function getState(env, key) {
+  const row = await env.DB.prepare('SELECT value, updated_at FROM system_state WHERE key = ?1').bind(key).first();
+  if (!row) return null;
+  try { return { ...JSON.parse(row.value), updatedAt: row.updated_at }; } catch { return null; }
+}
+
+async function gzipText(text) {
+  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/** One night's work, in small steps so it stays well inside Cloudflare's per-run limits. Each
+ *  step moves a cursor forward only after its copy is written, so a run that stops half way,
+ *  or has more to do than one run allows, simply carries on the next time. */
+async function runBackup(env, trigger) {
+  const started = Date.now();
+  const status = { ok: false, trigger, startedAt: new Date(started).toISOString() };
+  try {
+    if (!env.BACKUPS) throw new Error('backup storage is not connected (KV binding BACKUPS)');
+    const kv = env.BACKUPS;
+    const day = new Date().toISOString().slice(0, 10);
+    const pad = (n) => String(n).padStart(10, '0');
+    let writes = 0;
+
+    // 1. Older reports: file their inline photos, then record their current state as version 1.
+    status.photosFiled = await externalizeLegacyPhotos(env, 4);
+    status.baselines = await recordBaselines(env);
+    // 2. With photo storage switched on, photos still kept in the database move there.
+    status.photosMovedToStorage = env.PHOTOS ? await movePhotosToStorage(env, 10) : 0;
+
+    // 3. Every saved version, in blocks, written once and never again.
+    const cur = (await getState(env, 'backup.cursor')) || {};
+    let vAfter = Number(cur.versions) || 0, versions = 0;
+    for (let page = 0; page < 3; page += 1) {
+      const { results } = await env.DB.prepare('SELECT * FROM inspection_versions WHERE id > ?1 ORDER BY id LIMIT 60').bind(vAfter).all();
+      if (!results?.length) break;
+      const last = results[results.length - 1].id;
+      await kv.put(`versions/${pad(results[0].id)}-${pad(last)}.json.gz`, await gzipText(JSON.stringify(results)));
+      vAfter = last; versions += results.length; writes += 1;
+    }
+    cur.versions = vAfter;
+
+    // 4. Audit log and review history, the same way.
+    const blocks = {};
+    for (const [table, key] of [['audit_log', 'audit'], ['inspection_reviews', 'reviews']]) {
+      let after = Number(cur[key]) || 0, n = 0;
+      for (let page = 0; page < 2; page += 1) {
+        const { results } = await env.DB.prepare(`SELECT * FROM ${table} WHERE id > ?1 ORDER BY id LIMIT 500`).bind(after).all();
+        if (!results?.length) break;
+        const last = results[results.length - 1].id;
+        await kv.put(`${key}/${pad(results[0].id)}-${pad(last)}.json.gz`, await gzipText(JSON.stringify(results)));
+        after = last; n += results.length; writes += 1;
+      }
+      cur[key] = after; blocks[key] = n;
+    }
+    await setState(env, 'backup.cursor', cur);
+
+    // 5. The tables that change, whole, as tonight's copy, with the list of live and archived
+    //    reports and the version each is at (the versions themselves are in versions/…).
+    const snapshot = { format: 'facility-qa-daily', version: 2, createdAt: new Date().toISOString(), tables: {} };
+    for (const table of ['qa_users', 'buildings', 'assignments', 'notifications', 'saved_reports', 'system_state']) {
+      const { results } = await env.DB.prepare(`SELECT * FROM ${table}`).all();
+      snapshot.tables[table] = results || [];
+    }
+    const live = await env.DB.prepare(
+      'SELECT i.id, i.updated_at, (SELECT MAX(v.version) FROM inspection_versions v WHERE v.inspection_id = i.id) AS version FROM inspections i',
+    ).all();
+    const gone = await env.DB.prepare('SELECT id, deleted_at, deleted_by_name FROM inspection_archive').all();
+    const photos = await env.DB.prepare("SELECT id, mime, bytes, first_inspection_id, created_at, data = '' AS in_storage FROM photo_blobs").all();
+    snapshot.tables.inspections_index = live.results || [];
+    snapshot.tables.archive_index = gone.results || [];
+    snapshot.tables.photo_index = photos.results || [];
+    await kv.put(`daily/${day}.json.gz`, await gzipText(JSON.stringify(snapshot)));
+    writes += 1;
+
+    // 6. Daily copies: the last 30 days, and the first of every month for good.
+    const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    let removed = 0, listed = await kv.list({ prefix: 'daily/' });
+    for (;;) {
+      for (const k of listed.keys) {
+        const d = k.name.slice(6, 16);
+        if (d < cutoff && !d.endsWith('-01')) { await kv.delete(k.name); removed += 1; }
+      }
+      if (listed.list_complete) break;
+      listed = await kv.list({ prefix: 'daily/', cursor: listed.cursor });
+    }
+
+    const waiting = await env.DB.prepare(
+      `SELECT (SELECT COUNT(*) FROM inspection_versions WHERE id > ?1) AS versions,
+              (SELECT COUNT(*) FROM inspections WHERE instr(data, '"data:image/') > 0) AS legacy`,
+    ).bind(vAfter).first();
+    Object.assign(status, {
+      ok: true, finishedAt: new Date().toISOString(), seconds: Math.round((Date.now() - started) / 100) / 10,
+      day, versionsCopied: versions, versionsWaiting: waiting.versions, legacyWaiting: waiting.legacy,
+      auditRows: blocks.audit, reviewRows: blocks.reviews, writes, oldDailyCopiesRemoved: removed,
+      photoStorage: !!env.PHOTOS, reports: (live.results || []).length, archived: (gone.results || []).length, photos: (photos.results || []).length,
+    });
+  } catch (err) {
+    status.error = String(err?.message || err);
+    status.finishedAt = new Date().toISOString();
+  }
+  await setState(env, 'backup.last', status).catch(() => {});
+  if (status.ok) await setState(env, 'backup.lastOk', status).catch(() => {});
+  return status;
+}
+
+/** Reports saved before photos had their own storage: file a few reports' photos per call. The
+ *  report's saved time is left alone, so its review status does not change. */
+async function externalizeLegacyPhotos(env, limit) {
+  const { results } = await env.DB.prepare(
+    "SELECT id, data FROM inspections WHERE instr(data, '\"data:image/') > 0 ORDER BY id LIMIT ?1",
+  ).bind(limit).all();
+  let moved = 0;
+  for (const row of results || []) {
+    const stored = await storeReportPhotos(env, row.data, row.id);
+    if (stored.error || !stored.data) continue;
+    await env.DB.prepare('UPDATE inspections SET data = ?2 WHERE id = ?1').bind(row.id, stored.data).run();
+    moved += stored.stored || 0;
+  }
+  return moved;
+}
+
+/** Photos kept in the database move to photo storage once it is switched on. Each is written
+ *  and checked there before the database copy is cleared. */
+async function movePhotosToStorage(env, limit) {
+  const { results } = await env.DB.prepare("SELECT id, mime, data FROM photo_blobs WHERE data != '' LIMIT ?1").bind(limit).all();
+  const done = [];
+  for (const p of results || []) {
+    const bytes = b64ToBytes(p.data);
+    await env.PHOTOS.put(photoKey(p.id), bytes, { httpMetadata: { contentType: p.mime } });
+    const head = await env.PHOTOS.head(photoKey(p.id));
+    if (head && head.size === bytes.length) done.push(p.id);
+  }
+  if (done.length) await env.DB.batch(done.map((id) => env.DB.prepare("UPDATE photo_blobs SET data = '' WHERE id = ?1").bind(id)));
+  return done.length;
+}
+
+async function backupStatus(env) {
+  const [last, lastOk, counts] = await Promise.all([
+    getState(env, 'backup.last'), getState(env, 'backup.lastOk'),
+    env.DB.prepare(`SELECT (SELECT COUNT(*) FROM inspections) AS reports, (SELECT COUNT(*) FROM inspection_archive) AS archived,
+      (SELECT COUNT(*) FROM inspection_versions) AS versions, (SELECT COUNT(*) FROM photo_blobs) AS photos,
+      (SELECT COALESCE(SUM(bytes),0) FROM photo_blobs) AS photoBytes,
+      (SELECT COALESCE(SUM(bytes),0) FROM photo_blobs WHERE data != '') AS photoBytesInDb,
+      (SELECT COUNT(*) FROM inspections WHERE instr(data, '"data:image/') > 0) AS legacyReports,
+      (SELECT COUNT(*) FROM inspections i WHERE NOT EXISTS (SELECT 1 FROM inspection_versions v WHERE v.inspection_id = i.id)) AS withoutHistory,
+      (SELECT COUNT(*) FROM audit_log) AS auditRows`).first(),
+  ]);
+  return json({ last, lastOk, counts, storage: { backups: !!env.BACKUPS, photos: !!env.PHOTOS } });
+}
+
+/** One page of one table for the full export. Photos come a few at a time (they are large). */
+async function exportTablePage(env, url) {
+  const table = url.searchParams.get('table') || '';
+  const key = BACKUP_TABLES[table];
+  if (!key) return fail('unknown table', 400);
+  const after = url.searchParams.get('after');
+  const limit = table === 'photo_blobs' ? 8 : table === 'inspection_versions' || table === 'inspections' || table === 'inspection_archive' ? 100 : 1000;
+  const numeric = key === 'id' && !['qa_users', 'photo_blobs'].includes(table);
+  const { results } = after == null || after === ''
+    ? await env.DB.prepare(`SELECT * FROM ${table} ORDER BY ${key} LIMIT ?1`).bind(limit).all()
+    : await env.DB.prepare(`SELECT * FROM ${table} WHERE ${key} > ?1 ORDER BY ${key} LIMIT ?2`).bind(numeric ? Number(after) : after, limit).all();
+  const rows = results || [];
+  if (table === 'photo_blobs' && env.PHOTOS) {
+    // photos in photo storage come back into the copy, so the file stands on its own
+    for (const row of rows) if (!row.data) {
+      const obj = await env.PHOTOS.get(photoKey(row.id));
+      if (obj) row.data = bytesToB64(new Uint8Array(await obj.arrayBuffer()));
+    }
+  }
+  const { c } = await env.DB.prepare(`SELECT COUNT(*) AS c FROM ${table}`).first();
+  return json({ table, total: c, rows, next: rows.length === limit ? rows[rows.length - 1][key] : null });
 }
 
 /* ── Buildings ──────────────────────────────────────────── */
@@ -1038,7 +1530,7 @@ function libraryRow(row, ctx) {
     id: row.id, date: row.date || '', quarter: quarterOf(row.date), type: row.type || '', typeLabel: row.type_label || '',
     building: bld ? bld.name : (row.facility || ''), buildingId: bld ? bld.id : null,
     division: bld ? bld.division : String(row.division || '').trim(), area: bld ? bld.area : null, location: bld ? bld.location : null,
-    auditor: row.inspector || '', auditorId: asg ? asg.auditor_id : null,
+    auditor: row.inspector || '', auditorId: asg ? asg.auditor_id : null, inspectorId: row.inspector_id || null,
     overall: typeof row.overall === 'number' ? Math.round(row.overall) : null,
     assigned: !!asg, updatedAt: row.updated_at, createdAt: row.created_at,
     status: reviewStatus(row.updated_at, decision),
@@ -1047,7 +1539,8 @@ function libraryRow(row, ctx) {
 }
 
 /** The report belongs to this person: they were assigned it, or it is saved under their name. */
-const isOwnReport = (user, r) => (r.auditorId ? r.auditorId === user.id : normName(r.auditor) === normName(user.name));
+const isOwnReport = (user, r) => (r.inspectorId ? r.inspectorId === user.id
+  : r.auditorId ? r.auditorId === user.id : normName(r.auditor) === normName(user.name));
 const bandOf = (v) => (v == null ? null : v >= 91 ? 'Excellent' : v >= 81 ? 'Good' : v >= 71 ? 'Acceptable' : v >= 51 ? 'Poor' : 'Critical');
 
 async function reportLibrary(env, user, url) {
@@ -1061,7 +1554,7 @@ async function reportLibrary(env, user, url) {
   const [ctx, ins] = await Promise.all([
     libraryContext(env),
     env.DB.prepare(
-      `SELECT id, inspector, facility, division, date, type, type_label, overall, created_at, updated_at,
+      `SELECT id, inspector, inspector_id, facility, division, date, type, type_label, overall, created_at, updated_at,
               CAST(json_extract(data, '$.assignmentId') AS INTEGER) AS aid
        FROM inspections WHERE json_valid(data) ORDER BY date DESC, id DESC`,
     ).all(),
@@ -1402,7 +1895,6 @@ function deviceLabel(request) {
   return browser ? `${device} · ${browser}` : device;
 }
 
-const MIN_PASSWORD_LENGTH = 8;
 
 const ADMIN_ROLE = 'quality_admin';
 const ASSIGNABLE_ROLES = new Set(['quality_leader', 'quality_officer', 'quality_auditor', 'data_analyst']);
@@ -1489,9 +1981,9 @@ async function authBootstrap(env, body, request) {
   const name = (body?.name || '').trim();
   const username = (body?.username || '').trim().toLowerCase();
   const password = body?.password || '';
-  if (!name || !username || password.length < MIN_PASSWORD_LENGTH) {
-    return fail(`name, username, and a password of at least ${MIN_PASSWORD_LENGTH} characters are required`, 400);
-  }
+  if (!name || !username) return fail('name and username are required', 400);
+  const weak = passwordProblem(password);
+  if (weak) return fail(weak, 400);
   if (await hasAnyUser(env)) return fail('an administrator already exists', 409);
 
   const { hash, salt, iterations, rounds } = await hashPassword(password);
@@ -1565,20 +2057,32 @@ async function authCompleteSetup(env, body, request) {
   const currentPassword = body?.currentPassword || '';
   const newPassword = body?.newPassword || '';
   if (!username || !currentPassword) return fail('username and current password are required', 400);
-  if (newPassword.length < MIN_PASSWORD_LENGTH) {
-    return fail(`new password must be at least ${MIN_PASSWORD_LENGTH} characters`, 400);
-  }
+  const weak = passwordProblem(newPassword);
+  if (weak) return fail(weak, 400);
+  if (newPassword === currentPassword) return fail('choose a new password, not the temporary one', 400);
 
   const user = await env.DB.prepare('SELECT * FROM qa_users WHERE username = ?1').bind(username).first();
   if (!user || user.status !== 'active') return fail('invalid username or password', 401);
   if (!user.must_change_password) return fail('this account does not require a password change', 400);
-  if (!(await verifyPassword(currentPassword, user))) return fail('invalid username or password', 401);
+  // the temporary password is guarded exactly like a sign-in: five wrong tries lock the account
+  if (isLocked(user)) return fail('account locked — try again in 15 minutes', 423);
+  if (!(await verifyPassword(currentPassword, user))) {
+    await registerFailedAttempt(env, user);
+    if ((user.failed_attempts || 0) + 1 === MAX_FAILED_ATTEMPTS) {
+      await audit(env, null, 'security.lockout', user.id, `${user.name} (@${user.username})`,
+        `Locked for 15 minutes after ${MAX_FAILED_ATTEMPTS} wrong temporary passwords`);
+    }
+    return fail('invalid username or password', 401);
+  }
+  await clearFailedAttempts(env, user.id);
 
   const { hash, salt, iterations, rounds } = await hashPassword(newPassword);
   await env.DB.prepare(
     `UPDATE qa_users SET password_hash = ?2, password_salt = ?3, password_iterations = ?4, password_rounds = ?5,
        must_change_password = 0, updated_at = datetime('now') WHERE id = ?1`,
   ).bind(user.id, hash, salt, iterations, rounds).run();
+  await revokeSessions(env, user.id);
+  await audit(env, user, 'user.password_set', user.id, `${user.name} (@${user.username})`, 'Replaced the temporary password');
 
   const { token, expiresAt } = await createSession(env, user.id, deviceLabel(request));
   await touchLogin(env, user.id);
@@ -1597,7 +2101,7 @@ async function authLogout(request, env) {
 async function authMe(request, env) {
   const user = await getUserFromRequest(request, env);
   if (!user) return fail('not authenticated', 401);
-  return json({ user: publicUser(user) });
+  return json({ user: publicUser(user) }, 200, user.renewCookie ? { 'Set-Cookie': user.renewCookie } : {});
 }
 
 async function authChangePassword(request, env, body) {
@@ -1606,9 +2110,9 @@ async function authChangePassword(request, env, body) {
 
   const currentPassword = body?.currentPassword || '';
   const newPassword = body?.newPassword || '';
-  if (newPassword.length < MIN_PASSWORD_LENGTH) {
-    return fail(`new password must be at least ${MIN_PASSWORD_LENGTH} characters`, 400);
-  }
+  const weak = passwordProblem(newPassword);
+  if (weak) return fail(weak, 400);
+  if (newPassword === currentPassword) return fail('the new password must be different from the current one', 400);
 
   const row = await env.DB.prepare('SELECT * FROM qa_users WHERE id = ?1').bind(user.id).first();
   if (!row) return fail('account not found', 404);
@@ -1619,8 +2123,11 @@ async function authChangePassword(request, env, body) {
     `UPDATE qa_users SET password_hash = ?2, password_salt = ?3, password_iterations = ?4, password_rounds = ?5,
        must_change_password = 0, updated_at = datetime('now') WHERE id = ?1`,
   ).bind(user.id, hash, salt, iterations, rounds).run();
-
-  return json({ ok: true });
+  // A new password signs out every other device; this one stays signed in.
+  const ended = await revokeSessions(env, user.id, user.sessionHash);
+  await audit(env, user, 'user.password_change', user.id, `${user.name} (@${user.username})`,
+    `Password changed${ended ? ` · signed out ${ended} other device${ended === 1 ? '' : 's'}` : ''}`);
+  return json({ ok: true, signedOutElsewhere: ended });
 }
 
 /* ── Admin: user management ────────────────────────────────── */
@@ -1668,9 +2175,9 @@ async function adminCreateUser(env, actingUser, body) {
   const username = (body?.username || '').trim().toLowerCase();
   const password = body?.password || '';
   const role = ALL_ROLES.has(body?.role) ? body.role : 'quality_auditor';
-  if (!name || !username || password.length < MIN_PASSWORD_LENGTH) {
-    return fail(`name, username, and a temporary password of at least ${MIN_PASSWORD_LENGTH} characters are required`, 400);
-  }
+  if (!name || !username) return fail('name and username are required', 400);
+  const weak = passwordProblem(password);
+  if (weak) return fail(`Temporary password: ${weak.charAt(0).toLowerCase()}${weak.slice(1)}`, 400);
   if (!/^[a-z0-9._-]{3,40}$/.test(username)) return fail('username must be 3–40 characters: letters, numbers, dot, dash or underscore', 400);
   const existing = await env.DB.prepare('SELECT id FROM qa_users WHERE username = ?1').bind(username).first();
   if (existing) return fail('that username is already taken', 409);
@@ -1749,9 +2256,8 @@ async function adminUpdateUser(env, actingUser, targetId, body) {
 async function adminResetPassword(env, actingUser, targetId, body) {
   if (targetId === actingUser.id) return fail('use "Change Password" in your account menu instead', 400);
   const password = body?.password || '';
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return fail(`temporary password must be at least ${MIN_PASSWORD_LENGTH} characters`, 400);
-  }
+  const weak = passwordProblem(password);
+  if (weak) return fail(`Temporary password: ${weak.charAt(0).toLowerCase()}${weak.slice(1)}`, 400);
   const target = await env.DB.prepare('SELECT name, username FROM qa_users WHERE id = ?1').bind(targetId).first();
   if (!target) return fail('user not found', 404);
   const { hash, salt, iterations, rounds } = await hashPassword(password);
@@ -1829,6 +2335,28 @@ async function handleAdmin(request, env, path, user) {
   if (path === 'admin/users' && method === 'GET') return adminListUsers(env);
   if (path === 'admin/users' && method === 'POST') return adminCreateUser(env, user, await request.json());
   if (path === 'admin/audit' && method === 'GET') return adminAuditLog(env, new URL(request.url));
+  if (path === 'admin/archive' && method === 'GET') return listArchive(env);
+  const restoreMatch = path.match(/^admin\/archive\/(\d+)\/restore$/);
+  if (restoreMatch && method === 'POST') return restoreInspection(env, user, Number(restoreMatch[1]));
+  if (path === 'admin/backup' && method === 'GET') return backupStatus(env);
+  if (path === 'admin/backup/run' && method === 'POST') {
+    const status = await runBackup(env, `run by ${user.name}`);
+    await audit(env, user, 'backup.run', null, 'Backup', status.ok ? `Backup finished in ${status.seconds}s` : `Backup failed: ${status.error}`);
+    return json(status, status.ok ? 200 : 500);
+  }
+  if (path === 'admin/export' && method === 'GET') {
+    const url = new URL(request.url);
+    if (url.searchParams.get('start') === '1') await audit(env, user, 'backup.download', null, 'Full export', 'Downloaded a full copy of the database');
+    return exportTablePage(env, url);
+  }
+  if (path === 'admin/maintenance/photos' && method === 'POST') {
+    const moved = await externalizeLegacyPhotos(env, 8);
+    const baselines = await recordBaselines(env);
+    const toStorage = env.PHOTOS ? await movePhotosToStorage(env, 10) : 0;
+    const left = await env.DB.prepare(`SELECT (SELECT COUNT(*) FROM inspections WHERE instr(data, '"data:image/') > 0) AS legacy,
+      (SELECT COUNT(*) FROM photo_blobs WHERE data != '') AS inDb`).first();
+    return json({ moved, baselines, toStorage, reportsLeft: left.legacy, photosInDatabase: env.PHOTOS ? left.inDb : 0 });
+  }
 
   const idMatch = path.match(/^admin\/users\/([^/]+)$/);
   if (idMatch && method === 'PATCH') return adminUpdateUser(env, user, idMatch[1], await request.json());
@@ -1864,13 +2392,30 @@ async function handleApi(request, env, url) {
 
   if (path === 'health') return json({ ok: true });
 
+  // Anything that changes data must come from this site's own pages (defence against a
+  // hostile page submitting a form to the API in a signed-in browser).
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const origin = request.headers.get('Origin');
+    const site = request.headers.get('Sec-Fetch-Site');
+    if ((origin && origin !== url.origin) || (site && site !== 'same-origin' && site !== 'none')) {
+      return fail('request blocked: it did not come from this site', 403);
+    }
+  }
+
   const authResponse = await handleAuth(request, env, path);
   if (authResponse) return authResponse;
   if (path.startsWith('auth/')) return fail('not found', 404);
 
   const user = await getUserFromRequest(request, env);
   if (!user) return fail('authentication required', 401);
+  const res = await handleApiAuthed(request, env, url, path, method, user);
+  if (!user.renewCookie || res.headers.has('Set-Cookie')) return res;
+  const headers = new Headers(res.headers);
+  headers.append('Set-Cookie', user.renewCookie);                  // the session was extended: so is the cookie
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
 
+async function handleApiAuthed(request, env, url, path, method, user) {
   const adminResponse = await handleAdmin(request, env, path, user);
   if (adminResponse) return adminResponse;
   if (path.startsWith('admin/')) return fail('not found', 404);
@@ -1932,8 +2477,20 @@ async function handleApi(request, env, url) {
   if (notificationResponse) return notificationResponse;
   if (path.startsWith('notifications')) return fail('not found', 404);
 
+  const photoMatch = path.match(/^photos\/([0-9a-f]{64})$/);
+  if (photoMatch && method === 'GET') return servePhoto(env, photoMatch[1]);
+
+  const versionsMatch = path.match(/^inspections\/(\d+)\/versions(?:\/(\d+))?$/);
+  if (versionsMatch && method === 'GET') {
+    // a deleted report's history is for administrators only, like the archive itself
+    if (user.role !== ADMIN_ROLE) {
+      const live = await env.DB.prepare('SELECT 1 AS x FROM inspections WHERE id = ?1').bind(Number(versionsMatch[1])).first();
+      if (!live) return fail('record not found', 404);
+    }
+    return versionsMatch[2] ? getVersion(env, Number(versionsMatch[1]), Number(versionsMatch[2])) : listVersions(env, Number(versionsMatch[1]));
+  }
+
   if (path === 'inspections') {
-    if (method === 'GET') return json(await listInspections(env));
     if (method === 'POST') {
       if (!can(user, 'inspect')) return fail('you do not have permission to create inspections', 403);
       return insertInspection(env, user, await request.json());
@@ -1980,6 +2537,9 @@ async function handleAssets(request, env, url) {
 }
 
 export default {
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(runBackup(env, 'nightly'));
+  },
   async fetch(request, env) {
     const url = new URL(request.url);
     const isApi = url.pathname.startsWith('/api/');
