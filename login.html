@@ -29,6 +29,12 @@ body{
              linear-gradient(150deg,#001540 0%,#00246F 32%,#0A5C9E 70%,#26A8AB 100%);
   background-attachment:fixed;
 }
+body::before,body::after{content:'';position:fixed;z-index:-1;pointer-events:none;will-change:transform;border-radius:50%}
+body::before{width:70vmax;height:70vmax;top:-30vmax;right:-25vmax;background:radial-gradient(circle,rgba(38,168,171,.32) 0%,transparent 66%);animation:lgA 20s ease-in-out infinite alternate}
+body::after{width:60vmax;height:60vmax;bottom:-30vmax;left:-22vmax;background:radial-gradient(circle,rgba(140,254,227,.16) 0%,transparent 64%);animation:lgB 26s ease-in-out infinite alternate}
+@keyframes lgA{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(-30vw,24vh,0) scale(1.2)}}
+@keyframes lgB{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(26vw,-18vh,0) scale(.88)}}
+@media(prefers-reduced-motion:reduce){body::before,body::after{animation:none}}
 .back{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.75);text-decoration:none;font-weight:700;font-size:.8rem;width:100%;max-width:400px}
 .back:hover{color:#fff}
 .back svg{width:15px;height:15px}
@@ -48,7 +54,7 @@ label{display:block;font-size:.76rem;font-weight:800;color:var(--muted);margin-b
 label:first-of-type{margin-top:0}
 input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;font-family:var(--font);
   font-size:1rem;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s}
-input:focus{border-color:var(--teal)}
+input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(38,168,171,.18)}
 @media(pointer:coarse){input{font-size:16px}}
 .hint{font-size:.72rem;color:var(--muted);margin-top:6px}
 .pw-rules{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}

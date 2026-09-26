@@ -123,7 +123,23 @@ body.view-only #inspection-link{display:none}
 .ss-item.active{border-color:var(--teal);background:rgba(38,168,171,.08);box-shadow:inset 3px 0 var(--teal)}
 .ss-item.active b{color:var(--royal)}
 /* MAIN */
-#main{flex:1;min-width:0;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(135deg,#F7FAFB 0%,var(--bg) 52%,#F4F8F9 100%)}
+#main{flex:1;min-width:0;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:transparent}
+/* The page ground: soft royal and teal light that drifts slowly behind the cards. It sits in one
+   layer of its own that only moves (no repaint), so it costs next to nothing on a phone. */
+body{background:linear-gradient(135deg,#F7FAFB 0%,var(--bg) 52%,#F2F7F8 100%)}
+body::before,body::after{content:'';position:fixed;z-index:-1;pointer-events:none;will-change:transform}
+body::before{inset:-30%;background:
+  radial-gradient(30% 34% at 22% 26%,rgba(38,168,171,.30),transparent 70%),
+  radial-gradient(28% 32% at 80% 18%,rgba(0,51,160,.17),transparent 70%),
+  radial-gradient(32% 36% at 72% 78%,rgba(140,254,227,.42),transparent 70%);
+  animation:auraA 46s ease-in-out infinite alternate}
+body::after{inset:-30%;background:
+  radial-gradient(26% 30% at 30% 76%,rgba(11,95,174,.14),transparent 70%),
+  radial-gradient(24% 28% at 62% 44%,rgba(38,168,171,.14),transparent 70%);
+  animation:auraB 62s ease-in-out infinite alternate}
+@keyframes auraA{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}50%{transform:translate3d(5%,-4%,0) rotate(7deg) scale(1.08)}100%{transform:translate3d(-4%,5%,0) rotate(-5deg) scale(1.03)}}
+@keyframes auraB{0%{transform:translate3d(0,0,0) rotate(0deg)}100%{transform:translate3d(-6%,-5%,0) rotate(-9deg)}}
+@media print{body::before,body::after{display:none}}
 #pbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(38,168,171,.35);
   padding:8px 28px;display:flex;align-items:center;gap:8px 14px;min-height:54px;flex-wrap:wrap}
 /* Between a phone and a wide screen the inspection bar is crowded: the steps keep their numbers,
@@ -155,7 +171,7 @@ body.view-only #inspection-link{display:none}
   .pb-steps .pb-step small{display:none}
   .pb-steps .pb-step.done i{background:var(--good);border-color:var(--good);color:#fff}
   .pb-steps .pb-step.active{background:none}
-  .pb-steps .pb-step.active i{background:var(--royal);border-color:var(--royal);color:#fff;box-shadow:0 0 0 3px rgba(0,51,160,.16)}
+  .pb-steps .pb-step.active i{background:var(--royal);border-color:var(--royal);color:#fff}
   .pb-steps .pb-sep{width:12px}
 }
 .pb-sep{width:16px;height:2px;background:var(--border);border-radius:2px;flex-shrink:0}
@@ -173,6 +189,13 @@ body.view-only #inspection-link{display:none}
 #pg-home{padding:0}
 .home-hero{background:linear-gradient(150deg,#001540 0%,#00246F 32%,#0A5C9E 70%,#26A8AB 100%);color:#fff;padding:30px 44px 26px;position:relative;overflow:hidden;border-bottom:4px solid var(--teal)}
 .home-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(38,168,171,.2) 0%,transparent 70%);pointer-events:none}
+/* The banners breathe: two glows in the brand teal drift across the gradient, slowly */
+.home-hero::before{width:360px;height:360px;top:-120px;right:-80px;background:radial-gradient(circle,rgba(38,168,171,.34) 0%,transparent 68%);animation:heroGlowA 18s ease-in-out infinite alternate;will-change:transform}
+.home-hero::after{content:'';position:absolute;left:-120px;bottom:-190px;width:420px;height:420px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(140,254,227,.16) 0%,transparent 66%);animation:heroGlowB 24s ease-in-out infinite alternate;will-change:transform}
+.home-hero>*{position:relative;z-index:1}
+@keyframes heroGlowA{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(-38vw,70px,0) scale(1.25)}}
+@keyframes heroGlowB{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(30vw,-60px,0) scale(.85)}}
 .home-hero .ey{font-size:.68rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:5px}
 .home-hero h2{font-size:1.65rem;font-weight:900;line-height:1.2;margin-bottom:4px}
 .home-hero h2 span{color:var(--teal)}
@@ -341,6 +364,31 @@ body.view-only #inspection-link{display:none}
 .in-grid input,.in-grid select{border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:.88rem;font-family:var(--font);color:var(--text);
   background:#fff;outline:none;text-transform:none;letter-spacing:0;font-weight:600;min-width:0;width:100%}
 .in-grid input:focus,.in-grid select:focus{border-color:var(--teal)}
+/* Pick-or-type lists (makeCombo) */
+.cb{position:relative;display:block}
+.cb>input{width:100%;padding-right:42px!important}
+.modal-box .cb>input{margin-bottom:0}
+.modal-box .cb{margin-bottom:14px}
+.cb-btn{position:absolute;right:3px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;background:none;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;padding:0}
+.cb-btn:hover{color:var(--royal);background:rgba(0,51,160,.05)}
+.cb-btn svg{transition:transform .18s}
+.cb.open .cb-btn svg{transform:rotate(180deg)}
+.cb.open .cb-btn{color:var(--teal-ink)}
+.cb-list{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:70;margin:0;padding:6px;list-style:none;background:#fff;
+  border:1px solid rgba(0,51,160,.14);border-radius:12px;box-shadow:0 18px 40px -14px rgba(0,32,112,.35);max-height:340px;overflow-y:auto;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;text-transform:none;letter-spacing:0;font-weight:400;animation:cbIn .14s ease-out}
+.cb-list[hidden]{display:none}
+@keyframes cbIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.cb-group{position:sticky;top:-6px;z-index:1;background:#fff;padding:9px 10px 5px;font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-ink);border-bottom:1px solid var(--bg)}
+.cb-opt{display:flex;flex-direction:column;justify-content:center;gap:1px;min-height:44px;padding:7px 10px;border-radius:8px;cursor:pointer}
+.cb-opt b{font-size:.88rem;font-weight:700;color:var(--text);line-height:1.3}
+.cb-opt small{font-size:.74rem;font-weight:600;color:var(--muted);line-height:1.3}
+.cb-opt:hover,.cb-opt.on{background:rgba(38,168,171,.1)}
+.cb-opt.sel{background:rgba(0,51,160,.06);box-shadow:inset 3px 0 0 var(--royal)}
+.cb-opt.sel b{color:var(--royal)}
+.cb-opt mark{background:rgba(38,168,171,.24);color:inherit;border-radius:3px;padding:0 1px}
+.cb-empty{padding:12px 10px;font-size:.82rem;color:var(--muted)}
 .in-grid .invalid,.in-types.invalid{border-color:var(--danger)!important;background:#fff7f7}
 .in-static{display:flex;align-items:center;gap:9px;min-height:40px;border:1.5px dashed var(--border);border-radius:8px;padding:6px 11px;font-size:.88rem;
   font-weight:700;color:var(--text);text-transform:none;letter-spacing:0}
@@ -371,7 +419,7 @@ body.view-only #inspection-link{display:none}
 
 /* History */
 /* Home overview cards — same language as the landing page */
-#home-stats{padding:24px 44px 4px;background:var(--bg);display:grid;
+#home-stats{padding:24px 44px 4px;background:transparent;display:grid;
   grid-template-columns:repeat(6,minmax(0,1fr));gap:16px}
 #home-stats .hs-card{grid-column:span 2}
 #home-stats .hs-card.hs-wide{grid-column:span 3}
@@ -845,7 +893,7 @@ body.view-only #inspection-link{display:none}
 @media(max-width:780px){.rp-panel-wrap,.rp-bands{padding-left:14px;padding-right:14px}.rp-count{margin-left:0}
   .rp-filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:14px}}
 
-#history-section{padding:24px 44px 40px;background:var(--bg)}
+#history-section{padding:24px 44px 40px;background:transparent}
 #history-section h3{font-size:1rem;font-weight:800;color:var(--royal);margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .hist-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
 .hist-filters select,.hist-filters input{border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;font-size:.8rem;color:var(--text);background:#fff;outline:none;font-family:var(--font);min-width:130px}
@@ -1115,10 +1163,11 @@ body.nav-rail #acct-row{justify-content:center}
 @media (min-width:901px) and (max-width:1199px){
   #pbar{padding-left:20px;padding-right:20px}
   .home-hero{padding-left:30px;padding-right:30px}
-  #home-actions,.rp-panel-wrap,.rp-bands,#history-section{padding-left:30px;padding-right:30px}
+  #home-actions,.rp-panel-wrap,.rp-bands,#history-section,#home-stats{padding-left:30px;padding-right:30px}
   .ov-section{padding-left:30px;padding-right:30px}
 }
 @media(max-width:780px){
+  #home-stats{padding:18px 14px 4px}
   #pbar{box-shadow:0 2px 12px rgba(0,32,112,.08)}
   .page-tabs{margin-top:14px}
   .hist-card{align-items:flex-start;padding:12px;gap:10px}
@@ -1136,7 +1185,7 @@ body.nav-rail #acct-row{justify-content:center}
   html{font-size:14px}
   .home-hero{padding:22px 14px}
   .home-hero h2{font-size:1.42rem}
-  #home-actions,.rp-panel-wrap,.rp-bands,#history-section{padding-left:12px;padding-right:12px}
+  #home-actions,.rp-panel-wrap,.rp-bands,#history-section,#home-stats{padding-left:12px;padding-right:12px}
   .ov-section{padding-left:12px;padding-right:12px}
   .hist-filters select,.hist-filters input{width:100%;min-width:0}
   .app-toast{right:12px;bottom:12px;left:12px;max-width:none}
@@ -1183,6 +1232,8 @@ body.nav-rail #acct-row{justify-content:center}
 .ins-heat thead th{position:sticky;top:0;z-index:2;background:#fff}
 /* Keyboard focus is always visible */
 a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
+/* …except text fields and lists: an outline around a border reads as a ring inside a ring */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus,select:focus,textarea:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(38,168,171,.18)}
 
 /* ── Device awareness ──────────────────────────────────────
    Phones, tablets and desktops get the same app: safe areas on notched iPhones,
@@ -1510,10 +1561,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <label>Auditor<div class="in-static" id="in-inspector">–</div></label>
           <label>Date<input type="date" lang="en-GB" id="meta-date"></label>
           <label class="in-wide">Building
-            <input id="meta-facility" list="in-buildings" placeholder="Type to search the buildings list…" autocomplete="off">
+            <input id="meta-facility" placeholder="Tap to choose, or type to search…" autocomplete="off" autocapitalize="characters" spellcheck="false">
             <span class="in-hint" id="in-bld-hint">Pick from the list so reports can link it to its division and area.</span>
           </label>
-          <datalist id="in-buildings"></datalist>
           <label>Division
             <select id="meta-division">
               <option value="">Select division…</option>
@@ -1592,7 +1642,6 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <span class="ov-updated" id="au-updated"></span>
       <button class="rp-link" id="au-reports" hidden><svg data-lucide="bar-chart-3" width="13" height="13" style="vertical-align:-2px"></svg> Analytics</button>
       <button class="rp-link" id="au-manage" hidden><svg data-lucide="clipboard-list" width="13" height="13" style="vertical-align:-2px"></svg> Manage assignments</button>
-      <button class="rp-link" id="au-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
     </div>
 
     <div class="ov-stats" id="au-stats"></div>
@@ -1760,7 +1809,6 @@ html[data-pointer=mouse] .ph-cam{display:none}
       </select>
       <select id="of-division" aria-label="Division"><option value="">All divisions</option></select>
       <span class="of-live" id="of-live"><i></i><span id="of-updated">Connecting…</span></span><button type="button" class="info-tip" data-tip="of-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
-      <button class="rp-link" id="of-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
     </div>
 
     <div class="ov-stats" id="of-stats"></div>
@@ -1852,7 +1900,6 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <select id="sch-auditor" aria-label="Auditor"><option value="">All auditors</option></select>
       <span class="ov-updated" id="sch-note"></span>
       <button type="button" class="info-tip" data-tip="sch-tables" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
-      <button class="rp-link" id="sch-refresh"><svg data-lucide="refresh-cw" width="13" height="13" style="vertical-align:-2px"></svg> Refresh</button>
     </div>
 
     <div class="ov-stats" id="sch-stats"></div>
@@ -1953,7 +2000,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <div class="hist-hdr">
           <div><span class="sec-eyebrow">Kept for good</span><h3><svg data-lucide="shield-check" width="18" height="18"></svg> Backups</h3></div>
           <div class="ov-tools">
-            <button class="btn bo" type="button" id="ad-bk-run"><svg data-lucide="refresh-cw" width="14" height="14"></svg> Back up now</button>
+            <button class="btn bo" type="button" id="ad-bk-run"><svg data-lucide="database-backup" width="14" height="14"></svg> Back up now</button>
             <button class="btn br" type="button" id="ad-bk-download"><svg data-lucide="download" width="14" height="14"></svg> Download full copy</button>
           </div>
         </div>
@@ -2517,10 +2564,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <p class="msub" id="mb-sub"></p>
     <form id="mb-form" autocomplete="off">
       <label for="mb-name">Building name</label><input id="mb-name" required>
-      <label for="mb-division">Division</label><input id="mb-division" list="mb-divisions" required>
-      <label for="mb-area">Area</label><input id="mb-area" list="mb-areas" required>
-      <label for="mb-location">Location</label><input id="mb-location" list="mb-locations" required>
-      <datalist id="mb-divisions"></datalist><datalist id="mb-areas"></datalist><datalist id="mb-locations"></datalist>
+      <label for="mb-division">Division</label><input id="mb-division" required autocomplete="off">
+      <label for="mb-area">Area</label><input id="mb-area" required autocomplete="off">
+      <label for="mb-location">Location</label><input id="mb-location" required autocomplete="off">
       <p class="msub" id="mb-msg" style="display:none;color:var(--danger)"></p>
       <div class="mbtns">
         <button class="btn bt" type="submit">Save building</button>
@@ -3018,11 +3064,21 @@ function nav(pageId){
   if(location.hash!=='#'+wanted) window.history.pushState(null,'','#'+wanted);
   document.getElementById('main').scrollTo(0,0);
 }
-// On first load the browser still scrolls to the element named in the URL; undo that jump.
-window.addEventListener('load',()=>{
-  const page=document.querySelector('.page.active'), main=document.getElementById('main');
-  if(page&&main.scrollTop&&Math.abs(page.getBoundingClientRect().top)<2) main.scrollTo(0,0);
-});
+// On arrival the browser scrolls to the element named in the address — the page itself — and
+// WebKit (iPhone, iPad, Safari) does it late, after load, sliding the banner under the top bar.
+// Until the person scrolls, taps or types, a freshly opened page stays at its top.
+if('scrollRestoration' in history) history.scrollRestoration='manual';
+(function holdTopOnArrival(){
+  const main=document.getElementById('main'), until=Date.now()+5000;
+  let touched=false;
+  ['wheel','touchstart','pointerdown','keydown'].forEach(t=>window.addEventListener(t,()=>{ touched=true; },{once:true,passive:true,capture:true}));
+  const hold=()=>{
+    if(touched||Date.now()>until){ main.removeEventListener('scroll',hold); return; }
+    if(main.scrollTop) main.scrollTop=0;
+  };
+  main.addEventListener('scroll',hold,{passive:true});
+  hold();
+})();
 window.addEventListener('popstate',()=>window.dispatchEvent(new HashChangeEvent('hashchange')));
 window.addEventListener('hashchange',()=>{
   const pid=hashToPage(location.hash);
@@ -3460,6 +3516,106 @@ function useAccountInspector(){
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 // ═══════════════════════════════════════════════════════════
+// PICK-OR-TYPE LISTS
+// ═══════════════════════════════════════════════════════════
+// A native <datalist> shows only as keyboard suggestions on iPhone and iPad, so these lists are
+// drawn by the page: tap the field or its arrow to see every option, type to narrow it down.
+// options() returns [{value, sub?, group?}]; picking fills the field and fires input + change.
+let cbOpenNow=null;                                    // only one list is open at a time
+function makeCombo(input,{options}){
+  const wrap=document.createElement('div');
+  wrap.className='cb';
+  input.parentNode.insertBefore(wrap,input); wrap.appendChild(input);
+  const id=input.id+'-cb';
+  input.removeAttribute('list');
+  Object.entries({role:'combobox','aria-autocomplete':'list','aria-expanded':'false','aria-controls':id,autocomplete:'off'}).forEach(([k,v])=>input.setAttribute(k,v));
+  const btn=document.createElement('button');
+  btn.type='button'; btn.className='cb-btn'; btn.tabIndex=-1; btn.setAttribute('aria-label','Show the list');
+  btn.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  const list=document.createElement('ul');
+  list.className='cb-list'; list.id=id; list.setAttribute('role','listbox'); list.hidden=true;
+  wrap.append(btn,list);
+  let shown=[], active=-1, filtering=false;
+  const mark=(text,q)=>{ const t=String(text), i=q?t.toLowerCase().indexOf(q):-1;
+    return i<0?ovEsc(t):ovEsc(t.slice(0,i))+'<mark>'+ovEsc(t.slice(i,i+q.length))+'</mark>'+ovEsc(t.slice(i+q.length)); };
+  function render(){
+    const all=options()||[], q=filtering?input.value.trim().toLowerCase():'', cur=input.value.trim().toLowerCase();
+    shown=q?all.filter(o=>`${o.value} ${o.sub||''} ${o.group||''}`.toLowerCase().includes(q)):all;
+    if(active>=shown.length) active=shown.length-1;
+    let group=null, html='';
+    shown.forEach((o,i)=>{
+      if(o.group&&o.group!==group){ group=o.group; html+=`<li class="cb-group" role="presentation">${ovEsc(group)}</li>`; }
+      const sel=String(o.value).toLowerCase()===cur;
+      html+=`<li role="option" id="${id}-${i}" data-i="${i}" class="cb-opt${i===active?' on':''}${sel?' sel':''}" aria-selected="${sel}"><b>${mark(o.value,q)}</b>${o.sub?`<small>${mark(o.sub,q)}</small>`:''}</li>`;
+    });
+    list.innerHTML=html||`<li class="cb-empty" role="presentation">${all.length?`Nothing matches “${ovEsc(input.value.trim())}”`:'Loading the list…'}</li>`;
+    if(active>=0) input.setAttribute('aria-activedescendant',`${id}-${active}`); else input.removeAttribute('aria-activedescendant');
+  }
+  // Room below the field, above the on-screen keyboard. On a phone with too little of it the
+  // field is scrolled up under the top bar first, so the list is never hidden behind the keys.
+  function fit(){
+    const vv=window.visualViewport, bottom=vv?vv.offsetTop+vv.height:innerHeight;
+    let r=input.getBoundingClientRect();
+    if(bottom-r.bottom<230&&innerWidth<=780){
+      const scroller=input.closest('#main');
+      const top=(document.getElementById('pbar')?.getBoundingClientRect().bottom||0)+34;
+      if(scroller&&r.top>top){ scroller.scrollTop+=r.top-top; r=input.getBoundingClientRect(); }
+    }
+    list.style.maxHeight=Math.round(Math.max(170,Math.min(340,bottom-r.bottom-16)))+'px';
+  }
+  function open(){
+    render();
+    if(!list.hidden) return;
+    if(cbOpenNow&&cbOpenNow!==api) cbOpenNow.close();
+    cbOpenNow=api;
+    list.hidden=false; wrap.classList.add('open'); input.setAttribute('aria-expanded','true');
+    fit();
+    list.querySelector('.cb-opt.sel')?.scrollIntoView({block:'center'});
+  }
+  function close(){
+    if(list.hidden) return;
+    list.hidden=true; wrap.classList.remove('open'); input.setAttribute('aria-expanded','false');
+    input.removeAttribute('aria-activedescendant'); active=-1; filtering=false;
+  }
+  function pick(i){
+    const o=shown[i];
+    if(!o) return;
+    input.value=o.value;
+    close();
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  function move(step){
+    if(list.hidden){ open(); return; }
+    if(!shown.length) return;
+    active=(active+step+shown.length)%shown.length;
+    render();
+    document.getElementById(`${id}-${active}`)?.scrollIntoView({block:'nearest'});
+  }
+  input.addEventListener('focus',()=>{ filtering=false; open(); });
+  input.addEventListener('click',()=>{ if(list.hidden){ filtering=false; open(); } });
+  input.addEventListener('input',e=>{ if(!e.isTrusted) return; filtering=true; active=-1; open(); });
+  input.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){ e.preventDefault(); move(1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); move(-1); }
+    else if(e.key==='Enter'&&!list.hidden&&active>=0){ e.preventDefault(); pick(active); }
+    else if(e.key==='Escape'&&!list.hidden){ e.preventDefault(); close(); }
+    else if(e.key==='Tab') close();
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>{ if(!wrap.contains(document.activeElement)) close(); },150));
+  // Taps on the arrow or the list keep the field's focus (and the keyboard) where they are.
+  btn.addEventListener('mousedown',e=>e.preventDefault());
+  btn.addEventListener('click',e=>{ e.preventDefault(); if(list.hidden){ filtering=false; open(); } else close(); });
+  list.addEventListener('mousedown',e=>e.preventDefault());
+  // preventDefault also stops the surrounding <label> from passing the tap on to the field
+  list.addEventListener('click',e=>{ e.preventDefault(); const li=e.target.closest('[data-i]'); if(li) pick(Number(li.dataset.i)); });
+  document.addEventListener('pointerdown',e=>{ if(!wrap.contains(e.target)) close(); });
+  window.visualViewport?.addEventListener('resize',()=>{ if(!list.hidden) fit(); });
+  const api={open,close,refresh:()=>{ if(!list.hidden) render(); }};
+  return api;
+}
+
+// ═══════════════════════════════════════════════════════════
 // INSPECTION DETAILS (step 1)
 // ═══════════════════════════════════════════════════════════
 function inVal(id){ return document.getElementById(id).value.trim(); }
@@ -3471,10 +3627,22 @@ async function inLoadBuildings(){
     const res=await fetch('/api/buildings');
     if(res.ok){
       inBuildings=(await res.json()).buildings||[];
-      document.getElementById('in-buildings').innerHTML=inBuildings.map(b=>`<option value="${ovEsc(b.name)}">${ovEsc(b.division)} · ${ovEsc(b.area)}</option>`).join('');
+      inCombo?.refresh();
     }
   }catch{}
   return inBuildings||[];
+}
+/** The buildings list for the Building field: grouped by division — the chosen division first —
+ *  with each building's area and location underneath. */
+let inCombo=null;
+const IN_DIVISION_ORDER=['CAOSD','NPOSD','OOSD','SAOSD','NAOSD','RYOSD'];
+function inBuildingOptions(){
+  if(!inBuildings){ inLoadBuildings(); return []; }
+  const chosen=document.getElementById('meta-division').value;
+  const rank=d=>d===chosen?-1:(IN_DIVISION_ORDER.indexOf(d)+1||99);
+  return inBuildings.slice()
+    .sort((a,b)=>rank(a.division)-rank(b.division)||String(a.division).localeCompare(b.division)||a.name.localeCompare(b.name,undefined,{numeric:true}))
+    .map(b=>({value:b.name,sub:[b.area,b.location].filter(Boolean).join(' · '),group:b.division}));
 }
 function inMatchBuilding(){
   const v=inVal('meta-facility').toLowerCase();
@@ -3484,6 +3652,7 @@ function initInspectionDetails(){
   if(inReady) return;
   inReady=true;
   const fac=document.getElementById('meta-facility');
+  inCombo=makeCombo(fac,{options:inBuildingOptions});
   fac.addEventListener('input',()=>{ inOnBuilding({final:false}); inMarkChanged(); });
   fac.addEventListener('change',()=>inOnBuilding({final:true}));
   document.getElementById('meta-division').addEventListener('change',e=>{ e.target.classList.remove('invalid'); inMarkChanged(); });
@@ -4498,7 +4667,6 @@ function initAuditorProfile(){
   sel.value=cur;
   sel.addEventListener('change',()=>loadAuditorProfile());
   document.getElementById('au-switch').addEventListener('change',e=>openAuditorProfile(e.target.value));
-  document.getElementById('au-refresh').addEventListener('click',()=>loadAuditorProfile());
   document.getElementById('au-back').addEventListener('click',()=>nav(document.getElementById('team-link').dataset.page));
   document.getElementById('au-reports').addEventListener('click',()=>auData&&openReportsForInspector(auData.auditor.name));
   document.getElementById('au-manage').addEventListener('click',()=>{
@@ -5227,7 +5395,6 @@ function initOfficer(){
   document.getElementById('of-division').addEventListener('change',()=>{ document.getElementById('of-area').value=''; ofSave(); renderOfficer(); });
   document.getElementById('of-search').addEventListener('input',()=>renderOfRows());
   ['of-area','of-status','of-auditor-filter'].forEach(id=>document.getElementById(id).addEventListener('change',()=>renderOfficer()));
-  document.getElementById('of-refresh').addEventListener('click',()=>loadOfficer());
 
   const toTable=()=>document.getElementById('of-table-section').scrollIntoView({behavior:'smooth',block:'start'});
   document.getElementById('of-stats').addEventListener('click',e=>{
@@ -6404,7 +6571,6 @@ function schInit(){
   ['sch-quarter','sch-type','sch-auditor'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{
     if(id==='sch-auditor') renderSchedule(); else loadSchedule();
   }));
-  document.getElementById('sch-refresh').addEventListener('click',()=>loadSchedule());
 }
 async function loadSchedule(){
   schInit();
@@ -9000,19 +9166,28 @@ function adRenderBuildings(){
       </td></tr>`).join(''):'<tr><td colspan="5" class="ov-empty">No buildings match.</td></tr>';
   lucide.createIcons();
 }
+let adBuildingCombos=null;
 function adOpenBuilding(b){
   adEditingBuilding=b;
   const list=adBuildings||[];
-  const opts=key=>[...new Set(list.map(x=>x[key]))].sort().map(v=>`<option value="${ovEsc(v)}">`).join('');
-  document.getElementById('mb-divisions').innerHTML=opts('division');
-  document.getElementById('mb-areas').innerHTML=opts('area');
-  document.getElementById('mb-locations').innerHTML=opts('location');
+  if(!adBuildingCombos){
+    // each list offers what is already in use; areas and locations follow the division typed above
+    const uniq=(key,keep=()=>true)=>[...new Set((adBuildings||[]).filter(keep).map(x=>x[key]).filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(v=>({value:v}));
+    const inDiv=x=>{ const d=document.getElementById('mb-division').value.trim().toLowerCase(); return !d||String(x.division).toLowerCase()===d; };
+    adBuildingCombos=[
+      makeCombo(document.getElementById('mb-division'),{options:()=>uniq('division')}),
+      makeCombo(document.getElementById('mb-area'),{options:()=>{ const o=uniq('area',inDiv); return o.length?o:uniq('area'); }}),
+      makeCombo(document.getElementById('mb-location'),{options:()=>{ const o=uniq('location',inDiv); return o.length?o:uniq('location'); }}),
+    ];
+  }
   document.getElementById('mb-title').textContent=b?'Edit building':'Add building';
   document.getElementById('mb-sub').textContent=b
     ?'Renaming a building also changes how older, unassigned inspections are matched to it in Reports.'
     :'New buildings can be assigned right away in Assign & Track.';
   ['name','division','area','location'].forEach(k=>{ document.getElementById('mb-'+k).value=b?b[k]:''; });
   document.getElementById('mb-msg').style.display='none';
+  adBuildingCombos.forEach(c=>c.close());
   document.getElementById('modal-building').classList.add('open');
   document.getElementById('mb-name').focus();
 }

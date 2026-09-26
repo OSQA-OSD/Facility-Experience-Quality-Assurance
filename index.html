@@ -63,6 +63,13 @@ a{color:inherit}
 /* Hero */
 .hero{position:relative;overflow:hidden;background:var(--hero);color:#fff;border-bottom:4px solid var(--teal)}
 .hero{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+/* Two glows in the brand teal drift slowly across the gradient, as in the app */
+.hero::before,.hero::after{content:'';position:absolute;border-radius:50%;pointer-events:none;will-change:transform}
+.hero::before{width:620px;height:620px;top:-260px;right:-160px;background:radial-gradient(circle,rgba(38,168,171,.32) 0%,transparent 66%);animation:hgA 20s ease-in-out infinite alternate}
+.hero::after{width:560px;height:560px;bottom:-300px;left:-180px;background:radial-gradient(circle,rgba(140,254,227,.15) 0%,transparent 64%);animation:hgB 26s ease-in-out infinite alternate}
+.hero .wrap{z-index:1}
+@keyframes hgA{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(-34vw,90px,0) scale(1.2)}}
+@keyframes hgB{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(30vw,-80px,0) scale(.86)}}
 .hero .wrap{position:relative;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);align-items:center;gap:48px;min-height:min(640px,calc(100dvh - 70px));padding-block:72px}
 .kicker{display:flex;align-items:center;gap:12px;font-size:.72rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--teal-lt);margin-bottom:20px}
 .kicker::before{content:'';width:34px;height:2px;background:var(--teal)}
@@ -134,7 +141,7 @@ footer .brand small{color:var(--teal-lt)}
   .access-card .btn{width:100%}
   .actions .btn{flex:1 1 auto}
 }
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}.emblem svg,.emblem svg *{animation:none!important}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}.hero::before,.hero::after{animation:none}.emblem svg,.emblem svg *{animation:none!important}}
 </style>
 </head>
 <body>
