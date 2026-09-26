@@ -507,6 +507,7 @@ async function getVersion(env, id, version) {
  *  3. The full export an administrator downloads from Admin Control: every table, photos
  *     included, as one SQL file that loads straight back into a database.
  */
+const NIGHTLY_CRON = '30 23 * * *';      // 02:30 in Riyadh; the other trigger runs every 10 minutes
 const BACKUP_TABLES = {                // table → primary key used to page through it
   buildings: 'id', qa_users: 'id', assignments: 'id', inspections: 'id', inspection_reviews: 'id',
   inspection_versions: 'id', inspection_archive: 'id', photo_blobs: 'id', notifications: 'id',
@@ -528,12 +529,16 @@ async function gzipText(text) {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-/** One night's work, in small steps so it stays well inside Cloudflare's per-run limits. Each
- *  step moves a cursor forward only after its copy is written, so a run that stops half way,
- *  or has more to do than one run allows, simply carries on the next time. */
-async function runBackup(env, trigger) {
+/** The cloud backup. Nobody has to press anything:
+ *  - every 10 minutes a small run copies what changed — new versions, audit and review
+ *    entries, new photos — and brings reports saved before history began into it;
+ *  - every night a full run adds a copy of the accounts, buildings and assignments and keeps
+ *    the last 30 nightly copies plus the first of every month.
+ *  Each step moves its cursor only after its copy is written and stays well inside Cloudflare's
+ *  per-run limits, so a run that stops, or has more to do than one run allows, simply carries on. */
+async function runBackup(env, trigger, { full = true } = {}) {
   const started = Date.now();
-  const status = { ok: false, trigger, startedAt: new Date(started).toISOString() };
+  const status = { ok: false, full, trigger, startedAt: new Date(started).toISOString() };
   try {
     if (!env.BACKUPS) throw new Error('backup storage is not connected (KV binding BACKUPS)');
     const kv = env.BACKUPS;
@@ -542,15 +547,25 @@ async function runBackup(env, trigger) {
     let writes = 0;
 
     // 1. Older reports: file their inline photos, then record their current state as version 1.
-    status.photosFiled = await externalizeLegacyPhotos(env, 4);
-    status.baselines = await recordBaselines(env);
-    // 2. With photo storage switched on, photos still kept in the database move there.
-    status.photosMovedToStorage = env.PHOTOS ? await movePhotosToStorage(env, 10) : 0;
+    //    Once none are left the small runs stop looking; the nightly run always checks.
+    const olderDone = !full && (await getState(env, 'backup.older'))?.done;
+    if (!olderDone) {
+      status.photosFiled = await externalizeLegacyPhotos(env, full ? 6 : 5);
+      status.baselines = await recordBaselines(env);
+      const { n } = await env.DB.prepare(
+        `SELECT (SELECT COUNT(*) FROM inspections WHERE instr(data, '"data:image/') > 0)
+              + (SELECT COUNT(*) FROM inspections i WHERE NOT EXISTS (SELECT 1 FROM inspection_versions v WHERE v.inspection_id = i.id)) AS n`,
+      ).first();
+      await setState(env, 'backup.older', { done: n === 0, left: n });
+      status.olderLeft = n;
+    }
+    // 2. With photo storage (R2) switched on, photos still kept in the database move there.
+    if (env.PHOTOS) status.photosMovedToStorage = await movePhotosToStorage(env, full ? 10 : 4);
 
     // 3. Every saved version, in blocks, written once and never again.
     const cur = (await getState(env, 'backup.cursor')) || {};
     let vAfter = Number(cur.versions) || 0, versions = 0;
-    for (let page = 0; page < 3; page += 1) {
+    for (let page = 0; page < (full ? 3 : 1); page += 1) {
       const { results } = await env.DB.prepare('SELECT * FROM inspection_versions WHERE id > ?1 ORDER BY id LIMIT 60').bind(vAfter).all();
       if (!results?.length) break;
       const last = results[results.length - 1].id;
@@ -563,7 +578,7 @@ async function runBackup(env, trigger) {
     const blocks = {};
     for (const [table, key] of [['audit_log', 'audit'], ['inspection_reviews', 'reviews']]) {
       let after = Number(cur[key]) || 0, n = 0;
-      for (let page = 0; page < 2; page += 1) {
+      for (let page = 0; page < (full ? 2 : 1); page += 1) {
         const { results } = await env.DB.prepare(`SELECT * FROM ${table} WHERE id > ?1 ORDER BY id LIMIT 500`).bind(after).all();
         if (!results?.length) break;
         const last = results[results.length - 1].id;
@@ -572,54 +587,74 @@ async function runBackup(env, trigger) {
       }
       cur[key] = after; blocks[key] = n;
     }
+
+    // 5. Photos: each one copied once, as the image itself, wherever it is kept.
+    let pAfter = Number(cur.photos) || 0, photosCopied = 0;
+    const { results: shots } = await env.DB.prepare('SELECT rowid AS rid, id, mime, data FROM photo_blobs WHERE rowid > ?1 ORDER BY rowid LIMIT ?2')
+      .bind(pAfter, full ? 20 : 5).all();
+    for (const p of shots || []) {
+      let bytes = p.data ? b64ToBytes(p.data) : null;
+      if (!bytes && env.PHOTOS) { const obj = await env.PHOTOS.get(photoKey(p.id)); if (obj) bytes = new Uint8Array(await obj.arrayBuffer()); }
+      if (!bytes) break;                                   // try again next run rather than skip it
+      await kv.put(`photos/${p.id}`, bytes, { metadata: { mime: p.mime } });
+      pAfter = p.rid; photosCopied += 1; writes += 1;
+    }
+    cur.photos = pAfter;
     await setState(env, 'backup.cursor', cur);
 
-    // 5. The tables that change, whole, as tonight's copy, with the list of live and archived
-    //    reports and the version each is at (the versions themselves are in versions/…).
-    const snapshot = { format: 'facility-qa-daily', version: 2, createdAt: new Date().toISOString(), tables: {} };
-    for (const table of ['qa_users', 'buildings', 'assignments', 'notifications', 'saved_reports', 'system_state']) {
-      const { results } = await env.DB.prepare(`SELECT * FROM ${table}`).all();
-      snapshot.tables[table] = results || [];
-    }
-    const live = await env.DB.prepare(
-      'SELECT i.id, i.updated_at, (SELECT MAX(v.version) FROM inspection_versions v WHERE v.inspection_id = i.id) AS version FROM inspections i',
-    ).all();
-    const gone = await env.DB.prepare('SELECT id, deleted_at, deleted_by_name FROM inspection_archive').all();
-    const photos = await env.DB.prepare("SELECT id, mime, bytes, first_inspection_id, created_at, data = '' AS in_storage FROM photo_blobs").all();
-    snapshot.tables.inspections_index = live.results || [];
-    snapshot.tables.archive_index = gone.results || [];
-    snapshot.tables.photo_index = photos.results || [];
-    await kv.put(`daily/${day}.json.gz`, await gzipText(JSON.stringify(snapshot)));
-    writes += 1;
-
-    // 6. Daily copies: the last 30 days, and the first of every month for good.
-    const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-    let removed = 0, listed = await kv.list({ prefix: 'daily/' });
-    for (;;) {
-      for (const k of listed.keys) {
-        const d = k.name.slice(6, 16);
-        if (d < cutoff && !d.endsWith('-01')) { await kv.delete(k.name); removed += 1; }
+    let removed = 0, live = null, gone = null, photos = null;
+    if (full) {
+      // 6. The tables that change, whole, as tonight's copy, with the list of live and archived
+      //    reports and the version each is at (the versions themselves are in versions/…).
+      const snapshot = { format: 'facility-qa-daily', version: 3, createdAt: new Date().toISOString(), tables: {} };
+      for (const table of ['qa_users', 'buildings', 'assignments', 'notifications', 'saved_reports', 'system_state']) {
+        const { results } = await env.DB.prepare(`SELECT * FROM ${table}`).all();
+        snapshot.tables[table] = results || [];
       }
-      if (listed.list_complete) break;
-      listed = await kv.list({ prefix: 'daily/', cursor: listed.cursor });
+      live = await env.DB.prepare(
+        'SELECT i.id, i.updated_at, (SELECT MAX(v.version) FROM inspection_versions v WHERE v.inspection_id = i.id) AS version FROM inspections i',
+      ).all();
+      gone = await env.DB.prepare('SELECT id, deleted_at, deleted_by_name FROM inspection_archive').all();
+      photos = await env.DB.prepare("SELECT id, mime, bytes, first_inspection_id, created_at, data = '' AS in_storage FROM photo_blobs").all();
+      snapshot.tables.inspections_index = live.results || [];
+      snapshot.tables.archive_index = gone.results || [];
+      snapshot.tables.photo_index = photos.results || [];
+      await kv.put(`daily/${day}.json.gz`, await gzipText(JSON.stringify(snapshot)));
+      writes += 1;
+
+      // 7. Nightly copies: the last 30 days, and the first of every month for good.
+      const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+      let listed = await kv.list({ prefix: 'daily/' });
+      for (;;) {
+        for (const k of listed.keys) {
+          const d = k.name.slice(6, 16);
+          if (d < cutoff && !d.endsWith('-01')) { await kv.delete(k.name); removed += 1; }
+        }
+        if (listed.list_complete) break;
+        listed = await kv.list({ prefix: 'daily/', cursor: listed.cursor });
+      }
     }
 
     const waiting = await env.DB.prepare(
       `SELECT (SELECT COUNT(*) FROM inspection_versions WHERE id > ?1) AS versions,
-              (SELECT COUNT(*) FROM inspections WHERE instr(data, '"data:image/') > 0) AS legacy`,
-    ).bind(vAfter).first();
+              (SELECT COUNT(*) FROM photo_blobs WHERE rowid > ?2) AS photos`,
+    ).bind(vAfter, pAfter).first();
     Object.assign(status, {
       ok: true, finishedAt: new Date().toISOString(), seconds: Math.round((Date.now() - started) / 100) / 10,
-      day, versionsCopied: versions, versionsWaiting: waiting.versions, legacyWaiting: waiting.legacy,
-      auditRows: blocks.audit, reviewRows: blocks.reviews, writes, oldDailyCopiesRemoved: removed,
-      photoStorage: !!env.PHOTOS, reports: (live.results || []).length, archived: (gone.results || []).length, photos: (photos.results || []).length,
+      day, versionsCopied: versions, versionsWaiting: waiting.versions, photosCopied, photosWaiting: waiting.photos,
+      auditRows: blocks.audit, reviewRows: blocks.reviews, writes, oldDailyCopiesRemoved: removed, photoStorage: !!env.PHOTOS,
     });
+    if (full) Object.assign(status, { reports: (live.results || []).length, archived: (gone.results || []).length, photos: (photos.results || []).length });
   } catch (err) {
     status.error = String(err?.message || err);
     status.finishedAt = new Date().toISOString();
   }
-  await setState(env, 'backup.last', status).catch(() => {});
-  if (status.ok) await setState(env, 'backup.lastOk', status).catch(() => {});
+  if (full) {
+    await setState(env, 'backup.last', status).catch(() => {});
+    if (status.ok) await setState(env, 'backup.lastOk', status).catch(() => {});
+  } else {
+    await setState(env, 'backup.catchup', status).catch(() => {});
+  }
   return status;
 }
 
@@ -655,17 +690,20 @@ async function movePhotosToStorage(env, limit) {
 }
 
 async function backupStatus(env) {
-  const [last, lastOk, counts] = await Promise.all([
-    getState(env, 'backup.last'), getState(env, 'backup.lastOk'),
+  const cur = (await getState(env, 'backup.cursor')) || {};
+  const [last, lastOk, catchup, counts] = await Promise.all([
+    getState(env, 'backup.last'), getState(env, 'backup.lastOk'), getState(env, 'backup.catchup'),
     env.DB.prepare(`SELECT (SELECT COUNT(*) FROM inspections) AS reports, (SELECT COUNT(*) FROM inspection_archive) AS archived,
       (SELECT COUNT(*) FROM inspection_versions) AS versions, (SELECT COUNT(*) FROM photo_blobs) AS photos,
       (SELECT COALESCE(SUM(bytes),0) FROM photo_blobs) AS photoBytes,
       (SELECT COALESCE(SUM(bytes),0) FROM photo_blobs WHERE data != '') AS photoBytesInDb,
       (SELECT COUNT(*) FROM inspections WHERE instr(data, '"data:image/') > 0) AS legacyReports,
       (SELECT COUNT(*) FROM inspections i WHERE NOT EXISTS (SELECT 1 FROM inspection_versions v WHERE v.inspection_id = i.id)) AS withoutHistory,
-      (SELECT COUNT(*) FROM audit_log) AS auditRows`).first(),
+      (SELECT COUNT(*) FROM audit_log) AS auditRows,
+      (SELECT COUNT(*) FROM inspection_versions WHERE id > ?1) AS versionsWaiting,
+      (SELECT COUNT(*) FROM photo_blobs WHERE rowid > ?2) AS photosWaiting`).bind(Number(cur.versions) || 0, Number(cur.photos) || 0).first(),
   ]);
-  return json({ last, lastOk, counts, storage: { backups: !!env.BACKUPS, photos: !!env.PHOTOS } });
+  return json({ last, lastOk, catchup, counts, storage: { backups: !!env.BACKUPS, photos: !!env.PHOTOS } });
 }
 
 /** One page of one table for the full export. Photos come a few at a time (they are large). */
@@ -1108,6 +1146,79 @@ async function bulkAssign(env, officer, body) {
   }
 
   return json({ ok: true, changed: change.length, unchanged, skippedCompleted, notFound });
+}
+
+/* The end-of-quarter round usually goes to the same people as the beginning: each building's
+ * BOQI auditor gets it for the EOQI too. Limited to the auditors and/or buildings asked for.
+ * An EOQI already given to someone else is kept unless `replace` is set; one already inspected
+ * is never touched; an auditor who can no longer take work is reported, not assigned. */
+async function repeatForEndOfQuarter(env, officer, body) {
+  const quarter = String(body?.quarter || '').trim();
+  if (!QUARTER_RE.test(quarter)) return fail('quarter (YYYY-Qn) is required', 400);
+  const due = 'dueDate' in (body || {}) ? dueDateOf(body.dueDate) : null;
+  if (due && !due.ok) return fail('a deadline must be a date like 2026-09-30', 400);
+  const onlyAuditors = Array.isArray(body?.auditorIds) ? new Set(body.auditorIds.map(String)) : null;
+  const onlyBuildings = Array.isArray(body?.buildingIds) ? new Set(body.buildingIds.map(Number)) : null;
+  const replace = body?.replace === true;
+
+  const [{ results: begin }, { results: end }, { results: people }, { results: names }, completedIds] = await Promise.all([
+    env.DB.prepare("SELECT building_id, auditor_id FROM assignments WHERE quarter = ?1 AND type = 'BOQI'").bind(quarter).all(),
+    env.DB.prepare("SELECT id, building_id, auditor_id FROM assignments WHERE quarter = ?1 AND type = 'EOQI'").bind(quarter).all(),
+    env.DB.prepare('SELECT * FROM qa_users').all(),
+    env.DB.prepare('SELECT id, name FROM buildings').all(),
+    completedAssignmentIds(env),
+  ]);
+  const users = new Map((people || []).map((u) => [u.id, u]));
+  const endOf = new Map((end || []).map((x) => [x.building_id, x]));
+  const buildingName = new Map((names || []).map((x) => [x.id, x.name]));
+
+  const plan = new Map();                                   // auditor → buildings to give them
+  const tally = { assigned: 0, alreadyTheirs: 0, keptOther: 0, locked: 0, unavailable: 0 };
+  const unavailable = new Map();
+  for (const row of begin || []) {
+    if (onlyAuditors && !onlyAuditors.has(row.auditor_id)) continue;
+    if (onlyBuildings && !onlyBuildings.has(row.building_id)) continue;
+    const cur = endOf.get(row.building_id);
+    if (cur && completedIds.has(cur.id)) { tally.locked += 1; continue; }
+    if (cur && cur.auditor_id === row.auditor_id) { tally.alreadyTheirs += 1; if (!due) continue; }
+    else if (cur && !replace) { tally.keptOther += 1; continue; }
+    const who = users.get(row.auditor_id);
+    if (assigneeProblem(officer, who)) {
+      tally.unavailable += 1;
+      unavailable.set(row.auditor_id, (who && who.name) || 'Unknown');
+      continue;
+    }
+    if (!plan.has(row.auditor_id)) plan.set(row.auditor_id, []);
+    plan.get(row.auditor_id).push(row.building_id);
+    if (!cur || cur.auditor_id !== row.auditor_id) tally.assigned += 1;
+  }
+
+  const statements = [...plan.entries()].map(([auditorId, ids]) => env.DB.prepare(
+    `INSERT INTO assignments (building_id, auditor_id, quarter, type, assigned_by, due_date)
+     SELECT CAST(value AS INTEGER), ?2, ?3, 'EOQI', ?4, ?5 FROM json_each(?1) WHERE true
+     ON CONFLICT(building_id, quarter, type)
+     DO UPDATE SET auditor_id = excluded.auditor_id, assigned_by = excluded.assigned_by,
+       updated_at = datetime('now')${due ? ', due_date = excluded.due_date' : ''}`,
+  ).bind(JSON.stringify(ids), auditorId, quarter, officer.id, due ? due.value : null));
+  if (statements.length) await env.DB.batch(statements);
+
+  // Each auditor hears once, about the buildings that are new to them.
+  const told = [];
+  for (const [auditorId, ids] of plan) {
+    const fresh = ids.filter((id) => endOf.get(id)?.auditor_id !== auditorId);
+    if (!fresh.length || auditorId === officer.id) continue;
+    const list = fresh.slice(0, 3).map((id) => buildingName.get(id)).join(', ') + (fresh.length > 3 ? ` and ${fresh.length - 3} more` : '');
+    told.push(notify(env, auditorId, 'assignment',
+      fresh.length === 1 ? `End of quarter: ${buildingName.get(fresh[0])}` : `${fresh.length} buildings for the end of the quarter`,
+      `${officer.name} gave you ${list} for ${quarter} EOQI — the same buildings as your BOQI.${due && due.value ? ` Due ${due.value}.` : ''}`,
+      '#pg-auditor'));
+  }
+  await Promise.all(told);
+  if (tally.assigned || (due && plan.size)) {
+    await audit(env, officer, 'assignment.repeat', quarter, `${quarter} BOQI → EOQI`,
+      `${tally.assigned} buildings given to the same auditors for the EOQI${due && due.value ? ` · due ${due.value}` : ''}`);
+  }
+  return json({ ok: true, ...tally, unavailableAuditors: [...unavailable.values()] });
 }
 
 /* ── Auditor profile ───────────────────────────────────────
@@ -1778,6 +1889,10 @@ async function handleAssignments(request, env, url, path, user) {
     if (!canManage) return fail('you do not have permission to assign buildings', 403);
     return bulkAssign(env, user, await request.json());
   }
+  if (path === 'assignments/repeat' && method === 'POST') {
+    if (!canManage) return fail('you do not have permission to assign buildings', 403);
+    return repeatForEndOfQuarter(env, user, await request.json());
+  }
   const idMatch = path.match(/^assignments\/(\d+)$/);
   if (idMatch && method === 'DELETE') {
     if (!canManage) return fail('you do not have permission to unassign buildings', 403);
@@ -2346,18 +2461,12 @@ async function handleAdmin(request, env, path, user) {
   }
   if (path === 'admin/export' && method === 'GET') {
     const url = new URL(request.url);
-    if (url.searchParams.get('start') === '1') await audit(env, user, 'backup.download', null, 'Full export', 'Downloaded a full copy of the database');
+    if (url.searchParams.get('start') === '1') {
+      const photosOnly = url.searchParams.get('kind') === 'photos';
+      await audit(env, user, 'backup.download', null, photosOnly ? 'Photos' : 'Data', photosOnly ? 'Downloaded a copy of every photo' : 'Downloaded a copy of all the data');
+    }
     return exportTablePage(env, url);
   }
-  if (path === 'admin/maintenance/photos' && method === 'POST') {
-    const moved = await externalizeLegacyPhotos(env, 8);
-    const baselines = await recordBaselines(env);
-    const toStorage = env.PHOTOS ? await movePhotosToStorage(env, 10) : 0;
-    const left = await env.DB.prepare(`SELECT (SELECT COUNT(*) FROM inspections WHERE instr(data, '"data:image/') > 0) AS legacy,
-      (SELECT COUNT(*) FROM photo_blobs WHERE data != '') AS inDb`).first();
-    return json({ moved, baselines, toStorage, reportsLeft: left.legacy, photosInDatabase: env.PHOTOS ? left.inDb : 0 });
-  }
-
   const idMatch = path.match(/^admin\/users\/([^/]+)$/);
   if (idMatch && method === 'PATCH') return adminUpdateUser(env, user, idMatch[1], await request.json());
   if (idMatch && method === 'DELETE') return adminDeleteUser(env, user, idMatch[1]);
@@ -2538,7 +2647,8 @@ async function handleAssets(request, env, url) {
 
 export default {
   async scheduled(controller, env, ctx) {
-    ctx.waitUntil(runBackup(env, 'nightly'));
+    const nightly = controller.cron === NIGHTLY_CRON;
+    ctx.waitUntil(runBackup(env, nightly ? 'nightly' : 'automatic', { full: nightly }));
   },
   async fetch(request, env) {
     const url = new URL(request.url);
