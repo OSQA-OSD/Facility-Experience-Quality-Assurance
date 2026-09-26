@@ -13,9 +13,9 @@
 <title>Facility Experience QA Check List</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
 <!-- Lucide icons via CDN -->
-<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js" integrity="sha384-wHFvAtjmgnkA2PJcMsDaCgdipf7X7YV44X/igbLHpvGiq6T5/PvFKl93grpvtbQT" crossorigin="anonymous"></script>
 <script>
 /* Two libraries come from a CDN. If one cannot be reached — a weak signal in a plant room, a blocked
    domain — the app must still open and work: icons simply stay blank and charts stay empty. */
@@ -548,7 +548,11 @@ body::after{inset:-30%;background:
 .au-state.closed{background:var(--bg);color:var(--muted)}
 .au-type{display:inline-flex;align-items:center;justify-content:center;min-width:46px;font-size:.68rem;font-weight:900;letter-spacing:.04em;padding:3px 7px;border-radius:6px;color:#fff;background:var(--teal-deep);flex-shrink:0}
 .au-type.EOQI{background:var(--royal)}
-.au-list{display:grid;gap:8px}
+.au-list{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
+/* Very long names (buildings, areas, people) never widen the page: dropdowns keep to their row,
+   and a word too long for its table cell breaks inside the cell. */
+.ov-filters select,.ov-tools select,.hist-filters select,.rp-filters select{max-width:100%;text-overflow:ellipsis}
+.ov-table td{overflow-wrap:anywhere}   /* long building names shorten with … instead of widening the page */
 .au-group{display:flex;align-items:center;gap:8px;margin:12px 2px 2px;font-size:.72rem;font-weight:800;color:var(--royal)}
 .au-group:first-child{margin-top:0}
 .au-group small{color:var(--muted);font-weight:600}
@@ -1108,6 +1112,21 @@ html:not([data-itype="EOQI"]) .sb em{font-size:.78rem;background:none;padding:0}
 .notif-push button.primary{background:var(--teal-deep);border-color:var(--teal-deep);color:#fff}
 .notif-push button:disabled{opacity:.6}
 .notif-push.on{background:rgba(0,132,61,.06)}
+.notif-push.muted{background:var(--bg)}
+.notif-push.muted>svg{color:var(--muted)}
+/* Settings */
+.st-box{width:460px}
+.st-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--bg)}
+.st-row:last-of-type{border-bottom:1px solid var(--bg);margin-bottom:16px}
+.st-row b{display:block;font-size:.9rem;color:var(--royal-dk)}
+.st-row small{display:block;font-size:.76rem;color:var(--muted);line-height:1.45;margin-top:3px}
+.st-row .btn{flex:none;white-space:nowrap}
+.st-switch{flex:none;position:relative;width:48px;height:28px;border-radius:99px;border:none;background:#b8c0c8;cursor:pointer;padding:0;transition:background .15s}
+.st-switch i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.st-switch[aria-checked=true]{background:var(--teal-deep)}
+.st-switch[aria-checked=true] i{transform:translateX(20px)}
+.st-switch:disabled{opacity:.6;cursor:default}
+#acct-avatar{cursor:pointer}
 .notif-push.on>svg{color:var(--good-ink)}
 @keyframes ntIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 @keyframes bellRing{0%,100%{transform:rotate(0)}20%{transform:rotate(14deg)}40%{transform:rotate(-12deg)}60%{transform:rotate(8deg)}80%{transform:rotate(-4deg)}}
@@ -1472,9 +1491,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
   </nav>
   <div id="sb-foot">
     <div id="acct-row">
-      <i id="acct-avatar">–</i>
+      <i id="acct-avatar" role="button" tabindex="0" title="Settings" aria-label="Settings">–</i>
       <div class="acct-meta"><span id="acct-name">…</span><span id="acct-role"></span></div>
-      <button class="acct-btn" id="acct-settings" title="Change password"><svg data-lucide="settings" width="14" height="14"></svg></button>
+      <button class="acct-btn" id="acct-settings" title="Settings" aria-label="Settings"><svg data-lucide="settings" width="14" height="14"></svg></button>
       <button class="acct-btn" id="acct-logout" title="Sign out">Sign out</button>
     </div>
   </div>
@@ -2683,6 +2702,23 @@ html[data-pointer=mouse] .ph-cam{display:none}
   </div>
 </div>
 
+<!-- Settings: each person's own -->
+<div class="modal-bg" id="modal-settings">
+  <div class="modal-box st-box" role="dialog" aria-modal="true" aria-labelledby="st-title">
+    <h3 id="st-title">Settings</h3>
+    <p class="msub" id="st-who"></p>
+    <div class="st-row">
+      <div><b id="st-notif-label">Notifications</b><small>New assignments, reports to review, review decisions and deadlines — in the bell, and on devices where you turned them on. Security alerts about your own account (password changed or reset, account locked) always come through.</small></div>
+      <button type="button" class="st-switch" id="st-notif" role="switch" aria-checked="true" aria-labelledby="st-notif-label"><i></i></button>
+    </div>
+    <div class="st-row">
+      <div><b>Password</b><small>Change it any time. Your other devices will be signed out.</small></div>
+      <button class="btn bo" type="button" id="st-pw">Change password</button>
+    </div>
+    <div class="mbtns"><button class="btn bt" type="button" onclick="closeModal('modal-settings')">Done</button></div>
+  </div>
+</div>
+
 <!-- Change password -->
 <div class="modal-bg" id="modal-change-pw">
   <div class="modal-box">
@@ -3488,6 +3524,7 @@ function loadHeicConverter(){
     heicLoader=new Promise((resolve,reject)=>{
       const s=document.createElement('script');
       s.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+      s.integrity='sha384-OTofQ0MEeiSgh62havBcemCIK0gqj809wX6UA0uPISNMRnR6NZyCdGzX3SbLrgwL'; s.crossOrigin='anonymous';
       s.onload=()=>window.heic2any?resolve(window.heic2any):reject(new Error('converter unavailable'));
       s.onerror=()=>reject(new Error('converter could not be downloaded'));
       document.head.appendChild(s);
@@ -3578,6 +3615,12 @@ function useAccountInspector(){
   rebuildInspectorDropdown(); renderInspectorChips(); syncFormToState();
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
+// Escape closes the dialog on top, the same as its Cancel button (keyboard users are never stuck).
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape'||e.defaultPrevented) return;
+  const open=[...document.querySelectorAll('.modal-bg.open')].pop();
+  if(open){ e.preventDefault(); closeModal(open.id); }
+},true);                                                     // first, so one press closes only the top dialog
 
 // ═══════════════════════════════════════════════════════════
 // PICK-OR-TYPE LISTS
@@ -4309,11 +4352,12 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
     // Safari on iPhone ignores window.print() when the site runs from the Home Screen, and
     // there is no share menu there either — so the page builds the PDF itself and hands the
     // file to the system share sheet, which can save it to Files, send it, or print it.
-    function reportFileName(){ return ${JSON.stringify(String(report.filename||'inspection-report.pdf').replace(/\.pdf$/i,'')+'.pdf')}; }
+    function reportFileName(){ return ${jsonInScript(String(report.filename||'inspection-report.pdf').replace(/\.pdf$/i,'')+'.pdf')}; }
+    var SRI={'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js':'sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H','https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js':'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk'};
     function loadOnce(src){
       return new Promise(function(res,rej){
         var s=document.createElement('script');
-        s.src=src; s.onload=res; s.onerror=function(){ rej(new Error('Could not load '+src)); };
+        s.src=src; s.crossOrigin='anonymous'; if(SRI[src]) s.integrity=SRI[src]; s.onload=res; s.onerror=function(){ rej(new Error('Could not load '+src)); };
         document.head.appendChild(s);
       });
     }
@@ -5129,7 +5173,7 @@ function setNotifBadge(n){
 }
 function scheduleNotifPoll(){
   clearTimeout(notifTimer);
-  notifTimer=setTimeout(pollNotifications,document.visibilityState==='visible'?15000:60000);
+  notifTimer=setTimeout(pollNotifications,document.visibilityState==='visible'?30000:60000);
 }
 async function pollNotifications(){
   if(notifBusy) return;
@@ -5188,18 +5232,20 @@ const b64uBytes=t=>{ const s=t.replace(/-/g,'+').replace(/_/g,'/'), p=s+'='.repe
 function pushIosBrowser(){ const d=document.documentElement.dataset; return d.os==='ios'&&d.display!=='standalone'; }
 function pushRender(state){
   const box=document.getElementById('notif-push');
-  box.className='notif-push'+(state==='on'?' on':'');
+  box.className='notif-push'+(state==='on'?' on':state==='muted'?' muted':'');
   const icon=n=>`<svg data-lucide="${n}" width="18" height="18"></svg>`;
   const views={
     off:`${icon('bell-ring')}<div><b>Get notifications on this device</b>New assignments, reviews and reports show on the lock screen, even when OSQA is closed.<div class="np-btns"><button class="primary" data-push="on">Turn on</button></div></div>`,
     on:`${icon('bell-ring')}<div><b>Notifications are on for this device</b>They stop when you sign out, and start again when you sign in.<div class="np-btns"><button data-push="test">Send a test</button><button data-push="off">Turn off</button></div></div>`,
     ios:`${icon('smartphone')}<div><b>Notifications on this iPhone</b>Add OSQA to your Home Screen first: tap Share, then “Add to Home Screen”. Open OSQA from the Home Screen and turn notifications on here.</div>`,
     blocked:`${icon('bell-off')}<div><b>Notifications are blocked</b>Allow them for OSQA in this device’s settings, then come back here.</div>`,
+    muted:`${icon('bell-off')}<div><b>Notifications are off</b>You chose not to receive them. Security alerts about your account still come through.<div class="np-btns"><button data-push="settings">Open settings</button></div></div>`,
   };
   box.hidden=!views[state];
   if(views[state]){ box.innerHTML=views[state]; lucide.createIcons({nodes:[box]}); }
 }
 async function pushInit(){
+  if(currentUser&&currentUser.notificationsEnabled===false){ pushRender('muted'); return; }
   try{
     if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){ pushRender(pushIosBrowser()?'ios':'none'); return; }
     const [reg,cfg]=await Promise.all([
@@ -5241,6 +5287,8 @@ async function pushAction(what,btn){
         await sub.unsubscribe().catch(()=>{});
       }
       pushState.on=false; pushRender('off'); showToast('Notifications are off for this device');
+    }else if(what==='settings'){
+      document.getElementById('notif-panel').hidden=true; openSettings(); return;
     }else if(what==='test'){
       const d=await fetch('/api/push/test',{method:'POST'}).then(r=>r.json()).catch(()=>({}));
       showToast(d.sent?'Test sent — it should appear in a moment':'No device received it — turn notifications off and on again',!d.sent);
@@ -5262,13 +5310,15 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 window.addEventListener('focus',()=>pollNotifications());
 window.addEventListener('online',()=>pollNotifications());
 setInterval(()=>{ if(appIsOpen()&&document.visibilityState==='visible') refreshReviewBadge(); },60000);
-pushInit();
 loadNotifications();
 pollNotifications();
 
 // ═══════════════════════════════════════════════════════════
 // TEAM OVERVIEW (Quality Leader)
 // ═══════════════════════════════════════════════════════════
+/** A value written into a <script> block of a generated page: as JSON, with every "<" escaped so
+ *  no text (a file name, a building) can close the script and run code of its own. */
+function jsonInScript(v){ return JSON.stringify(v).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029'); }
 function ovEsc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function ovPct(done,total){
   const p=total?Math.round(done/total*100):0;
@@ -8584,16 +8634,17 @@ td.up{color:#007A38;font-weight:800}td.down{color:#CB3010;font-weight:800}
 <div id="docwrap"><div id="doc"><div id="sheets"></div></div></div>
 <div id="flow">${flow}</div>
 <script>
-var FIRST_HEAD=${JSON.stringify(`<div class="rule"></div>
+var FIRST_HEAD=${jsonInScript(`<div class="rule"></div>
   <div class="brand"><img src="${ovEsc(logoUrl)}" alt="OSQA"><i></i>OSD · Facility Experience Quality Assurance</div>
   <div class="head"><div><h1>${ovEsc(title)}</h1>${note?`<p class="lead">${ovEsc(note)}</p>`:''}
     <div class="chips">${chips.map(([k,v])=>`<span class="chip"><b>${ovEsc(k)}</b>${ovEsc(v)}</span>`).join('')}</div></div></div>`)};
-var DOC_NAME=${JSON.stringify(fileName)};
-var LEGEND=${JSON.stringify(legend?`<span class="legend">${ovEsc(legend)}</span>`:'<span></span>')};
+var DOC_NAME=${jsonInScript(fileName)};
+var LEGEND=${jsonInScript(legend?`<span class="legend">${ovEsc(legend)}</span>`:'<span></span>')};
+const SRI={'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js':'sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H','https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js':'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk'};
 function loadOnce(src){
   return new Promise(function(res,rej){
     var s=document.createElement('script');
-    s.src=src; s.onload=res; s.onerror=function(){ rej(new Error('Could not load '+src)); };
+    s.src=src; s.crossOrigin='anonymous'; if(SRI[src]) s.integrity=SRI[src]; s.onload=res; s.onerror=function(){ rej(new Error('Could not load '+src)); };
     document.head.appendChild(s);
   });
 }
@@ -9507,6 +9558,7 @@ function adRenderAudit(){
     if(!res.ok){ window.location.href='/login.html'; return; }
     const {user}=await res.json();
     currentUser=user;
+    pushInit();                                            // needs to know whether notifications are on
     const displayName=user.name||user.username;
     document.getElementById('acct-name').textContent=displayName;
     document.getElementById('acct-avatar').textContent=displayName.split(/\s+/).filter(Boolean).map(p=>p[0]).slice(0,2).join('').toUpperCase();
@@ -9557,14 +9609,45 @@ document.getElementById('acct-logout').addEventListener('click',async()=>{
   try{ await fetch('/api/auth/logout',{method:'POST'}); }finally{ window.location.href='/'; }
 });
 
+// ── Account: settings (each person's own) ──
+function openSettings(){
+  const u=currentUser||{};
+  document.getElementById('st-who').textContent=[u.name,u.username?'@'+u.username:''].filter(Boolean).join(' · ');
+  stRender();
+  document.getElementById('modal-settings').classList.add('open');
+  document.getElementById('st-notif').focus();
+}
+function stRender(){
+  const on=currentUser?.notificationsEnabled!==false;
+  document.getElementById('st-notif').setAttribute('aria-checked',on?'true':'false');
+}
+document.getElementById('acct-settings').addEventListener('click',openSettings);
+document.getElementById('acct-avatar').addEventListener('click',openSettings);
+document.getElementById('acct-avatar').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openSettings(); } });
+document.getElementById('modal-settings').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal('modal-settings'); });
+document.getElementById('st-pw').addEventListener('click',()=>{ closeModal('modal-settings'); openChangePassword(); });
+document.getElementById('st-notif').addEventListener('click',async e=>{
+  const sw=e.currentTarget, want=sw.getAttribute('aria-checked')!=='true';
+  sw.disabled=true;
+  try{
+    const res=await fetch('/api/account/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({notifications:want})});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(d.error||'Could not save the setting.');
+    if(currentUser) currentUser.notificationsEnabled=d.notifications;
+    stRender(); pushInit();
+    showToast(d.notifications?'Notifications are on':'Notifications are off — security alerts about your account still come through');
+  }catch(err){ showToast(err.message,true); }
+  finally{ sw.disabled=false; }
+});
+
 // ── Account: change password ──
-document.getElementById('acct-settings').addEventListener('click',()=>{
+function openChangePassword(){
   document.getElementById('pw-current').value='';
   document.getElementById('pw-new').value='';
   document.getElementById('pw-confirm').value='';
   document.getElementById('pw-msg').style.display='none';
   document.getElementById('modal-change-pw').classList.add('open');
-});
+}
 document.getElementById('modal-change-pw').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('modal-change-pw');});
 /* The password rule, the same one the server enforces: 8+ characters, an uppercase letter,
    a lowercase letter and a symbol. */

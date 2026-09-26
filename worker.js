@@ -63,10 +63,40 @@ function scoreReport(body) {
   return { overall: Math.round(total) };
 }
 
+/* What a report may contain. The browser builds it, but anyone can send a request by hand, so the
+ * server checks it: a known inspection type, a real date, sensible lengths and counts. */
+const INSPECTION_TYPES = new Set(['BOQI', 'EOQI', 'Follow-up']);
+function reportProblem(f, body) {
+  const text = (v, max) => v == null || (typeof v === 'string' && v.length <= max);
+  if (!INSPECTION_TYPES.has(f.type)) return 'choose the inspection type: BOQI, EOQI or Follow-up';
+  const d = dueDateOf(f.date);
+  if (!f.date || !d.ok || f.date < '2000-01-01' || f.date > '2100-12-31') return 'the inspection date must be a real date like 2026-09-30';
+  if (typeof f.facility !== 'string' || !f.facility.trim() || f.facility.length > 200) return 'the building name is missing or too long (200 characters at most)';
+  if (!text(f.division, 60) || !text(f.typeLabel, 100) || !text(f.filename, 200) || !text(f.inspector, 120)) return 'one of the report details is too long';
+  const sections = body.sections;
+  if (sections != null && (!Array.isArray(sections) || sections.length > 30)) return 'the report has too many sections';
+  for (const sec of sections || []) {
+    if (!sec || typeof sec !== 'object' || !Array.isArray(sec.items) || sec.items.length > 100) return 'a section of this report could not be read';
+    if (!text(sec.title, 200) || !text(sec.notes, 5000)) return 'a section title or note is too long';
+    for (const it of sec.items) {
+      if (it == null || typeof it === 'string') continue;
+      if (typeof it !== 'object') return 'an item of this report could not be read';
+      if (!text(it.label, 500) || !text(it.comment, 5000)) return 'an item or comment is too long (comments: 5000 characters at most)';
+      if (it.photos != null && (!Array.isArray(it.photos) || it.photos.length > 30)) return 'an item has too many photos (30 at most)';
+    }
+  }
+  return null;
+}
+
 function recordToRow(rec) {
+  if (!rec || typeof rec !== 'object' || Array.isArray(rec)) return { error: 'the report could not be read' };
   const { id, inspector, facility, division, date, type, typeLabel,
           overall: sentOverall, filename, ...rest } = rec;
-  const scored = rest.trialImport ? { overall: sentOverall ?? null } : scoreReport(rest);
+  // Marks the server sets never come from a request (trial rows keep theirs on edit — see updateInspection).
+  delete rest.trialImport;
+  const problem = reportProblem({ facility, division, date, type, typeLabel, filename, inspector }, rest);
+  if (problem) return { error: problem };
+  const scored = scoreReport(rest);
   if (scored.error) return { error: scored.error };
   const overall = scored.overall ?? sentOverall;
   return {
@@ -78,7 +108,8 @@ function recordToRow(rec) {
     type: type ?? '',
     type_label: typeLabel ?? '',
     overall: overall ?? null,
-    filename: filename ?? '',
+    // a file name is only ever a name: no markup, no path, no control characters
+    filename: String(filename ?? '').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '').slice(0, 200),
     data: JSON.stringify(rest ?? {}),
     body: rest ?? {},
   };
@@ -117,6 +148,7 @@ async function insertInspection(env, user, rec) {
   const stored = await storeReportPhotos(env, r.body, Number(r.id));
   if (stored.error) return fail(stored.error, 400);
   r.data = stored.data;
+  if (r.data.length > 1_800_000) return fail('this report is too large to save — shorten the longest comments', 400);
 
   try {
     await env.DB.prepare(
@@ -161,6 +193,17 @@ const MAX_PHOTO_BASE64 = 1_900_000; // ~1.4 MB of image, under D1's 2 MB row lim
 const b64ToBytes = (b64) => { const bin = atob(b64), out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i += 1) out[i] = bin.charCodeAt(i); return out; };
 function bytesToB64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); }
 const photoKey = (sha) => `photos/${sha}`;
+/** The first bytes of the file must match its declared type (JPEG, PNG, WebP, HEIC/HEIF). */
+function photoBytesMatch(b64, mime) {
+  let h;
+  try { h = b64ToBytes(b64.slice(0, 24)); } catch { return false; }
+  const ascii = (a, b) => String.fromCharCode(...h.slice(a, b));
+  if (mime === 'image/jpeg') return h[0] === 0xff && h[1] === 0xd8 && h[2] === 0xff;
+  if (mime === 'image/png') return h[0] === 0x89 && ascii(1, 4) === 'PNG';
+  if (mime === 'image/webp') return ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP';
+  if (mime === 'image/heic' || mime === 'image/heif') return ascii(4, 8) === 'ftyp';
+  return false;
+}
 
 /** Takes the report body (object or JSON text), files new photos, returns the body with addresses.
  *  With photo storage (R2, binding PHOTOS) switched on, the image goes there and the database
@@ -184,6 +227,7 @@ async function storeReportPhotos(env, body, inspectionId) {
           if (!PHOTO_MIME.has(mime)) return { error: `photos must be JPEG, PNG, WebP or HEIC (one is ${mime})` };
           const b64 = inline[2].replace(/\s+/g, '');
           if (b64.length > MAX_PHOTO_BASE64) return { error: 'one photo is larger than 1.4 MB — take it again or choose a smaller one' };
+          if (!photoBytesMatch(b64, mime)) return { error: 'a photo is not a real image of the type it claims — take it again' };
           const sha = await sha256Hex(b64);
           fresh.set(sha, { mime, b64 });
           out.push(`/api/photos/${sha}`);
@@ -323,7 +367,7 @@ const duplicateMessage = (x) => (x.sameAssignment
 /** Active accounts, with what is needed to work out their permissions. */
 async function activeAccounts(env) {
   const { results } = await env.DB.prepare(
-    "SELECT id, name, role, permissions, can_edit, can_delete, can_export FROM qa_users WHERE status = 'active'",
+    "SELECT id, name, role, permissions, can_edit, can_delete, can_export, notifications_enabled FROM qa_users WHERE status = 'active'",
   ).all();
   return results || [];
 }
@@ -342,12 +386,14 @@ async function notifySubmission(env, user, r, assignmentId) {
   const recipients = new Set(accounts.filter((u) => u.role === 'quality_leader' || can(u, 'review')).map((u) => u.id));
   if (a?.assigned_by && accounts.some((u) => u.id === a.assigned_by)) recipients.add(a.assigned_by);
   recipients.delete(user.id);
+  for (const u of accounts) if (!u.notifications_enabled) recipients.delete(u.id);   // their choice
+  const wantsReceipt = accounts.some((u) => u.id === user.id && u.notifications_enabled);
   const insert = 'INSERT INTO notifications (user_id, type, title, body, link, read_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)';
   const statements = [...recipients].map((id) => env.DB.prepare(insert)
     .bind(id, 'submission', `New report to review: ${building}`, `${user.name} submitted ${what}${score}.`, link, null));
-  statements.push(env.DB.prepare(insert).bind(user.id, 'receipt', `Report submitted: ${building}`,
+  if (wantsReceipt) statements.push(env.DB.prepare(insert).bind(user.id, 'receipt', `Report submitted: ${building}`,
     `${what}${score} — sent for review.`, link, new Date().toISOString().replace('T', ' ').slice(0, 19)));
-  await env.DB.batch(statements);
+  if (statements.length) await env.DB.batch(statements);
   queuePush(env, [...recipients], { title: `New report to review: ${building}`, body: `${user.name} submitted ${what}${score}.`, link, tag: 'submission' });
 }
 
@@ -363,6 +409,7 @@ async function updateInspection(env, user, id, rec) {
 
   const r = recordToRow(rec);
   if (r.error) return fail(r.error, 400);
+  try { if (JSON.parse(row.data || '{}').trialImport) { r.body.trialImport = JSON.parse(row.data).trialImport; r.data = JSON.stringify(r.body); } } catch { /* unreadable old row: nothing to keep */ }
   // The owner never changes on an edit, except when an administrator says so.
   let ownerId = row.inspector_id || null;
   if (user.role === ADMIN_ROLE) { const who = await reportOwner(env, user, r.inspector); r.inspector = who.name; ownerId = who.id ?? ownerId; }
@@ -374,6 +421,7 @@ async function updateInspection(env, user, id, rec) {
   const stored = await storeReportPhotos(env, r.body, id);
   if (stored.error) return fail(stored.error, 400);
   r.data = stored.data;
+  if (r.data.length > 1_800_000) return fail('this report is too large to save — shorten the longest comments', 400);
   await ensureFirstVersion(env, row);
 
   const res = await env.DB.prepare(
@@ -623,6 +671,8 @@ async function runBackup(env, trigger, { full = true } = {}) {
       snapshot.tables.photo_index = photos.results || [];
       await kv.put(`daily/${day}.json.gz`, await gzipText(JSON.stringify(snapshot)));
       writes += 1;
+
+      await env.DB.prepare('DELETE FROM auth_throttle WHERE window < ?1').bind(Math.floor(Date.now() / 60000 / 5) - 12).run().catch(() => {});
 
       // 7. Nightly copies: the last 30 days, and the first of every month for good.
       const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -1920,11 +1970,29 @@ async function handleAssignments(request, env, url, path, user) {
 
 /* ── Notifications ──────────────────────────────────────── */
 
+/** Settings each person controls for themselves. Always the signed-in account: there is no id
+ *  to change, so nobody can set someone else's, and administrators cannot change them either. */
+async function updateOwnSettings(env, user, body) {
+  if (!body || typeof body !== 'object' || typeof body.notifications !== 'boolean') return fail('send { "notifications": true or false }', 400);
+  const on = body.notifications ? 1 : 0;
+  await env.DB.prepare("UPDATE qa_users SET notifications_enabled = ?2, updated_at = datetime('now') WHERE id = ?1").bind(user.id, on).run();
+  if ((user.notifications_enabled !== 0) !== !!on) {
+    await audit(env, user, 'user.settings', user.id, user.name, `Notifications turned ${on ? 'on' : 'off'}`);
+  }
+  return json({ ok: true, notifications: !!on });
+}
+
+/** Notification types that are always delivered, even to someone who turned notifications off:
+ *  alerts about their own account's security. */
+const ALWAYS_NOTIFY = new Set(['security']);
+
 async function notify(env, userId, type, title, body, link) {
-  await env.DB.prepare(
-    `INSERT INTO notifications (user_id, type, title, body, link) VALUES (?1, ?2, ?3, ?4, ?5)`,
-  ).bind(userId, type, title, body || null, link || null).run();
-  queuePush(env, [userId], { title, body: body || '', link, tag: type });
+  // One statement: written only if the person has notifications on (or it is a security alert).
+  const res = await env.DB.prepare(
+    `INSERT INTO notifications (user_id, type, title, body, link)
+     SELECT ?1, ?2, ?3, ?4, ?5 FROM qa_users WHERE id = ?1 AND (notifications_enabled = 1 OR ?6 = 1)`,
+  ).bind(userId, type, title, body || null, link || null, ALWAYS_NOTIFY.has(type) ? 1 : 0).run();
+  if (res.meta?.changes) queuePush(env, [userId], { title, body: body || '', link, tag: type, always: ALWAYS_NOTIFY.has(type) });
 }
 
 /* ── Notifications on the phone (Web Push) ──────────────────────────────────────────
@@ -1943,8 +2011,9 @@ async function pushToUsers(env, userIds, message, { onlySession = null } = {}) {
   const { results } = await env.DB.prepare(
     `SELECT p.id, p.user_id, p.endpoint, p.p256dh, p.auth FROM push_subscriptions p
      JOIN qa_sessions s ON s.token_hash = p.session_hash
-     WHERE p.user_id IN (SELECT value FROM json_each(?1)) AND s.expires_at > ?2 ${onlySession ? 'AND p.session_hash = ?3' : ''}`,
-  ).bind(JSON.stringify([...new Set(userIds)]), Date.now(), ...(onlySession ? [onlySession] : [])).all();
+     JOIN qa_users u ON u.id = p.user_id AND u.status = 'active' AND (u.notifications_enabled = 1 OR ?4 = 1)
+     WHERE p.user_id IN (SELECT value FROM json_each(?1)) AND s.expires_at > ?2 AND (?3 IS NULL OR p.session_hash = ?3)`,
+  ).bind(JSON.stringify([...new Set(userIds)]), Date.now(), onlySession, message.always ? 1 : 0).all();
   const subs = results || [];
   if (!subs.length) return { sent: 0, devices: 0 };
   // the number on the app icon: each person's unread notifications
@@ -2219,6 +2288,30 @@ async function authBootstrap(env, body, request) {
   );
 }
 
+/* Sign-in attempts per network (IP address), per window. Generous enough for a whole office behind
+ * one address signing in together; far too few to guess passwords. The per-account lockout (five
+ * wrong passwords) still applies on top. */
+const AUTH_LIMITS = {
+  'auth/login': [60, 5], 'auth/complete-setup': [30, 5], 'auth/bootstrap': [10, 5], 'auth/change-password': [20, 5],
+};
+async function authThrottled(env, request, path) {
+  const [limit, minutes] = AUTH_LIMITS[path];
+  const ip = request.headers.get('CF-Connecting-IP') || 'local';
+  const windowNo = Math.floor(Date.now() / 60000 / minutes);
+  try {
+    const row = await env.DB.prepare(
+      `INSERT INTO auth_throttle (key, window, hits) VALUES (?1, ?2, 1)
+       ON CONFLICT(key) DO UPDATE SET hits = CASE WHEN window = ?2 THEN hits + 1 ELSE 1 END, window = ?2
+       RETURNING hits`,
+    ).bind(`${path}:${ip}`, windowNo).first();
+    return (row?.hits || 0) > limit;
+  } catch { return false; }                                     // never lock everyone out over a counter
+}
+
+/** A stand-in account for names that do not exist, so a wrong username takes as long to refuse as
+ *  a wrong password (the time taken must not reveal which usernames are real). */
+const NO_SUCH_USER = { password_hash: 'x', password_salt: 'AAAAAAAAAAAAAAAAAAAAAA==', password_iterations: 100000, password_rounds: 6 };
+
 function publicUser(user) {
   const permissions = effectivePermissions(user);
   return {
@@ -2230,6 +2323,7 @@ function publicUser(user) {
     canEdit: permissions.includes('inspect'),
     canDelete: permissions.includes('delete'),
     canExport: permissions.includes('export'),
+    notificationsEnabled: user.notifications_enabled !== 0,
   };
 }
 
@@ -2239,8 +2333,7 @@ async function authLogin(env, body, request) {
   if (!username || !password) return fail('username and password are required', 400);
 
   const user = await env.DB.prepare('SELECT * FROM qa_users WHERE username = ?1').bind(username).first();
-  if (!user) return fail('invalid username or password', 401);
-  if (user.status !== 'active') return fail('this account has been suspended', 403);
+  if (!user) { await verifyPassword(password, NO_SUCH_USER).catch(() => {}); return fail('invalid username or password', 401); }
   if (isLocked(user)) return fail('account locked — try again in 15 minutes', 423);
 
   const valid = await verifyPassword(password, user);
@@ -2249,11 +2342,14 @@ async function authLogin(env, body, request) {
     if ((user.failed_attempts || 0) + 1 === MAX_FAILED_ATTEMPTS) {
       await audit(env, null, 'security.lockout', user.id, `${user.name} (@${user.username})`,
         `Locked for 15 minutes after ${MAX_FAILED_ATTEMPTS} failed sign-in attempts`);
+      await notify(env, user.id, 'security', 'Your account was locked for 15 minutes',
+        `${MAX_FAILED_ATTEMPTS} wrong passwords were entered for your account. If this was not you, tell an administrator.`, null);
     }
     return fail('invalid username or password', 401);
   }
 
   await clearFailedAttempts(env, user.id);
+  if (user.status !== 'active') return fail('this account has been suspended', 403);
 
   if (user.must_change_password) {
     return json({ ok: true, mustChangePassword: true, username: user.username });
@@ -2278,7 +2374,7 @@ async function authCompleteSetup(env, body, request) {
   if (newPassword === currentPassword) return fail('choose a new password, not the temporary one', 400);
 
   const user = await env.DB.prepare('SELECT * FROM qa_users WHERE username = ?1').bind(username).first();
-  if (!user || user.status !== 'active') return fail('invalid username or password', 401);
+  if (!user || user.status !== 'active') { await verifyPassword(currentPassword, NO_SUCH_USER).catch(() => {}); return fail('invalid username or password', 401); }
   if (!user.must_change_password) return fail('this account does not require a password change', 400);
   // the temporary password is guarded exactly like a sign-in: five wrong tries lock the account
   if (isLocked(user)) return fail('account locked — try again in 15 minutes', 423);
@@ -2287,6 +2383,8 @@ async function authCompleteSetup(env, body, request) {
     if ((user.failed_attempts || 0) + 1 === MAX_FAILED_ATTEMPTS) {
       await audit(env, null, 'security.lockout', user.id, `${user.name} (@${user.username})`,
         `Locked for 15 minutes after ${MAX_FAILED_ATTEMPTS} wrong temporary passwords`);
+      await notify(env, user.id, 'security', 'Your account was locked for 15 minutes',
+        `${MAX_FAILED_ATTEMPTS} wrong temporary passwords were entered for your account. If this was not you, tell an administrator.`, null);
     }
     return fail('invalid username or password', 401);
   }
@@ -2345,6 +2443,8 @@ async function authChangePassword(request, env, body) {
   const ended = await revokeSessions(env, user.id, user.sessionHash);
   await audit(env, user, 'user.password_change', user.id, `${user.name} (@${user.username})`,
     `Password changed${ended ? ` · signed out ${ended} other device${ended === 1 ? '' : 's'}` : ''}`);
+  await notify(env, user.id, 'security', 'Your password was changed',
+    `Changed from ${deviceLabel(request)}${ended ? `; ${ended} other device${ended === 1 ? ' was' : 's were'} signed out` : ''}. If this was not you, contact an administrator.`, null);
   return json({ ok: true, signedOutElsewhere: ended });
 }
 
@@ -2486,6 +2586,8 @@ async function adminResetPassword(env, actingUser, targetId, body) {
   ).bind(targetId, hash, salt, iterations, rounds).run();
   await env.DB.prepare('DELETE FROM qa_sessions WHERE user_id = ?1').bind(targetId).run();
   await audit(env, actingUser, 'user.password_reset', targetId, `${target.name} (@${target.username})`, 'Temporary password issued; signed out everywhere');
+  await notify(env, targetId, 'security', 'Your password was reset',
+    `${actingUser.name} issued you a temporary password. You will choose a new one when you next sign in.`, null);
   return json({ ok: true });
 }
 
@@ -2519,6 +2621,7 @@ async function adminDeleteUser(env, actingUser, targetId) {
   if (a) return fail(`this account is linked to ${a} assignment${a === 1 ? '' : 's'} — suspend it instead so the history stays intact`, 409);
   await env.DB.prepare('DELETE FROM notifications WHERE user_id = ?1').bind(targetId).run();
   await env.DB.prepare('DELETE FROM qa_sessions WHERE user_id = ?1').bind(targetId).run();
+  await env.DB.prepare('DELETE FROM push_subscriptions WHERE user_id = ?1').bind(targetId).run();
   await env.DB.prepare('DELETE FROM qa_users WHERE id = ?1').bind(targetId).run();
   await audit(env, actingUser, 'user.delete', targetId, `${target.name} (@${target.username})`, `Role ${target.role}`);
   return json({ ok: true });
@@ -2586,6 +2689,10 @@ async function handleAdmin(request, env, path, user) {
 
 async function handleAuth(request, env, path) {
   const method = request.method.toUpperCase();
+  // Password guessing from one network is slowed down before any account is even looked at.
+  if (method === 'POST' && AUTH_LIMITS[path] && await authThrottled(env, request, path)) {
+    return fail('too many sign-in attempts from this network — wait a few minutes and try again', 429);
+  }
   if (path === 'auth/status' && method === 'GET') return authStatus(env);
   if (path === 'auth/bootstrap' && method === 'POST') return authBootstrap(env, await request.json(), request);
   if (path === 'auth/login' && method === 'POST') return authLogin(env, await request.json(), request);
@@ -2649,6 +2756,12 @@ async function handleApiAuthed(request, env, url, path, method, user) {
     return method === 'PATCH'
       ? updateBuilding(env, user, Number(buildingMatch[1]), await request.json())
       : deleteBuilding(env, user, Number(buildingMatch[1]));
+  }
+
+  if (path === 'account/settings') {
+    if (method === 'GET') return json({ notifications: user.notifications_enabled !== 0 });
+    if (method === 'PATCH') return updateOwnSettings(env, user, await request.json());
+    return fail('method not allowed', 405);
   }
 
   if (path === 'reports/library' && method === 'GET') return reportLibrary(env, user, url);
