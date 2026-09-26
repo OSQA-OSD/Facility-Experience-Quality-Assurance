@@ -21,8 +21,9 @@
   "kv_namespaces": [
     { "binding": "BACKUPS", "id": "f3cb2a897aff46b8bd545a33983784e5" }
   ],
-  // 23:30 UTC = 02:30 in Riyadh.
-  "triggers": { "crons": ["30 23 * * *"] }
+  // Cloud backup: a full run at 23:30 UTC (02:30 in Riyadh), and a small catch-up every 10
+  // minutes that copies whatever changed since (see runBackup in worker.js).
+  "triggers": { "crons": ["30 23 * * *", "*/10 * * * *"] }
   // Photo storage for the long run. Once R2 is switched on for the account and the bucket
   // exists (npx wrangler r2 bucket create facility-qa-photos), add:
   //   "r2_buckets": [ { "binding": "PHOTOS", "bucket_name": "facility-qa-photos" } ]

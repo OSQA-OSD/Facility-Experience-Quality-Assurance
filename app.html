@@ -219,6 +219,23 @@ body::after{inset:-30%;background:
 @media(max-width:420px){.hero-actions{gap:8px}.hero-actions .page-tabs{gap:8px}.hero-actions .page-tab,.hero-actions .page-export{padding:6px 11px;font-size:.72rem}}
 /* Quick assign: pick an auditor once, then one tap per building */
 .of-quick{max-width:220px}
+.of-mirror{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;font-weight:700;color:var(--royal-dk);padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;white-space:nowrap;min-height:36px}
+.of-mirror input{width:16px;height:16px;min-height:0!important;accent-color:var(--teal);margin:0;flex:none}
+.of-mirror:has(input:checked){border-color:var(--teal);background:rgba(38,168,171,.08)}
+.of-mirror[hidden],#of-repeat[hidden]{display:none}
+/* Repeat for End of Quarter */
+.rep-box{width:520px}
+.rep-list{display:grid;gap:6px;max-height:44vh;overflow-y:auto;margin:4px 0 14px;padding:2px}
+.rep-row{display:flex!important;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;text-transform:none!important;letter-spacing:0!important;font-size:.84rem!important;color:var(--text)!important;margin:0!important}
+.rep-row:has(input:checked){border-color:var(--teal);background:rgba(38,168,171,.06)}
+.rep-row.off{opacity:.6;cursor:default}
+/* the modal's text-field style must not reach these checkboxes */
+.modal-box .rep-row input[type=checkbox],.modal-box .rep-opt input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;border:none;margin:2px 0 0;accent-color:var(--teal);flex:none;box-shadow:none}
+.rep-row>span,.rep-opt>span{flex:1;min-width:0}
+.rep-row b{display:block;font-weight:800;color:var(--royal-dk)}
+.rep-row small{display:block;color:var(--muted);font-size:.74rem;font-weight:600;margin-top:2px}
+.rep-opt{display:flex!important;align-items:flex-start;gap:8px;text-transform:none!important;letter-spacing:0!important;font-size:.8rem!important;font-weight:600!important;color:var(--text)!important;margin:0 0 14px!important}
+.rep-total{font-weight:800;color:var(--royal-dk);font-size:.86rem;margin:0 0 14px}
 .of-quick.on{border-color:var(--teal);box-shadow:0 0 0 2px rgba(38,168,171,.16);font-weight:800;color:var(--royal-dk)}
 .of-tap{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed var(--border);background:#fff;color:var(--royal);
   border-radius:999px;padding:6px 13px;font-family:var(--font);font-size:.76rem;font-weight:800;cursor:pointer;transition:background .12s,border-color .12s}
@@ -722,6 +739,10 @@ body::after{inset:-30%;background:
 .ad-bk-how{margin:14px 0 0;padding-left:18px;display:grid;gap:7px;font-size:.8rem;color:var(--text)}
 .ad-bk-how b{color:var(--royal-dk)}
 .ad-bk-progress{margin-top:14px}
+.ad-bk-own{display:flex;align-items:center;justify-content:space-between;gap:12px 18px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--bg)}
+.ad-bk-own b{display:block;font-size:.84rem;color:var(--royal-dk)}
+.ad-bk-own small{display:block;font-size:.76rem;color:var(--muted);max-width:560px;margin-top:2px}
+.ad-bk-own-btns{display:flex;gap:8px;flex-wrap:wrap}
 .ad-bk-progress>div{height:8px;background:var(--bg);border-radius:99px;overflow:hidden}
 .ad-bk-progress i{display:block;height:100%;width:0;background:var(--royal);transition:width .2s}
 .ad-bk-progress small{display:block;margin-top:6px;font-size:.74rem;color:var(--muted)}
@@ -1843,6 +1864,8 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <div class="ov-tools">
           <select id="of-quick" class="of-quick" aria-label="Quick assign to"><option value="">Quick assign: off</option></select>
           <button class="rp-link" id="of-copy-last" title="Give the same auditors the buildings they had last quarter"><svg data-lucide="copy" width="13" height="13" style="vertical-align:-2px"></svg> Copy last quarter</button>
+          <button class="rp-link" id="of-repeat" title="Give each auditor the same buildings for the end-of-quarter inspection"><svg data-lucide="repeat" width="13" height="13" style="vertical-align:-2px"></svg> <span id="of-repeat-label">Repeat for End of Quarter</span></button>
+          <label class="of-mirror" id="of-mirror-wrap" title="Whatever you assign here is given to the same auditor for the end-of-quarter inspection too. Unassigning here does not touch the end of the quarter."><input type="checkbox" id="of-mirror"> Same auditor for End of Quarter</label>
           <input type="text" id="of-search" placeholder="Search building or auditor…">
           <select id="of-area" aria-label="Area"><option value="">All areas</option></select>
           <select id="of-status" aria-label="Status">
@@ -1998,20 +2021,25 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="ov-stats" id="ad-bk-stats"></div>
       <div class="ov-section">
         <div class="hist-hdr">
-          <div><span class="sec-eyebrow">Kept for good</span><h3><svg data-lucide="shield-check" width="18" height="18"></svg> Backups</h3></div>
+          <div><span class="sec-eyebrow">Automatic</span><h3><svg data-lucide="cloud" width="18" height="18"></svg> Cloud backup</h3></div>
           <div class="ov-tools">
-            <button class="btn bo" type="button" id="ad-bk-run"><svg data-lucide="database-backup" width="14" height="14"></svg> Back up now</button>
-            <button class="btn br" type="button" id="ad-bk-download"><svg data-lucide="download" width="14" height="14"></svg> Download full copy</button>
+            <button class="btn bo" type="button" id="ad-bk-run" title="The backup runs by itself; this only runs it now"><svg data-lucide="database-backup" width="14" height="14"></svg> Back up now</button>
           </div>
         </div>
         <div class="ov-panel ad-bk-panel">
           <div id="ad-bk-status" class="ad-bk-status"></div>
           <ul class="ad-bk-how">
-            <li><b>Nothing is ever thrown away.</b> Every saved state of every report is kept as a numbered version; deleting a report moves it to the archive below; photos are stored once and never removed.</li>
-            <li><b>The database</b> keeps itself, and Cloudflare can put it back to any minute of the last 30 days.</li>
-            <li><b>Every night at 02:30</b> a backup is written outside the database: every version once, the audit and review history, and a copy of the accounts, buildings and assignments (30 days of nightly copies, and the first of every month kept for good).</li>
-            <li><b>Download full copy</b> saves everything — photos included — as one file on this device. Keep one somewhere safe from time to time; it loads straight back into a new database.</li>
+            <li><b>Saved at once.</b> Every report is written to the database the moment it is submitted or changed, and stays there for good. Nothing is ever thrown away: every change is a numbered version, a deleted report waits in the archive below, photos are never removed.</li>
+            <li><b>Backed up by itself — nothing to press.</b> Every 10 minutes whatever changed (new versions, the audit and review history, new photos) is copied to separate cloud storage. Every night at 02:30 a copy of the accounts, buildings and assignments is added: the last 30 nights, and the first night of every month for good.</li>
+            <li><b>The database</b> can also be put back to any minute of the last 30 days.</li>
           </ul>
+          <div class="ad-bk-own">
+            <div><b>Optional — keep a copy on this device</b><small>Take the data out at any time. Two files that load straight back into a new database: the data (small), and the photos (can be large — best on a computer).</small></div>
+            <div class="ad-bk-own-btns">
+              <button class="btn bo" type="button" data-download="data"><svg data-lucide="file-down" width="14" height="14"></svg> Data</button>
+              <button class="btn bo" type="button" data-download="photos"><svg data-lucide="images" width="14" height="14"></svg> Photos</button>
+            </div>
+          </div>
           <div class="ad-bk-progress" id="ad-bk-progress" hidden><div><i id="ad-bk-bar"></i></div><small id="ad-bk-note"></small></div>
         </div>
       </div>
@@ -2555,6 +2583,23 @@ html[data-pointer=mouse] .ph-cam{display:none}
     </div>
     <div class="ad-d-body" id="ad-d-body"></div>
   </aside>
+</div>
+
+<!-- Assign & Track: the beginning-of-quarter plan, repeated for the end of the quarter -->
+<div class="modal-bg" id="modal-repeat">
+  <div class="modal-box rep-box">
+    <h3>Repeat for End of Quarter</h3>
+    <p class="msub" id="rep-sub"></p>
+    <div class="rep-list" id="rep-list"></div>
+    <label class="rep-opt"><input type="checkbox" id="rep-replace"> <span>Also replace end-of-quarter buildings already given to someone else</span></label>
+    <label for="rep-due">Deadline for the end-of-quarter visits <small style="text-transform:none;letter-spacing:0">(optional)</small></label>
+    <input type="date" lang="en-GB" id="rep-due">
+    <p class="rep-total" id="rep-total"></p>
+    <div class="mbtns">
+      <button class="btn bt" type="button" id="rep-go">Assign</button>
+      <button class="btn bo" type="button" onclick="closeModal('modal-repeat')">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <!-- Admin: add / edit building -->
@@ -5442,6 +5487,13 @@ function initOfficer(){
   });
   document.getElementById('of-quick').addEventListener('change',e=>{ ofQuick=e.target.value; renderOfRows(); });
   document.getElementById('of-copy-last').addEventListener('click',ofCopyLastQuarter);
+  document.getElementById('of-repeat').addEventListener('click',ofOpenRepeat);
+  const mirror=document.getElementById('of-mirror');
+  try{ mirror.checked=localStorage.getItem('of-mirror')==='1'; }catch{}
+  mirror.addEventListener('change',()=>{ try{ localStorage.setItem('of-mirror',mirror.checked?'1':'0'); }catch{} });
+  document.getElementById('rep-list').addEventListener('change',ofRepeatTotal);
+  document.getElementById('rep-replace').addEventListener('change',ofRepeatTotal);
+  document.getElementById('rep-go').addEventListener('click',ofRunRepeat);
   // A refresh never re-draws the table under an open auditor picker; it catches up on blur.
   rowsEl.addEventListener('focusout',()=>setTimeout(()=>{ if(ofRowsStale&&!rowsEl.contains(document.activeElement)) renderOfRows(); },0));
   ['of-check-all','of-check-all-m'].forEach(id=>document.getElementById(id).addEventListener('change',e=>{
@@ -5489,6 +5541,9 @@ async function loadOfficer({quiet=false}={}){
 function renderOfficer(fresh=[]){
   if(!ofData) return;
   const d=ofData, curQ=ofVal('of-quarter');
+  const begin=ofVal('of-type')==='BOQI';
+  document.getElementById('of-mirror-wrap').hidden=!begin;
+  document.getElementById('of-repeat-label').textContent=begin?'Repeat for End of Quarter':'Copy from Beginning of Quarter';
   const qSel=document.getElementById('of-quarter');
   qSel.innerHTML=ofQuarterOptions([...d.quarters,curQ]).map(q=>`<option value="${q}">${q}${q===ofCurrentQuarter()?' (current)':''}</option>`).join('');
   qSel.value=curQ;
@@ -5683,7 +5738,8 @@ async function ofAssignOne(buildingId,auditorId,el){
       res=await fetch('/api/assignments/'+b.assignmentId,{method:'DELETE'});
     }
     if(res&&!res.ok) throw new Error((await res.json().catch(()=>({}))).error||'Could not save the change.');
-    showToast(auditorId?`${b.name} assigned to ${who}`:`${b.name} unassigned`);
+    const also=auditorId?await ofMirror([buildingId]):'';
+    showToast(auditorId?`${b.name} assigned to ${who}${also}`:`${b.name} unassigned`);
   }catch(err){
     showToast(err.message,true);
   }
@@ -5735,10 +5791,104 @@ async function ofCopyLastQuarter(){
     const who=[...plan.entries()].map(([id,ids])=>`${canTake.get(id)}: ${ids.length}`).join(' · ');
     if(!confirm(`Copy ${prev} into ${quarter} (${type})?\n\n${total} building${total===1?'':'s'} would be assigned as they were.\n${who}\n\nNothing already assigned or inspected is touched.`)) return;
     for(const [auditorId,ids] of plan) await ofBulk(auditorId,ids);
-    showToast(`${total} building${total===1?'':'s'} copied from ${prev}`);
+    const also=await ofMirror([...plan.values()].flat());
+    showToast(`${total} building${total===1?'':'s'} copied from ${prev}${also}`);
     await loadOfficer();
   }catch(err){ showToast(err.message,true); }
   finally{ btn.disabled=false; }
+}
+
+/** With "Same auditor for End of Quarter" on (BOQI view), what was just assigned is given to the
+ *  same auditors for the EOQI as well. Returns a few words for the toast. */
+async function ofMirror(buildingIds){
+  if(ofVal('of-type')!=='BOQI'||!document.getElementById('of-mirror').checked||!buildingIds.length) return '';
+  try{
+    const r=await ofRepeat({buildingIds,replace:true});
+    return r.assigned?` · also for End of Quarter`:'';
+  }catch(err){ return ` · End of Quarter not updated: ${err.message}`; }
+}
+async function ofRepeat(body){
+  const res=await fetch('/api/assignments/repeat',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({quarter:ofVal('of-quarter'),...body})});
+  const d=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(d.error||'Could not assign the end of the quarter.');
+  return d;
+}
+
+/** Repeat for End of Quarter: each auditor's beginning-of-quarter buildings, and what would
+ *  happen to them, so the officer can leave anyone out before anything changes. */
+let ofRepeatPlan=null;
+async function ofOpenRepeat(){
+  const quarter=ofVal('of-quarter'), div=ofVal('of-division'), btn=document.getElementById('of-repeat');
+  btn.disabled=true;
+  try{
+    const get=async type=>{
+      const res=await fetch(`/api/assignments/schedule?quarter=${encodeURIComponent(quarter)}&type=${type}`,{cache:'no-store'});
+      const d=await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(d.error||'Could not read the plan.');
+      return d.buildings||[];
+    };
+    const [begin,end]=await Promise.all([get('BOQI'),get('EOQI')]);
+    const endOf=new Map(end.map(b=>[b.buildingId,b]));
+    const available=new Set(ofActiveAuditors().map(a=>a.id));
+    const by=new Map();
+    begin.filter(b=>b.auditorId&&(!div||b.division===div)).forEach(b=>{
+      if(!by.has(b.auditorId)) by.set(b.auditorId,{id:b.auditorId,name:b.auditorName||'Unknown',ids:[],fresh:0,theirs:0,other:0,locked:0});
+      const x=by.get(b.auditorId), e=endOf.get(b.buildingId);
+      x.ids.push(b.buildingId);
+      if(e&&e.status==='completed') x.locked++;
+      else if(e&&e.auditorId===b.auditorId) x.theirs++;
+      else if(e&&e.auditorId) x.other++;
+      else x.fresh++;
+    });
+    const rows=[...by.values()].sort((a,b)=>a.name.localeCompare(b.name));
+    if(!rows.length){ showToast(`Nothing to repeat — no buildings are assigned for ${quarter} BOQI${div?' in '+div:''} yet.`,true); return; }
+    ofRepeatPlan={quarter,div,rows,buildingIds:div?rows.flatMap(r=>r.ids):null};
+    document.getElementById('rep-sub').textContent=`Each auditor gets the same buildings for ${quarter} EOQI as for the BOQI${div?` (${div} only, as filtered)`:''}. You can still change any building afterwards — for an absence or an emergency, give it to someone else in the End of Quarter view.`;
+    document.getElementById('rep-list').innerHTML=rows.map(r=>{
+      const ok=available.has(r.id);
+      const parts=[r.fresh?`${r.fresh} new`:'',r.theirs?`${r.theirs} already theirs`:'',r.other?`${r.other} given to someone else`:'',r.locked?`${r.locked} already inspected`:''].filter(Boolean).join(' · ');
+      return `<label class="rep-row${ok?'':' off'}"><input type="checkbox" data-aud="${ovEsc(r.id)}"${ok?' checked':' disabled'}>
+        <span><b>${ovEsc(r.name)}</b><small>${r.ids.length} building${r.ids.length===1?'':'s'} at the beginning of the quarter${parts?' — '+parts:''}${ok?'':' · not available now: give these out in the End of Quarter view'}</small></span></label>`;
+    }).join('');
+    document.getElementById('rep-replace').checked=false;
+    // the end of the quarter is the natural deadline for the end-of-quarter visit
+    const m=/^(\d{4})-Q([1-4])$/.exec(quarter);
+    document.getElementById('rep-due').value=m?new Date(Date.UTC(+m[1],+m[2]*3,0)).toISOString().slice(0,10):'';
+    ofRepeatTotal();
+    document.getElementById('modal-repeat').classList.add('open');
+  }catch(err){ showToast(err.message,true); }
+  finally{ btn.disabled=false; }
+}
+function ofRepeatTotal(){
+  if(!ofRepeatPlan) return;
+  const replace=document.getElementById('rep-replace').checked;
+  const picked=new Set([...document.querySelectorAll('#rep-list [data-aud]:checked')].map(x=>x.dataset.aud));
+  const n=ofRepeatPlan.rows.filter(r=>picked.has(r.id)).reduce((t,r)=>t+r.fresh+(replace?r.other:0),0);
+  document.getElementById('rep-total').textContent=n?`${n} building${n===1?'':'s'} will be assigned for the end of the quarter.`:'Nothing new to assign — choose auditors above, or tick “replace”.';
+  document.getElementById('rep-go').textContent=n?`Assign ${n} building${n===1?'':'s'}`:'Assign';
+}
+async function ofRunRepeat(){
+  const plan=ofRepeatPlan;
+  if(!plan) return;
+  const auditorIds=[...document.querySelectorAll('#rep-list [data-aud]:checked')].map(x=>x.dataset.aud);
+  if(!auditorIds.length){ showToast('Choose at least one auditor.',true); return; }
+  const go=document.getElementById('rep-go'), due=document.getElementById('rep-due').value;
+  go.disabled=true;
+  try{
+    const body={auditorIds,replace:document.getElementById('rep-replace').checked};
+    if(plan.buildingIds) body.buildingIds=plan.buildingIds;
+    if(due) body.dueDate=due;
+    const r=await ofRepeat(body);
+    closeModal('modal-repeat');
+    const bits=[r.alreadyTheirs?`${r.alreadyTheirs} already theirs`:'',r.keptOther?`${r.keptOther} kept with someone else`:'',r.locked?`${r.locked} already inspected`:'',r.unavailable?`${r.unavailable} with an auditor who is not available`:''].filter(Boolean).join(' · ');
+    showToast(`${r.assigned} building${r.assigned===1?'':'s'} assigned for ${plan.quarter} EOQI${due?` · due ${dueFmt(due)}`:''}${bits?' · '+bits:''}`);
+    // show the result, where any building can still be changed
+    const type=document.getElementById('of-type');
+    if(type.value!=='EOQI'){ type.value='EOQI'; type.dispatchEvent(new Event('change')); }
+    else await loadOfficer();
+  }catch(err){ showToast(err.message,true); }
+  finally{ go.disabled=false; }
 }
 
 async function ofBulk(auditorId,buildingIds,dueDate){
@@ -5777,7 +5927,8 @@ async function ofRunBulk(action){
       if(!aud){ showToast('Choose an auditor first.',true); return; }
       buttons.forEach(b=>b.disabled=true);
       const r=await ofBulk(aud,ids,due);
-      showToast(`Assigned ${plural(r.changed)}${due?` · due ${dueFmt(due)}`:''}${r.unchanged?` · ${r.unchanged} already theirs`:''}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}`);
+      const also=await ofMirror(ids);
+      showToast(`Assigned ${plural(r.changed)}${due?` · due ${dueFmt(due)}`:''}${r.unchanged?` · ${r.unchanged} already theirs`:''}${r.skippedCompleted?` · ${r.skippedCompleted} locked`:''}${also}`);
     }else if(action==='unassign'){
       if(!confirm(`Unassign ${plural(ids.length)}? They go back to the unassigned list.`)) return;
       buttons.forEach(b=>b.disabled=true);
@@ -5798,7 +5949,8 @@ async function ofRunBulk(action){
       buttons.forEach(b=>b.disabled=true);
       let changed=0;
       for(const p of plan) changed+=(await ofBulk(p.id,p.ids)).changed;
-      showToast(`Distributed ${plural(changed)} across ${plan.length} auditor${plan.length===1?'':'s'}`);
+      const also=await ofMirror(plan.flatMap(p=>p.ids));
+      showToast(`Distributed ${plural(changed)} across ${plan.length} auditor${plan.length===1?'':'s'}${also}`);
     }
     ofSelected.clear();
   }catch(err){
@@ -8840,8 +8992,7 @@ function initAdmin(){
   document.getElementById('ad-a-search').addEventListener('input',adRenderAudit);
   document.getElementById('ad-a-more').addEventListener('click',()=>adLoadAudit({more:true}));
   document.getElementById('ad-bk-run').addEventListener('click',adRunBackup);
-  document.getElementById('ad-bk-download').addEventListener('click',adDownloadBackup);
-  document.getElementById('ad-bk-status').addEventListener('click',e=>{ if(e.target.closest('#ad-bk-photos')) adMovePhotos(e.target.closest('#ad-bk-photos')); });
+  document.getElementById('ad-backup').addEventListener('click',e=>{ const b=e.target.closest('[data-download]'); if(b) adDownloadBackup(b.dataset.download); });
   document.getElementById('ad-arch-rows').addEventListener('click',e=>{ const b=e.target.closest('[data-restore]'); if(b) adRestore(Number(b.dataset.restore),b); });
 }
 
@@ -8857,18 +9008,27 @@ async function adLoadBackup(){
       tile('history',c.versions??0,'Saved versions','every change kept')+
       tile('image',c.photos??0,'Photos',adBytes(c.photoBytes))+
       tile('scroll-text',c.auditRows??0,'Audit entries','who did what, and when');
-    const age=ok?Math.round((Date.now()-Date.parse(ok.finishedAt))/3600000):null;
+    const when=t=>new Date(t).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const cu=st.catchup, age=ok?(Date.now()-Date.parse(ok.finishedAt))/3600000:null;
+    const recent=cu&&cu.ok&&(Date.now()-Date.parse(cu.finishedAt))<40*60000;     // a 10-minute run in the last 40 minutes
     const fresh=ok&&age<=30;
-    document.getElementById('ad-bk-status').innerHTML=!st.storage.backups
-      ?`<div class="sc-callout warn"><svg data-lucide="triangle-alert" width="17" height="17"></svg><div><b>Backup storage is not connected.</b> The database still keeps itself; nightly copies start once the storage is linked.</div></div>`
-      :ok?`<div class="sc-callout ${fresh?'ok':'warn'}"><svg data-lucide="${fresh?'circle-check':'triangle-alert'}" width="17" height="17"></svg><div><b>${fresh?'Backed up':'The last backup is more than a day old'}</b> — ${new Date(ok.finishedAt).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})} (${ok.trigger}).
-          ${ok.reports} reports, ${ok.archived} archived, ${ok.photos} photos on file.${ok.versionsWaiting?` ${ok.versionsWaiting} versions still to copy — the next run continues.`:''}
-          ${st.storage.photos?'<br><small>Photos are kept in photo storage (Cloudflare R2), built to keep files for good.</small>':`<br><small>Photos are kept inside the database (${adBytes(c.photoBytesInDb)} so far) and in the full copy you download. To keep years of photos, switch on Cloudflare R2 photo storage for this account.</small>`}</div></div>`
-      :`<div class="sc-callout warn"><svg data-lucide="clock" width="17" height="17"></svg><div><b>No backup has finished yet.</b> The first runs tonight at 02:30, or press “Back up now”.</div></div>`;
-    // reports saved before history began: their photos filed and their current state recorded as version 1
-    const older=Math.max(c.legacyReports||0,c.withoutHistory||0), dbPhotos=st.storage.photos&&c.photoBytesInDb>0;
-    if(older||dbPhotos) document.getElementById('ad-bk-status').innerHTML+=`<div class="sc-callout warn" style="margin-top:8px"><svg data-lucide="history" width="17" height="17"></svg><div><b>${older?`${older} report${older===1?' was':'s were'} saved before history began.`:'Some photos are still inside the database.'}</b> They are safe; bringing them in ${older?'records each one as version 1, files its photos, and adds it to the nightly backup':'moves them to photo storage'}. The nightly backup does a few at a time.<br><button class="ad-btn" type="button" id="ad-bk-photos" style="margin-top:8px"><svg data-lucide="history" width="13" height="13" style="vertical-align:-2px"></svg> Bring them in now</button></div></div>`;
-    if(last&&!last.ok) document.getElementById('ad-bk-status').innerHTML+=`<div class="sc-callout warn" style="margin-top:8px"><svg data-lucide="circle-x" width="17" height="17"></svg><div><b>The last attempt failed</b> (${ovEsc(last.finishedAt||'')}): ${ovEsc(last.error||'unknown error')}</div></div>`;
+    const waiting=[c.versionsWaiting?`${c.versionsWaiting} version${c.versionsWaiting===1?'':'s'}`:'',c.photosWaiting?`${c.photosWaiting} photo${c.photosWaiting===1?'':'s'}`:''].filter(Boolean).join(' and ');
+    const photoNote=st.storage.photos?'Photos are kept in photo storage (Cloudflare R2) and copied to the backup.'
+      :`Photos are kept in the database (${adBytes(c.photoBytesInDb)} so far) and copied to the backup. To keep years of photos, switch on Cloudflare R2 photo storage for this account.`;
+    const box=document.getElementById('ad-bk-status');
+    box.innerHTML=!st.storage.backups
+      ?`<div class="sc-callout warn"><svg data-lucide="triangle-alert" width="17" height="17"></svg><div><b>Backup storage is not connected.</b> The data is safe in the database; the automatic copies start once the storage is linked.</div></div>`
+      :(ok||recent)?`<div class="sc-callout ${fresh||recent?'ok':'warn'}"><svg data-lucide="${fresh||recent?'circle-check':'triangle-alert'}" width="17" height="17"></svg><div>
+          <b>${fresh||recent?'Backed up automatically':'The last nightly copy is more than a day old'}</b>
+          ${recent?` — last copy ${timeAgo(cu.finishedAt.replace('T',' ').slice(0,19))}`:''}${ok?`${recent?'; ':' — '}last nightly copy ${when(ok.finishedAt)}`:''}.
+          ${waiting?` ${waiting} still to copy — the next runs carry on.`:' Everything is copied.'}
+          <br><small>${photoNote}</small></div></div>`
+      :`<div class="sc-callout warn"><svg data-lucide="clock" width="17" height="17"></svg><div><b>The first automatic copy has not run yet.</b> It starts within 10 minutes of the update; you can also press “Back up now”.</div></div>`;
+    // reports saved before history began are brought in by the automatic runs, a few at a time
+    const older=Math.max(c.legacyReports||0,c.withoutHistory||0);
+    if(older) box.innerHTML+=`<div class="sc-callout info" style="margin-top:8px"><svg data-lucide="history" width="17" height="17"></svg><div><b>${older} report${older===1?' was':'s were'} saved before history began.</b> They are safe in the database and are being added to the history and the backup automatically — a few every 10 minutes. Nothing to do.</div></div>`;
+    const failed=[last,cu].find(x=>x&&!x.ok&&x.error);
+    if(failed) box.innerHTML+=`<div class="sc-callout warn" style="margin-top:8px"><svg data-lucide="circle-x" width="17" height="17"></svg><div><b>The last ${failed===cu?'automatic':'nightly'} run failed</b> (${ovEsc(failed.finishedAt||'')}): ${ovEsc(failed.error||'unknown error')}. The next run tries again.</div></div>`;
     const rows=ar.reports||[];
     document.getElementById('ad-arch-note').textContent=`${rows.length} report${rows.length===1?'':'s'}`;
     document.getElementById('ad-arch-rows').innerHTML=rows.length?rows.map(x=>`<tr>
@@ -8883,24 +9043,9 @@ async function adLoadBackup(){
 }
 async function adRunBackup(){
   const b=document.getElementById('ad-bk-run'); b.disabled=true;
-  try{ const r=await adRequest('/api/admin/backup/run',{method:'POST'},'The backup did not finish.'); showToast(`Backup finished in ${r.seconds}s`); }
+  try{ const r=await adRequest('/api/admin/backup/run',{method:'POST'},'The backup did not finish.'); showToast(`Backed up in ${r.seconds}s`); }
   catch(err){ showToast(err.message,true); }
   finally{ b.disabled=false; adLoadBackup(); }
-}
-async function adMovePhotos(btn){
-  btn.disabled=true; let prev=Infinity, versions=0;
-  try{
-    for(;;){
-      const r=await adRequest('/api/admin/maintenance/photos',{method:'POST'},'Could not bring the older reports in.');
-      versions+=r.baselines; const left=r.reportsLeft+r.photosInDatabase;
-      btn.textContent=`Working… ${left} left`;
-      if(!left&&!r.baselines) break;
-      if(left>=prev&&!r.baselines&&!r.moved&&!r.toStorage) break;       // nothing moved: stop rather than loop
-      prev=left;
-    }
-    showToast(`Done — ${versions} report${versions===1?'':'s'} added to the history`);
-  }catch(err){ showToast(err.message,true); }
-  adLoadBackup();
 }
 async function adRestore(id,btn){
   if(!confirm('Put this report back where it was? It returns with all its versions, reviews and photos.')) return;
@@ -8909,38 +9054,39 @@ async function adRestore(id,btn){
   catch(err){ showToast(err.message,true); }
   adLoadBackup();
 }
-/** The full copy: every table, page by page, written as SQL that loads straight back into
- *  a database made from the same migrations (npx wrangler d1 execute <db> --file <this file>). */
-async function adDownloadBackup(){
-  const btn=document.getElementById('ad-bk-download'), box=document.getElementById('ad-bk-progress'), bar=document.getElementById('ad-bk-bar'), note=document.getElementById('ad-bk-note');
-  const tables=['buildings','qa_users','assignments','inspections','inspection_versions','inspection_archive','inspection_reviews','photo_blobs','notifications','saved_reports','audit_log','system_state'];
+/** A copy on this device, as SQL that loads straight back into a database made from the same
+ *  migrations (npx wrangler d1 execute <db> --file <file>): the data, or the photos, each its own file. */
+async function adDownloadBackup(kind){
+  const photos=kind==='photos';
+  const btns=[...document.querySelectorAll('[data-download]')], box=document.getElementById('ad-bk-progress'), bar=document.getElementById('ad-bk-bar'), note=document.getElementById('ad-bk-note');
+  const tables=photos?['photo_blobs']:['buildings','qa_users','assignments','inspections','inspection_versions','inspection_archive','inspection_reviews','notifications','saved_reports','audit_log','system_state'];
   const q=v=>v==null?'NULL':typeof v==='number'?String(v):`'${String(v).replace(/'/g,"''")}'`;
-  const parts=[`-- Facility Experience QA — full copy, ${new Date().toISOString()}\n-- Load into a database built from the same migrations:\n--   npx wrangler d1 execute <database> --remote --file <this file>\nPRAGMA defer_foreign_keys = ON;\n`];
-  btn.disabled=true; box.hidden=false; bar.style.width='0%';
+  const parts=[`-- Facility Experience QA — ${photos?'photos':'data'}, ${new Date().toISOString()}\n-- Load into a database built from the same migrations${photos?' (the data file too, in either order)':''}:\n--   npx wrangler d1 execute <database> --remote --file <this file>\nPRAGMA defer_foreign_keys = ON;\n`];
+  btns.forEach(b=>b.disabled=true); box.hidden=false; bar.style.width='0%';
   try{
     for(let t=0;t<tables.length;t++){
       const table=tables[t]; let after='', done=0, total=null, first=true;
       parts.push(`\n-- ${table}\n`);
       for(;;){
-        const d=await adRequest(`/api/admin/export?table=${table}&after=${encodeURIComponent(after)}${t===0&&first?'&start=1':''}`,{cache:'no-store'},`Could not read ${table}.`);
+        const d=await adRequest(`/api/admin/export?table=${table}&after=${encodeURIComponent(after)}${t===0&&first?`&start=1&kind=${photos?'photos':'data'}`:''}`,{cache:'no-store'},`Could not read ${table}.`);
         first=false; total=d.total;
         for(const row of d.rows){ const cols=Object.keys(row); parts.push(`INSERT OR REPLACE INTO ${table} (${cols.join(', ')}) VALUES (${cols.map(k=>q(row[k])).join(', ')});\n`); }
         done+=d.rows.length;
-        note.textContent=`${table}: ${done} of ${total}`;
+        note.textContent=photos?`Photos: ${done} of ${total}`:`${table}: ${done} of ${total}`;
         bar.style.width=Math.round(((t+(total?done/total:1))/tables.length)*100)+'%';
         if(d.next==null) break;
         after=d.next;
       }
     }
-    const blob=new Blob(parts,{type:'application/sql'}), name=`facility-qa-full-copy-${new Date().toISOString().slice(0,10)}.sql`;
+    const blob=new Blob(parts,{type:'application/sql'}), name=`facility-qa-${photos?'photos':'data'}-${new Date().toISOString().slice(0,10)}.sql`;
     bar.style.width='100%';
-    // Building the copy takes a while, and browsers drop a download that no longer follows a tap:
+    // Building the file takes a while, and browsers drop a download that no longer follows a tap:
     // the file is saved from its own button.
-    note.innerHTML=`Ready — ${adBytes(blob.size)}. <button class="ad-btn" type="button" id="ad-bk-save"><svg data-lucide="download" width="13" height="13" style="vertical-align:-2px"></svg> Save the file</button> Keep it somewhere safe.`;
+    note.innerHTML=`Ready — ${adBytes(blob.size)}. <button class="ad-btn" type="button" id="ad-bk-save"><svg data-lucide="download" width="13" height="13" style="vertical-align:-2px"></svg> Save the file</button>`;
     lucide.createIcons({nodes:[note]});
     document.getElementById('ad-bk-save').onclick=()=>exDownload(name,blob);
   }catch(err){ note.textContent=err.message; showToast(err.message,true); }
-  finally{ btn.disabled=false; }
+  finally{ btns.forEach(b=>b.disabled=false); }
 }
 
 async function loadAdmin(){
