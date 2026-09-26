@@ -140,6 +140,15 @@ body::after{inset:-30%;background:
 @keyframes auraA{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}50%{transform:translate3d(5%,-4%,0) rotate(7deg) scale(1.08)}100%{transform:translate3d(-4%,5%,0) rotate(-5deg) scale(1.03)}}
 @keyframes auraB{0%{transform:translate3d(0,0,0) rotate(0deg)}100%{transform:translate3d(-6%,-5%,0) rotate(-9deg)}}
 @media print{body::before,body::after{display:none}}
+/* On a phone only a thin strip of ground shows beside the cards, where round patches of light
+   read as smudges at the screen edge. There the light is one soft wash, even from side to side,
+   that drifts slowly up and down. */
+@media(max-width:780px){
+  body::before{inset:-50% 0;background:linear-gradient(180deg,rgba(38,168,171,.13) 0%,rgba(38,168,171,0) 20%,rgba(0,51,160,.07) 40%,rgba(0,51,160,0) 60%,rgba(140,254,227,.20) 80%,rgba(140,254,227,0) 100%);
+    animation:auraPhone 40s ease-in-out infinite alternate}
+  body::after{display:none}
+}
+@keyframes auraPhone{0%{transform:translate3d(0,-14%,0)}100%{transform:translate3d(0,14%,0)}}
 #pbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(38,168,171,.35);
   padding:8px 28px;display:flex;align-items:center;gap:8px 14px;min-height:54px;flex-wrap:wrap}
 /* Between a phone and a wide screen the inspection bar is crowded: the steps keep their numbers,
@@ -1089,8 +1098,17 @@ html:not([data-itype="EOQI"]) .sb em{font-size:.78rem;background:none;padding:0}
 .nt-open{border:none;background:var(--royal);color:#fff;font-family:var(--font);font-weight:800;font-size:.74rem;border-radius:999px;padding:5px 12px;cursor:pointer}
 .nt-close{border:none;background:none;color:var(--muted);font-size:1.2rem;line-height:1;cursor:pointer;padding:2px 6px}
 #notif-bell.ring svg{animation:bellRing .9s ease 2;transform-origin:50% 0}
-#notif-alerts{background:none;border:none;color:var(--royal);font-size:.72rem;font-weight:700;cursor:pointer;font-family:var(--font)}
-#notif-alerts[hidden]{display:none}
+/* Phone notifications (Web Push), at the top of the bell panel */
+.notif-push{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-bottom:1px solid var(--bg);background:rgba(38,168,171,.06);font-size:.76rem;line-height:1.45;color:var(--text)}
+.notif-push[hidden]{display:none}
+.notif-push>svg{flex:none;color:var(--teal-ink);margin-top:1px}
+.notif-push b{display:block;font-size:.8rem;color:var(--royal-dk)}
+.notif-push .np-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.notif-push button{border:1.5px solid var(--teal);background:#fff;color:var(--teal-ink);border-radius:8px;padding:6px 12px;font:700 .74rem var(--font);cursor:pointer;min-height:34px}
+.notif-push button.primary{background:var(--teal-deep);border-color:var(--teal-deep);color:#fff}
+.notif-push button:disabled{opacity:.6}
+.notif-push.on{background:rgba(0,132,61,.06)}
+.notif-push.on>svg{color:var(--good-ink)}
 @keyframes ntIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 @keyframes bellRing{0%,100%{transform:rotate(0)}20%{transform:rotate(14deg)}40%{transform:rotate(-12deg)}60%{transform:rotate(8deg)}80%{transform:rotate(-4deg)}}
 @media(max-width:600px){.notif-toast{top:60px;left:12px;right:12px;width:auto}}
@@ -1491,8 +1509,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div id="notif-panel" hidden>
         <div class="notif-panel-head">
           <span>Notifications</span>
-          <span><button id="notif-alerts" hidden title="Show a desktop alert when something new arrives while this tab is in the background">Turn on alerts</button> <button id="notif-mark-all">Mark all read</button></span>
+          <span><button id="notif-mark-all">Mark all read</button></span>
         </div>
+        <div class="notif-push" id="notif-push" hidden></div>
         <div id="notif-list"><div class="notif-empty">No notifications yet.</div></div>
       </div>
     </div>
@@ -5103,6 +5122,7 @@ document.addEventListener('click',(e)=>{
 // once when the tab comes back into view. Anything new shows as a card, rings the bell, refreshes the
 // lists it affects and — when allowed — raises a desktop alert while the tab is in the background.
 function setNotifBadge(n){
+  try{ if(navigator.setAppBadge){ n>0?navigator.setAppBadge(n).catch(()=>{}):navigator.clearAppBadge().catch(()=>{}); } }catch{}
   const badge=document.getElementById('notif-badge');
   badge.hidden=!(n>0); badge.textContent=n>9?'9+':String(n||0);
   document.title=(n>0?`(${n>9?'9+':n}) `:'')+document.title.replace(/^\(\d+\+?\) /,'');
@@ -5145,7 +5165,7 @@ function announceNotifications(list){
   }
   if(types.has('assignment')&&document.getElementById('pg-auditor').classList.contains('active')){ loadAuditorProfile({quiet:true}); auLoadNotifications(); }
   if(types.has('submission')&&document.getElementById('pg-officer').classList.contains('active')) loadOfficer({quiet:true});
-  if(document.visibilityState!=='visible'&&'Notification' in window&&Notification.permission==='granted'){
+  if(!pushState.on&&document.visibilityState!=='visible'&&'Notification' in window&&Notification.permission==='granted'){
     list.slice(-3).forEach(n=>{
       try{
         const alert=new Notification(n.title,{body:n.body||'',tag:'qa-'+n.id});
@@ -5159,21 +5179,90 @@ document.getElementById('nt-open').addEventListener('click',()=>{
   openNotification(Number(t.dataset.id),t.dataset.link);
 });
 document.getElementById('nt-close').addEventListener('click',()=>{ document.getElementById('notif-toast').hidden=true; });
-function syncAlertsButton(){
-  const b=document.getElementById('notif-alerts');
-  b.hidden=!('Notification' in window)||Notification.permission!=='default';
+// ── Notifications on this device (Web Push) ──
+// On an iPhone or iPad this works once OSQA is added to the Home Screen and opened from there
+// (iOS 16.4 and later); computers and Android phones can turn it on straight away. A device gets
+// notifications while it is signed in: signing out stops them, signing in again resumes them.
+const pushState={on:false,reg:null,key:null};
+const b64uBytes=t=>{ const s=t.replace(/-/g,'+').replace(/_/g,'/'), p=s+'='.repeat((4-s.length%4)%4), bin=atob(p); return Uint8Array.from(bin,c=>c.charCodeAt(0)); };
+function pushIosBrowser(){ const d=document.documentElement.dataset; return d.os==='ios'&&d.display!=='standalone'; }
+function pushRender(state){
+  const box=document.getElementById('notif-push');
+  box.className='notif-push'+(state==='on'?' on':'');
+  const icon=n=>`<svg data-lucide="${n}" width="18" height="18"></svg>`;
+  const views={
+    off:`${icon('bell-ring')}<div><b>Get notifications on this device</b>New assignments, reviews and reports show on the lock screen, even when OSQA is closed.<div class="np-btns"><button class="primary" data-push="on">Turn on</button></div></div>`,
+    on:`${icon('bell-ring')}<div><b>Notifications are on for this device</b>They stop when you sign out, and start again when you sign in.<div class="np-btns"><button data-push="test">Send a test</button><button data-push="off">Turn off</button></div></div>`,
+    ios:`${icon('smartphone')}<div><b>Notifications on this iPhone</b>Add OSQA to your Home Screen first: tap Share, then “Add to Home Screen”. Open OSQA from the Home Screen and turn notifications on here.</div>`,
+    blocked:`${icon('bell-off')}<div><b>Notifications are blocked</b>Allow them for OSQA in this device’s settings, then come back here.</div>`,
+  };
+  box.hidden=!views[state];
+  if(views[state]){ box.innerHTML=views[state]; lucide.createIcons({nodes:[box]}); }
 }
-document.getElementById('notif-alerts').addEventListener('click',async e=>{
+async function pushInit(){
+  try{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){ pushRender(pushIosBrowser()?'ios':'none'); return; }
+    const [reg,cfg]=await Promise.all([
+      navigator.serviceWorker.register('/sw.js').catch(()=>null),
+      fetch('/api/push/key').then(r=>r.ok?r.json():null).catch(()=>null),
+    ]);
+    if(!reg||!cfg||!cfg.enabled){ pushRender('none'); return; }
+    pushState.reg=reg; pushState.key=cfg.publicKey;
+    if(Notification.permission==='denied'){ pushRender('blocked'); return; }
+    const sub=await reg.pushManager.getSubscription();
+    if(sub&&Notification.permission==='granted'){
+      const st=await fetch('/api/push/status?endpoint='+encodeURIComponent(sub.endpoint)).then(r=>r.json()).catch(()=>({}));
+      if(st.on){ pushState.on=true; pushRender('on'); return; }
+      await pushSave(sub,true); return;                             // signed in again on this device: on again, quietly
+    }
+    pushRender('off');
+  }catch{ pushRender('none'); }
+}
+async function pushSave(sub,quiet){
+  const res=await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON(),quiet})});
+  const d=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(d.error||'The server did not accept it.');
+  pushState.on=true; pushRender('on');
+  if(!quiet) showToast(d.sent?'Notifications are on — the first one is on its way':'Notifications are on');
+}
+async function pushAction(what,btn){
+  btn.disabled=true;
+  try{
+    if(what==='on'){
+      const perm=await Notification.requestPermission();                 // must follow the tap directly (iPhone)
+      if(perm!=='granted'){ pushRender(perm==='denied'?'blocked':'off'); return; }
+      const reg=pushState.reg||await navigator.serviceWorker.ready;
+      const sub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uBytes(pushState.key)});
+      await pushSave(sub,false);
+    }else if(what==='off'){
+      const sub=await pushState.reg?.pushManager.getSubscription();
+      if(sub){
+        await fetch('/api/push/subscribe',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:sub.endpoint})}).catch(()=>{});
+        await sub.unsubscribe().catch(()=>{});
+      }
+      pushState.on=false; pushRender('off'); showToast('Notifications are off for this device');
+    }else if(what==='test'){
+      const d=await fetch('/api/push/test',{method:'POST'}).then(r=>r.json()).catch(()=>({}));
+      showToast(d.sent?'Test sent — it should appear in a moment':'No device received it — turn notifications off and on again',!d.sent);
+    }
+  }catch(err){ showToast('Notifications: '+(err&&err.message||err),true); }
+  finally{ if(btn.isConnected) btn.disabled=false; }
+}
+document.getElementById('notif-push').addEventListener('click',e=>{
   e.stopPropagation();
-  try{ await Notification.requestPermission(); }catch{}
-  syncAlertsButton();
-  if(Notification.permission==='granted') showToast('Desktop alerts are on for this browser');
+  const b=e.target.closest('[data-push]'); if(b) pushAction(b.dataset.push,b);
+});
+// A tap on a notification while OSQA is already open: go to the page it is about.
+navigator.serviceWorker?.addEventListener('message',e=>{
+  if(e.data?.type!=='open'||!e.data.url) return;
+  const u=new URL(e.data.url,location.origin);
+  if(u.hash&&u.hash!==location.hash) location.hash=u.hash;
 });
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ pollNotifications(); } else scheduleNotifPoll(); });
 window.addEventListener('focus',()=>pollNotifications());
 window.addEventListener('online',()=>pollNotifications());
 setInterval(()=>{ if(appIsOpen()&&document.visibilityState==='visible') refreshReviewBadge(); },60000);
-syncAlertsButton();
+pushInit();
 loadNotifications();
 pollNotifications();
 
