@@ -9,6 +9,7 @@ import {
   registerFailedAttempt, clearFailedAttempts, SESSION_COOKIE, MAX_FAILED_ATTEMPTS,
   passwordProblem, revokeSessions, sha256Hex,
 } from './auth.js';
+import { sendPush, pushEndpointAllowed } from './push.js';
 
 // API answers describe live data, so no browser may keep a copy — Safari in particular will
 // otherwise hand back an old list for the same URL.
@@ -347,6 +348,7 @@ async function notifySubmission(env, user, r, assignmentId) {
   statements.push(env.DB.prepare(insert).bind(user.id, 'receipt', `Report submitted: ${building}`,
     `${what}${score} — sent for review.`, link, new Date().toISOString().replace('T', ' ').slice(0, 19)));
   await env.DB.batch(statements);
+  queuePush(env, [...recipients], { title: `New report to review: ${building}`, body: `${user.name} submitted ${what}${score}.`, link, tag: 'submission' });
 }
 
 async function updateInspection(env, user, id, rec) {
@@ -656,6 +658,20 @@ async function runBackup(env, trigger, { full = true } = {}) {
     await setState(env, 'backup.catchup', status).catch(() => {});
   }
   return status;
+}
+
+/** The backup also follows use of the site: whenever someone has the app open (it checks for
+ *  notifications about once a minute), a small run starts if none has run for 10 minutes, and a
+ *  full run if none has for a day. Data only changes while people use the site, so every change
+ *  reaches the backup within minutes even if the scheduled runs are late or missing. */
+let backupLookedAt = 0;                                      // per isolate: look at most once a minute
+async function backupSoon(env) {
+  if (!env.BACKUPS || Date.now() - backupLookedAt < 60000) return;
+  backupLookedAt = Date.now();
+  const [small, full] = await Promise.all([getState(env, 'backup.catchup'), getState(env, 'backup.lastOk')]);
+  const age = (x) => (x?.updatedAt ? Date.now() - Date.parse(x.updatedAt.replace(' ', 'T') + 'Z') : Infinity);
+  if (age(full) > 26 * 3600000) await runBackup(env, 'daily (while in use)', { full: true });
+  else if (age(small) > 10 * 60000 && age(full) > 10 * 60000) await runBackup(env, 'automatic (while in use)', { full: false });
 }
 
 /** Reports saved before photos had their own storage: file a few reports' photos per call. The
@@ -1908,6 +1924,91 @@ async function notify(env, userId, type, title, body, link) {
   await env.DB.prepare(
     `INSERT INTO notifications (user_id, type, title, body, link) VALUES (?1, ?2, ?3, ?4, ?5)`,
   ).bind(userId, type, title, body || null, link || null).run();
+  queuePush(env, [userId], { title, body: body || '', link, tag: type });
+}
+
+/* ── Notifications on the phone (Web Push) ──────────────────────────────────────────
+ * A device that turned them on gets each notification on its lock screen while the session
+ * that turned them on is signed in. Sending happens after the reply, so nobody waits for it. */
+const pushReady = (env) => !!(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_JWK);
+const vapidOf = (env) => ({ publicKey: env.VAPID_PUBLIC_KEY, privateJwk: env.VAPID_PRIVATE_JWK, subject: env.VAPID_SUBJECT || 'https://facility-experience-quality-assurance.osqa.workers.dev' });
+
+function queuePush(env, userIds, message) {
+  if (!pushReady(env) || !userIds.length) return;
+  const job = pushToUsers(env, userIds, message).catch((err) => console.error('push', err));
+  if (env.ctx) env.ctx.waitUntil(job);
+}
+
+async function pushToUsers(env, userIds, message, { onlySession = null } = {}) {
+  const { results } = await env.DB.prepare(
+    `SELECT p.id, p.user_id, p.endpoint, p.p256dh, p.auth FROM push_subscriptions p
+     JOIN qa_sessions s ON s.token_hash = p.session_hash
+     WHERE p.user_id IN (SELECT value FROM json_each(?1)) AND s.expires_at > ?2 ${onlySession ? 'AND p.session_hash = ?3' : ''}`,
+  ).bind(JSON.stringify([...new Set(userIds)]), Date.now(), ...(onlySession ? [onlySession] : [])).all();
+  const subs = results || [];
+  if (!subs.length) return { sent: 0, devices: 0 };
+  // the number on the app icon: each person's unread notifications
+  const { results: counts } = await env.DB.prepare(
+    `SELECT user_id, COUNT(*) AS n FROM notifications WHERE read_at IS NULL AND user_id IN (SELECT value FROM json_each(?1)) GROUP BY user_id`,
+  ).bind(JSON.stringify([...new Set(subs.map((x) => x.user_id))])).all();
+  const unread = new Map((counts || []).map((x) => [x.user_id, x.n]));
+  const url = message.link ? `/app${String(message.link).startsWith('#') ? message.link : ''}` : '/app';
+  const gone = [], sent = [];
+  await Promise.all(subs.map(async (sub) => {
+    try {
+      const status = await sendPush(sub, { title: message.title, body: message.body, url, tag: message.tag || 'qa', badge: unread.get(sub.user_id) || 0 }, vapidOf(env));
+      if (status === 404 || status === 410) gone.push(sub.id);
+      else if (status >= 200 && status < 300) sent.push(sub.id);
+      else console.error('push refused', status, new URL(sub.endpoint).host);
+    } catch (err) { console.error('push failed', new URL(sub.endpoint).host, err?.message); }
+  }));
+  const stmts = [];
+  if (gone.length) stmts.push(env.DB.prepare('DELETE FROM push_subscriptions WHERE id IN (SELECT value FROM json_each(?1))').bind(JSON.stringify(gone)));
+  if (sent.length) stmts.push(env.DB.prepare("UPDATE push_subscriptions SET last_sent_at = datetime('now') WHERE id IN (SELECT value FROM json_each(?1))").bind(JSON.stringify(sent)));
+  if (stmts.length) await env.DB.batch(stmts);
+  return { sent: sent.length, devices: subs.length };
+}
+
+async function handlePush(request, env, path, method, user) {
+  if (!path.startsWith('push/')) return null;
+  if (path === 'push/key' && method === 'GET') {
+    return json({ enabled: pushReady(env), publicKey: env.VAPID_PUBLIC_KEY || null });
+  }
+  if (!pushReady(env)) return fail('notifications are not set up on the server yet', 503);
+  if (path === 'push/status' && method === 'GET') {
+    const endpoint = new URL(request.url).searchParams.get('endpoint') || '';
+    const row = await env.DB.prepare('SELECT id FROM push_subscriptions WHERE endpoint = ?1 AND user_id = ?2 AND session_hash = ?3')
+      .bind(endpoint, user.id, user.sessionHash).first();
+    return json({ on: !!row });
+  }
+  if (path === 'push/subscribe' && method === 'POST') {
+    const body = await request.json();
+    const sub = body?.subscription || {};
+    const endpoint = String(sub.endpoint || '');
+    const p256dh = String(sub.keys?.p256dh || ''), auth = String(sub.keys?.auth || '');
+    if (!pushEndpointAllowed(endpoint, { allowLocal: env.PUSH_ALLOW_LOCAL === '1' })) return fail('that is not a push service this site sends to', 400);
+    if (!/^[A-Za-z0-9_-]{80,100}$/.test(p256dh) || !/^[A-Za-z0-9_-]{16,32}$/.test(auth)) return fail('the device keys are not valid', 400);
+    if (endpoint.length > 1000) return fail('the push address is too long', 400);
+    await env.DB.prepare(
+      `INSERT INTO push_subscriptions (user_id, session_hash, endpoint, p256dh, auth, device) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+       ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, session_hash = excluded.session_hash,
+         p256dh = excluded.p256dh, auth = excluded.auth, device = excluded.device, created_at = datetime('now')`,
+    ).bind(user.id, user.sessionHash, endpoint, p256dh, auth, deviceLabel(request)).run();
+    if (body?.quiet === true) return json({ ok: true, sent: 0 });   // the same device, signed in again
+    await audit(env, user, 'push.on', user.id, user.name, `Notifications turned on · ${deviceLabel(request)}`);
+    const r = await pushToUsers(env, [user.id], { title: 'Notifications are on', body: 'New assignments, reviews and reports will show here, even when OSQA is closed.', link: '#pg-home', tag: 'welcome' }, { onlySession: user.sessionHash });
+    return json({ ok: true, sent: r.sent });
+  }
+  if (path === 'push/subscribe' && method === 'DELETE') {
+    const body = await request.json().catch(() => ({}));
+    await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?1 AND user_id = ?2').bind(String(body?.endpoint || ''), user.id).run();
+    return json({ ok: true });
+  }
+  if (path === 'push/test' && method === 'POST') {
+    const r = await pushToUsers(env, [user.id], { title: 'Test notification', body: `Sent ${new Date().toISOString().slice(11, 16)} UTC — notifications work on this device.`, link: '#pg-home', tag: 'test' }, { onlySession: user.sessionHash });
+    return json({ ok: true, ...r });
+  }
+  return fail('not found', 404);
 }
 
 async function listNotifications(env, userId) {
@@ -2209,7 +2310,9 @@ async function authCompleteSetup(env, body, request) {
 }
 
 async function authLogout(request, env) {
-  await destroySession(env, readCookie(request, SESSION_COOKIE));
+  const token = readCookie(request, SESSION_COOKIE);
+  if (token) await env.DB.prepare('DELETE FROM push_subscriptions WHERE session_hash = ?1').bind(await sha256Hex(token)).run().catch(() => {});
+  await destroySession(env, token);
   return json({ ok: true }, 200, { 'Set-Cookie': clearCookieHeader() });
 }
 
@@ -2517,6 +2620,7 @@ async function handleApi(request, env, url) {
 
   const user = await getUserFromRequest(request, env);
   if (!user) return fail('authentication required', 401);
+  if (method === 'GET') env.ctx?.waitUntil(backupSoon(env).catch((err) => console.error('backup', err)));
   const res = await handleApiAuthed(request, env, url, path, method, user);
   if (!user.renewCookie || res.headers.has('Set-Cookie')) return res;
   const headers = new Headers(res.headers);
@@ -2581,6 +2685,9 @@ async function handleApiAuthed(request, env, url, path, method, user) {
   const assignmentResponse = await handleAssignments(request, env, url, path, user);
   if (assignmentResponse) return assignmentResponse;
   if (path.startsWith('assignments')) return fail('not found', 404);
+
+  const pushResponse = await handlePush(request, env, path, method, user);
+  if (pushResponse) return pushResponse;
 
   const notificationResponse = await handleNotifications(request, env, path, user, url);
   if (notificationResponse) return notificationResponse;
@@ -2650,9 +2757,12 @@ export default {
     const nightly = controller.cron === NIGHTLY_CRON;
     ctx.waitUntil(runBackup(env, nightly ? 'nightly' : 'automatic', { full: nightly }));
   },
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const isApi = url.pathname.startsWith('/api/');
+    // This request's own view of the bindings, carrying its context so work can continue after
+    // the response (phone notifications, the backup). Bindings are read through the prototype.
+    env = Object.assign(Object.create(env), { ctx });
     try {
       return isApi ? await handleApi(request, env, url) : await handleAssets(request, env, url);
     } catch (err) {
