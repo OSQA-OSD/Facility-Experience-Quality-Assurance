@@ -775,7 +775,7 @@ async function backupStatus(env) {
 /** One page of one table for the full export. Photos come a few at a time (they are large). */
 async function exportTablePage(env, url) {
   const table = url.searchParams.get('table') || '';
-  const key = BACKUP_TABLES[table];
+  const key = Object.hasOwn(BACKUP_TABLES, table) ? BACKUP_TABLES[table] : null;   // only the listed tables
   if (!key) return fail('unknown table', 400);
   const after = url.searchParams.get('after');
   const limit = table === 'photo_blobs' ? 8 : table === 'inspection_versions' || table === 'inspections' || table === 'inspection_archive' ? 100 : 1000;
