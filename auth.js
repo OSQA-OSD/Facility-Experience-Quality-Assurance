@@ -124,7 +124,7 @@ export async function getUserFromRequest(request, env) {
     renewCookie = sessionCookieHeader(token, expiresAt);
   }
   const user = await env.DB.prepare(
-    `SELECT id, name, username, role, status, can_edit, can_delete, can_export, permissions, must_change_password, notifications_enabled
+    `SELECT id, name, username, role, status, can_edit, can_delete, can_export, permissions, must_change_password, notifications_enabled, theme
      FROM qa_users WHERE id = ?1`,
   ).bind(session.user_id).first();
   if (!user || user.status !== 'active') return null;

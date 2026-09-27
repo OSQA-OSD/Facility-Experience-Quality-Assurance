@@ -1972,14 +1972,20 @@ async function handleAssignments(request, env, url, path, user) {
 
 /** Settings each person controls for themselves. Always the signed-in account: there is no id
  *  to change, so nobody can set someone else's, and administrators cannot change them either. */
+const THEMES = new Set(['auto', 'light', 'dark']);
 async function updateOwnSettings(env, user, body) {
-  if (!body || typeof body !== 'object' || typeof body.notifications !== 'boolean') return fail('send { "notifications": true or false }', 400);
-  const on = body.notifications ? 1 : 0;
-  await env.DB.prepare("UPDATE qa_users SET notifications_enabled = ?2, updated_at = datetime('now') WHERE id = ?1").bind(user.id, on).run();
-  if ((user.notifications_enabled !== 0) !== !!on) {
+  if (!body || typeof body !== 'object') return fail('send the settings to change', 400);
+  const hasNotif = 'notifications' in body, hasTheme = 'theme' in body;
+  if (!hasNotif && !hasTheme) return fail('send { "notifications": true|false } and/or { "theme": "auto"|"light"|"dark" }', 400);
+  if (hasNotif && typeof body.notifications !== 'boolean') return fail('notifications must be true or false', 400);
+  if (hasTheme && !THEMES.has(body.theme)) return fail('theme must be auto, light or dark', 400);
+  const on = hasNotif ? (body.notifications ? 1 : 0) : (user.notifications_enabled !== 0 ? 1 : 0);
+  const theme = hasTheme ? body.theme : (THEMES.has(user.theme) ? user.theme : 'auto');
+  await env.DB.prepare("UPDATE qa_users SET notifications_enabled = ?2, theme = ?3, updated_at = datetime('now') WHERE id = ?1").bind(user.id, on, theme).run();
+  if (hasNotif && (user.notifications_enabled !== 0) !== !!on) {
     await audit(env, user, 'user.settings', user.id, user.name, `Notifications turned ${on ? 'on' : 'off'}`);
   }
-  return json({ ok: true, notifications: !!on });
+  return json({ ok: true, notifications: !!on, theme });
 }
 
 /** Notification types that are always delivered, even to someone who turned notifications off:
@@ -2324,6 +2330,7 @@ function publicUser(user) {
     canDelete: permissions.includes('delete'),
     canExport: permissions.includes('export'),
     notificationsEnabled: user.notifications_enabled !== 0,
+    theme: ['auto', 'light', 'dark'].includes(user.theme) ? user.theme : 'auto',
   };
 }
 
@@ -2759,7 +2766,7 @@ async function handleApiAuthed(request, env, url, path, method, user) {
   }
 
   if (path === 'account/settings') {
-    if (method === 'GET') return json({ notifications: user.notifications_enabled !== 0 });
+    if (method === 'GET') return json({ notifications: user.notifications_enabled !== 0, theme: THEMES.has(user.theme) ? user.theme : 'auto' });
     if (method === 'PATCH') return updateOwnSettings(env, user, await request.json());
     return fail('method not allowed', 405);
   }

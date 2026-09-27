@@ -10,7 +10,10 @@
 <meta name="apple-mobile-web-app-title" content="OSQA">
 <title>Facility Experience Quality Assurance</title>
 <meta name="description" content="The official system for facility inspections and quality reports. For authorised personnel only.">
-<meta name="theme-color" content="#002070">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#002070" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B1320" media="(prefers-color-scheme: dark)">
+<script>(function(){ try{ var t=localStorage.getItem('qa-theme'); if(t==='light'||t==='dark') document.documentElement.dataset.theme=t; }catch(e){} })();</script>
 <link rel="icon" type="image/svg+xml" href="/osqa-icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,37 +23,41 @@
 :root{
   --royal:#0033A0;--royal-dk:#002070;--navy:#001540;--teal:#26A8AB;--teal-lt:#8CFEE3;
   --ink:#102040;--muted:#5F6369;--line:#C0C0C0;--paper:#f5f8fb;
+  --surface:#fff;--top:rgba(255,255,255,.96);--royal-ink:#0033A0;--heading:#002070;--teal-ink:#0C7B7D;
   --hero:linear-gradient(150deg,#001540 0%,#00246F 32%,#0A5C9E 70%,#26A8AB 100%);
   --font:'Cairo',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
 }
+/* Dark: the device's setting, or the person's choice remembered from the app */
+@media (prefers-color-scheme: dark){:root:not([data-theme=light]) .top .brand-logo{content:url(/osqa-logo-white.svg)}:root:not([data-theme=light]) .pillar{background:#162131}:root:not([data-theme=light]) .access-card{background:#162131}:root:not([data-theme=light]){color-scheme:dark;--surface:#0F1824;--paper:#131F2E;--line:#2E3F54;--ink:#E3E9F1;--muted:#9CA8B6;--top:rgba(15,24,36,.94);--royal-ink:#8FB0FF;--heading:#C8D6FF;--teal-ink:#6ED3D5}}
+:root[data-theme=dark] .top .brand-logo{content:url(/osqa-logo-white.svg)}:root[data-theme=dark] .pillar{background:#162131}:root[data-theme=dark] .access-card{background:#162131}:root[data-theme=dark]{color-scheme:dark;--surface:#0F1824;--paper:#131F2E;--line:#2E3F54;--ink:#E3E9F1;--muted:#9CA8B6;--top:rgba(15,24,36,.94);--royal-ink:#8FB0FF;--heading:#C8D6FF;--teal-ink:#6ED3D5}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:var(--font);color:var(--ink);background:#fff;line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+body{font-family:var(--font);color:var(--ink);background:var(--surface);line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
 main{flex:1}
 [hidden]{display:none!important}
 a{color:inherit}
 .i{width:20px;height:20px;flex-shrink:0}
 .wrap{width:min(1120px,100% - 48px);margin-inline:auto}
-.skip{position:absolute;left:-9999px;top:8px;z-index:50;background:#fff;color:var(--royal);padding:8px 14px;border-radius:8px;font-weight:700}
+.skip{position:absolute;left:-9999px;top:8px;z-index:50;background:#fff;color:var(--royal-ink);padding:8px 14px;border-radius:8px;font-weight:700}
 .skip:focus{left:12px}
 :focus-visible{outline:3px solid var(--teal);outline-offset:3px}
 
 /* Header */
-.top{position:sticky;top:0;z-index:20;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);background:rgba(255,255,255,.96);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+.top{position:sticky;top:0;z-index:20;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);background:var(--top);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:66px}
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none;min-width:0}
 .brand-logo{height:34px;width:auto;display:block;flex-shrink:0}
 .brand-sep{width:1px;height:32px;background:var(--line);flex-shrink:0}
 .brand-text{min-width:0}
-.brand small{display:block;font-size:.68rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#0C7B7D;line-height:1.3}
-.brand b{display:block;font-size:1rem;font-weight:900;color:var(--royal-dk);line-height:1.25;white-space:nowrap}
+.brand small{display:block;font-size:.68rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--teal-ink);line-height:1.3}
+.brand b{display:block;font-size:1rem;font-weight:900;color:var(--heading);line-height:1.25;white-space:nowrap}
 .top nav{display:flex;align-items:center;gap:28px;margin-left:auto;margin-right:12px}
 .top nav a{text-decoration:none;font-weight:700;font-size:.86rem;color:var(--muted)}
-@media(hover:hover){.top nav a:hover{color:var(--royal)}}
+@media(hover:hover){.top nav a:hover{color:var(--royal-ink)}}
 .who{display:flex;align-items:center;gap:10px;font-size:.84rem;font-weight:700}
 .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0033A0 0%,#0B5FAE 55%,#26A8AB 100%);color:#fff;font-size:.7rem;font-weight:900;display:flex;align-items:center;justify-content:center}
 .link-btn{background:none;border:none;font:inherit;font-weight:700;font-size:.84rem;color:var(--muted);cursor:pointer;padding:6px 4px}
-@media(hover:hover){.link-btn:hover{color:var(--royal)}}
+@media(hover:hover){.link-btn:hover{color:var(--royal-ink)}}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border-radius:10px;padding:11px 22px;font-family:var(--font);font-weight:800;font-size:.9rem;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:background .15s,box-shadow .15s,transform .15s;white-space:nowrap}
 .btn .i{width:17px;height:17px}
@@ -98,20 +105,20 @@ a{color:inherit}
 /* Sections */
 .section{padding-block:84px}
 .head{max-width:620px;margin-bottom:44px}
-.head h2{font-size:clamp(1.55rem,2.6vw,2.05rem);font-weight:900;color:var(--royal-dk);line-height:1.25;margin-bottom:10px}
+.head h2{font-size:clamp(1.55rem,2.6vw,2.05rem);font-weight:900;color:var(--heading);line-height:1.25;margin-bottom:10px}
 .head p{color:var(--muted);font-size:1rem}
 .pillars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
-.pillar{border:1px solid var(--line);border-radius:14px;padding:28px 26px;background:#fff;position:relative}
+.pillar{border:1px solid var(--line);border-radius:14px;padding:28px 26px;background:var(--surface);position:relative}
 .pillar::before{content:'';position:absolute;left:26px;right:26px;top:-1px;height:3px;border-radius:0 0 3px 3px;background:linear-gradient(90deg,var(--royal),var(--teal))}
-.pillar .ico{width:46px;height:46px;border-radius:12px;background:var(--paper);border:1px solid var(--line);color:var(--royal);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
-.pillar h3{font-size:1.06rem;font-weight:800;color:var(--royal-dk);margin-bottom:6px}
+.pillar .ico{width:46px;height:46px;border-radius:12px;background:var(--paper);border:1px solid var(--line);color:var(--royal-ink);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.pillar h3{font-size:1.06rem;font-weight:800;color:var(--heading);margin-bottom:6px}
 .pillar p{font-size:.92rem;color:var(--muted)}
 
 .access{background:var(--paper);border-top:1px solid var(--line)}
-.access-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:28px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:34px 36px;box-shadow:0 24px 50px -40px rgba(0,32,112,.5)}
+.access-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:28px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:34px 36px;box-shadow:0 24px 50px -40px rgba(0,32,112,.5)}
 .access-card .ico{width:56px;height:56px;border-radius:14px;background:var(--royal);color:#fff;display:flex;align-items:center;justify-content:center}
 .access-card .ico .i{width:26px;height:26px}
-.access-card h2{font-size:1.35rem;font-weight:900;color:var(--royal-dk);margin-bottom:4px}
+.access-card h2{font-size:1.35rem;font-weight:900;color:var(--heading);margin-bottom:4px}
 .access-card p{color:var(--muted);font-size:.95rem;max-width:620px}
 
 footer{background:var(--navy);color:rgba(255,255,255,.66);font-size:.82rem}
