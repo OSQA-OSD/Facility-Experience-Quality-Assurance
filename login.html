@@ -8,7 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="OSQA">
-<meta name="theme-color" content="#002070">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#002070" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B1320" media="(prefers-color-scheme: dark)">
+<script>(function(){ try{ var t=localStorage.getItem('qa-theme'); if(t==='light'||t==='dark') document.documentElement.dataset.theme=t; }catch(e){} })();</script>
 <link rel="icon" type="image/svg+xml" href="/osqa-icon.svg">
 <title>Sign In — Facility Experience QA</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -18,7 +21,11 @@
   --teal:#26A8AB;--teal-lt:#8CFEE3;--royal:#0033A0;--royal-dk:#002070;
   --bg:#EEF3F7;--border:#C0C0C0;--text:#102040;--muted:#5F6369;
   --good:#00843D;--danger:#C0392B;--r:12px;--font:'Cairo',system-ui,sans-serif;
+  --card:#fff;--teal-ink:#0A7274;--ok-ink:#007A38;
 }
+/* Dark: the device's setting, or the person's choice remembered from the app */
+@media (prefers-color-scheme: dark){:root:not([data-theme=light]) .brand-logo{content:url(/osqa-logo-white.svg)}:root:not([data-theme=light]) .card{border-color:rgba(255,255,255,.08)}:root:not([data-theme=light]){color-scheme:dark;--card:#162131;--bg:#0F1A28;--border:#33455B;--text:#E3E9F1;--muted:#9CA8B6;--royal:#2A55C9;--royal-dk:#C8D6FF;--teal-ink:#6ED3D5;--ok-ink:#6BD69D;--good:#4CC784;--danger:#FF8A7A}}
+:root[data-theme=dark] .brand-logo{content:url(/osqa-logo-white.svg)}:root[data-theme=dark] .card{border-color:rgba(255,255,255,.08)}:root[data-theme=dark]{color-scheme:dark;--card:#162131;--bg:#0F1A28;--border:#33455B;--text:#E3E9F1;--muted:#9CA8B6;--royal:#2A55C9;--royal-dk:#C8D6FF;--teal-ink:#6ED3D5;--ok-ink:#6BD69D;--good:#4CC784;--danger:#FF8A7A}
 *{box-sizing:border-box;margin:0;padding:0}
 /* Same look as the app and landing page: royal/teal gradient ground, white card, gradient logo tile */
 body{
@@ -38,14 +45,14 @@ body::after{width:60vmax;height:60vmax;bottom:-30vmax;left:-22vmax;background:ra
 .back{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.75);text-decoration:none;font-weight:700;font-size:.8rem;width:100%;max-width:400px}
 .back:hover{color:#fff}
 .back svg{width:15px;height:15px}
-.card{width:100%;max-width:400px;background:#fff;border:1px solid rgba(255,255,255,.4);border-bottom:4px solid var(--teal);border-radius:16px;
+.card{width:100%;max-width:400px;background:var(--card);border:1px solid rgba(255,255,255,.4);border-bottom:4px solid var(--teal);border-radius:16px;
   box-shadow:0 30px 70px -24px rgba(0,0,0,.55);padding:34px 32px;}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:24px}
 .brand{gap:12px}
 .brand-logo{height:34px;width:auto;display:block;flex-shrink:0}
 .brand-sep{width:1px;height:32px;background:var(--border,#C8D8E4);flex-shrink:0}
 .brand b{font-weight:900;font-size:1rem;color:var(--royal-dk);display:block;line-height:1.25}
-.brand span{font-size:.68rem;color:#0A7274;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.brand span{font-size:.68rem;color:var(--teal-ink);font-weight:800;letter-spacing:.14em;text-transform:uppercase}
 
 h2{font-size:1.25rem;font-weight:900;color:var(--royal-dk);margin-bottom:6px}
 .sub{font-size:.83rem;color:var(--muted);margin-bottom:24px;line-height:1.5}
@@ -60,7 +67,7 @@ input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(38,168,171,.18)}
 .pw-rules{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
 .pw-rules li{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;color:var(--muted)}
 .pw-rules li::before{content:'';width:14px;height:14px;border-radius:50%;border:1.5px solid #b8c0c8;flex:none;box-sizing:border-box}
-.pw-rules li.ok{color:#007A38}
+.pw-rules li.ok{color:var(--ok-ink)}
 .pw-rules li.ok::before{border-color:#007A38;background:#007A38 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/12px no-repeat}
 @media(max-width:360px){.pw-rules{grid-template-columns:1fr}}
 
@@ -75,7 +82,7 @@ input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(38,168,171,.18)}
 .msg.err{display:block;background:rgba(192,57,43,.1);color:var(--danger)}
 .msg.ok{display:block;background:rgba(0,132,61,.1);color:var(--good)}
 
-.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(38,168,171,.14);color:#0c7b7d;
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(38,168,171,.14);color:var(--teal-ink);
   font-weight:800;font-size:.68rem;letter-spacing:.04em;padding:5px 11px;border-radius:999px;margin-bottom:16px}
 .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
   animation:spin .7s linear infinite}
