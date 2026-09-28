@@ -672,7 +672,7 @@ async function runBackup(env, trigger, { full = true } = {}) {
       await kv.put(`daily/${day}.json.gz`, await gzipText(JSON.stringify(snapshot)));
       writes += 1;
 
-      await env.DB.prepare('DELETE FROM auth_throttle WHERE window < ?1').bind(Math.floor(Date.now() / 60000 / 5) - 12).run().catch(() => {});
+      await clearOldThrottles(env);
 
       // 7. Nightly copies: the last 30 days, and the first of every month for good.
       const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -1143,7 +1143,8 @@ async function setAssignmentDue(env, officer, body) {
     due.value ? `Deadline ${due.value} for ${n} building${n === 1 ? '' : 's'}` : `Deadline removed for ${n} building${n === 1 ? '' : 's'}`,
     `${quarter} · ${type} · set by ${officer.name}`, '#pg-auditor',
   )));
-  await audit(env, officer, 'assignment.due', `${quarter}|${type}`, `${rows.length} buildings`, { dueDate: due.value });
+  await audit(env, officer, 'assignment.due', `${quarter}|${type}`, `${rows.length} building${rows.length === 1 ? '' : 's'} · ${quarter} ${type}`,
+    due.value ? `Deadline set to ${due.value}` : 'Deadline removed');
   return json({ updated: rows.length, skipped: ids.length - rows.length, dueDate: due.value });
 }
 
@@ -1849,6 +1850,16 @@ async function reviewInspection(env, user, id, body) {
   const summary = libraryRow({ ...row, aid }, ctx);
   if (isOwnReport(user, summary)) return fail('you cannot review your own report', 403);
 
+  // The same decision sent twice (a double tap, a replayed request) is recorded once and tells the
+  // auditor once.
+  const last = await env.DB.prepare(
+    `SELECT decision, comment FROM inspection_reviews WHERE inspection_id = ?1 AND reviewer_id = ?2
+       AND created_at > datetime('now', '-10 minutes') ORDER BY id DESC LIMIT 1`,
+  ).bind(id, user.id).first();
+  if (last && last.decision === decision && (last.comment || '') === comment) {
+    return json({ ok: true, duplicate: true, status: reviewStatus(row.updated_at, ctx.decision.get(id) || null) });
+  }
+
   await env.DB.prepare('INSERT INTO inspection_reviews (inspection_id, reviewer_id, reviewer_name, decision, comment) VALUES (?1, ?2, ?3, ?4, ?5)')
     .bind(id, user.id, user.name, decision, comment || null).run();
   const label = `${summary.building} · ${summary.date}${summary.type ? ' ' + summary.type : ''}`;
@@ -2044,6 +2055,7 @@ async function pushToUsers(env, userIds, message, { onlySession = null } = {}) {
   return { sent: sent.length, devices: subs.length };
 }
 
+const PUSH_MAX_DEVICES = 10;
 async function handlePush(request, env, path, method, user) {
   if (!path.startsWith('push/')) return null;
   if (path === 'push/key' && method === 'GET') {
@@ -2069,6 +2081,12 @@ async function handlePush(request, env, path, method, user) {
        ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, session_hash = excluded.session_hash,
          p256dh = excluded.p256dh, auth = excluded.auth, device = excluded.device, created_at = datetime('now')`,
     ).bind(user.id, user.sessionHash, endpoint, p256dh, auth, deviceLabel(request)).run();
+    // A person has a handful of devices: only the ten newest addresses are kept, so no account can
+    // make each of its notifications fan out to hundreds of addresses.
+    await env.DB.prepare(
+      `DELETE FROM push_subscriptions WHERE user_id = ?1 AND id NOT IN
+         (SELECT id FROM push_subscriptions WHERE user_id = ?1 ORDER BY created_at DESC, id DESC LIMIT ${PUSH_MAX_DEVICES})`,
+    ).bind(user.id).run();
     if (body?.quiet === true) return json({ ok: true, sent: 0 });   // the same device, signed in again
     await audit(env, user, 'push.on', user.id, user.name, `Notifications turned on · ${deviceLabel(request)}`);
     const r = await pushToUsers(env, [user.id], { title: 'Notifications are on', body: 'New assignments, reviews and reports will show here, even when OSQA is closed.', link: '#pg-home', tag: 'welcome' }, { onlySession: user.sessionHash });
@@ -2300,19 +2318,63 @@ async function authBootstrap(env, body, request) {
 const AUTH_LIMITS = {
   'auth/login': [60, 5], 'auth/complete-setup': [30, 5], 'auth/bootstrap': [10, 5], 'auth/change-password': [20, 5],
 };
-async function authThrottled(env, request, path) {
-  const [limit, minutes] = AUTH_LIMITS[path];
-  const ip = request.headers.get('CF-Connecting-IP') || 'local';
-  const windowNo = Math.floor(Date.now() / 60000 / minutes);
+/* Limits per signed-in person, on top of every permission check: far above a busy real day, far
+ * below what it takes to flood colleagues with notifications or fill the database.
+ *  - notify: changes that tell someone else (reviews, submissions, assignments)
+ *  - push:   turning phone notifications on, or sending a test
+ *  - write:  any other change */
+const USER_LIMITS = { notify: [60, 10], push: [10, 10], write: [300, 5] };
+function userLimitClass(path, method) {
+  if (path === 'push/test' || (path === 'push/subscribe' && method === 'POST')) return 'push';
+  if (/^inspections(\/\d+\/reviews)?$/.test(path) && method === 'POST') return 'notify';
+  if (/^assignments(\/(bulk|repeat|due))?$/.test(path) && method === 'POST') return 'notify';
+  return 'write';
+}
+const clientIp = (request) => request.headers.get('CF-Connecting-IP') || 'local';
+/** Where a sign-in came from, for the audit log: the kind of device and the network address.
+ *  (Never what was typed — a password entered in the username box must not end up in a log.) */
+const signInPlace = (request) => `${deviceLabel(request) || 'Unknown device'} · network ${clientIp(request)}`;
+
+/** Counts one hit against `key` in a fixed window of `minutes` and returns the hits so far.
+ *  The window is stored as the minute it started, so old counters can be cleared in one sweep. */
+async function countHit(env, key, minutes) {
+  const minute = Math.floor(Date.now() / 60000);
+  const windowStart = minute - (minute % minutes);
   try {
     const row = await env.DB.prepare(
       `INSERT INTO auth_throttle (key, window, hits) VALUES (?1, ?2, 1)
        ON CONFLICT(key) DO UPDATE SET hits = CASE WHEN window = ?2 THEN hits + 1 ELSE 1 END, window = ?2
        RETURNING hits`,
-    ).bind(`${path}:${ip}`, windowNo).first();
-    return (row?.hits || 0) > limit;
-  } catch { return false; }                                     // never lock everyone out over a counter
+    ).bind(key, windowStart).first();
+    return row?.hits || 0;
+  } catch { return 0; }                                         // never lock everyone out over a counter
 }
+async function authThrottled(env, request, path) {
+  const [limit, minutes] = AUTH_LIMITS[path];
+  const ip = clientIp(request);
+  const hits = await countHit(env, `${path}:${ip}`, minutes);
+  // One line in the audit log when a network first goes over the limit (not one per attempt).
+  if (hits === limit + 1) {
+    await audit(env, null, 'security.throttle', null, `Network ${ip}`,
+      `More than ${limit} ${path.replace('auth/', '').replace('-', ' ')} attempts in ${minutes} minutes — further attempts refused until the window ends`);
+  }
+  return hits > limit;
+}
+/** A signed-in person over their limit for this kind of change: the refusal, else null. */
+async function userThrottled(env, user, path, method) {
+  const cls = userLimitClass(path, method);
+  const [limit, minutes] = USER_LIMITS[cls];
+  const hits = await countHit(env, `user:${user.id}:${cls}`, minutes);
+  if (hits === limit + 1) {
+    await audit(env, user, 'security.throttle', user.id, `${user.name} (@${user.username})`,
+      `More than ${limit} ${cls === 'notify' ? 'submissions, reviews or assignments' : cls === 'push' ? 'notification requests' : 'changes'} in ${minutes} minutes — further requests refused until the window ends`);
+  }
+  if (hits <= limit) return null;
+  return json({ error: 'too many requests — wait a few minutes and try again' }, 429, { 'Retry-After': String(minutes * 60) });
+}
+/** Counters older than a day are finished with. */
+const clearOldThrottles = (env) => env.DB.prepare('DELETE FROM auth_throttle WHERE window < ?1')
+  .bind(Math.floor(Date.now() / 60000) - 24 * 60).run().catch(() => {});
 
 /** A stand-in account for names that do not exist, so a wrong username takes as long to refuse as
  *  a wrong password (the time taken must not reveal which usernames are real). */
@@ -2344,10 +2406,13 @@ async function authLogin(env, body, request) {
   if (isLocked(user)) return fail('account locked — try again in 15 minutes', 423);
 
   const valid = await verifyPassword(password, user);
+  const label = `${user.name} (@${user.username})`, where = signInPlace(request);
   if (!valid) {
     await registerFailedAttempt(env, user);
-    if ((user.failed_attempts || 0) + 1 === MAX_FAILED_ATTEMPTS) {
-      await audit(env, null, 'security.lockout', user.id, `${user.name} (@${user.username})`,
+    const tries = (user.failed_attempts || 0) + 1;
+    await audit(env, null, 'auth.failed', user.id, label, `Wrong password (${tries} of ${MAX_FAILED_ATTEMPTS}) · ${where}`);
+    if (tries === MAX_FAILED_ATTEMPTS) {
+      await audit(env, null, 'security.lockout', user.id, label,
         `Locked for 15 minutes after ${MAX_FAILED_ATTEMPTS} failed sign-in attempts`);
       await notify(env, user.id, 'security', 'Your account was locked for 15 minutes',
         `${MAX_FAILED_ATTEMPTS} wrong passwords were entered for your account. If this was not you, tell an administrator.`, null);
@@ -2356,7 +2421,10 @@ async function authLogin(env, body, request) {
   }
 
   await clearFailedAttempts(env, user.id);
-  if (user.status !== 'active') return fail('this account has been suspended', 403);
+  if (user.status !== 'active') {
+    await audit(env, null, 'auth.blocked', user.id, label, `Correct password, but the account is suspended · ${where}`);
+    return fail('this account has been suspended', 403);
+  }
 
   if (user.must_change_password) {
     return json({ ok: true, mustChangePassword: true, username: user.username });
@@ -2364,6 +2432,7 @@ async function authLogin(env, body, request) {
 
   const { token, expiresAt } = await createSession(env, user.id, deviceLabel(request));
   await touchLogin(env, user.id);
+  await audit(env, user, 'auth.login', user.id, label, where);
   return json(
     { ok: true, user: publicUser(user) },
     200,
@@ -2387,6 +2456,8 @@ async function authCompleteSetup(env, body, request) {
   if (isLocked(user)) return fail('account locked — try again in 15 minutes', 423);
   if (!(await verifyPassword(currentPassword, user))) {
     await registerFailedAttempt(env, user);
+    await audit(env, null, 'auth.failed', user.id, `${user.name} (@${user.username})`,
+      `Wrong temporary password (${(user.failed_attempts || 0) + 1} of ${MAX_FAILED_ATTEMPTS}) · ${signInPlace(request)}`);
     if ((user.failed_attempts || 0) + 1 === MAX_FAILED_ATTEMPTS) {
       await audit(env, null, 'security.lockout', user.id, `${user.name} (@${user.username})`,
         `Locked for 15 minutes after ${MAX_FAILED_ATTEMPTS} wrong temporary passwords`);
@@ -2697,7 +2768,7 @@ async function handleAdmin(request, env, path, user) {
 async function handleAuth(request, env, path) {
   const method = request.method.toUpperCase();
   // Password guessing from one network is slowed down before any account is even looked at.
-  if (method === 'POST' && AUTH_LIMITS[path] && await authThrottled(env, request, path)) {
+  if (method === 'POST' && Object.hasOwn(AUTH_LIMITS, path) && await authThrottled(env, request, path)) {
     return fail('too many sign-in attempts from this network — wait a few minutes and try again', 429);
   }
   if (path === 'auth/status' && method === 'GET') return authStatus(env);
@@ -2735,6 +2806,10 @@ async function handleApi(request, env, url) {
   const user = await getUserFromRequest(request, env);
   if (!user) return fail('authentication required', 401);
   if (method === 'GET') env.ctx?.waitUntil(backupSoon(env).catch((err) => console.error('backup', err)));
+  else if (!['HEAD', 'OPTIONS'].includes(method)) {
+    const refused = await userThrottled(env, user, path, method);
+    if (refused) return refused;
+  }
   const res = await handleApiAuthed(request, env, url, path, method, user);
   if (!user.renewCookie || res.headers.has('Set-Cookie')) return res;
   const headers = new Headers(res.headers);
@@ -2860,6 +2935,17 @@ async function handleAssets(request, env, url) {
   const isAdminShell = url.pathname === '/admin.html' || url.pathname === '/admin';
   const isAssignShell = url.pathname === '/assign.html' || url.pathname === '/assign';
   const isReportShell = url.pathname === '/report.html' || url.pathname === '/report';
+  // The app's own code is for signed-in people only, as it was when it lived inside app.html.
+  if (url.pathname === '/js/app.js') {
+    const user = await getUserFromRequest(request, env);
+    if (!user) return new Response('Sign in first.', { status: 401, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
+    return withHeaders(await env.ASSETS.fetch(request), { 'Cache-Control': 'private, no-cache' });
+  }
+  // The photo converter's page (see heic.html): the only page where eval is allowed, and the only
+  // script it may run besides its own is the converter itself. It can fetch nothing.
+  if (url.pathname === '/heic' || url.pathname === '/heic.html') {
+    return withHeaders(await env.ASSETS.fetch(request), { 'Content-Security-Policy': heicCsp(url.origin) });
+  }
   if (isAppShell || isAdminShell || isAssignShell || isReportShell) {
     const user = await getUserFromRequest(request, env);
     if (!user) return Response.redirect(new URL('/login.html', url).toString(), 302);
@@ -2868,8 +2954,20 @@ async function handleAssets(request, env, url) {
       return Response.redirect(new URL(user.role === ADMIN_ROLE ? '/app#pg-admin' : '/app', url).toString(), 302);
     }
     if (isAssignShell) return Response.redirect(new URL('/app#pg-officer', url).toString(), 302);
+    // Signed-in pages are never kept by a browser or proxy: after signing out, Back cannot bring
+    // one (and whatever it was showing) back from the cache.
+    return withHeaders(await env.ASSETS.fetch(request), { 'Cache-Control': 'no-store' });
   }
   return env.ASSETS.fetch(request);
+}
+/* Scripts are named by full address: inside the sandbox the page has no origin of its own, so
+ * 'self' would match nothing. */
+const heicCsp = (origin) => `default-src 'none'; script-src ${origin}/js/heic-frame.js https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js 'unsafe-eval'; `
+  + "worker-src blob:; connect-src blob: data:; img-src blob: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
+function withHeaders(res, set) {
+  const headers = new Headers(res.headers);
+  for (const [k, v] of Object.entries(set)) headers.set(k, v);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 
 export default {
