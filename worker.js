@@ -13,7 +13,10 @@ import { sendPush, pushEndpointAllowed } from './push.js';
 
 // API answers describe live data, so no browser may keep a copy — Safari in particular will
 // otherwise hand back an old list for the same URL.
-const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
+const JSON_HEADERS = {
+  'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+  'Cross-Origin-Resource-Policy': 'same-origin',                   // API answers are for this site's own pages only
+};
 
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...extraHeaders } });
@@ -280,6 +283,7 @@ async function servePhoto(env, sha) {
     'Cache-Control': 'private, max-age=31536000, immutable',
     'X-Content-Type-Options': 'nosniff',
     'Content-Security-Policy': "default-src 'none'; sandbox",
+    'Cross-Origin-Resource-Policy': 'same-origin',                 // no other site can embed a photo
   } });
 }
 
