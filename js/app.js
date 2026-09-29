@@ -736,9 +736,10 @@ function updateScoreCardActionBar(){
 // ═══════════════════════════════════════════════════════════
 // iPhone photos arrive as HEIC. Safari reads them itself; other browsers cannot, so for them the
 // photo is converted to JPEG first. Everything is then downscaled: a straight-from-camera photo
-// is several MB, and these are stored inside the inspection record itself.
-const PHOTO_MAX_EDGE=1600;
-const PHOTO_QUALITY=0.82;
+// is several MB. 1280 px on the long edge is sharper than any printed report needs and keeps
+// a photo near a quarter of a megabyte, so a report with dozens of photos still uploads.
+const PHOTO_MAX_EDGE=1280;
+const PHOTO_QUALITY=0.75;
 let heicFrame=null;
 
 function isHeicFile(f){ return /\.hei[cf]$/i.test(f.name||'') || /image\/hei[cf]/i.test(f.type||''); }
@@ -1164,8 +1165,54 @@ function countPhotos(record){
 }
 function tooLargeMessage(record){
   const mb=(recordSize(record)/1024/1024).toFixed(1);
-  return `This report is ${mb} MB — too large to save (limit is 12 MB).\n\n`+
-    `It currently holds ${countPhotos(record)} photos. Remove a few of the largest ones and save again.`;
+  return `This report is ${mb} MB — too large to save, even with its photos made smaller (limit is 12 MB).\n\n`+
+    `It currently holds ${countPhotos(record)} photos. Remove a few and save again.`;
+}
+
+/** A report over the limit is not refused straight away: its photos are made smaller, a step at a
+ *  time and always from the copy that was taken, until it fits. The draft keeps the smaller copies,
+ *  so saving it again later fits too. Returns false only if even the smallest step is too big. */
+const PHOTO_FIT_STEPS=[[1280,0.7],[1024,0.66],[900,0.6],[800,0.55]];
+function shrinkPhoto(dataUrl,edge,quality){
+  return new Promise((resolve,reject)=>{
+    const im=new Image();
+    im.onload=()=>{
+      const scale=Math.min(1,edge/Math.max(im.naturalWidth,im.naturalHeight));
+      const c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(im.naturalWidth*scale)); c.height=Math.max(1,Math.round(im.naturalHeight*scale));
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      const out=c.toDataURL('image/jpeg',quality); c.width=c.height=0;
+      resolve(out);
+    };
+    im.onerror=()=>reject(new Error('This photo could not be read.'));
+    im.src=dataUrl;
+  });
+}
+async function fitReportPhotos(record){
+  let size=recordSize(record);
+  if(size<=RECORD_SIZE_LIMIT) return true;
+  const taken=new Set();
+  record.sections.forEach(s=>s.items.forEach(it=>(it.photos||[]).forEach(p=>{ if(/^data:image\//.test(p)) taken.add(p); })));
+  if(!taken.size) return false;
+  const uses=new Map();                                   // the same photo can sit on two items
+  record.sections.forEach(s=>s.items.forEach(it=>(it.photos||[]).forEach(p=>uses.set(p,(uses.get(p)||0)+1))));
+  const now=new Map([...taken].map(p=>[p,p]));
+  showOverlay(`Making ${taken.size} photo${taken.size===1?'':'s'} smaller so the report fits…`);
+  try{
+    for(const [edge,q] of PHOTO_FIT_STEPS){
+      for(const p of taken){
+        let smaller; try{ smaller=await shrinkPhoto(p,edge,q); }catch{ continue; }
+        if(smaller.length<now.get(p).length){ size-=(now.get(p).length-smaller.length)*uses.get(p); now.set(p,smaller); }
+      }
+      if(size<=RECORD_SIZE_LIMIT) break;
+    }
+  }finally{ hideOverlay(); }
+  // the report and the draft both take the smaller copies
+  const swap=p=>now.get(p)||p;
+  record.sections.forEach(s=>s.items.forEach(it=>{ if(it.photos) it.photos=it.photos.map(swap); }));
+  const st=curState();
+  st.photos.forEach((row,si)=>row.forEach((list,ii)=>{ st.photos[si][ii]=list.map(swap); renderPhotos(si,ii); }));
+  return recordSize(record)<=RECORD_SIZE_LIMIT;
 }
 
 // ── Submit once ──
@@ -1252,9 +1299,10 @@ async function saveInspection(updateExisting){
     showToast('Add the building and inspection type in Details before saving.',true); nav('pg-new'); return;
   }
   const record=buildRecord(null);
-  if(recordSize(record)>RECORD_SIZE_LIMIT){ setSyncChip('err','Report too large'); alert(tooLargeMessage(record)); return; }
+  saveBusy=true; updateSubmitState();                     // (no second tap while photos are made smaller)
+  let fits=false; try{ fits=await fitReportPhotos(record); }catch{}
+  if(!fits){ saveBusy=false; updateSubmitState(); setSyncChip('err','Report too large'); alert(tooLargeMessage(record)); return; }
   const editing=editingRecordId!==null&&updateExisting, sub=editing?null:submittedReport();
-  saveBusy=true; updateSubmitState();
   setSyncChip('sync','Saving…'); showOverlay(editing||sub?'Saving changes…':'Submitting report…');
   try{
     if(editing||sub){
@@ -1287,8 +1335,9 @@ async function saveInspection(updateExisting){
 async function saveAsEOQI(){
   if(saveBusy) return;
   const record=buildRecord('EOQI');
-  if(recordSize(record)>RECORD_SIZE_LIMIT){ setSyncChip('err','Report too large'); alert(tooLargeMessage(record)); return; }
   saveBusy=true; updateSubmitState();
+  let fits=false; try{ fits=await fitReportPhotos(record); }catch{}
+  if(!fits){ saveBusy=false; updateSubmitState(); setSyncChip('err','Report too large'); alert(tooLargeMessage(record)); return; }
   setSyncChip('sync','Submitting EOQI…'); showOverlay('Submitting the EOQI report…');
   try{
     const res=await dbInsert(record);
