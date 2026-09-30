@@ -2,7 +2,7 @@
    Requests arrive from the app (the parent window) with a private reply channel; nothing else is
    listened to. */
 (function(){
-  var SRC='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+  var SRC='/vendor/heic2any.min.js';
   var SRI='sha384-OTofQ0MEeiSgh62havBcemCIK0gqj809wX6UA0uPISNMRnR6NZyCdGzX3SbLrgwL';
   var loading=null;
   function converter(){

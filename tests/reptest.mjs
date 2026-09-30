@@ -54,7 +54,7 @@ ok(beg.get(blds[3]).auditorId === AU1, 'its BOQI assignment is unchanged');
 console.log('Notifications and audit');
 const n = await call('au1', 'GET', '/api/notifications');
 const items = n.j?.notifications || n.j?.items || [];
-ok(items.some((x) => /end of the quarter|End of quarter/i.test(x.title) && /same buildings as your BOQI/.test(x.body || '')), 'the auditor was told, once, about the end-of-quarter buildings');
+ok(items.some((x) => /end of the quarter|End of quarter/i.test(x.title) && /same buildings as your BOQ\b/.test(x.body || '')), 'the assessor was told, once, about the end-of-quarter buildings');
 const au = await call('adm', 'GET', '/api/admin/audit?limit=20');
 ok((au.j?.entries || au.j?.rows || []).some((e) => e.action === 'assignment.repeat'), 'the audit log records it');
 

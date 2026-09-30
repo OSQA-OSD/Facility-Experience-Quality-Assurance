@@ -23,6 +23,9 @@ const json = (data, status = 200, extraHeaders = {}) =>
 
 const fail = (message, status = 500) => json({ error: message }, status);
 
+/* Assessment types are stored as BOQI / EOQI; messages people read say BOQ / EOQ. */
+const shownType = (t) => ({ BOQI: 'BOQ', EOQI: 'EOQ' })[t] || t;
+
 /** DB row -> shape the front-end expects */
 function rowToRecord(row) {
   let extra = {};
@@ -71,9 +74,9 @@ function scoreReport(body) {
 const INSPECTION_TYPES = new Set(['BOQI', 'EOQI', 'Follow-up']);
 function reportProblem(f, body) {
   const text = (v, max) => v == null || (typeof v === 'string' && v.length <= max);
-  if (!INSPECTION_TYPES.has(f.type)) return 'choose the inspection type: BOQI, EOQI or Follow-up';
+  if (!INSPECTION_TYPES.has(f.type)) return 'choose the assessment type: BOQ, EOQ or Follow-up';
   const d = dueDateOf(f.date);
-  if (!f.date || !d.ok || f.date < '2000-01-01' || f.date > '2100-12-31') return 'the inspection date must be a real date like 2026-09-30';
+  if (!f.date || !d.ok || f.date < '2000-01-01' || f.date > '2100-12-31') return 'the assessment date must be a real date like 2026-09-30';
   if (typeof f.facility !== 'string' || !f.facility.trim() || f.facility.length > 200) return 'the building name is missing or too long (200 characters at most)';
   if (!text(f.division, 60) || !text(f.typeLabel, 100) || !text(f.filename, 200) || !text(f.inspector, 120)) return 'one of the report details is too long';
   const sections = body.sections;
@@ -132,7 +135,7 @@ async function insertInspection(env, user, rec) {
   const same = await env.DB.prepare('SELECT id FROM inspections WHERE id = ?1').bind(r.id).first();
   if (same) return json({ ok: true, id: r.id, alreadySaved: true });
   const archived = await env.DB.prepare('SELECT id FROM inspection_archive WHERE id = ?1').bind(r.id).first();
-  if (archived) return fail('this report number belongs to an archived report — start a new inspection', 409);
+  if (archived) return fail('this report number belongs to an archived report — start a new assessment', 409);
 
   // Who the report belongs to comes from the session, never from the form: an auditor always
   // files under their own account. Only an administrator may record it for someone else.
@@ -166,7 +169,7 @@ async function insertInspection(env, user, rec) {
   }
 
   await saveVersion(env, Number(r.id), 'submitted', user, { ...r, inspector_id: who.id });
-  await audit(env, user, 'inspection.create', String(r.id), `${r.facility} · ${r.date}${r.type ? ' ' + r.type : ''}`,
+  await audit(env, user, 'inspection.create', String(r.id), `${r.facility} · ${r.date}${r.type ? ' ' + shownType(r.type) : ''}`,
     `Submitted${who.id !== user.id ? ` for ${who.name}` : ''} · score ${r.overall ?? '–'}`);
   await notifySubmission(env, user, r, assignmentId);
   return json({ ok: true, id: r.id }, 201);
@@ -365,8 +368,8 @@ async function findExistingSubmission(env, r, assignmentId, excludeId) {
   return null;
 }
 const duplicateMessage = (x) => (x.sameAssignment
-  ? `This assignment was already submitted by ${x.auditor || 'an auditor'} on ${x.date}. Open that report to make changes.`
-  : `${x.building} already has a ${x.type} report for ${x.quarter}, submitted by ${x.auditor || 'an auditor'} on ${x.date}. Open that report to make changes.`);
+  ? `This assignment was already submitted by ${x.auditor || 'an assessor'} on ${x.date}. Open that report to make changes.`
+  : `${x.building} already has a ${shownType(x.type)} report for ${x.quarter}, submitted by ${x.auditor || 'an assessor'} on ${x.date}. Open that report to make changes.`);
 
 /** Active accounts, with what is needed to work out their permissions. */
 async function activeAccounts(env) {
@@ -440,14 +443,14 @@ async function updateInspection(env, user, id, rec) {
 
   const version = await saveVersion(env, id, 'edited', user, { ...r, inspector_id: ownerId });
   const moved = typeof row.overall === 'number' && typeof r.overall === 'number' && row.overall !== r.overall ? ` · score ${row.overall} → ${r.overall}` : '';
-  await audit(env, user, 'inspection.update', String(id), `${r.facility} · ${r.date}${r.type ? ' ' + r.type : ''}`, `Saved as version ${version}${moved}`);
+  await audit(env, user, 'inspection.update', String(id), `${r.facility} · ${r.date}${r.type ? ' ' + shownType(r.type) : ''}`, `Saved as version ${version}${moved}`);
 
   // The first save after "changes requested" tells that reviewer the report is ready again.
   const decision = ctx.decision.get(id);
   if (before.status === 'changes' && decision?.reviewer_id && decision.reviewer_id !== user.id
       && ctx.users.some((u) => u.id === decision.reviewer_id)) {
     await notify(env, decision.reviewer_id, 'resubmission', `Updated for review: ${before.building}`,
-      `${user.name} made the requested changes${before.type ? ` to the ${before.type}` : ''}. Ready to review again.`, `#pg-library/${id}`);
+      `${user.name} made the requested changes${before.type ? ` to the ${shownType(before.type)}` : ''}. Ready to review again.`, `#pg-library/${id}`);
   }
   return json({ ok: true, id, version });
 }
@@ -477,7 +480,7 @@ async function deleteInspection(env, user, id) {
   ]);
   await saveVersion(env, id, 'deleted', user, row);
   await audit(env, user, 'inspection.delete', String(id), `${row.facility} · ${row.date}`,
-    `Moved to the archive · inspection by ${row.inspector}`);
+    `Moved to the archive · assessment by ${row.inspector}`);
   return json({ ok: true, id, archived: true });
 }
 
@@ -962,7 +965,7 @@ async function upsertAssignment(env, officer, body) {
     'SELECT id, auditor_id FROM assignments WHERE building_id = ?1 AND quarter = ?2 AND type = ?3',
   ).bind(buildingId, quarter, type).first();
   if (existing && existing.auditor_id !== auditorId && await isAssignmentCompleted(env, existing.id)) {
-    return fail('this building was already inspected for that quarter, so its auditor cannot change', 409);
+    return fail('this building was already assessed for that quarter, so its assessor cannot change', 409);
   }
 
   await env.DB.prepare(
@@ -976,7 +979,7 @@ async function upsertAssignment(env, officer, body) {
     await notify(
       env, auditorId, 'assignment',
       `New assignment: ${building.name}`,
-      `${officer.name} assigned you ${building.name} for ${quarter} ${type}.`,
+      `${officer.name} assigned you ${building.name} for ${quarter} ${shownType(type)}.`,
       '#pg-auditor',
     );
   }
@@ -1078,11 +1081,11 @@ async function officerBoard(env, viewer, url) {
   const events = [
     ...inPeriod.map((x) => ({
       kind: 'assigned', at: x.updated_at, buildingId: x.building_id,
-      actor: users.get(x.assigned_by)?.name || 'Someone', auditor: users.get(x.auditor_id)?.name || 'an auditor',
+      actor: users.get(x.assigned_by)?.name || 'Someone', auditor: users.get(x.auditor_id)?.name || 'an assessor',
     })),
     ...inPeriod.filter((x) => results.has(x.id)).map((x) => ({
       kind: 'completed', at: results.get(x.id).completedAt, buildingId: x.building_id,
-      auditor: users.get(x.auditor_id)?.name || 'an auditor', score: results.get(x.id).score,
+      auditor: users.get(x.auditor_id)?.name || 'an assessor', score: results.get(x.id).score,
     })),
   ].filter((x) => x.at).sort((x, y) => (y.at > x.at ? 1 : y.at < x.at ? -1 : 0)).slice(0, 25);
 
@@ -1145,9 +1148,9 @@ async function setAssignmentDue(env, officer, body) {
   await Promise.all([...byAuditor.entries()].filter(([id]) => id !== officer.id).map(([id, n]) => notify(
     env, id, 'assignment',
     due.value ? `Deadline ${due.value} for ${n} building${n === 1 ? '' : 's'}` : `Deadline removed for ${n} building${n === 1 ? '' : 's'}`,
-    `${quarter} · ${type} · set by ${officer.name}`, '#pg-auditor',
+    `${quarter} · ${shownType(type)} · set by ${officer.name}`, '#pg-auditor',
   )));
-  await audit(env, officer, 'assignment.due', `${quarter}|${type}`, `${rows.length} building${rows.length === 1 ? '' : 's'} · ${quarter} ${type}`,
+  await audit(env, officer, 'assignment.due', `${quarter}|${type}`, `${rows.length} building${rows.length === 1 ? '' : 's'} · ${quarter} ${shownType(type)}`,
     due.value ? `Deadline set to ${due.value}` : 'Deadline removed');
   return json({ updated: rows.length, skipped: ids.length - rows.length, dueDate: due.value });
 }
@@ -1206,7 +1209,7 @@ async function bulkAssign(env, officer, body) {
     if (auditor.id !== officer.id) await notify(
       env, auditor.id, 'assignment',
       change.length === 1 ? `New assignment: ${names[0]}` : `${change.length} new assignments`,
-      `${officer.name} assigned you ${list} for ${quarter} ${type}.${due && due.value ? ` Due ${due.value}.` : ''}`,
+      `${officer.name} assigned you ${list} for ${quarter} ${shownType(type)}.${due && due.value ? ` Due ${due.value}.` : ''}`,
       '#pg-auditor',
     );
   } else if (change.length) {
@@ -1281,13 +1284,13 @@ async function repeatForEndOfQuarter(env, officer, body) {
     const list = fresh.slice(0, 3).map((id) => buildingName.get(id)).join(', ') + (fresh.length > 3 ? ` and ${fresh.length - 3} more` : '');
     told.push(notify(env, auditorId, 'assignment',
       fresh.length === 1 ? `End of quarter: ${buildingName.get(fresh[0])}` : `${fresh.length} buildings for the end of the quarter`,
-      `${officer.name} gave you ${list} for ${quarter} EOQI — the same buildings as your BOQI.${due && due.value ? ` Due ${due.value}.` : ''}`,
+      `${officer.name} gave you ${list} for ${quarter} EOQ — the same buildings as your BOQ.${due && due.value ? ` Due ${due.value}.` : ''}`,
       '#pg-auditor'));
   }
   await Promise.all(told);
   if (tally.assigned || (due && plan.size)) {
-    await audit(env, officer, 'assignment.repeat', quarter, `${quarter} BOQI → EOQI`,
-      `${tally.assigned} buildings given to the same auditors for the EOQI${due && due.value ? ` · due ${due.value}` : ''}`);
+    await audit(env, officer, 'assignment.repeat', quarter, `${quarter} BOQ → EOQ`,
+      `${tally.assigned} buildings given to the same assessors for the EOQ${due && due.value ? ` · due ${due.value}` : ''}`);
   }
   return json({ ok: true, ...tally, unavailableAuditors: [...unavailable.values()] });
 }
@@ -1564,7 +1567,7 @@ async function leaderOverview(env, url) {
     ...scopedAssignments.map((x) => ({
       kind: 'assignment', at: x.updated_at || x.created_at,
       actor: userById.get(x.assigned_by)?.name || 'Someone',
-      target: userById.get(x.auditor_id)?.name || 'an auditor',
+      target: userById.get(x.auditor_id)?.name || 'an assessor',
       building: buildingById.get(x.building_id)?.name || '', quarter: x.quarter, type: x.type,
     })),
     ...inspections.map((x) => ({
@@ -1866,7 +1869,7 @@ async function reviewInspection(env, user, id, body) {
 
   await env.DB.prepare('INSERT INTO inspection_reviews (inspection_id, reviewer_id, reviewer_name, decision, comment) VALUES (?1, ?2, ?3, ?4, ?5)')
     .bind(id, user.id, user.name, decision, comment || null).run();
-  const label = `${summary.building} · ${summary.date}${summary.type ? ' ' + summary.type : ''}`;
+  const label = `${summary.building} · ${summary.date}${summary.type ? ' ' + shownType(summary.type) : ''}`;
   await audit(env, user, 'inspection.review', String(id), label,
     `${decision === 'approved' ? 'Approved' : decision === 'changes_requested' ? 'Changes requested' : 'Comment'}${comment ? ': ' + comment.slice(0, 200) : ''}`);
 
@@ -2254,7 +2257,7 @@ const can = (user, key) => effectivePermissions(user).includes(key);
 const ASSIGNEE_ROLES = new Set(['quality_auditor', 'quality_officer', 'quality_admin']);
 const ROLE_NAMES = {
   quality_admin: 'Quality Admin', quality_leader: 'Quality Leader', quality_officer: 'Quality Officer',
-  quality_auditor: 'Quality Auditor', data_analyst: 'Data Analyst',
+  quality_auditor: 'Quality Assessor', data_analyst: 'Data Analyst',
 };
 function canAssignTo(actor, target) {
   if (!target || !ASSIGNEE_ROLES.has(target.role)) return false;
@@ -2266,7 +2269,7 @@ function assigneeProblem(actor, target) {
   if (!target) return [404, 'that person was not found'];
   if (!canAssignTo(actor, target)) return [403, `you cannot assign buildings to a ${ROLE_NAMES[target.role] || target.role}`];
   if (target.status !== 'active') return [400, `${target.name}'s account is suspended`];
-  if (!can(target, 'inspect')) return [400, `${target.name} does not have permission to create inspections — an admin can grant it in Admin Control`];
+  if (!can(target, 'inspect')) return [400, `${target.name} does not have permission to create assessments — an admin can grant it in Admin Control`];
   return null;
 }
 const sameSet = (a, b) => a.length === b.length && a.every((k) => b.includes(k));
@@ -2907,7 +2910,7 @@ async function handleApiAuthed(request, env, url, path, method, user) {
 
   if (path === 'inspections') {
     if (method === 'POST') {
-      if (!can(user, 'inspect')) return fail('you do not have permission to create inspections', 403);
+      if (!can(user, 'inspect')) return fail('you do not have permission to create assessments', 403);
       return insertInspection(env, user, await request.json());
     }
     return fail('method not allowed', 405);
@@ -2921,11 +2924,11 @@ async function handleApiAuthed(request, env, url, path, method, user) {
     const id = Number(match[1]);
     if (method === 'GET') return getInspectionForReview(env, user, id);
     if (method === 'PATCH' || method === 'PUT') {
-      if (!can(user, 'inspect')) return fail('you do not have permission to edit inspections', 403);
+      if (!can(user, 'inspect')) return fail('you do not have permission to edit assessments', 403);
       return updateInspection(env, user, id, await request.json());
     }
     if (method === 'DELETE') {
-      if (!can(user, 'delete')) return fail('you do not have permission to delete inspections', 403);
+      if (!can(user, 'delete')) return fail('you do not have permission to delete assessments', 403);
       return deleteInspection(env, user, id);
     }
     return fail('method not allowed', 405);
@@ -2966,7 +2969,7 @@ async function handleAssets(request, env, url) {
 }
 /* Scripts are named by full address: inside the sandbox the page has no origin of its own, so
  * 'self' would match nothing. */
-const heicCsp = (origin) => `default-src 'none'; script-src ${origin}/js/heic-frame.js https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js 'unsafe-eval'; `
+const heicCsp = (origin) => `default-src 'none'; script-src ${origin}/js/heic-frame.js ${origin}/vendor/heic2any.min.js 'unsafe-eval'; `
   + "worker-src blob:; connect-src blob: data:; img-src blob: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
 function withHeaders(res, set) {
   const headers = new Headers(res.headers);

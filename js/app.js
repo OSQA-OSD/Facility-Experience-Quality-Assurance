@@ -1,4 +1,4 @@
-/* Two libraries come from a CDN. If one cannot be reached — a weak signal in a plant room, a blocked
+/* Two libraries load before the app. If one cannot be loaded — a weak signal in a plant room, a blocked
    domain — the app must still open and work: icons simply stay blank and charts stay empty. */
 window.__cdnMissing=[];
 if(!window.lucide){ window.__cdnMissing.push('icons'); window.lucide={createIcons:function(){}}; }
@@ -11,6 +11,16 @@ if(!window.Chart){
 // API CONFIG  (Cloudflare D1 via same-origin Worker)
 // ═══════════════════════════════════════════════════════════
 const API_BASE = '/api';
+
+// Assessment types are stored as BOQI / EOQI (the database, the API, filters and saved setups use
+// these codes); people read BOQ / EOQ.
+const TYPE_SHOWN={BOQI:'BOQ',EOQI:'EOQ'};
+const TYPE_NAMES={BOQI:'Beginning of Quarter Assessment (BOQ)',EOQI:'End of Quarter Assessment (EOQ)'};
+const showType=t=>TYPE_SHOWN[t]||t;
+/** The long type name — also for older reports, which were saved with the earlier wording. */
+const showTypeLabel=(label,type)=>TYPE_NAMES[type]||label||type||'';
+/** File names of older reports carry the stored code; show today's. */
+const showFileName=f=>String(f||'').replace(/(^|[_\- ])(BOQI|EOQI)(?=[_\- .]|$)/g,(m,a,c)=>a+TYPE_SHOWN[c]);
 
 async function apiFetch(method, path, body){
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
@@ -108,7 +118,7 @@ const RP_GROUPS = {
     drill:k=>{ document.getElementById('rp-building').value=k; }},
   quarter:  {label:'Quarter', time:true, key:x=>x.quarter||'No date'},
   month:    {label:'Month', time:true, key:x=>(x.date||'').slice(0,7)||'No date'},
-  inspector:{label:'Auditor', key:x=>x.inspector||'Unknown',
+  inspector:{label:'Assessor', key:x=>x.inspector||'Unknown',
     drill:k=>{ document.getElementById('rp-inspector').value=k; }},
   type:     {label:'Type', key:x=>x.type||'Unknown',
     drill:k=>{ document.getElementById('rp-type').value=k; }},
@@ -609,7 +619,7 @@ function updateTopBar(pageId){
   document.getElementById('pb-name').textContent=link?link.querySelector('.ni-txt').textContent:'';
   const sec=/^pg-s(\d)$/.exec(pageId);
   document.getElementById('pb-sub').textContent=
-    pageId==='pg-overview'?'Overview':pageId==='pg-officer'?'Assign & Track':pageId==='pg-schedule'?(schData?`${schData.quarter} · ${schData.type}`:''):sec?SECTIONS[+sec[1]].title:
+    pageId==='pg-overview'?'Overview':pageId==='pg-officer'?'Assign & Track':pageId==='pg-schedule'?(schData?`${schData.quarter} · ${showType(schData.type)}`:''):sec?SECTIONS[+sec[1]].title:
     pageId==='pg-auditor'&&auData&&!auData.isSelf?auData.auditor.name:pageId==='pg-admin'?adTabLabel(adTab):pageId==='pg-reports'?rpTabLabel(rpTab):'';
   const inspecting=group==='inspection';
   document.getElementById('pb-steps').hidden=!inspecting;
@@ -672,7 +682,7 @@ function updateScoreCard(){
   document.getElementById('sc-total').textContent=started?overall:'–';
   document.getElementById('sc-grade').textContent=started?og.label:'Not started';
   const tv=document.getElementById('meta-type').value;
-  const fields=[['Auditor',activeInspector],['Building',document.getElementById('meta-facility').value],['Division',document.getElementById('meta-division').value],
+  const fields=[['Assessor',activeInspector],['Building',document.getElementById('meta-facility').value],['Division',document.getElementById('meta-division').value],
     ['Date',document.getElementById('meta-date').value],['Type',tv==='Follow-up'?'Follow-up':tv]];
   document.getElementById('sc-header-grid').innerHTML=fields
     .map(([l,v])=>`<div class="sc-hf"><span class="sc-hl">${l}</span><span class="sc-hv">${ovEsc(v||'—')}</span></div>`).join('');
@@ -697,7 +707,7 @@ function updateScoreCard(){
   document.getElementById('sc-scale').innerHTML=bands.map(([label,range,color,,ink])=>
     `<div class="sc-band${started&&og.label===label?' active':''}" style="--c:${color};--ink:${ink}"><i style="background:${color}"></i>${label} <small>${range}</small></div>`).join('');
   const band=bands.find(b=>b[0]===og.label);
-  document.getElementById('sc-scale-note').innerHTML=started?`<b>${band[0]}</b> — ${band[3]}.`:'Score the sections to see where this inspection lands.';
+  document.getElementById('sc-scale-note').innerHTML=started?`<b>${band[0]}</b> — ${band[3]}.`:'Score the sections to see where this assessment lands.';
 
   // Section table
   const rows=document.getElementById('sc-rows');
@@ -1059,10 +1069,10 @@ async function inCheckAssignment(){
   }
   const had=currentAssignmentId;
   currentAssignmentId=match?match.id:null;
-  document.getElementById('in-mode').textContent=match?'Assigned inspection':'New inspection';
+  document.getElementById('in-mode').textContent=match?'Assigned assessment':'New assessment';
   box.hidden=!match&&!had;
   box.innerHTML=match
-    ?`<div class="sc-callout info"><svg data-lucide="link" width="17" height="17"></svg><div><strong>Linked to your assignment</strong>${ovEsc(match.buildingName)} · ${match.quarter} ${match.type} — saving this inspection completes it.</div></div>`
+    ?`<div class="sc-callout info"><svg data-lucide="link" width="17" height="17"></svg><div><strong>Linked to your assignment</strong>${ovEsc(match.buildingName)} · ${match.quarter} ${showType(match.type)} — saving this assessment completes it.</div></div>`
     :`<div class="sc-callout warn"><svg data-lucide="unlink" width="17" height="17"></svg><div><strong>No longer linked to an assignment</strong>The building, type or date no longer matches one of your assignments.</div></div>`;
   lucide.createIcons();
 }
@@ -1070,11 +1080,11 @@ function inRenderDetails(){
   initInspectionDetails();
   renderInspectorChips();
   inRenderTypes();
-  document.getElementById('in-mode').textContent=editingRecordId!==null?'Editing a saved report':currentAssignmentId?'Assigned inspection':'New inspection';
+  document.getElementById('in-mode').textContent=editingRecordId!==null?'Editing a saved report':currentAssignmentId?'Assigned assessment':'New assessment';
   const answered=auAnsweredPct(), resume=document.getElementById('in-resume');
   resume.hidden=!(answered>0&&!currentReportSaved&&editingRecordId===null);
   if(!resume.hidden){
-    resume.innerHTML=`<svg data-lucide="history" width="17" height="17"></svg><div style="flex:1"><strong>Inspection in progress</strong>${ovEsc(inVal('meta-facility')||'Untitled building')} · ${answered}% answered</div>
+    resume.innerHTML=`<svg data-lucide="history" width="17" height="17"></svg><div style="flex:1"><strong>Assessment in progress</strong>${ovEsc(inVal('meta-facility')||'Untitled building')} · ${answered}% answered</div>
       <button class="btn bt" style="padding:6px 14px;font-size:.76rem" data-in="continue">Continue scoring</button>
       <button class="btn bo" style="padding:6px 14px;font-size:.76rem" data-in="over">Start over</button>`;
     resume.style.alignItems='center';
@@ -1083,7 +1093,7 @@ function inRenderDetails(){
   lucide.createIcons();
 }
 function inStartOver(){
-  if(!confirm('Clear the answers, comments and photos of the inspection in progress?')) return;
+  if(!confirm('Clear the answers, comments and photos of the assessment in progress?')) return;
   clearInspectionState();
   currentAssignmentId=null; currentReportSaved=false; lastSection='pg-s0';
   ['meta-facility','meta-type','meta-division'].forEach(id=>{ document.getElementById(id).value=''; });
@@ -1097,10 +1107,10 @@ function inStartOver(){
 // ═══════════════════════════════════════════════════════════
 function buildFilenameFrom(typeVal, date, facility, division, inspector){
   const month=(date||new Date().toISOString()).slice(0,7);
-  const tl=typeVal==='BOQI'?'BOQI':typeVal==='EOQI'?'EOQI':typeVal==='Follow-up'?'Follow-up':'Inspection';
+  const tl=typeVal==='BOQI'?'BOQ':typeVal==='EOQI'?'EOQ':typeVal==='Follow-up'?'Follow-up':'Assessment';
   const b=(facility||'Building').replace(/\s+/g,'-');
   const d=(division||'').replace(/\s+/g,'-');
-  const i=(inspector||'Auditor').replace(/\s+/g,'-');
+  const i=(inspector||'Assessor').replace(/\s+/g,'-');
   return [month,tl,b,d,i].filter(Boolean).join('_')+'.pdf';
 }
 
@@ -1117,7 +1127,7 @@ function selectSaveChoice(mode){
   document.getElementById('choice-update').classList.toggle('selected',mode==='update');
   document.getElementById('choice-eoqi').classList.toggle('selected',mode==='eoqi');
   const btn=document.getElementById('btn-confirm-save');
-  if(btn)btn.textContent=mode==='eoqi'?'Save as New EOQI Report':'Update Existing Report';
+  if(btn)btn.textContent=mode==='eoqi'?'Save as New EOQ Report':'Update Existing Report';
 }
 function confirmSaveChoice(){
   closeModal('modal-save-choice');
@@ -1132,7 +1142,7 @@ function buildRecord(overrideType){
   let grand=0;SECTIONS.forEach((_,si)=>grand+=getSecScore(si).total);
   const overall=Math.round(grand);
   const typeVal=overrideType||document.getElementById('meta-type').value;
-  const typeLabel=typeVal==='BOQI'?'Beginning of Quarter Inspection (BOQI)':typeVal==='EOQI'?'End of Quarter Inspection (EOQI)':typeVal==='Follow-up'?'Follow-up and Edit':typeVal;
+  const typeLabel=typeVal==='BOQI'?'Beginning of Quarter Assessment (BOQ)':typeVal==='EOQI'?'End of Quarter Assessment (EOQ)':typeVal==='Follow-up'?'Follow-up and Edit':typeVal;
   const date=overrideType?new Date().toISOString().slice(0,10):document.getElementById('meta-date').value||new Date().toISOString().slice(0,10);
   const facility=document.getElementById('meta-facility').value||'Unknown';
   const division=document.getElementById('meta-division').value||'';
@@ -1265,7 +1275,7 @@ function submitDialog({title,sub,facts,warn,go,onGo}){
 function submitReport(){
   if(saveBusy) return;
   if(!inVal('meta-facility')||!document.getElementById('meta-type').value){
-    showToast('Add the building and inspection type in Details before submitting.',true); nav('pg-new'); return;
+    showToast('Add the building and assessment type in Details before submitting.',true); nav('pg-new'); return;
   }
   const sub=submittedReport();
   if(sub){ if(!currentReportSaved) saveInspection(); return; }
@@ -1275,7 +1285,7 @@ function submitReport(){
   submitDialog({
     title:'Submit report',
     sub:'Check the details. The reviewers are notified as soon as the report is submitted.',
-    facts:[['Building',inVal('meta-facility')],['Inspection',[type,inQuarterOf(date)].filter(Boolean).join(' · ')],['Date',date||'—'],['Auditor',activeInspector||'—'],
+    facts:[['Building',inVal('meta-facility')],['Assessment',[type,inQuarterOf(date)].filter(Boolean).join(' · ')],['Date',date||'—'],['Assessor',activeInspector||'—'],
       ['Score',`${overall}/100 · ${grade(overall).label}`],['Answered',`${answered} of ${all.length} items`]],
     warn:missing?`${missing} item${missing===1?' has':'s have'} no answer yet. Go back to complete ${missing===1?'it':'them'}, or submit the report as it is.`:'',
     go:'Submit report', onGo:()=>saveInspection(),
@@ -1286,7 +1296,7 @@ function showAlreadySubmitted(err){
   if(!x) return false;
   submitDialog({
     title:'Already submitted', sub:err.message,
-    facts:[['Building',x.building||'—'],['Inspection',[x.type,x.quarter].filter(Boolean).join(' · ')],['Submitted by',x.auditor||'—'],['Date',x.date||'—']],
+    facts:[['Building',x.building||'—'],['Assessment',[x.type,x.quarter].filter(Boolean).join(' · ')],['Submitted by',x.auditor||'—'],['Date',x.date||'—']],
     warn:'', go:'Open that report', onGo:()=>openReport(x.id),
   });
   return true;
@@ -1296,7 +1306,7 @@ document.getElementById('submitted-open').addEventListener('click',()=>{ const s
 async function saveInspection(updateExisting){
   if(saveBusy) return;
   if(!inVal('meta-facility')||!document.getElementById('meta-type').value){
-    showToast('Add the building and inspection type in Details before saving.',true); nav('pg-new'); return;
+    showToast('Add the building and assessment type in Details before saving.',true); nav('pg-new'); return;
   }
   const record=buildRecord(null);
   saveBusy=true; updateSubmitState();                     // (no second tap while photos are made smaller)
@@ -1338,7 +1348,7 @@ async function saveAsEOQI(){
   saveBusy=true; updateSubmitState();
   let fits=false; try{ fits=await fitReportPhotos(record); }catch{}
   if(!fits){ saveBusy=false; updateSubmitState(); setSyncChip('err','Report too large'); alert(tooLargeMessage(record)); return; }
-  setSyncChip('sync','Submitting EOQI…'); showOverlay('Submitting the EOQI report…');
+  setSyncChip('sync','Submitting EOQ…'); showOverlay('Submitting the EOQ report…');
   try{
     const res=await dbInsert(record);
     document.getElementById('meta-type').value='EOQI';
@@ -1350,8 +1360,8 @@ async function saveAsEOQI(){
     lastSubmitted={id:record.id,key:submitKeyOf(record.facility,record.type,record.assignmentId,record.date)};
     currentReportSaved=true;
     loadHome();
-    setSyncChip('ok','Saved as EOQI');
-    showToast(res?.alreadySaved?'This EOQI was already submitted — nothing was sent twice.':'EOQI submitted — the reviewers have been notified.');
+    setSyncChip('ok','Saved as EOQ');
+    showToast(res?.alreadySaved?'This EOQ was already submitted — nothing was sent twice.':'EOQ submitted — the reviewers have been notified.');
   }catch(e){
     if(e.status===409&&showAlreadySubmitted(e)) setSyncChip('err','Already submitted');
     else{ setSyncChip('err','Save failed'); alert('Could not save the report: '+e.message); }
@@ -1400,11 +1410,11 @@ async function loadHome(){
       return `<div class="hist-card" data-report="${r.id}" tabindex="0" role="button" title="Open this report">
         <div class="hc-score" style="background:${g?g.color:'#9fb3c8'};color:${g?g.on:'#102040'}">${r.overall??'–'}</div>
         <div class="hc-info"><div class="hc-title">${ovEsc(r.building)}${r.division?' — '+ovEsc(r.division):''}</div>
-          <div class="hc-meta">${ovEsc(r.auditor||'—')} · ${ds}${r.type?' · '+ovEsc(r.type):''}</div></div>
+          <div class="hc-meta">${ovEsc(r.auditor||'—')} · ${ds}${r.type?' · '+ovEsc(showType(r.type)):''}</div></div>
         ${libStatusPill(r.status)}
         <svg data-lucide="chevron-right" width="16" height="16" style="color:var(--muted);flex-shrink:0"></svg>
       </div>`;
-    }).join(''):'<div class="no-hist">No reports saved yet. Complete an inspection and save it from the Score Card.</div>';
+    }).join(''):'<div class="no-hist">No reports saved yet. Complete an assessment and save it from the Score Card.</div>';
     list.onclick=e=>{ const c=e.target.closest('[data-report]'); if(c) openReport(Number(c.dataset.report)); };
     list.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-report]')){ e.preventDefault(); openReport(Number(e.target.dataset.report)); } };
     lucide.createIcons();
@@ -1469,8 +1479,8 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
 
   const totalMax=sections.reduce((a,s)=>a+(Number(s.max)||0),0);
   const coverFacts=[
-    ['Building',report.facility],['Division',report.division],['Inspection type',report.typeLabel],
-    ['Quarter',quarter],['Inspection date',report.date],['Auditor',report.inspector],
+    ['Building',report.facility],['Division',report.division],['Assessment type',showTypeLabel(report.typeLabel,report.type)],
+    ['Quarter',quarter],['Assessment date',report.date],['Assessor',report.inspector],
   ].map(([l,v])=>`<tr><th>${l}</th><td>${value(v)}</td></tr>`).join('');
 
   const detailSections=sections.map(sec=>{
@@ -1499,9 +1509,9 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
     return `<div class="blk"><section class="report-section">
       <div class="section-head"><div><span class="kicker">Journey touchpoint</span><h2>${value(sec.title)}</h2></div>
         <div class="section-total"><b style="color:${t.color}">${score}<small>/${max}</small></b><span class="chip" style="--tone:${t.color};--soft:${t.soft}">${t.label}</span></div></div>
-      <table class="detail-table"><thead><tr><th class="n">#</th><th class="item-col">Inspection item</th><th class="item-res">Result</th><th>Observations &amp; evidence</th></tr></thead>
+      <table class="detail-table"><thead><tr><th class="n">#</th><th class="item-col">Assessment item</th><th class="item-res">Result</th><th>Observations &amp; evidence</th></tr></thead>
         <tbody>${rows}</tbody>
-        ${sec.notes?`<tfoot><tr><td colspan="4"><b>Auditor note</b><span>${value(sec.notes)}</span></td></tr></tfoot>`:''}</table>
+        ${sec.notes?`<tfoot><tr><td colspan="4"><b>Assessor note</b><span>${value(sec.notes)}</span></td></tr></tfoot>`:''}</table>
     </section>${gallery}</div>`;
   }).join('');
 
@@ -1509,7 +1519,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
   return `<!DOCTYPE html><html lang="en" dir="ltr"><head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${filename}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="/vendor/fonts/cairo.css" rel="stylesheet">
     <style>
       :root{--ink:#002070;--deep:#102040;--royal:#0033A0;--teal:#26A8AB;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369;
         --pad-x:12mm;--pad-t:11mm;--pad-b:10mm}
@@ -1627,7 +1637,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
     <section class="sheet cover">
       <div class="rule"></div>
       <div class="brand"><img src="${reportPrintEsc(logoUrl)}" alt="OSQA"><i></i>OSD · Facility Experience Quality Assurance</div>
-      <h1>Inspection <span>report.</span></h1>
+      <h1>Assessment <span>report.</span></h1>
       <div class="cover-score"><b>${overall}</b> / ${totalMax||100}<span class="chip" style="--tone:${tone.color};--soft:${tone.soft}">${tone.label}</span></div>
       <table class="fact-table"><tbody>${coverFacts}</tbody></table>
       ${journey?`<div class="journey-card">${journey}</div>`:''}
@@ -1637,7 +1647,7 @@ async function buildInspectionReportHtml(report,{autoPrint=false,sameTab=false}=
     </div></div>
     <div id="flow">
       ${detailSections}
-      <div class="blk" data-sign><div class="sign"><div><span>Auditor signature</span><b>&nbsp;</b><em>${value(report.inspector)}</em></div><div><span>Reviewed by</span><b>&nbsp;</b>${report.approvedBy?`<em>${value(report.approvedBy)}</em>`:''}<i>Quality Officer</i></div></div></div>
+      <div class="blk" data-sign><div class="sign"><div><span>Assessor signature</span><b>&nbsp;</b><em>${value(report.inspector)}</em></div><div><span>Reviewed by</span><b>&nbsp;</b>${report.approvedBy?`<em>${value(report.approvedBy)}</em>`:''}<i>Quality Officer</i></div></div></div>
     </div>
     <script type="application/json" id="doc-config">${jsonInScript({fileName:String(report.filename||'inspection-report.pdf').replace(/\.pdf$/i,'')+'.pdf',autoPrint:!!autoPrint})}</script>
     <script src="/js/doc-report.js"></script>
@@ -1742,7 +1752,7 @@ function startNewInspection(){
   if(!inVal('meta-date')) missing.push('meta-date');
   if(!document.getElementById('meta-type').value) missing.push('in-types');
   missing.forEach(id=>document.getElementById(id).classList.add('invalid'));
-  if(missing.length){ showToast('Add the building, division, date and inspection type first.',true); return; }
+  if(missing.length){ showToast('Add the building, division, date and assessment type first.',true); return; }
   nav(lastSection);
 }
 
@@ -1807,7 +1817,7 @@ function currentReportForPrint(){
     division:document.getElementById('meta-division').value,
     date:document.getElementById('meta-date').value,
     type:reportType,
-    typeLabel:reportType==='BOQI'?'Beginning of Quarter Inspection (BOQI)':reportType==='EOQI'?'End of Quarter Inspection (EOQI)':reportType==='Follow-up'?'Follow-up and Edit':'—',
+    typeLabel:reportType==='BOQI'?'Beginning of Quarter Assessment (BOQ)':reportType==='EOQI'?'End of Quarter Assessment (EOQ)':reportType==='Follow-up'?'Follow-up and Edit':'—',
     overall:reportSections.reduce((sum,section)=>sum+section.score,0),
     filename:buildFilenameFrom(reportType,document.getElementById('meta-date').value,document.getElementById('meta-facility').value,document.getElementById('meta-division').value,activeInspector),
     sections:reportSections
@@ -1815,7 +1825,7 @@ function currentReportForPrint(){
 }
 
 function resetForm(){
-  if(!confirm('Start a new inspection for '+activeInspector+'? All unsaved data will be cleared.'))return;
+  if(!confirm('Start a new assessment for '+activeInspector+'? All unsaved data will be cleared.'))return;
   clearInspectionState();currentAssignmentId=null;useAccountInspector();
   currentReportSaved=false;updatePDFButton();syncFormToState();nav('pg-home');
 }
@@ -1866,7 +1876,7 @@ updateScoreCardActionBar();
 function auVal(id){ return document.getElementById(id).value; }
 function auIsManagerView(){ return !!(auData&&!auData.isSelf); }
 function openAuditorProfile(id){
-  if(!hasPerm('profiles')&&!(currentUser&&id===currentUser.id)){ showToast('Your account does not have access to auditor profiles.',true); return; }
+  if(!hasPerm('profiles')&&!(currentUser&&id===currentUser.id)){ showToast('Your account does not have access to assessor profiles.',true); return; }
   auId=currentUser&&id===currentUser.id?null:id;
   auData=null;
   nav('pg-auditor');
@@ -1964,7 +1974,7 @@ function renderAuditorProfile(){
   document.getElementById('au-eyebrow').textContent=self?'My assignments':`${adRoleLabels()[a.role]||'Team member'} profile`;
   document.getElementById('au-title').innerHTML=self?'My <span>Assignments</span>':`${ovEsc(first)} <span>${ovEsc(a.name.split(/\s+/).slice(1).join(' '))}</span>`;
   document.getElementById('au-sub').textContent=self
-    ?'Your buildings for the quarter, the inspection schedule and your results.'
+    ?'Your buildings for the quarter, the assessment schedule and your results.'
     :`@${a.username}${a.status!=='active'?' · Suspended':''} · ${adRoleLabels()[a.role]||''} — assignments, completion and quality of work.`;
   document.getElementById('au-back').hidden=self;
   const sw=document.getElementById('au-switch');
@@ -1988,7 +1998,7 @@ function renderAuditorProfile(){
   const tile=(icon,value,label,extra,{jump,color}={})=>`<div class="hs-card${jump?' clickable':''}"${jump?` data-jump="${jump}"`:''}><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b${color?` style="color:${color}"`:''}>${value}</b><span>${label}</span>${extra}</div>`;
   document.getElementById('au-stats').innerHTML=
     tile('circle-check',`${pct}%`,`Completed · ${q}`,note(`${done.length} of ${list.length} buildings`)+bar(pct))+
-    tile('hourglass',pending.length,'Still to inspect',note(d.carriedOver.length?`+ ${d.carriedOver.length} carried over`:'This quarter'),{jump:'todo'})+
+    tile('hourglass',pending.length,'Still to assess',note(d.carriedOver.length?`+ ${d.carriedOver.length} carried over`:'This quarter'),{jump:'todo'})+
     tile('trending-up',avg??'–','Quarter average',note(avg!=null?grade(avg).label:'No results yet'),{color:avg!=null?grade(avg).ink:''})+
     tile('calendar-plus',d.upcoming.total,`Assigned for ${d.upcoming.quarter}`,note(d.upcoming.total?'Open the next quarter':'Nothing yet'),{jump:'next'});
 
@@ -2014,7 +2024,7 @@ function auRenderSchedule(){
   const phases=[['BOQI','Beginning of quarter',start,new Date(y,m0+1,0)],['EOQI','End of quarter',new Date(y,m0+2,1),end]];
   document.getElementById('au-schedule').innerHTML=`<div class="au-sched">
     <div class="au-months">${[0,1,2].map(i=>{
-      const tag=i===0?'<em class="BOQI">BOQI</em>':i===2?'<em class="EOQI">EOQI</em>':'';
+      const tag=i===0?'<em class="BOQI">BOQ</em>':i===2?'<em class="EOQI">EOQ</em>':'';
       return `<span>${new Date(y,m0+i,1).toLocaleDateString('en-GB',{month:'long'})}${tag}</span>`;}).join('')}</div>
     <div class="au-track"><i style="width:${pos}%"></i>${today>=start&&today<=end?`<b style="left:${pos}%">Today</b>`:''}</div>
     <div class="au-track-note"><span>${auFmt(start)}</span><strong>${status}</strong><span>${auFmt(end)}</span></div>
@@ -2022,7 +2032,7 @@ function auRenderSchedule(){
       const st=today<ws?['soon',`Opens in ${auDays(today,ws)} days`]:today>we?['closed','Window passed']:['open',auDays(today,we)?`Open · ${auDays(today,we)} days left`:'Open · last day'];
       const ofType=list.filter(x=>x.type===type), doneN=ofType.filter(x=>x.status==='completed').length;
       return `<div class="au-phase ${st[0]}">
-        <div class="au-phase-hd"><span class="au-type ${type}">${type}</span><span class="au-state ${st[0]}">${st[1]}</span></div>
+        <div class="au-phase-hd"><span class="au-type ${type}">${showType(type)}</span><span class="au-state ${st[0]}">${st[1]}</span></div>
         <b>${label}</b><small>${auFmt(ws)} – ${auFmt(we)}</small>
         ${ofType.length?ovPct(doneN,ofType.length)+`<small>${doneN} of ${ofType.length} done</small>`:'<small>No buildings of this type</small>'}
       </div>`;}).join('')}</div>
@@ -2055,9 +2065,9 @@ function auRenderActivity(){
   const ev=auData.events;
   document.getElementById('au-feed').innerHTML=ev.length?ev.map(e=>e.kind==='completed'
     ?`<li><span class="dot" style="background:${e.score!=null?grade(e.score).color:'var(--teal)'};color:${e.score!=null?grade(e.score).on:'#fff'}"><svg data-lucide="check" width="14" height="14"></svg></span>
-       <div>Completed <b>${ovEsc(e.building)}</b>${e.score!=null?` — ${e.score}/100`:''}<small>${e.quarter} ${e.type} · ${timeAgo(e.at)}</small></div></li>`
+       <div>Completed <b>${ovEsc(e.building)}</b>${e.score!=null?` — ${e.score}/100`:''}<small>${e.quarter} ${showType(e.type)} · ${timeAgo(e.at)}</small></div></li>`
     :`<li><span class="dot" style="background:var(--royal)"><svg data-lucide="clipboard-list" width="14" height="14"></svg></span>
-       <div>Assigned <b>${ovEsc(e.building)}</b>${e.actor?` by ${ovEsc(e.actor)}`:''}<small>${e.quarter} ${e.type} · ${timeAgo(e.at)}</small></div></li>`
+       <div>Assigned <b>${ovEsc(e.building)}</b>${e.actor?` by ${ovEsc(e.actor)}`:''}<small>${e.quarter} ${showType(e.type)} · ${timeAgo(e.at)}</small></div></li>`
   ).join(''):'<li class="ov-empty" style="display:block">No activity yet.</li>';
 }
 
@@ -2072,7 +2082,7 @@ function auCard(x,{carried=false}={}){
   if(x.status==='completed'){
     const g=typeof x.score==='number'?grade(x.score):null;
     return `<div class="au-card done">
-      <span class="au-type ${x.type}">${x.type}</span>
+      <span class="au-type ${x.type}">${showType(x.type)}</span>
       <div class="au-main"><b>${ovEsc(x.buildingName)}</b><small>${ovEsc(meta)}</small>
         <small>Completed ${x.inspectionDate?ovEsc(x.inspectionDate):''}${x.completedAt?` · ${timeAgo(x.completedAt)}`:''}</small></div>
       ${g?`<span class="ov-pill" style="background:${g.soft};color:${g.ink}">${x.score} · ${g.label}</span>`:''}
@@ -2082,12 +2092,12 @@ function auCard(x,{carried=false}={}){
   }
   const resuming=self&&currentAssignmentId===x.id&&auAnsweredPct()>0&&!currentReportSaved;
   return `<div class="au-card${carried?' carried':''}${resuming?' current':''}">
-    <span class="au-type ${x.type}">${x.type}</span>
+    <span class="au-type ${x.type}">${showType(x.type)}</span>
     <div class="au-main"><b>${ovEsc(x.buildingName)}</b><small>${ovEsc(meta)}</small>
       <small>${carried?`${x.quarter} · `:''}${x.assignedBy?`Assigned by ${ovEsc(x.assignedBy)} · `:''}${x.assignedAt?timeAgo(x.assignedAt):''}</small></div>
     ${x.dueDate?`<span class="due ${dueState(x).cls}" title="Deadline ${ovEsc(dueFmt(x.dueDate))}">${ovEsc(dueFmt(x.dueDate))} · ${ovEsc(dueState(x).note)}</span>`:''}
     ${resuming?`<span class="au-progress">${auAnsweredPct()}% answered</span>`:''}
-    ${self?`<button class="btn bt" data-start="${x.id}">${resuming?'Continue':'Start inspection'} <svg data-lucide="arrow-right" width="14" height="14"></svg></button>`
+    ${self?`<button class="btn bt" data-start="${x.id}">${resuming?'Continue':'Start assessment'} <svg data-lucide="arrow-right" width="14" height="14"></svg></button>`
       :'<span class="ov-pill pending">Pending</span>'}
   </div>`;
 }
@@ -2095,9 +2105,9 @@ function auRenderBuildings(){
   if(!auData) return;
   const list=auData.assignments, term=auVal('au-search').trim().toLowerCase();
   const counts={todo:list.filter(x=>x.status==='pending').length,done:list.filter(x=>x.status==='completed').length,all:list.length};
-  const labels={todo:'To inspect',done:'Completed',all:'All'};
+  const labels={todo:'To assess',done:'Completed',all:'All'};
   document.getElementById('au-status').innerHTML=Object.keys(labels).map(k=>`<button class="rp-chip${auFilter.status===k?' active':''}" data-v="${k}">${labels[k]} ${counts[k]}</button>`).join('');
-  document.getElementById('au-type').innerHTML=['all','BOQI','EOQI'].map(k=>`<button class="rp-chip${auFilter.type===k?' active':''}" data-v="${k}">${k==='all'?'Both types':k}</button>`).join('');
+  document.getElementById('au-type').innerHTML=['all','BOQI','EOQI'].map(k=>`<button class="rp-chip${auFilter.type===k?' active':''}" data-v="${k}">${k==='all'?'Both types':showType(k)}</button>`).join('');
   const rows=list.filter(x=>
     (auFilter.status==='all'||(auFilter.status==='todo'?x.status==='pending':x.status==='completed')) &&
     (auFilter.type==='all'||x.type===auFilter.type) &&
@@ -2108,14 +2118,14 @@ function auRenderBuildings(){
     return;
   }
   if(!rows.length){
-    box.innerHTML=`<div class="au-empty">${auFilter.status==='todo'&&!term?'All caught up — every building for this quarter has been inspected.':'Nothing matches these filters.'}</div>`;
+    box.innerHTML=`<div class="au-empty">${auFilter.status==='todo'&&!term?'All caught up — every building for this quarter has been assessed.':'Nothing matches these filters.'}</div>`;
     return;
   }
   const html=[];
   ['BOQI','EOQI'].forEach(type=>{
     const group=rows.filter(x=>x.type===type);
     if(!group.length) return;
-    html.push(`<div class="au-group"><span class="au-type ${type}">${type}</span>${type==='BOQI'?'Beginning of quarter':'End of quarter'} <small>${group.length} building${group.length===1?'':'s'}</small></div>`);
+    html.push(`<div class="au-group"><span class="au-type ${type}">${showType(type)}</span>${type==='BOQI'?'Beginning of quarter':'End of quarter'} <small>${group.length} building${group.length===1?'':'s'}</small></div>`);
     group.forEach(x=>html.push(auCard(x)));
   });
   box.innerHTML=html.join('');
@@ -2126,9 +2136,9 @@ function auRenderPerformance(){
   const p=auData.performance;
   const tile=(icon,value,label,extra='',color='')=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b${color?` style="color:${color}"`:''}>${value}</b><span>${label}</span>${extra}</div>`;
   const note=t=>`<small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px">${t}</small>`;
-  const typeNote=['BOQI','EOQI'].map(t=>`${t} ${p.byType[t].avgScore??'–'}`).join(' · ');
+  const typeNote=['BOQI','EOQI'].map(t=>`${showType(t)} ${p.byType[t].avgScore??'–'}`).join(' · ');
   document.getElementById('au-perf').innerHTML=
-    tile('clipboard-check',`${p.completed}/${p.assigned}`,'Inspections completed',note('All quarters'))+
+    tile('clipboard-check',`${p.completed}/${p.assigned}`,'Assessments completed',note('All quarters'))+
     tile('award',p.avgScore??'–','All-time average',note(p.avgScore!=null?`${grade(p.avgScore).label} · ${typeNote}`:'No results yet'),p.avgScore!=null?grade(p.avgScore).ink:'')+
     tile('timer',p.avgTurnaroundDays!=null?`${p.avgTurnaroundDays}d`:'–','Average turnaround',note('From assignment to submission'));
 
@@ -2159,8 +2169,8 @@ function auRenderPerformance(){
 
   document.getElementById('au-findings').innerHTML=p.findings.length?p.findings.map(f=>`<tr>
       <td><b style="white-space:normal">${ovEsc(f.item)}</b></td><td>${ovEsc(f.section)}</td>
-      <td><span class="ov-pill pending">${f.count}×</span><small>of ${p.completed} inspection${p.completed===1?'':'s'}</small></td>
-    </tr>`).join(''):`<tr><td colspan="3" class="ov-empty">${p.completed?'No items marked non-compliant — nothing to follow up.':'No completed inspections yet.'}</td></tr>`;
+      <td><span class="ov-pill pending">${f.count}×</span><small>of ${p.completed} assessment${p.completed===1?'':'s'}</small></td>
+    </tr>`).join(''):`<tr><td colspan="3" class="ov-empty">${p.completed?'No items marked non-compliant — nothing to follow up.':'No completed assessments yet.'}</td></tr>`;
 }
 
 function auViewReport(id){ openReport(id); }
@@ -2203,7 +2213,7 @@ function startAssignedInspection(id){
   }
   const answered=auAnsweredPct()>0&&!currentReportSaved;
   const resuming=currentAssignmentId===id&&answered;
-  if(answered&&!resuming&&!confirm(`You have unsaved answers from another inspection. Start ${x.buildingName} with a clean form? Those answers will be cleared.`)) return;
+  if(answered&&!resuming&&!confirm(`You have unsaved answers from another assessment. Start ${x.buildingName} with a clean form? Those answers will be cleared.`)) return;
   if(!resuming) clearInspectionState();
   currentAssignmentId=id;
   document.getElementById('meta-facility').value=x.buildingName;
@@ -2442,7 +2452,7 @@ function ovScore(v){ return v==null?'<span style="color:var(--muted)">–</span>
 /** Refresh: the whole app again, on the same page. Unsubmitted inspection work lives only in this tab, so ask first. */
 function refreshApp(){
   const answered=typeof auAnsweredPct==='function'?auAnsweredPct():0;
-  if(answered>0&&!currentReportSaved&&!confirm('You have an inspection in progress that has not been submitted. Refreshing will clear it.\n\nRefresh anyway?')) return;
+  if(answered>0&&!currentReportSaved&&!confirm('You have an assessment in progress that has not been submitted. Refreshing will clear it.\n\nRefresh anyway?')) return;
   document.getElementById('app-refresh').classList.add('spin');
   location.reload();
 }
@@ -2534,14 +2544,14 @@ function renderOverview(){
       `<div class="ov-bar" style="margin-top:10px"><i style="width:${s.completionPct}%"></i></div>`)+
     tile('building-2',`${s.buildingsCovered}/${s.buildings}`,'Buildings assigned')+
     tile('trending-up',s.avgScore??'–','Average score')+
-    tile('file-text',s.inspections,'Inspections')+
-    tile('users',s.activeAuditors,'Active auditors');
+    tile('file-text',s.inspections,'Assessments')+
+    tile('users',s.activeAuditors,'Active assessors');
 
   const divRows=document.getElementById('ov-div-rows');
   const focused=document.getElementById('ov-division').value;
   divRows.innerHTML=d.byDivision.length?d.byDivision.map(x=>`
     <tr class="clickable" data-division="${ovEsc(x.division)}"${x.division===focused?' style="background:rgba(38,168,171,.08)"':''}>
-      <td><b>${ovEsc(x.division)}</b><small>${x.buildings} buildings · ${x.inspections} inspections</small></td>
+      <td><b>${ovEsc(x.division)}</b><small>${x.buildings} buildings · ${x.inspections} assessments</small></td>
       <td>${ovPct(x.completed,x.assignments)}<small>${x.completed}/${x.assignments} assignments</small></td>
       <td>${ovScore(x.avgScore)}</td>
     </tr>`).join(''):'<tr><td colspan="3" class="ov-empty">No divisions match.</td></tr>';
@@ -2564,7 +2574,7 @@ function renderOverview(){
       <td>${x.assigned}</td>
       <td>${ovPct(x.completed,x.assigned)}<small>${x.completed} done · ${x.assigned-x.completed} pending</small></td>
       <td>${ovScore(x.avgScore)}</td>
-    </tr>`).join(''):'<tr><td colspan="4" class="ov-empty">No auditors yet.</td></tr>';
+    </tr>`).join(''):'<tr><td colspan="4" class="ov-empty">No assessors yet.</td></tr>';
 
   document.getElementById('ov-off-rows').innerHTML=d.officers.length?d.officers.map(x=>`
     <tr>
@@ -2575,10 +2585,10 @@ function renderOverview(){
 
   document.getElementById('ov-feed').innerHTML=d.activity.length?d.activity.map(x=>{
     if(x.kind==='assignment') return `<li><span class="dot" style="background:var(--royal)"><svg data-lucide="clipboard-list" width="14" height="14"></svg></span>
-      <div><b>${ovEsc(x.actor)}</b> assigned <b>${ovEsc(x.building)}</b> to ${ovEsc(x.target)}<small>${ovEsc(x.quarter)} ${ovEsc(x.type)} · ${timeAgo(x.at)}</small></div></li>`;
+      <div><b>${ovEsc(x.actor)}</b> assigned <b>${ovEsc(x.building)}</b> to ${ovEsc(x.target)}<small>${ovEsc(x.quarter)} ${ovEsc(showType(x.type))} · ${timeAgo(x.at)}</small></div></li>`;
     const bg=x.score!=null?grade(x.score).color:'var(--teal)', fg=x.score!=null?grade(x.score).on:'#fff';
     return `<li><span class="dot" style="background:${bg};color:${fg}"><svg data-lucide="check" width="14" height="14"></svg></span>
-      <div><b>${ovEsc(x.actor)}</b> submitted <b>${ovEsc(x.building)}</b>${x.score!=null?` — ${x.score}/100`:''}<small>${ovEsc(x.type||'')}${x.quarter?' · '+ovEsc(x.quarter):''}${x.linked?' · assigned':''} · ${timeAgo(x.at)}</small></div></li>`;
+      <div><b>${ovEsc(x.actor)}</b> submitted <b>${ovEsc(x.building)}</b>${x.score!=null?` — ${x.score}/100`:''}<small>${ovEsc(showType(x.type||''))}${x.quarter?' · '+ovEsc(x.quarter):''}${x.linked?' · assigned':''} · ${timeAgo(x.at)}</small></div></li>`;
   }).join(''):'<li class="ov-empty" style="display:block">No activity for these filters yet.</li>';
 
   document.getElementById('ov-area-rows').innerHTML=d.byArea.length?d.byArea.map(x=>`
@@ -2638,7 +2648,7 @@ function ofQuarterOptions(extra=[]){
 /** A name short enough for a button: the whole name when it fits, otherwise the first part. */
 function firstName(name){
   const full=String(name||'').trim();
-  if(!full) return 'the auditor';
+  if(!full) return 'the assessor';
   return full.length<=16?full:full.split(/\s+/)[0];
 }
 function ofInitials(name){ return String(name||'?').split(/\s+/).filter(Boolean).map(p=>p[0]).slice(0,2).join('').toUpperCase(); }
@@ -2659,7 +2669,7 @@ function ofCounts(){
 }
 /** People this account may give buildings to (the server decides: admins → admins, officers, auditors; officers → admins, themselves, auditors). */
 function ofActiveAuditors(){ return ofData.auditors.filter(a=>a.assignable); }
-function roleShort(role){ return ({quality_admin:'Admin',quality_officer:'Officer',quality_leader:'Leader',data_analyst:'Analyst',quality_auditor:'Auditor'})[role]||''; }
+function roleShort(role){ return ({quality_admin:'Admin',quality_officer:'Officer',quality_leader:'Leader',data_analyst:'Analyst',quality_auditor:'Assessor'})[role]||''; }
 /** "Name" for auditors, "Name · Admin" / "Name · you" for everyone else. */
 function assigneeLabel(a){
   const tag=currentUser&&a.id===currentUser.id?'you':a.role&&a.role!=='quality_auditor'?roleShort(a.role):'';
@@ -2774,7 +2784,7 @@ async function loadOfficer({quiet=false}={}){
     renderOfficer(fresh);
     if(fresh.length){
       const b=data.buildings.find(x=>x.buildingId===fresh[0]);
-      showToast(fresh.length===1?`${b.auditorName||'An auditor'} completed ${b.name}${b.score!=null?` — ${b.score}/100`:''}`:`${fresh.length} buildings were just completed`);
+      showToast(fresh.length===1?`${b.auditorName||'An assessor'} completed ${b.name}${b.score!=null?` — ${b.score}/100`:''}`:`${fresh.length} buildings were just completed`);
     }
     live.classList.remove('off');
     updated.textContent='Live · updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -2799,7 +2809,7 @@ function renderOfficer(fresh=[]){
   const scoped=d.buildings.filter(b=>!div||b.division===div);
   rpSelect('of-area',[...new Set(scoped.map(b=>b.area))].sort(),'All areas');
   const af=document.getElementById('of-auditor-filter'), curA=af.value;
-  af.innerHTML='<option value="">All auditors</option>'+d.auditors.map(a=>`<option value="${ovEsc(a.id)}">${ovEsc(a.name)}</option>`).join('');
+  af.innerHTML='<option value="">All assessors</option>'+d.auditors.map(a=>`<option value="${ovEsc(a.id)}">${ovEsc(a.name)}</option>`).join('');
   af.value=d.auditors.some(a=>a.id===curA)?curA:'';
 
   // KPI tiles (respect the division filter); four of them double as status filters
@@ -2816,8 +2826,8 @@ function renderOfficer(fresh=[]){
     tile('building-2',total,'Buildings',note(ovEsc(div||'All divisions')))+
     tile('user-check',`${assigned}/${total}`,'Assigned',bar(pct(assigned,total)),'assigned')+
     tile('circle-check',`${pct(completed,assigned)}%`,'Completion',note(`${completed} of ${assigned} assigned done`)+bar(pct(completed,assigned)),'completed')+
-    tile('hourglass',pending,'Pending',note('Assigned, not yet inspected'),'pending')+
-    tile('circle-dashed',total-assigned,'Unassigned',note('Still need an auditor'),'unassigned')+
+    tile('hourglass',pending,'Pending',note('Assigned, not yet assessed'),'pending')+
+    tile('circle-dashed',total-assigned,'Unassigned',note('Still need an assessor'),'unassigned')+
     tile('trending-up',avg??'–','Average score',avg!=null?note(grade(avg).label):note('No results yet'),null,avg!=null?grade(avg).ink:'');
 
   // Auditor progress: the whole quarter + type, so workloads compare fairly
@@ -2846,7 +2856,7 @@ function renderOfficer(fresh=[]){
       </div>
       <div class="of-card-ft"><span>${a.last?`Last submission ${timeAgo(a.last)}`:a.assigned?'No submissions yet':'Nothing assigned this period'}</span><b>Profile <svg data-lucide="chevron-right" width="13" height="13"></svg></b></div>
     </div>`;
-  }).join(''):'<div class="ov-empty">No active auditors yet — an admin can create them in Admin Control.</div>';
+  }).join(''):'<div class="ov-empty">No active assessors yet — an admin can create them in Admin Control.</div>';
 
   // Progress by area
   const areas=new Map();
@@ -2911,7 +2921,7 @@ function renderOfRows(fresh=[]){
     const held=b.auditorId&&!active.some(a=>a.id===b.auditorId)?`<option value="${ovEsc(b.auditorId)}" selected disabled>${ovEsc(b.auditorName||'Unknown')} (not available)</option>`:'';
     const quick=ofQuick&&active.some(a=>a.id===ofQuick)?active.find(a=>a.id===ofQuick):null;
     const auditorCell=done
-      ?`<span class="of-lock"><svg data-lucide="lock" width="12" height="12"></svg> ${ovEsc(b.auditorName||'—')}</span><small>Locked — already inspected</small>`
+      ?`<span class="of-lock"><svg data-lucide="lock" width="12" height="12"></svg> ${ovEsc(b.auditorName||'—')}</span><small>Locked — already assessed</small>`
       :quick
         ?(b.auditorId===quick.id
           ?`<button class="of-tap on" data-quick="${b.buildingId}" title="Tap to take it back"><svg data-lucide="check" width="13" height="13"></svg> ${ovEsc(firstName(quick.name))}</button><small>Tap to unassign</small>`
@@ -2928,7 +2938,7 @@ function renderOfRows(fresh=[]){
       <td class="of-chk">${done?'':`<input type="checkbox" data-check="${b.buildingId}"${picked?' checked':''} aria-label="Select ${ovEsc(b.name)}">`}</td>
       <td class="bld"><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}<span class="m-only"> · ${ovEsc(b.division)} · ${ovEsc(b.area)}</span></small></td>
       <td data-l="Division" class="col-div"><div class="of-v">${ovEsc(b.division)}<small>${ovEsc(b.area)}</small></div></td>
-      <td data-l="Auditor"><div class="of-v">${auditorCell}</div></td>
+      <td data-l="Assessor"><div class="of-v">${auditorCell}</div></td>
       <td data-l="Deadline"><div class="of-v">${dueCell}</div></td>
       <td data-l="Status"><span class="ov-pill ${b.status}">${label[b.status]}</span></td>
       <td data-l="Result"${done?'':' class="no-res"'}><div class="of-v">${done?`${b.inspectionId?`<button class="rp-link" style="padding:0" data-click="openReport" data-id="${b.inspectionId}" title="Open the report">${ovScore(b.score)}</button>`:ovScore(b.score)}${b.review?`<small class="of-review">${reviewMark(b.review)}</small>`:''}<small>${ovEsc(b.inspectionDate||'')}${b.inspector?' · '+ovEsc(b.inspector):''}</small>`:'<span style="color:var(--muted)">–</span>'}</div></td>
@@ -2974,7 +2984,7 @@ async function ofAssignOne(buildingId,auditorId,el){
   if(!b) return;
   const who=!auditorId?''
     :el?el.options[el.selectedIndex].text.replace(/ \(\d+\)$/,'').replace(/ · you$/,' (you)')
-      :(ofData.auditors.find(a=>a.id===auditorId)?.name||'the auditor');
+      :(ofData.auditors.find(a=>a.id===auditorId)?.name||'the assessor');
   if(el) el.disabled=true;
   try{
     let res=null;
@@ -3034,9 +3044,9 @@ async function ofCopyLastQuarter(){
       plan.get(b.auditorId).push(b.buildingId);
     });
     const total=[...plan.values()].reduce((n,ids)=>n+ids.length,0);
-    if(!total){ showToast(`Nothing to copy from ${prev} — those buildings are already assigned or their auditors are unavailable.`,true); return; }
+    if(!total){ showToast(`Nothing to copy from ${prev} — those buildings are already assigned or their assessors are unavailable.`,true); return; }
     const who=[...plan.entries()].map(([id,ids])=>`${canTake.get(id)}: ${ids.length}`).join(' · ');
-    if(!confirm(`Copy ${prev} into ${quarter} (${type})?\n\n${total} building${total===1?'':'s'} would be assigned as they were.\n${who}\n\nNothing already assigned or inspected is touched.`)) return;
+    if(!confirm(`Copy ${prev} into ${quarter} (${showType(type)})?\n\n${total} building${total===1?'':'s'} would be assigned as they were.\n${who}\n\nNothing already assigned or assessed is touched.`)) return;
     for(const [auditorId,ids] of plan) await ofBulk(auditorId,ids);
     const also=await ofMirror([...plan.values()].flat());
     showToast(`${total} building${total===1?'':'s'} copied from ${prev}${also}`);
@@ -3089,12 +3099,12 @@ async function ofOpenRepeat(){
       else x.fresh++;
     });
     const rows=[...by.values()].sort((a,b)=>a.name.localeCompare(b.name));
-    if(!rows.length){ showToast(`Nothing to repeat — no buildings are assigned for ${quarter} BOQI${div?' in '+div:''} yet.`,true); return; }
+    if(!rows.length){ showToast(`Nothing to repeat — no buildings are assigned for ${quarter} BOQ${div?' in '+div:''} yet.`,true); return; }
     ofRepeatPlan={quarter,div,rows,buildingIds:div?rows.flatMap(r=>r.ids):null};
-    document.getElementById('rep-sub').textContent=`Each auditor gets the same buildings for ${quarter} EOQI as for the BOQI${div?` (${div} only, as filtered)`:''}. You can still change any building afterwards — for an absence or an emergency, give it to someone else in the End of Quarter view.`;
+    document.getElementById('rep-sub').textContent=`Each assessor gets the same buildings for ${quarter} EOQ as for the BOQ${div?` (${div} only, as filtered)`:''}. You can still change any building afterwards — for an absence or an emergency, give it to someone else in the End of Quarter view.`;
     document.getElementById('rep-list').innerHTML=rows.map(r=>{
       const ok=available.has(r.id);
-      const parts=[r.fresh?`${r.fresh} new`:'',r.theirs?`${r.theirs} already theirs`:'',r.other?`${r.other} given to someone else`:'',r.locked?`${r.locked} already inspected`:''].filter(Boolean).join(' · ');
+      const parts=[r.fresh?`${r.fresh} new`:'',r.theirs?`${r.theirs} already theirs`:'',r.other?`${r.other} given to someone else`:'',r.locked?`${r.locked} already assessed`:''].filter(Boolean).join(' · ');
       return `<label class="rep-row${ok?'':' off'}"><input type="checkbox" data-aud="${ovEsc(r.id)}"${ok?' checked':' disabled'}>
         <span><b>${ovEsc(r.name)}</b><small>${r.ids.length} building${r.ids.length===1?'':'s'} at the beginning of the quarter${parts?' — '+parts:''}${ok?'':' · not available now: give these out in the End of Quarter view'}</small></span></label>`;
     }).join('');
@@ -3112,14 +3122,14 @@ function ofRepeatTotal(){
   const replace=document.getElementById('rep-replace').checked;
   const picked=new Set([...document.querySelectorAll('#rep-list [data-aud]:checked')].map(x=>x.dataset.aud));
   const n=ofRepeatPlan.rows.filter(r=>picked.has(r.id)).reduce((t,r)=>t+r.fresh+(replace?r.other:0),0);
-  document.getElementById('rep-total').textContent=n?`${n} building${n===1?'':'s'} will be assigned for the end of the quarter.`:'Nothing new to assign — choose auditors above, or tick “replace”.';
+  document.getElementById('rep-total').textContent=n?`${n} building${n===1?'':'s'} will be assigned for the end of the quarter.`:'Nothing new to assign — choose assessors above, or tick “replace”.';
   document.getElementById('rep-go').textContent=n?`Assign ${n} building${n===1?'':'s'}`:'Assign';
 }
 async function ofRunRepeat(){
   const plan=ofRepeatPlan;
   if(!plan) return;
   const auditorIds=[...document.querySelectorAll('#rep-list [data-aud]:checked')].map(x=>x.dataset.aud);
-  if(!auditorIds.length){ showToast('Choose at least one auditor.',true); return; }
+  if(!auditorIds.length){ showToast('Choose at least one assessor.',true); return; }
   const go=document.getElementById('rep-go'), due=document.getElementById('rep-due').value;
   go.disabled=true;
   try{
@@ -3128,8 +3138,8 @@ async function ofRunRepeat(){
     if(due) body.dueDate=due;
     const r=await ofRepeat(body);
     closeModal('modal-repeat');
-    const bits=[r.alreadyTheirs?`${r.alreadyTheirs} already theirs`:'',r.keptOther?`${r.keptOther} kept with someone else`:'',r.locked?`${r.locked} already inspected`:'',r.unavailable?`${r.unavailable} with an auditor who is not available`:''].filter(Boolean).join(' · ');
-    showToast(`${r.assigned} building${r.assigned===1?'':'s'} assigned for ${plan.quarter} EOQI${due?` · due ${dueFmt(due)}`:''}${bits?' · '+bits:''}`);
+    const bits=[r.alreadyTheirs?`${r.alreadyTheirs} already theirs`:'',r.keptOther?`${r.keptOther} kept with someone else`:'',r.locked?`${r.locked} already assessed`:'',r.unavailable?`${r.unavailable} with an assessor who is not available`:''].filter(Boolean).join(' · ');
+    showToast(`${r.assigned} building${r.assigned===1?'':'s'} assigned for ${plan.quarter} EOQ${due?` · due ${dueFmt(due)}`:''}${bits?' · '+bits:''}`);
     // show the result, where any building can still be changed
     const type=document.getElementById('of-type');
     if(type.value!=='EOQI'){ type.value='EOQI'; type.dispatchEvent(new Event('change')); }
@@ -3171,7 +3181,7 @@ async function ofRunBulk(action){
   try{
     if(action==='assign'){
       const aud=ofVal('of-bulk-auditor'), due=ofVal('of-bulk-due');
-      if(!aud){ showToast('Choose an auditor first.',true); return; }
+      if(!aud){ showToast('Choose an assessor first.',true); return; }
       buttons.forEach(b=>b.disabled=true);
       const r=await ofBulk(aud,ids,due);
       const also=await ofMirror(ids);
@@ -3190,14 +3200,14 @@ async function ofRunBulk(action){
       if(r.skipped) showToast(`${plural(r.updated)} updated · ${r.skipped} not assigned yet`,!r.updated);
     }else if(action==='distribute'){
       const plan=ofPlanDistribution(ids);
-      if(!plan){ showToast('There are no active auditors to distribute to.',true); return; }
+      if(!plan){ showToast('There are no active assessors to distribute to.',true); return; }
       const lines=plan.map(p=>`• ${p.name}: +${p.ids.length} (total ${p.total})`).join('\n');
-      if(!confirm(`Distribute ${plural(ids.length)} across your auditors, keeping each area together:\n\n${lines}`)) return;
+      if(!confirm(`Distribute ${plural(ids.length)} across your assessors, keeping each area together:\n\n${lines}`)) return;
       buttons.forEach(b=>b.disabled=true);
       let changed=0;
       for(const p of plan) changed+=(await ofBulk(p.id,p.ids)).changed;
       const also=await ofMirror(plan.flatMap(p=>p.ids));
-      showToast(`Distributed ${plural(changed)} across ${plan.length} auditor${plan.length===1?'':'s'}${also}`);
+      showToast(`Distributed ${plural(changed)} across ${plan.length} assessor${plan.length===1?'':'s'}${also}`);
     }
     ofSelected.clear();
   }catch(err){
@@ -3374,7 +3384,7 @@ async function loadReports(){
     const months=[...new Set(rpData.inspections.map(x=>x.date.slice(0,7)).filter(m=>/^\d{4}-\d{2}$/.test(m)))].sort().reverse();
     rpSelect('rp-month',months,'All months');
     [...document.getElementById('rp-month').options].forEach(o=>{ if(o.value) o.textContent=rpMonthLabel(o.value); });
-    rpSelect('rp-inspector',[...new Set(rpData.inspections.map(x=>x.inspector).filter(Boolean))].sort((a,b)=>a.localeCompare(b)),'All auditors');
+    rpSelect('rp-inspector',[...new Set(rpData.inspections.map(x=>x.inspector).filter(Boolean))].sort((a,b)=>a.localeCompare(b)),'All assessors');
     rpCascade();
     if(first){ rpRestore(); rpCascade(); }
     rpShowTab();
@@ -3394,7 +3404,7 @@ function renderReports(){
   document.getElementById('rp-group-col').textContent=cfg.label;
 
   const list=rpFilter(), st=rpStats(list);
-  document.getElementById('rp-count').textContent=`${list.length} of ${rpData.inspections.length} inspections`;
+  document.getElementById('rp-count').textContent=`${list.length} of ${rpData.inspections.length} assessments`;
 
   // KPI tiles
   const inScope=rpData.buildings.filter(b=>(!rpVal('rp-division')||b.division===rpVal('rp-division'))&&(!rpVal('rp-area')||b.area===rpVal('rp-area'))&&(!rpVal('rp-building')||b.name===rpVal('rp-building')));
@@ -3403,12 +3413,12 @@ function renderReports(){
   const tile=(icon,value,label,extra='',color='')=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b${color?` style="color:${color}"`:''}>${value}</b><span>${label}</span>${extra}</div>`;
   const note=t=>`<small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</small>`;
   document.getElementById('rp-stats').innerHTML=
-    tile('file-text',list.length,'Inspections',note(`${st.n} scored`))+
+    tile('file-text',list.length,'Assessments',note(`${st.n} scored`))+
     tile('trending-up',st.avg??'–','Average score',st.avg!=null?note(grade(st.avg).label):'',st.avg!=null?grade(st.avg).ink:'')+
     tile('activity',st.sd??'–','Std deviation',note('σ — how spread out scores are'))+
     tile('arrow-up-circle',st.max??'–','Highest',best?note(ovEsc(best.building)):'')+
     tile('arrow-down-circle',st.min??'–','Lowest',worst?note(ovEsc(worst.building)):'')+
-    tile('building-2',`${covered}/${inScope.length}`,'Buildings inspected',`<div class="ov-bar" style="margin-top:10px"><i style="width:${inScope.length?Math.round(covered/inScope.length*100):0}%"></i></div>`);
+    tile('building-2',`${covered}/${inScope.length}`,'Buildings assessed',`<div class="ov-bar" style="margin-top:10px"><i style="width:${inScope.length?Math.round(covered/inScope.length*100):0}%"></i></div>`);
 
   // Rating bands (counts ignore the rating filter so every band stays clickable)
   const bandBase=rpFilter({ignoreRating:true}), rating=rpVal('rp-rating');
@@ -3436,7 +3446,7 @@ function renderReports(){
       <td>${g.n>1?g.sd:'–'}</td>
       <td>${mix(g)}</td>
       <td style="white-space:nowrap">${delta(g)}</td>
-    </tr>`).join(''):'<tr><td colspan="8" class="ov-empty">No inspections match these filters.</td></tr>';
+    </tr>`).join(''):'<tr><td colspan="8" class="ov-empty">No assessments match these filters.</td></tr>';
 
   const chartGroups=cfg.time?groups.slice(-24):groups.slice(0,25);
   const withSd=rpMetric==='sd';
@@ -3446,7 +3456,7 @@ function renderReports(){
     const most=spread.reduce((a,b)=>b.sd>a.sd?b:a), least=spread.reduce((a,b)=>b.sd<a.sd?b:a);
     groupNote.textContent=`Most consistent: ${least.key} (σ ${least.sd}) · Most variable: ${most.key} (σ ${most.sd})`;
   }else{
-    groupNote.textContent=withSd?'Std dev needs at least 2 scored inspections in a group':'';
+    groupNote.textContent=withSd?'Std dev needs at least 2 scored assessments in a group':'';
   }
   // One measure per chart (no second axis): average, or the spread of scores.
   const groupSets=withSd
@@ -3460,7 +3470,7 @@ function renderReports(){
       scales:{y:{beginAtZero:true,max:withSd?undefined:100,ticks:{font:{family:'Cairo'}}},
         x:{ticks:{font:{family:'Cairo',weight:'700'},autoSkip:false,maxRotation:50}}},
       plugins:{legend:{display:false},
-        tooltip:{callbacks:{afterBody:items=>{const g=chartGroups[items[0].dataIndex];return `${g.count} inspections · min ${g.min??'–'} · max ${g.max??'–'}`;}}},
+        tooltip:{callbacks:{afterBody:items=>{const g=chartGroups[items[0].dataIndex];return `${g.count} assessments · min ${g.min??'–'} · max ${g.max??'–'}`;}}},
         title:{display:groups.length>chartGroups.length,text:`Showing ${chartGroups.length} of ${groups.length} — see the table for all`,font:{family:'Cairo',weight:'600'},color:'#64748b'}}},
   });
 
@@ -3471,7 +3481,7 @@ function renderReports(){
   if(rpTrend==='each'){
     const pts=list.filter(x=>typeof x.overall==='number'&&x.date).sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
     trendRows=pts.map(x=>[x.date,x.building,x.overall]);
-    trendNote.textContent=`${pts.length} scored inspections`;
+    trendNote.textContent=`${pts.length} scored assessments`;
     rpCharts.trend=new Chart(document.getElementById('rp-trend-chart'),{
       type:'line',
       data:{labels:pts.map(x=>x.date),datasets:[{label:'Score',data:pts.map(x=>x.overall),borderColor:'#0033A0',backgroundColor:'rgba(0,51,160,.08)',
@@ -3479,7 +3489,7 @@ function renderReports(){
       options:{responsive:true,maintainAspectRatio:false,
         scales:{y:{beginAtZero:true,max:100,ticks:{font:{family:'Cairo'}}},x:{ticks:{font:{family:'Cairo'},maxRotation:50,autoSkip:true,maxTicksLimit:14}}},
         plugins:{legend:{display:false},tooltip:{callbacks:{title:items=>{const x=pts[items[0].dataIndex];return `${x.building} — ${x.date}`;},
-          label:c=>{const x=pts[c.dataIndex];return `${x.overall}/100 · ${x.type||'—'} · ${x.inspector||'—'}`;}}}}},
+          label:c=>{const x=pts[c.dataIndex];return `${x.overall}/100 · ${showType(x.type)||'—'} · ${x.inspector||'—'}`;}}}}},
     });
   }else{
     const keyOf=rpTrend==='month'?(x=>/^\d{4}-\d{2}/.test(x.date)?x.date.slice(0,7):null):(x=>x.quarter);
@@ -3487,14 +3497,14 @@ function renderReports(){
     list.forEach(x=>{ const k=keyOf(x); if(!k) return; if(!buckets.has(k)) buckets.set(k,[]); buckets.get(k).push(x); });
     const keys=[...buckets.keys()].sort();
     trendRows=keys.map(k=>[rpTrend==='month'?rpMonthLabel(k):k,buckets.get(k).length,rpStats(buckets.get(k)).avg]);
-    trendNote.textContent='Hover a point for the number of inspections';
+    trendNote.textContent='Hover a point for the number of assessments';
     rpCharts.trend=new Chart(document.getElementById('rp-trend-chart'),{
       type:'line',
       data:{labels:keys.map(k=>rpTrend==='month'?new Date(k+'-01T12:00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'}):k),datasets:[
         {label:'Average score',data:keys.map(k=>rpStats(buckets.get(k)).avg),borderColor:'#26A8AB',backgroundColor:'#26A8AB',borderWidth:2,pointRadius:4,pointBorderColor:'#fff',pointBorderWidth:2,tension:.25,spanGaps:true},
       ]},
       options:vizOptions({interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,max:100}},
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{ const n=buckets.get(keys[c.dataIndex]).length; return `${c.raw??'–'} average · ${n} inspection${n===1?'':'s'}`; }}}}}),
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{ const n=buckets.get(keys[c.dataIndex]).length; return `${c.raw??'–'} average · ${n} assessment${n===1?'':'s'}`; }}}}}),
     });
   }
 
@@ -3537,12 +3547,12 @@ function renderRpDetail(list=rpFilter()){
       <td style="white-space:nowrap">${ovEsc(x.date)}<small>${ovEsc(x.quarter||'')}</small></td>
       <td><b>${ovEsc(x.building)}</b>${x.location?`<small>${ovEsc(x.location)}</small>`:''}</td>
       <td>${ovEsc(x.division||'—')}<small>${ovEsc(x.area||'')}</small></td>
-      <td>${ovEsc(x.type||'—')}</td>
+      <td>${ovEsc(showType(x.type)||'—')}</td>
       <td>${ovEsc(x.inspector||'—')}</td>
       <td>${ovScore(x.overall)}</td>
       <td>${g?`<span class="ov-pill" style="background:${g.soft};color:${g.ink}">${g.label}</span>`:'–'}</td>
     </tr>`;
-  }).join(''):'<tr><td colspan="7" class="ov-empty">No inspections match these filters.</td></tr>';
+  }).join(''):'<tr><td colspan="7" class="ov-empty">No assessments match these filters.</td></tr>';
   const more=document.getElementById('rp-more');
   more.hidden=rows.length<=rpShown;
   more.textContent=`Show more (${rows.length-shown.length} remaining)`;
@@ -3552,43 +3562,43 @@ function renderRpDetail(list=rpFilter()){
 // ⓘ EXPLANATIONS — a short, plain description for each analysis tool, shown on demand
 // ═══════════════════════════════════════════════════════════
 const TIPS={
-  'home-kpis':['What these numbers are',['Reports on file, average, highest and lowest score count every saved report in the system (not just the list below). Under the highest and lowest score is the building they were given to, with its division and area — tap the card to open that report.','“Reports in” counts reports dated in the current quarter. The list shows the six newest reports — open one to review it, or search them all in Inspection Reports.']],
-  'cx-report':['Building your own report',['The four steps on the left decide everything: <b>1</b> which inspections are counted, <b>2</b> what one row stands for, <b>3</b> which columns are measured, <b>4</b> which parts appear.','The page you see <em>is</em> the report — Export gives you exactly these parts and columns as PDF, Excel or an image, nothing else.','<ul><li><b>Buildings in list</b>, <b>Coverage</b> — only for rows that are divisions, areas or buildings; they count the buildings on file, inspected or not.</li><li><b>BOQI / EOQI / Change</b> — averages of each type, and end minus beginning.</li><li><b>Sections</b> — the average of that section, out of 10.</li></ul>','“Save setup” keeps the whole arrangement under a name; share it and the rest of the team sees the same report.']],
-  'lib-status':['Review status and search',['<b>Needs review</b>: saved and not yet reviewed. <b>Updated — review again</b>: edited after a decision. <b>Changes requested</b>: sent back to the auditor. <b>Approved</b>: accepted.','Search looks at the building, auditor, division, area and report number. Tick “Also search comments & notes” to look inside what auditors wrote.']],
-  'ins-kpis':['Summary cards',['For the chosen period (a quarter or a whole year), type and division:','<ul><li><b>Inspections</b> — reports saved.</li><li><b>Average score</b> — mean overall score out of 100.</li><li><b>Buildings inspected</b> — buildings in the list with at least one inspection ÷ all buildings.</li><li><b>Good or Excellent</b> — share scoring 81 or more.</li><li><b>Poor or Critical</b> — reports scoring 70 or less.</li></ul>','Arrows compare with the period before — the previous quarter, or the previous year. While a year is still in progress it is compared with the same quarters of the year before. Green is better, red is worse.']],
-  'ins-trend':['Average score by quarter',['The average overall score for each of the last 8 quarters — one line per division, or the selected division next to all divisions.','Hover a point to see how many inspections it is based on. “View as table” shows the same numbers.']],
-  'ins-heat':['Section heatmap',['Each cell is the average score (out of 10) of one checklist section, for a division — or for an area once you pick a division — in the chosen quarter.','Colours follow the rating scale: red = poor or critical, grey = acceptable, blue = good or excellent. “All” is every division together; “Overall” is the full score ÷ 10.','Click a cell to open those inspections in Report Builder.']],
-  'ins-board':['Ranking',['Divisions (or areas) sorted by this quarter’s average score.','<b>Change</b> — difference from last quarter’s average. <b>Coverage</b> — buildings inspected ÷ buildings in the list. <b>Weakest section</b> — the section with the lowest average.','Click a division to see its areas.']],
+  'home-kpis':['What these numbers are',['Reports on file, average, highest and lowest score count every saved report in the system (not just the list below). Under the highest and lowest score is the building they were given to, with its division and area — tap the card to open that report.','“Reports in” counts reports dated in the current quarter. The list shows the six newest reports — open one to review it, or search them all in Assessment Reports.']],
+  'cx-report':['Building your own report',['The four steps on the left decide everything: <b>1</b> which assessments are counted, <b>2</b> what one row stands for, <b>3</b> which columns are measured, <b>4</b> which parts appear.','The page you see <em>is</em> the report — Export gives you exactly these parts and columns as PDF, Excel or an image, nothing else.','<ul><li><b>Buildings in list</b>, <b>Coverage</b> — only for rows that are divisions, areas or buildings; they count the buildings on file, assessed or not.</li><li><b>BOQ / EOQ / Change</b> — averages of each type, and end minus beginning.</li><li><b>Sections</b> — the average of that section, out of 10.</li></ul>','“Save setup” keeps the whole arrangement under a name; share it and the rest of the team sees the same report.']],
+  'lib-status':['Review status and search',['<b>Needs review</b>: saved and not yet reviewed. <b>Updated — review again</b>: edited after a decision. <b>Changes requested</b>: sent back to the assessor. <b>Approved</b>: accepted.','Search looks at the building, assessor, division, area and report number. Tick “Also search comments & notes” to look inside what assessors wrote.']],
+  'ins-kpis':['Summary cards',['For the chosen period (a quarter or a whole year), type and division:','<ul><li><b>Assessments</b> — reports saved.</li><li><b>Average score</b> — mean overall score out of 100.</li><li><b>Buildings assessed</b> — buildings in the list with at least one assessment ÷ all buildings.</li><li><b>Good or Excellent</b> — share scoring 81 or more.</li><li><b>Poor or Critical</b> — reports scoring 70 or less.</li></ul>','Arrows compare with the period before — the previous quarter, or the previous year. While a year is still in progress it is compared with the same quarters of the year before. Green is better, red is worse.']],
+  'ins-trend':['Average score by quarter',['The average overall score for each of the last 8 quarters — one line per division, or the selected division next to all divisions.','Hover a point to see how many assessments it is based on. “View as table” shows the same numbers.']],
+  'ins-heat':['Section heatmap',['Each cell is the average score (out of 10) of one checklist section, for a division — or for an area once you pick a division — in the chosen quarter.','Colours follow the rating scale: red = poor or critical, grey = acceptable, blue = good or excellent. “All” is every division together; “Overall” is the full score ÷ 10.','Click a cell to open those assessments in Report Builder.']],
+  'ins-board':['Ranking',['Divisions (or areas) sorted by this quarter’s average score.','<b>Change</b> — difference from last quarter’s average. <b>Coverage</b> — buildings assessed ÷ buildings in the list. <b>Weakest section</b> — the section with the lowest average.','Click a division to see its areas.']],
   'ins-fail':['Most often scored 0',['Checklist items that scored 0 most often this quarter. The % is 0-scores ÷ all answers for that item.','Only reports scored item by item count here — imported overall scores are left out.']],
-  'ins-attention':['Lowest-scoring buildings',['The buildings with the lowest latest score this quarter — the ones to look at first, whatever their rating. <b>Change</b> compares with the same building’s latest score last quarter.','Click a building to see all its inspections.']],
-  'ins-movers':['Biggest movers',['Buildings with both a BOQI and an EOQI this quarter, ranked by how much the score changed between the beginning and the end of the quarter.']],
-  'rp-filters':['Filters, grouping and saved reports',['Every filter you set must match (for example CAOSD + EOQI + Q3). <b>Group by</b> decides how the summary, chart and table below are split.','<b>Save report</b> keeps this exact setup to reopen later; tick “share” to make it visible to everyone who can use Analytics.']],
-  'rp-summary':['Summary table',['Each row is one group of the matching inspections.','<ul><li><b>Average / Min / Max</b> — of the overall score.</li><li><b>Std dev</b> — how spread out the scores are: small = consistent, large = uneven.</li><li><b>Rating mix</b> — share of each rating.</li><li><b>BOQI → EOQI</b> — the two averages inside the group and the change.</li></ul>','Click a row to drill down (division → area → building).']],
+  'ins-attention':['Lowest-scoring buildings',['The buildings with the lowest latest score this quarter — the ones to look at first, whatever their rating. <b>Change</b> compares with the same building’s latest score last quarter.','Click a building to see all its assessments.']],
+  'ins-movers':['Biggest movers',['Buildings with both a BOQ and an EOQ this quarter, ranked by how much the score changed between the beginning and the end of the quarter.']],
+  'rp-filters':['Filters, grouping and saved reports',['Every filter you set must match (for example CAOSD + EOQ + Q3). <b>Group by</b> decides how the summary, chart and table below are split.','<b>Save report</b> keeps this exact setup to reopen later; tick “share” to make it visible to everyone who can use Analytics.']],
+  'rp-summary':['Summary table',['Each row is one group of the matching assessments.','<ul><li><b>Average / Min / Max</b> — of the overall score.</li><li><b>Std dev</b> — how spread out the scores are: small = consistent, large = uneven.</li><li><b>Rating mix</b> — share of each rating.</li><li><b>BOQ → EOQ</b> — the two averages inside the group and the change.</li></ul>','Click a row to drill down (division → area → building).']],
   'rp-chart':['Group chart',['<b>Average</b>: the average score of each group, coloured by rating. <b>Std deviation</b>: how uneven scores are inside each group — taller bars mean less consistent results.','Up to 25 groups are drawn; the table lists all of them.']],
-  'rp-trends':['Over time and by section',['Left: the average score over time — per quarter, per month, or every single inspection. Right: the average of each checklist section, out of 10, for the matching inspections.']],
-  'rp-detail':['Matching inspections',['Every inspection that matches the filters above. Click a row to open the full report.']],
-  'cmp':['Compare two periods',['Choose <b>Quarters</b>, <b>Years</b> or <b>Custom dates</b>, then pick period A (the starting point) and period B. Each side can have its own inspection type. <b>Change = B − A</b>.','<b>Years</b>: if one year has fewer quarters with data (for example the current year), tick “Compare only …” to compare the same quarters of both years. The <b>Quick</b> buttons set common comparisons, such as last year against this year or year to date.','The chart and table split the result by division, area, building, section (out of 10), auditor — or quarter when comparing years.']],
-  'cmp-table':['Changes table',['Sorted by the biggest drop first so declines stand out. The small number under each average is how many inspections (or scored sections) it is based on.']],
+  'rp-trends':['Over time and by section',['Left: the average score over time — per quarter, per month, or every single assessment. Right: the average of each checklist section, out of 10, for the matching assessments.']],
+  'rp-detail':['Matching assessments',['Every assessment that matches the filters above. Click a row to open the full report.']],
+  'cmp':['Compare two periods',['Choose <b>Quarters</b>, <b>Years</b> or <b>Custom dates</b>, then pick period A (the starting point) and period B. Each side can have its own assessment type. <b>Change = B − A</b>.','<b>Years</b>: if one year has fewer quarters with data (for example the current year), tick “Compare only …” to compare the same quarters of both years. The <b>Quick</b> buttons set common comparisons, such as last year against this year or year to date.','The chart and table split the result by division, area, building, section (out of 10), assessor — or quarter when comparing years.']],
+  'cmp-table':['Changes table',['Sorted by the biggest drop first so declines stand out. The small number under each average is how many assessments (or scored sections) it is based on.']],
   'dq-unlinked':['Not linked to a building',['The building name on these reports doesn’t match any name in the buildings list, so Analytics can’t place them in a division or area. The suggestion is the closest name in the list.']],
-  'dq-dups':['Possible duplicates',['The same building has more than one BOQI (or more than one EOQI) in the same quarter. Keep the right one, or confirm both are intended.']],
+  'dq-dups':['Possible duplicates',['The same building has more than one BOQ (or more than one EOQ) in the same quarter. Keep the right one, or confirm both are intended.']],
   'dq-incomplete':['Incomplete scoring',['Reports saved with unanswered checklist items. Imported overall scores (with no item detail) also appear here.']],
-  'dq-missing':['Missing details',['Reports without a type, date, division or auditor — they drop out of any filter that uses the missing field.']],
-  'dq-coverage':['Coverage',['For each division, how many buildings in the list have at least one inspection in the most recent quarter that has data.']],
-  'ov-kpis':['Team overview cards',['For the chosen quarter, type and division:','<ul><li><b>Assignments completed</b> — assignments with a saved inspection ÷ all assignments.</li><li><b>Buildings assigned</b> — buildings that have an assignment ÷ buildings in the list.</li><li><b>Average score</b> — mean overall score of the inspections.</li><li><b>Inspections</b> — reports saved. <b>Active auditors</b> — auditor accounts in use.</li></ul>']],
+  'dq-missing':['Missing details',['Reports without a type, date, division or assessor — they drop out of any filter that uses the missing field.']],
+  'dq-coverage':['Coverage',['For each division, how many buildings in the list have at least one assessment in the most recent quarter that has data.']],
+  'ov-kpis':['Team overview cards',['For the chosen quarter, type and division:','<ul><li><b>Assignments completed</b> — assignments with a saved assessment ÷ all assignments.</li><li><b>Buildings assigned</b> — buildings that have an assignment ÷ buildings in the list.</li><li><b>Average score</b> — mean overall score of the assessments.</li><li><b>Assessments</b> — reports saved. <b>Active assessors</b> — assessor accounts in use.</li></ul>']],
   'ov-division':['By division',['Completion of assignments and the average score for each division. Click a division to focus the whole page on it.']],
-  'ov-team':['Officers and auditors',['Auditors (and anyone holding buildings): buildings assigned, how many are done and their average score on completed work. Officers: assignments they made and how many are complete.','Click a person to open their profile.']],
+  'ov-team':['Officers and assessors',['Assessors (and anyone holding buildings): buildings assigned, how many are done and their average score on completed work. Officers: assignments they made and how many are complete.','Click a person to open their profile.']],
   'ov-area':['By area',['Buildings, assignments, completion and average score for each area.']],
-  'ov-building':['By building',['Every building with its status for the filters: <b>Unassigned</b>, <b>Pending</b> (assigned, not inspected yet) or <b>Completed</b>, plus its number of inspections and latest score.']],
-  'sch-tables':['The quarter schedule',['Every building assigned for the chosen quarter and type. The first part gives each auditor a table of their own; the list underneath is the same buildings together, by division and area.','<b>Pending</b> means assigned but not inspected yet, <b>Completed</b> means the report is in — open it by tapping the score.','The <b>deadline</b> is set by whoever assigns the quarter. It turns amber in the last week and red once it passes; on a finished building it says whether it was met.','Export gives you the whole schedule or any single auditor\u2019s table, as PDF (one auditor per A4 page) or Excel.']],
-  'of-kpis':['Assign & Track cards',['For the chosen quarter and type: <b>Assigned</b> = buildings with someone assigned; <b>Completion</b> = completed ÷ assigned; <b>Pending</b> = assigned but not inspected; <b>Unassigned</b> = still need someone.','Click a card to filter the buildings table. The page refreshes itself every 30 seconds.']],
+  'ov-building':['By building',['Every building with its status for the filters: <b>Unassigned</b>, <b>Pending</b> (assigned, not assessed yet) or <b>Completed</b>, plus its number of assessments and latest score.']],
+  'sch-tables':['The quarter schedule',['Every building assigned for the chosen quarter and type. The first part gives each assessor a table of their own; the list underneath is the same buildings together, by division and area.','<b>Pending</b> means assigned but not assessed yet, <b>Completed</b> means the report is in — open it by tapping the score.','The <b>deadline</b> is set by whoever assigns the quarter. It turns amber in the last week and red once it passes; on a finished building it says whether it was met.','Export gives you the whole schedule or any single assessor\u2019s table, as PDF (one assessor per A4 page) or Excel.']],
+  'of-kpis':['Assign & Track cards',['For the chosen quarter and type: <b>Assigned</b> = buildings with someone assigned; <b>Completion</b> = completed ÷ assigned; <b>Pending</b> = assigned but not assessed; <b>Unassigned</b> = still need someone.','Click a card to filter the buildings table. The page refreshes itself every 30 seconds.']],
   'of-team':['Team progress',['One card per person holding buildings this quarter: completion %, assigned / done / pending, average score of completed buildings and when they last submitted. Click a card to show only their buildings.']],
   'of-area':['Progress by area',['How many buildings in each area are assigned, and how many of those are completed.']],
-  'of-activity':['Recent activity',['The latest assignments and completed inspections for this quarter.']],
-  'of-buildings':['Assigning buildings',['Choose a person for each building, or tick several and use <b>Assign</b> or <b>Distribute evenly</b> (spreads them across auditors, lightest workload first, keeping each area together).','Set a <b>deadline</b> on any assigned building — one date at a time, or a date for everything you have ticked. Leave the date empty and press <b>Set deadline</b> to remove it.','Buildings that were already inspected are locked. Click a score to open that report.']],
-  'au-carried':['Still open from earlier quarters',['Buildings assigned in a previous quarter that were never inspected. They still count as open work.']],
+  'of-activity':['Recent activity',['The latest assignments and completed assessments for this quarter.']],
+  'of-buildings':['Assigning buildings',['Choose a person for each building, or tick several and use <b>Assign</b> or <b>Distribute evenly</b> (spreads them across assessors, lightest workload first, keeping each area together).','Set a <b>deadline</b> on any assigned building — one date at a time, or a date for everything you have ticked. Leave the date empty and press <b>Set deadline</b> to remove it.','Buildings that were already assessed are locked. Click a score to open that report.']],
+  'au-carried':['Still open from earlier quarters',['Buildings assigned in a previous quarter that were never assessed. They still count as open work.']],
   'au-schedule':['Quarter timeline',['Key dates for the quarter and how much of this person’s work is done against them.']],
-  'au-quality':['Quality of work',['Across all quarters: inspections completed out of those assigned, the average score of completed work, and the average time from assignment to submission.','The chart shows the average score per quarter (hover for assigned and completed counts); the section chart shows their average per section out of 10.']],
-  'sc-scale':['Rating scale',['The five rating bands used everywhere in the system. The highlighted band is where this inspection’s overall score falls.']],
+  'au-quality':['Quality of work',['Across all quarters: assessments completed out of those assigned, the average score of completed work, and the average time from assignment to submission.','The chart shows the average score per quarter (hover for assigned and completed counts); the section chart shows their average per section out of 10.']],
+  'sc-scale':['Rating scale',['The five rating bands used everywhere in the system. The highlighted band is where this assessment’s overall score falls.']],
   'sc-sections':['Results by section',['Each section’s score out of 10, how many of its items are answered, and its grade. Click a section to go back and change it.']],
 };
 function toggleTip(btn){
@@ -3722,7 +3732,7 @@ function renderLibrary(){
   libSelectValues('lib-quarter',d.facets.quarters,'All quarters');
   libSelectValues('lib-division',d.facets.divisions,'All divisions');
   libSelectValues('lib-area',d.facets.areas,'All areas');
-  libSelectValues('lib-auditor',d.facets.auditors,'All auditors');
+  libSelectValues('lib-auditor',d.facets.auditors,'All assessors');
   const chips=[['','All',c.all],...(d.canReview?[['review','Needs review',c.pending+c.resubmitted]]:[]),['changes','Changes requested',c.changes],['approved','Approved',c.approved],
     ...(hasPerm('inspect')?[['mine','My reports',null]]:[])];
   if(!d.canReview&&libStatus==='review') libStatus='';
@@ -3738,7 +3748,7 @@ function renderLibrary(){
       <td class="lib-date">${ovEsc(r.date||'—')}<small>${ovEsc(r.quarter||'')}</small></td>
       <td><b>${mark(r.building)}</b><small>${mark([r.division,r.area].filter(Boolean).join(' · ')||'Not linked to a building')}</small>
         ${r.snippet?`<small class="lib-snip"><svg data-lucide="message-square-quote" width="12" height="12"></svg> ${ovEsc(r.snippet.section||'')}: “${mark(String(r.snippet.text||'').slice(0,140))}”</small>`:''}</td>
-      <td>${ovEsc(r.type||'—')}</td>
+      <td>${ovEsc(showType(r.type)||'—')}</td>
       <td>${mark(r.auditor||'—')}${r.own?'<small>You</small>':''}</td>
       <td>${g?`<span class="lib-score" style="--c:${g.ink};--soft:${g.soft}">${r.overall}</span><small>${g.label}</small>`:'–'}</td>
       <td>${libStatusPill(r.status)}${r.lastDecision?`<small>${ovEsc(r.lastDecision.by)} · ${timeAgo(r.lastDecision.at)}</small>`:''}</td>
@@ -3788,8 +3798,8 @@ function closeReport(){
 function renderReportPanel(){
   const {record:r,summary:s,reviews,canReview,reviewBlockedReason}=rvData;
   const g=s.overall!=null?grade(s.overall):null;
-  document.getElementById('rv-title').textContent=s.building||r.facility||'Inspection report';
-  document.getElementById('rv-meta').textContent=[s.date,s.typeLabel||s.type,[s.division,s.area].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
+  document.getElementById('rv-title').textContent=s.building||r.facility||'Assessment report';
+  document.getElementById('rv-meta').textContent=[s.date,showTypeLabel(s.typeLabel,s.type),[s.division,s.area].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
   const ring=document.getElementById('rv-ring');
   ring.style.setProperty('--p',s.overall??0); ring.style.setProperty('--c',g?g.color:'#9fb3c8');
   document.getElementById('rv-score').textContent=s.overall??'–';
@@ -3810,7 +3820,7 @@ function renderReportPanel(){
       <div class="rv-decided-txt">
         <b>${s.status==='approved'?(mine?'You approved this report':`Approved by ${who}`)
           :s.status==='changes'?(mine?'You asked for changes':`Changes requested by ${who}`)
-          :(mine?'You reviewed this — the auditor has updated it since':`Reviewed by ${who} — the auditor has updated it since`)}</b>
+          :(mine?'You reviewed this — the assessor has updated it since':`Reviewed by ${who} — the assessor has updated it since`)}</b>
         <small>${timeAgo(decided.at)}${decided.comment?` · “${ovEsc(decided.comment)}”`:''}</small>
       </div>
       ${canReview?`<button type="button" class="btn bo rv-change" id="rv-change">${s.status==='resubmitted'?'Review again':'Change decision'}</button>`:''}
@@ -3852,7 +3862,7 @@ function renderReportPanel(){
     :'<li class="ov-empty" style="display:block">No reviews yet.</li>';
   document.getElementById('rv-body').innerHTML=`
     <section class="rv-status">
-      <div class="rv-status-top">${libStatusPill(s.status)}<span class="rv-auditor">Auditor: <b>${ovEsc(s.auditor||'—')}</b>${s.assigned?' · assigned':''}</span></div>
+      <div class="rv-status-top">${libStatusPill(s.status)}<span class="rv-auditor">Assessor: <b>${ovEsc(s.auditor||'—')}</b>${s.assigned?' · assigned':''}</span></div>
       ${reviewBox}
     </section>
     <div class="rv-actions">
@@ -3895,8 +3905,8 @@ async function openReportVersion(id,version){
     const d=await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(d.error||'Could not open that version.');
     const r=d.record;
-    printInspectionReport({inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,type:r.type,typeLabel:r.typeLabel||r.type,overall:r.overall,approvedBy:'',
-      filename:`${(r.filename||`${r.date||'inspection'}_${r.type||'Inspection'}_${r.facility||'facility'}.pdf`).replace(/\.pdf$/i,'')}_v${version}.pdf`,sections:r.sections||[]});
+    printInspectionReport({inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,type:r.type,typeLabel:showTypeLabel(r.typeLabel,r.type),overall:r.overall,approvedBy:'',
+      filename:showFileName(`${(r.filename||`${r.date||'assessment'}_${showType(r.type)||'Assessment'}_${r.facility||'facility'}.pdf`).replace(/\.pdf$/i,'')}_v${version}.pdf`),sections:r.sections||[]});
   }catch(err){ showToast(err.message,true); }
 }
 /**
@@ -3922,9 +3932,9 @@ async function rvAction(act){
   if(!r) return;
   if(act==='pdf'||act==='print'){
     const decided=(rvData.reviews||[]).find(v=>v.decision!=='comment');
-    const doc={inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,type:r.type,typeLabel:r.typeLabel||r.type,overall:r.overall,
+    const doc={inspector:r.inspector,facility:r.facility,division:r.division,date:r.date,type:r.type,typeLabel:showTypeLabel(r.typeLabel,r.type),overall:r.overall,
       approvedBy:s&&s.status==='approved'&&decided?decided.by:'',
-      filename:r.filename||`${r.date||'inspection'}_${r.type||'Inspection'}_${r.facility||'facility'}.pdf`,sections:r.sections||[]};
+      filename:showFileName(r.filename||`${r.date||'assessment'}_${showType(r.type)||'Assessment'}_${r.facility||'facility'}.pdf`),sections:r.sections||[]};
     return act==='print'?printInspectionReportNow(doc):printInspectionReport(doc);
   }
   if(act==='edit'){ closeReport(); return editInspection({stopPropagation(){}},r.id,r); }
@@ -3951,7 +3961,7 @@ async function rvAction(act){
     const res=await fetch(`/api/inspections/${r.id}/reviews`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({decision:act,comment})});
     const d=await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(d.error||'Could not save the review.');
-    showToast(act==='approved'?'Report approved':act==='changes_requested'?'Changes requested — the auditor has been notified':'Comment added');
+    showToast(act==='approved'?'Report approved':act==='changes_requested'?'Changes requested — the assessor has been notified':'Comment added');
     afterReview(r.id,act,d.status);
     await openReport(r.id,{fromHash:true});
   }catch(err){ showToast(err.message,true); btns.forEach(b=>b.disabled=false); }
@@ -3982,7 +3992,7 @@ async function loadSchedule(){
     if(req!==schReq) return;
     schData=d;
     const sel=document.getElementById('sch-auditor'), cur=sel.value;
-    sel.innerHTML='<option value="">All auditors</option>'+d.auditors.map(a=>`<option value="${ovEsc(a.id)}">${ovEsc(a.name)} (${a.count})</option>`).join('');
+    sel.innerHTML='<option value="">All assessors</option>'+d.auditors.map(a=>`<option value="${ovEsc(a.id)}">${ovEsc(a.name)} (${a.count})</option>`).join('');
     sel.value=d.auditors.some(a=>a.id===cur)?cur:'';
     renderSchedule();
     updateTopBar('pg-schedule');
@@ -4010,8 +4020,8 @@ function renderSchedule(){
   const nextDue=assigned.filter(b=>b.dueDate&&b.status!=='completed').map(b=>b.dueDate).sort()[0];
   document.getElementById('sch-stats').innerHTML=
     tile('building-2',`${t.assigned}/${t.buildings}`,'Buildings assigned',`${t.unassigned} still unassigned`)+
-    tile('users',t.auditors,'Auditors','with buildings this quarter')+
-    tile('circle-check',t.completed,'Completed',`${t.assigned-t.completed} still to inspect`)+
+    tile('users',t.auditors,'Assessors','with buildings this quarter')+
+    tile('circle-check',t.completed,'Completed',`${t.assigned-t.completed} still to assess`)+
     tile('calendar-clock',overdue||(nextDue?dueFmt(nextDue):'—'),overdue?'Past deadline':'Next deadline',
       overdue?`of ${dated.length} with a deadline`:dated.length?`${dated.length} of ${t.assigned} have a deadline`:'No deadline set yet');
 
@@ -4022,7 +4032,7 @@ function renderSchedule(){
     return `<div class="ov-panel sch-aud">
       <div class="sch-aud-hd"><i class="of-av">${ovEsc(ofInitials(a.name))}</i>
         <div><b>${ovEsc(a.name)}</b><small>${a.count} building${a.count===1?'':'s'} · ${a.completed} completed · ${a.count-a.completed} to go</small></div>
-        <button class="tool-x rp-export" data-ex-ctx="schedule" data-ex-block="aud-${ovEsc(a.id)}" title="Export this auditor's table"><svg data-lucide="download" width="14" height="14"></svg></button></div>
+        <button class="tool-x rp-export" data-ex-ctx="schedule" data-ex-block="aud-${ovEsc(a.id)}" title="Export this assessor's table"><svg data-lucide="download" width="14" height="14"></svg></button></div>
       <div class="ov-scroll"><table class="ov-table sch-t"><thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Deadline</th><th>Status</th><th>Result</th></tr></thead>
         <tbody>${rows.length?rows.map((b,i)=>`<tr><td class="num">${i+1}</td>
           <td class="bld" data-l="Building"><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
@@ -4039,26 +4049,26 @@ function renderSchedule(){
     <td class="num">${i+1}</td>
     <td class="bld" data-l="Building"><b>${ovEsc(b.name)}</b><small>${ovEsc(b.location||'')}</small></td>
     <td data-l="Division">${ovEsc(b.division||'—')}<small>${ovEsc(b.area||'')}</small></td>
-    <td data-l="Auditor">${ovEsc(b.auditorName||'—')}</td>
+    <td data-l="Assessor">${ovEsc(b.auditorName||'—')}</td>
     <td data-l="Deadline">${dueChip(b)}</td>
     <td data-l="Status"><span class="ov-pill ${b.status}">${SCH_STATUS[b.status]}</span></td>
     <td data-l="Result">${schResult(b)}</td></tr>`).join(''):'<tr><td colspan="7" class="ov-empty">Nothing assigned yet.</td></tr>';
-  document.getElementById('sch-all-note').textContent=`${all.length} building${all.length===1?'':'s'}${only?' · filtered to one auditor':''}`;
-  document.getElementById('sch-note').textContent=`${schData.quarter} · ${schData.type}`;
+  document.getElementById('sch-all-note').textContent=`${all.length} building${all.length===1?'':'s'}${only?' · filtered to one assessor':''}`;
+  document.getElementById('sch-note').textContent=`${schData.quarter} · ${showType(schData.type)}`;
   schView={assigned,auditors:schData.auditors,totals:t,only};
   lucide.createIcons({nodes:[document.getElementById('pg-schedule')]});
 }
 /** The schedule exports as it reads: a sheet per auditor, then the whole list. */
 function exModelSchedule(){
   if(!schView||!schData) return null;
-  const head=['#','Building','Location','Division','Area','Deadline','Status','Score','Inspected on','Auditor'];
+  const head=['#','Building','Location','Division','Area','Deadline','Status','Score','Assessed on','Assessor'];
   const row=(b,i)=>[i+1,b.name,b.location,b.division,b.area,b.dueDate||null,SCH_STATUS[b.status],b.score,b.inspectionDate,b.auditorName];
-  const sheetName=n=>String(n||'Auditor').replace(/[\\/?*\[\]:]/g,' ').slice(0,28);
+  const sheetName=n=>String(n||'Assessor').replace(/[\\/?*\[\]:]/g,' ').slice(0,28);
   const blocks=[{id:'summary',label:'Summary',sheet:'Summary',pdfTable:true,
-    kpis:[{label:'Quarter',value:`${schData.quarter} · ${schData.type}`},{label:'Buildings assigned',value:`${schView.totals.assigned} of ${schView.totals.buildings}`},
-      {label:'Auditors',value:schView.totals.auditors},{label:'Completed',value:schView.totals.completed},
+    kpis:[{label:'Quarter',value:`${schData.quarter} · ${showType(schData.type)}`},{label:'Buildings assigned',value:`${schView.totals.assigned} of ${schView.totals.buildings}`},
+      {label:'Assessors',value:schView.totals.auditors},{label:'Completed',value:schView.totals.completed},
       {label:'Past deadline',value:dueOverdue(schView.assigned)}],
-    table:{head:['Auditor','Buildings','Completed','Still to inspect','Past deadline','Next deadline'],
+    table:{head:['Assessor','Buildings','Completed','Still to assess','Past deadline','Next deadline'],
       rows:schView.auditors.map(a=>{
         const mine=schView.assigned.filter(b=>b.auditorId===a.id);
         const next=mine.filter(b=>b.dueDate&&b.status!=='completed').map(b=>b.dueDate).sort()[0]||null;
@@ -4071,8 +4081,8 @@ function exModelSchedule(){
     blocks.push({id:`aud-${a.id}`,label:`${a.name} · ${rows.length} building${rows.length===1?'':'s'}`,sheet:sheetName(a.name),
       pdfBreak:true,
       // Exported on its own it is that auditor's schedule for this quarter — nothing else.
-      docTitle:'Quarter schedule',docNote:a.name,file:`quarter-schedule-${schData.quarter}-${schData.type}-${a.name}`,
-      docContext:[['Auditor',a.name],['Quarter',schData.quarter],['Type',schData.type],
+      docTitle:'Quarter schedule',docNote:a.name,file:`quarter-schedule-${schData.quarter}-${showType(schData.type)}-${a.name}`,
+      docContext:[['Assessor',a.name],['Quarter',schData.quarter],['Type',schData.type],
         ['Buildings',String(rows.length)],...(next?[['Next deadline',dueFmt(next)]]:[])],
       table:{head:head.slice(0,9),bands:{7:100},rows:rows.map((b,i)=>row(b,i).slice(0,9)),
         // On paper: the columns that fit an A4 page without shrinking the type.
@@ -4082,10 +4092,10 @@ function exModelSchedule(){
     table:{head,bands:{7:100},rows:[...schView.assigned].sort((x,y)=>(x.division||'').localeCompare(y.division||'')||(x.area||'').localeCompare(y.area||'')||x.name.localeCompare(y.name)).map(row),
       pdfCols:[0,1,3,5,6,7,9],pdfHead:head,resultCols:[7,8]}});
   const withDue=schView.assigned.filter(b=>b.dueDate).length;
-  return {title:'Quarter schedule',file:`schedule-${schData.quarter}-${schData.type}`,
-    note:`${schData.quarter} · ${schData.type}`,pdfPage:'portrait',
+  return {title:'Quarter schedule',file:`schedule-${schData.quarter}-${showType(schData.type)}`,
+    note:`${schData.quarter} · ${showType(schData.type)}`,pdfPage:'portrait',
     context:[['Quarter',schData.quarter],['Type',schData.type],['Buildings assigned',`${schView.totals.assigned} of ${schView.totals.buildings}`],
-      ['Auditors',String(schView.totals.auditors)],['With a deadline',`${withDue} of ${schView.totals.assigned}`]],
+      ['Assessors',String(schView.totals.auditors)],['With a deadline',`${withDue} of ${schView.totals.assigned}`]],
     blocks};
 }
 
@@ -4260,7 +4270,7 @@ function renderInsights(){
   const qs=rpQuarters(), ys=rpYears(), curQ=ofCurrentQuarter();
   const qSel=document.getElementById('ins-quarter'), wantQ=qSel.value||insSavedQuarter;
   qSel.innerHTML=qs.length?`<optgroup label="Quarter">${qs.map(q=>`<option value="${q}">${q}${q===curQ?' (current)':''}</option>`).join('')}</optgroup>`+
-    `<optgroup label="Whole year">${ys.map(y=>`<option value="${y}">${yearLabel(y)}</option>`).join('')}</optgroup>`:'<option value="">No inspections yet</option>';
+    `<optgroup label="Whole year">${ys.map(y=>`<option value="${y}">${yearLabel(y)}</option>`).join('')}</optgroup>`:'<option value="">No assessments yet</option>';
   qSel.value=[...qs,...ys].includes(wantQ)?wantQ:(qs[0]||'');
   const divSel=document.getElementById('ins-division'), wantD=divSel.value||insSavedDivision;
   rpSelect('ins-division',rpDivisionList(),'All divisions');
@@ -4293,10 +4303,10 @@ function renderInsights(){
   const A=kpi(cur), B=kpi(prev), hasPrev=prev.length>0;
   const tile=(icon,value,label,extra,color)=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div><b${color?` style="color:${color}"`:''}>${value}</b><span>${label}</span>${extra}</div>`;
   document.getElementById('ins-stats').innerHTML=!cur.length
-    ?`<div class="ov-empty" style="grid-column:1/-1">No inspections in ${ovEsc(Q||'this period')} for these filters.</div>`
-    :tile('file-text',A.n,'Inspections',insDelta(hasPrev?A.n-B.n:null,{vs:pLabel,neutral:true,digits:0}))+
+    ?`<div class="ov-empty" style="grid-column:1/-1">No assessments in ${ovEsc(Q||'this period')} for these filters.</div>`
+    :tile('file-text',A.n,'Assessments',insDelta(hasPrev?A.n-B.n:null,{vs:pLabel,neutral:true,digits:0}))+
      tile('trending-up',A.avg==null?'–':r1(A.avg),'Average score',insDelta(hasPrev&&A.avg!=null&&B.avg!=null?r1(A.avg)-r1(B.avg):null,{vs:pLabel}),A.avg!=null?grade(A.avg).ink:'')+
-     tile('building-2',A.coverage==null?'–':`${Math.round(A.coverage)}%`,'Buildings inspected',insDelta(hasPrev&&A.coverage!=null&&B.coverage!=null?Math.round(A.coverage)-Math.round(B.coverage):null,{vs:pLabel,unit:' pts',digits:0})+`<div class="ov-bar" style="margin-top:8px"><i style="width:${Math.round(A.coverage||0)}%"></i></div>`)+
+     tile('building-2',A.coverage==null?'–':`${Math.round(A.coverage)}%`,'Buildings assessed',insDelta(hasPrev&&A.coverage!=null&&B.coverage!=null?Math.round(A.coverage)-Math.round(B.coverage):null,{vs:pLabel,unit:' pts',digits:0})+`<div class="ov-bar" style="margin-top:8px"><i style="width:${Math.round(A.coverage||0)}%"></i></div>`)+
      tile('award',A.goodShare==null?'–':`${Math.round(A.goodShare)}%`,'Good or Excellent',insDelta(hasPrev&&A.goodShare!=null&&B.goodShare!=null?Math.round(A.goodShare)-Math.round(B.goodShare):null,{vs:pLabel,unit:' pts',digits:0}))+
      tile('triangle-alert',A.low,'Poor or Critical',insDelta(hasPrev?A.low-B.low:null,{vs:pLabel,inverse:true,digits:0}),A.low?'var(--c-b42318)':'');
 
@@ -4318,10 +4328,10 @@ function renderInsights(){
     options:vizOptions({
       scales:{y:{min:vals.length?Math.max(0,Math.floor((Math.min(...vals)-5)/10)*10):0,max:100}},
       plugins:{tooltip:{itemSort:(a,b)=>(b.raw??-1)-(a.raw??-1),callbacks:{
-        label:c=>{ const p=series[c.datasetIndex].points[c.dataIndex]; return p.avg==null?null:`${p.avg}  ${c.dataset.label} · ${p.n} inspection${p.n===1?'':'s'}`; }}}},
+        label:c=>{ const p=series[c.datasetIndex].points[c.dataIndex]; return p.avg==null?null:`${p.avg}  ${c.dataset.label} · ${p.n} assessment${p.n===1?'':'s'}`; }}}},
     }),
   });
-  document.getElementById('ins-trend-note').textContent=series.length?`${quarters[0]} – ${quarters[quarters.length-1]}${type?' · '+type:''}`:'No data yet';
+  document.getElementById('ins-trend-note').textContent=series.length?`${quarters[0]} – ${quarters[quarters.length-1]}${type?' · '+showType(type):''}`:'No data yet';
   document.getElementById('ins-trend-table').innerHTML=`<thead><tr><th>Quarter</th>${series.map(s=>`<th>${ovEsc(s.label)}</th>`).join('')}</tr></thead><tbody>${
     quarters.map((q,i)=>`<tr><td><b>${q}</b></td>${series.map(s=>`<td>${s.points[i].avg??'–'}${s.points[i].n?`<small>${s.points[i].n} insp.</small>`:''}</td>`).join('')}</tr>`).join('')}</tbody>`;
 
@@ -4340,11 +4350,11 @@ function renderInsights(){
   insHeatData={rows,cols,cell,label:div?'Area':'Division'};
   const td=(r,c,label)=>{ const v=cell(r,c), [bg,fg]=heatColor(v);
     return `<td class="hm" style="background:${bg};color:${fg}" ${r==='__all'?'':`data-row="${ovEsc(r)}" data-sec="${ovEsc(c)}" tabindex="0"`}
-      title="${ovEsc(label)} · ${ovEsc(c==='__overall'?'Overall':c)}: ${v??'no data'}${v!=null?'/10':''} (${count(r,c)} inspection${count(r,c)===1?'':'s'})">${v??'–'}</td>`; };
+      title="${ovEsc(label)} · ${ovEsc(c==='__overall'?'Overall':c)}: ${v??'no data'}${v!=null?'/10':''} (${count(r,c)} assessment${count(r,c)===1?'':'s'})">${v??'–'}</td>`; };
   document.getElementById('ins-heat').innerHTML=rows.length?`<thead><tr><th>${div?'Area':'Division'}</th>${cols.map(c=>`<th title="${ovEsc(c)}">${ovEsc(sectionShort(c))}</th>`).join('')}<th>Overall</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><th scope="row">${ovEsc(r)}</th>${cols.map(c=>td(r,c,r)).join('')}${td(r,'__overall',r)}</tr>`).join('')}</tbody>
     <tfoot><tr><th scope="row">All</th>${cols.map(c=>td('__all',c,'All')).join('')}${td('__all','__overall','All')}</tr></tfoot>`
-    :`<tbody><tr><td class="ov-empty">No inspections in ${ovEsc(Q||'this period')}.</td></tr></tbody>`;
+    :`<tbody><tr><td class="ov-empty">No assessments in ${ovEsc(Q||'this period')}.</td></tr></tbody>`;
   document.getElementById('ins-heat-legend').innerHTML=heatLegend();
 
   // Leaderboard
@@ -4358,7 +4368,7 @@ function renderInsights(){
     return {k,n:l.length,avg:r1(avg),delta:avg!=null&&pAvg!=null?r1(r1(avg)-r1(pAvg)):null,total,covered,weakest};
   }).sort((a,b)=>(b.avg??-1)-(a.avg??-1));
   document.getElementById('ins-board').innerHTML=board.length?board.map(r=>`<tr class="clickable" data-key="${ovEsc(r.k)}" title="${div?'Open in Report Builder':'Show areas in '+ovEsc(r.k)}">
-      <td><b>${ovEsc(r.k)}</b><small>${r.n} inspection${r.n===1?'':'s'}</small></td>
+      <td><b>${ovEsc(r.k)}</b><small>${r.n} assessment${r.n===1?'':'s'}</small></td>
       <td>${ovScore(r.avg)}</td>
       <td>${deltaCell(r.delta)}</td>
       <td>${r.total?ovPct(r.covered,r.total):'<span style="color:var(--muted)">–</span>'}</td>
@@ -4382,7 +4392,7 @@ function renderInsights(){
   document.getElementById('ins-fail').innerHTML=failing.length?failing.map(i=>`<li>
       <div class="ins-fail-top"><b>${ovEsc(SECTIONS[i.si].items[i.ii])}</b><span>${Math.round(i.rate*100)}%</span></div>
       <div class="ins-fail-bar"><i style="width:${Math.max(3,Math.round(i.rate*100))}%"></i></div>
-      <small>${ovEsc(SECTIONS[i.si].title)} · scored 0 in ${i.fails} of ${i.n} inspections</small>
+      <small>${ovEsc(SECTIONS[i.si].title)} · scored 0 in ${i.fails} of ${i.n} assessments</small>
     </li>`).join(''):'<li class="ov-empty" style="display:block">No non-compliant items recorded in this period.</li>';
 
   // Buildings needing attention (lowest latest score in the period) and biggest movers (BOQI → EOQI)
@@ -4393,12 +4403,12 @@ function renderInsights(){
   prev.forEach(x=>{ const k=bKey(x), c=prevLatest.get(k); if(!c||x.date>c.date) prevLatest.set(k,x); });
   const latest=[...byBuilding.entries()].map(([k,l])=>{ const x=l.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id)[0]; return {k,x,prev:prevLatest.get(k)}; })
     .filter(r=>typeof r.x.overall==='number').sort((a,b)=>a.x.overall-b.x.overall).slice(0,6);
-  document.getElementById('ins-attention').innerHTML=latest.length?latest.map(({x,prev:p})=>{ const g=grade(x.overall); return `<tr class="clickable" data-building="${ovEsc(x.building)}" title="Open this building's inspections">
+  document.getElementById('ins-attention').innerHTML=latest.length?latest.map(({x,prev:p})=>{ const g=grade(x.overall); return `<tr class="clickable" data-building="${ovEsc(x.building)}" title="Open this building's assessments">
       <td><b>${ovEsc(x.building)}</b><small>${ovEsc([x.division,x.area].filter(Boolean).join(' · ')||'Not linked')}</small></td>
-      <td>${ovScore(x.overall)}<small>${ovEsc(x.type||'')} · ${ovEsc(x.date)}</small></td>
+      <td>${ovScore(x.overall)}<small>${ovEsc(showType(x.type||''))} · ${ovEsc(x.date)}</small></td>
       <td>${deltaCell(p&&typeof p.overall==='number'?x.overall-p.overall:null)}</td>
       <td><span class="ov-pill" style="background:${g.soft};color:${g.ink}">${g.label}</span></td>
-    </tr>`; }).join(''):'<tr><td colspan="4" class="ov-empty">No scored inspections in this period.</td></tr>';
+    </tr>`; }).join(''):'<tr><td colspan="4" class="ov-empty">No scored assessments in this period.</td></tr>';
 
   const inQ=periodTest(Q), moversBase=rpData.inspections.filter(x=>inQ(x)&&(!div||x.division===div)&&typeof x.overall==='number');
   const pairs=new Map();
@@ -4409,7 +4419,7 @@ function renderInsights(){
   document.getElementById('ins-movers').innerHTML=movers.length?movers.map(m=>`<tr>
       <td><b>${ovEsc(m.x.building)}</b><small>${ovEsc([m.x.division,m.x.area,isYear?m.x.quarter:''].filter(Boolean).join(' · '))}</small></td>
       <td>${m.from} → ${m.to}</td><td>${deltaCell(m.d)}</td></tr>`).join('')
-    :`<tr><td colspan="3" class="ov-empty">No building has both a BOQI and an EOQI in ${ovEsc(Q||'this period')} yet.</td></tr>`;
+    :`<tr><td colspan="3" class="ov-empty">No building has both a BOQ and an EOQ in ${ovEsc(Q||'this period')} yet.</td></tr>`;
   insView={Q,P:pLabel,type,div,A,B,hasPrev,quarters,series,heat:insHeatData,board,failing,latest,movers};
   lucide.createIcons();
 }
@@ -4417,7 +4427,7 @@ function normNameClient(s){ return String(s||'').toLowerCase().replace(/\s+/g,' 
 
 // ═══ COMPARE ═══
 // Compare two periods: quarters, whole years (optionally like for like) or any date range.
-function cmpDimLabel(d=cmpDim){ return ({division:'Division',area:'Area',building:'Building',section:'Section',inspector:'Auditor',quarter:'Quarter'})[d]||''; }
+function cmpDimLabel(d=cmpDim){ return ({division:'Division',area:'Area',building:'Building',section:'Section',inspector:'Assessor',quarter:'Quarter'})[d]||''; }
 function cmpDims(){ return ['division','area','building','section','inspector',...(cmpMode==='year'?['quarter']:[])]; }
 function cmpFmtDate(d){ return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
 function cmpRangeLabel(f,t){ return f&&t?`${cmpFmtDate(f)} – ${cmpFmtDate(t)}`:f?`From ${cmpFmtDate(f)}`:t?`Until ${cmpFmtDate(t)}`:'All dates'; }
@@ -4452,7 +4462,7 @@ function initCompare(){
 // Ready-made comparisons, based on the latest quarter that has inspections.
 function cmpQuick(kind){
   const latestQ=rpQuarters()[0];
-  if(!latestQ){ showToast('There are no inspections to compare yet.',true); return; }
+  if(!latestQ){ showToast('There are no assessments to compare yet.',true); return; }
   const y=latestQ.slice(0,4), set=(id,v)=>{ document.getElementById(id).value=v; };
   const pick=(mode,a,b)=>{ cmpMode=mode; [['cmp-a',a],['cmp-b',b]].forEach(([id,v])=>{ const el=document.getElementById(id); el.value=''; el.dataset.want=v; }); };
   if(kind==='qoq') pick('quarter',prevQuarter(latestQ),latestQ);
@@ -4550,9 +4560,9 @@ function renderCompare(){
   const tile=(icon,label,a,b,d,unit='')=>`<div class="hs-card"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div>
     <b>${a??'–'}${unit} <span class="cmp-arrow">→</span> ${b??'–'}${unit}</b><span>${label}</span>${d}</div>`;
   document.getElementById('cmp-stats').innerHTML=
-    tile('file-text','Inspections',sa.n,sb.n,insDelta(sb.n-sa.n,{vs,neutral:true,digits:0}))+
+    tile('file-text','Assessments',sa.n,sb.n,insDelta(sb.n-sa.n,{vs,neutral:true,digits:0}))+
     tile('trending-up','Average score',sa.avg,sb.avg,insDelta(sa.avg!=null&&sb.avg!=null?sb.avg-sa.avg:null,{vs}))+
-    tile('building-2','Buildings inspected',sa.cov,sb.cov,insDelta(sa.cov!=null&&sb.cov!=null?sb.cov-sa.cov:null,{vs,unit:' pts',digits:0}),'%')+
+    tile('building-2','Buildings assessed',sa.cov,sb.cov,insDelta(sa.cov!=null&&sb.cov!=null?sb.cov-sa.cov:null,{vs,unit:' pts',digits:0}),'%')+
     tile('award','Good or Excellent',sa.good,sb.good,insDelta(sa.good!=null&&sb.good!=null?sb.good-sa.good:null,{vs,unit:' pts',digits:0}),'%')+
     tile('triangle-alert','Poor or Critical',sa.low,sb.low,insDelta(LA.length||LB.length?sb.low-sa.low:null,{vs,inverse:true,digits:0}));
 
@@ -4562,8 +4572,8 @@ function renderCompare(){
   document.getElementById('cmp-a-col').textContent=A; document.getElementById('cmp-b-col').textContent=B;
   document.getElementById('cmp-rows').innerHTML=cmpRows.length?cmpRows.map(r=>`<tr>
       <td><b>${ovEsc(r.key)}</b></td>
-      <td>${r.a??'–'}<small>${r.nA} ${bySection?'scored':'inspection'+(r.nA===1?'':'s')}</small></td>
-      <td>${r.b??'–'}<small>${r.nB} ${bySection?'scored':'inspection'+(r.nB===1?'':'s')}</small></td>
+      <td>${r.a??'–'}<small>${r.nA} ${bySection?'scored':'assessment'+(r.nA===1?'':'s')}</small></td>
+      <td>${r.b??'–'}<small>${r.nB} ${bySection?'scored':'assessment'+(r.nB===1?'':'s')}</small></td>
       <td>${deltaCell(r.d)}</td></tr>`).join('')
     :'<tr><td colspan="4" class="ov-empty">Nothing to compare for these periods.</td></tr>';
 
@@ -4621,7 +4631,7 @@ function renderQuality(){
     ...unlinked.map(x=>{ const sg=buildingSuggestion(x.building); return {issue:'Not linked to a building',x,detail:sg?`Closest match: ${sg.b.name}`:''}; }),
     ...missing.map(x=>({issue:'Missing details',x,detail:['type','date','division','inspector'].filter(k=>!x[k]).map(k=>k==='inspector'?'auditor':k).join(', ')})),
     ...incomplete.map(r=>({issue:'Incomplete scoring',x:r.x,detail:`${r.answered} of ${total} items answered`})),
-    ...dups.flatMap(l=>l.map(x=>({issue:'Possible duplicate',x,detail:`${l.length} ${x.type} inspections in ${x.quarter}`}))),
+    ...dups.flatMap(l=>l.map(x=>({issue:'Possible duplicate',x,detail:`${l.length} ${showType(x.type)} assessments in ${x.quarter}`}))),
   ];
   const tile=(icon,value,label,note,jump,bad)=>`<div class="hs-card clickable" data-jump="${jump}" title="Go to the list"><div class="hs-ic"><svg data-lucide="${icon}" width="19" height="19"></svg></div>
     <b style="color:${value&&bad?'var(--c-b42318)':value?'':'var(--good)'}">${value}</b><span>${label}</span><small style="display:block;color:var(--muted);font-size:.7rem;margin-top:4px">${note}</small></div>`;
@@ -4629,29 +4639,29 @@ function renderQuality(){
     tile('unlink',unlinked.length,'Not linked to a building','Reports can’t place them in a division or area','dq-unlinked',true)+
     tile('copy',dups.length,'Possible duplicates','Same building, quarter and type','dq-dups',true)+
     tile('list-checks',incomplete.length,'Incomplete scoring','Saved with unanswered items','dq-incomplete',true)+
-    tile('file-question',missing.length,'Missing details','No type, date, division or auditor','dq-missing',true)+
-    tile('building-2',notInspected.length,`Not inspected in ${latestQ||'—'}`,`${rpData.buildings.length-notInspected.length} of ${rpData.buildings.length} buildings covered`,'dq-coverage',false);
+    tile('file-question',missing.length,'Missing details','No type, date, division or assessor','dq-missing',true)+
+    tile('building-2',notInspected.length,`Not assessed in ${latestQ||'—'}`,`${rpData.buildings.length-notInspected.length} of ${rpData.buildings.length} buildings covered`,'dq-coverage',false);
   document.getElementById('dq-ok').hidden=!!(unlinked.length||dups.length||incomplete.length||missing.length);
 
-  const row=(x,extra)=>`<tr><td>${ovEsc(x.date||'—')}<small>${ovEsc(x.quarter||'')}</small></td><td><b>${ovEsc(x.building||'—')}</b><small>${ovEsc(x.type||'No type')}</small></td><td>${ovEsc(x.inspector||'—')}</td><td>${extra}</td></tr>`;
+  const row=(x,extra)=>`<tr><td>${ovEsc(x.date||'—')}<small>${ovEsc(x.quarter||'')}</small></td><td><b>${ovEsc(x.building||'—')}</b><small>${ovEsc(showType(x.type)||'No type')}</small></td><td>${ovEsc(x.inspector||'—')}</td><td>${extra}</td></tr>`;
   const empty=(cols,msg)=>`<tr><td colspan="${cols}" class="ov-empty">${msg}</td></tr>`;
   document.getElementById('dq-unlinked-rows').innerHTML=unlinked.length?unlinked.map(x=>{ const s=buildingSuggestion(x.building);
     return row(x,s?`<span class="dq-sugg"><svg data-lucide="sparkles" width="13" height="13"></svg>${ovEsc(s.b.name)}</span><small>${ovEsc(s.b.division)} · ${ovEsc(s.b.area)} · ${Math.round(s.score*100)}% match</small>`:'<span style="color:var(--muted)">No close match — check the name</span>'); }).join('')
-    :empty(4,'Every inspection is linked to a building.');
+    :empty(4,'Every assessment is linked to a building.');
   document.getElementById('dq-dups-rows').innerHTML=dups.length?dups.map(l=>{ const x=l[0];
-    return `<tr><td><b>${ovEsc(x.building)}</b><small>${ovEsc(x.division||'')}</small></td><td>${ovEsc(x.quarter)} · ${ovEsc(x.type)}</td><td>${l.length}</td>
+    return `<tr><td><b>${ovEsc(x.building)}</b><small>${ovEsc(x.division||'')}</small></td><td>${ovEsc(x.quarter)} · ${ovEsc(showType(x.type))}</td><td>${l.length}</td>
       <td>${l.map(i=>`${ovEsc(i.date)} · ${ovEsc(i.inspector||'—')} · ${i.overall??'–'}`).join('<br>')}</td></tr>`; }).join('')
     :empty(4,'No duplicates found.');
   document.getElementById('dq-incomplete-rows').innerHTML=incomplete.length?incomplete.map(r=>row(r.x,`${ovPct(r.answered,total)}<small>${r.answered} of ${total} items</small>`)).join('')
-    :empty(4,'All saved inspections are fully scored.');
+    :empty(4,'All saved assessments are fully scored.');
   document.getElementById('dq-missing-rows').innerHTML=missing.length?missing.map(x=>row(x,ovEsc(['type','date','division','inspector'].filter(k=>!x[k]).map(k=>k==='inspector'?'auditor':k).join(', ')))).join('')
-    :empty(4,'No inspections are missing details.');
+    :empty(4,'No assessments are missing details.');
   const byDiv=new Map();
   rpData.buildings.forEach(b=>{ if(!byDiv.has(b.division)) byDiv.set(b.division,{total:0,missing:[]}); const e=byDiv.get(b.division); e.total++; if(!inspectedLatest.has(b.id)) e.missing.push(b); });
-  document.getElementById('dq-coverage-title').textContent=`Buildings without an inspection in ${latestQ||'the latest quarter'}`;
+  document.getElementById('dq-coverage-title').textContent=`Buildings without an assessment in ${latestQ||'the latest quarter'}`;
   document.getElementById('dq-coverage-rows').innerHTML=[...byDiv.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([d,e])=>`<tr>
-      <td><b>${ovEsc(d)}</b></td><td>${ovPct(e.total-e.missing.length,e.total)}<small>${e.total-e.missing.length} of ${e.total} inspected</small></td>
-      <td>${e.missing.length?`<details><summary>${e.missing.length} building${e.missing.length===1?'':'s'}</summary><div class="dq-list">${e.missing.map(b=>`${ovEsc(b.name)} <small>${ovEsc(b.area)}</small>`).join('<br>')}</div></details>`:'<span style="color:var(--good);font-weight:800">All inspected</span>'}</td>
+      <td><b>${ovEsc(d)}</b></td><td>${ovPct(e.total-e.missing.length,e.total)}<small>${e.total-e.missing.length} of ${e.total} assessed</small></td>
+      <td>${e.missing.length?`<details><summary>${e.missing.length} building${e.missing.length===1?'':'s'}</summary><div class="dq-list">${e.missing.map(b=>`${ovEsc(b.name)} <small>${ovEsc(b.area)}</small>`).join('<br>')}</div></details>`:'<span style="color:var(--good);font-weight:800">All assessed</span>'}</td>
     </tr>`).join('')||empty(3,'No buildings in the list.');
   dqView={latestQ,total:rpData.buildings.length,counts:{unlinked:unlinked.length,dups:dups.length,incomplete:incomplete.length,missing:missing.length,notInspected:notInspected.length},
     coverage:[...byDiv.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([d,e])=>({division:d,total:e.total,missing:e.missing}))};
@@ -4758,10 +4768,10 @@ const CX_DIMS={
   division: {label:'Division', key:x=>x.division||'Unknown', bkey:b=>b.division},
   area:     {label:'Area', key:x=>x.area||'Not linked to a building', bkey:b=>b.area},
   building: {label:'Building', key:x=>x.building||'Unknown', bkey:b=>b.name},
-  inspector:{label:'Auditor', key:x=>x.inspector||'Unknown'},
+  inspector:{label:'Assessor', key:x=>x.inspector||'Unknown'},
   quarter:  {label:'Quarter', key:x=>x.quarter||'No date', time:true},
   month:    {label:'Month', key:x=>(x.date||'').slice(0,7)||'No date', time:true},
-  type:     {label:'Inspection type', key:x=>x.type||'Unknown'},
+  type:     {label:'Assessment type', key:x=>x.type||'Unknown'},
 };
 const cxAvg=list=>r1(rpMean(list.filter(v=>typeof v==='number')));
 const cxTypeAvg=(g,t)=>cxAvg(g.list.filter(x=>x.type===t).map(x=>x.overall));
@@ -4771,11 +4781,11 @@ const cxShare=(g,test)=>g.scores.length?Math.round(g.scores.filter(test).length/
 const CX_METRICS=[
   ['Coverage',[
     ['buildings','Buildings in list',g=>g.buildings?g.buildings.length:null,{needsBuildings:true}],
-    ['inspected','Buildings inspected',g=>g.covered],
+    ['inspected','Buildings assessed',g=>g.covered],
     ['coverage','Coverage (%)',g=>g.buildings&&g.buildings.length?Math.round(g.covered/g.buildings.length*100):null,{needsBuildings:true,unit:'%'}],
     ['areas','Areas',g=>new Set(g.list.map(x=>x.area).filter(Boolean)).size],
-    ['auditors','Auditors',g=>new Set(g.list.map(x=>x.inspector).filter(Boolean)).size],
-    ['inspections','Inspections',g=>g.list.length],
+    ['auditors','Assessors',g=>new Set(g.list.map(x=>x.inspector).filter(Boolean)).size],
+    ['inspections','Assessments',g=>g.list.length],
   ]],
   ['Scores',[
     ['avg','Average score',g=>cxAvg(g.scores)],
@@ -4784,9 +4794,9 @@ const CX_METRICS=[
     ['sd','Std deviation',g=>g.scores.length>1?rpStats(g.list).sd:null],
   ]],
   ['Beginning and end of quarter',[
-    ['boqi','BOQI average',g=>cxTypeAvg(g,'BOQI')],
-    ['eoqi','EOQI average',g=>cxTypeAvg(g,'EOQI')],
-    ['change','Change (EOQI − BOQI)',g=>{ const a=cxTypeAvg(g,'BOQI'), b=cxTypeAvg(g,'EOQI'); return a!=null&&b!=null?r1(b-a):null; }],
+    ['boqi','BOQ average',g=>cxTypeAvg(g,'BOQI')],
+    ['eoqi','EOQ average',g=>cxTypeAvg(g,'EOQI')],
+    ['change','Change (EOQ − BOQ)',g=>{ const a=cxTypeAvg(g,'BOQI'), b=cxTypeAvg(g,'EOQI'); return a!=null&&b!=null?r1(b-a):null; }],
   ]],
   ['Ratings',[
     ['good','Good or Excellent (%)',g=>cxShare(g,v=>v>=81),{unit:'%'}],
@@ -4798,7 +4808,7 @@ const CX_METRICS=[
     return cxAvg(vals);
   }])],
 ];
-const CX_PARTS=[['cards','Summary cards'],['chart','Chart'],['table','Table'],['list','Inspection list']];
+const CX_PARTS=[['cards','Summary cards'],['chart','Chart'],['table','Table'],['list','Assessment list']];
 const CX_METRIC=Object.fromEntries(CX_METRICS.flatMap(([,items])=>items.map(([id,label,calc,opt])=>[id,{label,calc,...(opt||{})}])));
 const CX_DEFAULT={period:'',scores:'both',division:'',area:'',building:'',auditor:'',group:'division',
   metrics:['inspected','inspections','avg','boqi','eoqi','change'],parts:['cards','chart','table'],chartMetric:'avg',chartType:'bar'};
@@ -4911,10 +4921,10 @@ function cxTitle(){
   return [cx.period||'All periods',`by ${dim.label.toLowerCase()}`].join(' · ');
 }
 function cxContext(){
-  const scores={both:'BOQI and EOQI',BOQI:'Beginning of quarter (BOQI)',EOQI:'End of quarter (EOQI)',all:'Every inspection'}[cx.scores];
+  const scores={both:'BOQ and EOQ',BOQI:'Beginning of quarter (BOQ)',EOQI:'End of quarter (EOQ)',all:'Every assessment'}[cx.scores];
   return [['Period',cx.period||'All periods'],['Scores',scores],['Rows',CX_DIMS[cx.group].label],
     ...(cx.division?[['Division',cx.division]]:[]),...(cx.area?[['Area',cx.area]]:[]),
-    ...(cx.building?[['Building',cx.building]]:[]),...(cx.auditor?[['Auditor',cx.auditor]]:[])];
+    ...(cx.building?[['Building',cx.building]]:[]),...(cx.auditor?[['Assessor',cx.auditor]]:[])];
 }
 function renderCustom(){
   initCustom();
@@ -4939,7 +4949,7 @@ function renderCustom(){
   document.getElementById('cx-building').value=buildings.includes(cx.building)?cx.building:'';
   cx.building=ofVal('cx-building');
   const auditors=[...new Set(rpData.inspections.map(x=>x.inspector).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  rpSelect('cx-auditor',auditors,'All auditors');
+  rpSelect('cx-auditor',auditors,'All assessors');
   document.getElementById('cx-auditor').value=auditors.includes(cx.auditor)?cx.auditor:'';
   cx.auditor=ofVal('cx-auditor');
 
@@ -4962,7 +4972,7 @@ function renderCustom(){
 
   const {rows,list,total}=cxRows();
   const cols=cx.metrics.filter(id=>!CX_METRIC[id].needsBuildings||rowsAreBuildings);
-  document.getElementById('cx-count').textContent=`${list.length} inspection${list.length===1?'':'s'} · ${rows.length} row${rows.length===1?'':'s'}`;
+  document.getElementById('cx-count').textContent=`${list.length} assessment${list.length===1?'':'s'} · ${rows.length} row${rows.length===1?'':'s'}`;
   cxView={rows,list,total,cols,dim:CX_DIMS[cx.group]};
 
   const doc=document.getElementById('cx-doc');
@@ -4982,11 +4992,11 @@ function renderCustom(){
       ||`<tr><td colspan="${cols.length+1}" class="ov-empty">Nothing matches this setup.</td></tr>`}</tbody>
     ${rows.length?`<tfoot><tr><td><b>All</b></td>${cols.map(id=>`<td><b>${fmt(total,id)}</b></td>`).join('')}</tr></tfoot>`:''}</table></div></div>`:'';
   const listRows=rpSorted(list).slice(0,200);
-  const inspections=cx.parts.includes('list')?`<div class="cx-part"><h4>Inspections${list.length>listRows.length?` · first ${listRows.length} of ${list.length}`:''}</h4>
-    <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Date</th><th>Building</th><th>Type</th><th>Auditor</th><th>Score</th></tr></thead>
+  const inspections=cx.parts.includes('list')?`<div class="cx-part"><h4>Assessments${list.length>listRows.length?` · first ${listRows.length} of ${list.length}`:''}</h4>
+    <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Date</th><th>Building</th><th>Type</th><th>Assessor</th><th>Score</th></tr></thead>
     <tbody>${listRows.map(x=>`<tr><td>${ovEsc(x.date)}<small>${ovEsc(x.quarter||'')}</small></td><td><b>${ovEsc(x.building)}</b><small>${ovEsc([x.division,x.area].filter(Boolean).join(' · '))}</small></td>
-      <td>${ovEsc(x.type||'—')}</td><td>${ovEsc(x.inspector||'—')}</td><td>${ovScore(x.overall)}</td></tr>`).join('')
-      ||'<tr><td colspan="5" class="ov-empty">No inspections match.</td></tr>'}</tbody></table></div></div>`:'';
+      <td>${ovEsc(showType(x.type)||'—')}</td><td>${ovEsc(x.inspector||'—')}</td><td>${ovScore(x.overall)}</td></tr>`).join('')
+      ||'<tr><td colspan="5" class="ov-empty">No assessments match.</td></tr>'}</tbody></table></div></div>`:'';
   doc.innerHTML=cxDocHead()+cards+chart+table+inspections+(cx.parts.length?'':'<div class="cx-empty">Tick at least one part of the report on the left.</div>');
 
   if(cxChart){ cxChart.destroy(); cxChart=null; }
@@ -5045,8 +5055,8 @@ function exModelCustom(){
     sheet:'Chart',chart:()=>cxChart,table:{head:[v.dim.label,CX_METRIC[cx.chartMetric].label],rows:v.rows.map(g=>[g.key,cxCell(g,cx.chartMetric)])}});
   if(cx.parts.includes('table')) blocks.push({id:'table',label:`By ${v.dim.label.toLowerCase()}`,sheet:`By ${v.dim.label.toLowerCase()}`,
     table:{head,rows:[...v.rows.map(fmtRow),fmtRow({...v.total,key:'All'})]}});
-  if(cx.parts.includes('list')) blocks.push({id:'list',label:'Inspections',sheet:'Inspections',
-    table:{head:['Report no.','Date','Quarter','Type','Building','Division','Area','Auditor','Score','Rating'],bands:{8:100},
+  if(cx.parts.includes('list')) blocks.push({id:'list',label:'Assessments',sheet:'Assessments',
+    table:{head:['Report no.','Date','Quarter','Type','Building','Division','Area','Assessor','Score','Rating'],bands:{8:100},
       rows:rpSorted(v.list).map(x=>[x.id,x.date,x.quarter,x.type,x.building,x.division,x.area,x.inspector,x.overall,rpBandOf(x)])}});
   return {title:'Custom report',file:`custom-report-${exSlug(cxTitle())}`,note:cxTitle(),context:cxContext(),blocks};
 }
@@ -5086,11 +5096,11 @@ function exModelInsights(){
   const A=v.A, B=v.hasPrev?v.B:null, pct=x=>x==null?null:Math.round(x), both=(a,b)=>a!=null&&b!=null;
   // measure · what it counts · this period · the period before · change — each number in its own format
   const kpi=[
-    ['Inspections','reports saved',A.n,B?B.n:null,B?A.n-B.n:null,'int','din'],
+    ['Assessments','reports saved',A.n,B?B.n:null,B?A.n-B.n:null,'int','din'],
     ['Average score','points out of 100',r1(A.avg),B?r1(B.avg):null,B&&both(A.avg,B.avg)?r1(r1(A.avg)-r1(B.avg)):null,'n1','d1',100],
-    ['Buildings inspected','% of the buildings in the list',pct(A.coverage),B?pct(B.coverage):null,B&&both(A.coverage,B.coverage)?pct(A.coverage)-pct(B.coverage):null,'pct','d1'],
-    ['Good or Excellent','% of scored inspections (81–100)',pct(A.goodShare),B?pct(B.goodShare):null,B&&both(A.goodShare,B.goodShare)?pct(A.goodShare)-pct(B.goodShare):null,'pct','d1'],
-    ['Poor or Critical','inspections scoring below 71',A.low,B?B.low:null,B?A.low-B.low:null,'int','dir'],
+    ['Buildings assessed','% of the buildings in the list',pct(A.coverage),B?pct(B.coverage):null,B&&both(A.coverage,B.coverage)?pct(A.coverage)-pct(B.coverage):null,'pct','d1'],
+    ['Good or Excellent','% of scored assessments (81–100)',pct(A.goodShare),B?pct(B.goodShare):null,B&&both(A.goodShare,B.goodShare)?pct(A.goodShare)-pct(B.goodShare):null,'pct','d1'],
+    ['Poor or Critical','assessments scoring below 71',A.low,B?B.low:null,B?A.low-B.low:null,'int','dir'],
   ];
   const units=['','',' pts',' pts',''], digits=[0,1,0,0,0];
   const cards=kpi.map((r,i)=>({label:r[0],value:r[2]==null?'–':i===2||i===3?`${r[2]}%`:r[2],sub:exDelta(r[4],v.P,units[i],digits[i])}));
@@ -5099,9 +5109,9 @@ function exModelInsights(){
   return {title:'Insights',file:`insights-${v.Q}`,
     blurb:`How ${v.div?'the areas of '+v.div:'the divisions'} are performing in ${v.Q}, compared with ${v.P}.`,
     context:[['Period',v.Q],['Compared with',v.P],['Type',v.type||'All types'],['Division',v.div||'All divisions']],
-    glossary:[['Buildings inspected','Buildings in the list that have at least one inspection in the period, as a share of all buildings.'],
-      ['Good or Excellent','Inspections scoring 81 or more, as a share of the inspections that were scored.'],
-      ['Poor or Critical','Inspections scoring below 71: rated Poor (51–70) or Critical (0–50).']],
+    glossary:[['Buildings assessed','Buildings in the list that have at least one assessment in the period, as a share of all buildings.'],
+      ['Good or Excellent','Assessments scoring 81 or more, as a share of the assessments that were scored.'],
+      ['Poor or Critical','Assessments scoring below 71: rated Poor (51–70) or Critical (0–50).']],
     blocks:[
       {id:'kpis',label:'Key numbers',sheet:'Key numbers',desc:'The five headline numbers for the period, next to the period before.',note:'Change = this period minus the period before · ▲ up ▼ down',
         kpis:cards,
@@ -5114,18 +5124,18 @@ function exModelInsights(){
         table:{head:[h.label,...h.cols,'Overall'],pdfHead:[h.label,...h.cols.map(sectionShort),'Overall'],heat:true,
           fmt:['t',...h.cols.map(()=>'n1'),'n1'],bands:Object.fromEntries([...h.cols.map((_,i)=>[i+1,10]),[h.cols.length+1,10]]),
           rows:[...h.rows,'__all'].map(r=>[r==='__all'?'All':r,...h.cols.map(c=>h.cell(r,c)),h.cell(r,'__overall')])}},
-      {id:'board',label:v.div?`Areas in ${v.div}`:'Divisions ranked',sheet:'Ranking',desc:`${dim}s ranked by average score, with how many buildings they inspected and their weakest section.`,note:'Average score out of 100',
-        table:{head:[dim,'Inspections','Average score',chg,'Buildings inspected','Total buildings','Coverage (%)','Weakest section','Weakest section score (out of 10)'],
+      {id:'board',label:v.div?`Areas in ${v.div}`:'Divisions ranked',sheet:'Ranking',desc:`${dim}s ranked by average score, with how many buildings they assessed and their weakest section.`,note:'Average score out of 100',
+        table:{head:[dim,'Assessments','Average score',chg,'Buildings assessed','Total buildings','Coverage (%)','Weakest section','Weakest section score (out of 10)'],
           fmt:['t','int','n1','d1','int','int','pct','t','n1'],bands:{2:100,8:10},
           rows:v.board.map(r=>[r.k,r.n,r.avg,r.delta,r.covered,r.total,r.total?Math.round(r.covered/r.total*100):null,r.weakest?r.weakest[0]:null,r.weakest?r.weakest[1]:null])}},
-      {id:'fail',label:'Most often scored 0',sheet:'Scored 0',desc:'The checklist items that scored 0 in the largest share of inspections.',
-        table:{head:['Checklist item','Section','Times scored 0','Inspections','Share of inspections (%)'],fmt:['t','t','int','int','pct'],
+      {id:'fail',label:'Most often scored 0',sheet:'Scored 0',desc:'The checklist items that scored 0 in the largest share of assessments.',
+        table:{head:['Checklist item','Section','Times scored 0','Assessments','Share of assessments (%)'],fmt:['t','t','int','int','pct'],
           rows:v.failing.map(i=>[SECTIONS[i.si].items[i.ii],SECTIONS[i.si].title,i.fails,i.n,Math.round(i.rate*100)])}},
       {id:'attention',label:'Lowest-scoring buildings',sheet:'Lowest scores',desc:'The buildings with the lowest latest score in the period — the ones to look at first.',note:'Score out of 100',
         table:{head:['Building','Division','Area','Latest score','Rating','Type','Date',chg],fmt:['t','t','t','n1','t','t','date','d1'],bands:{3:100},
           rows:v.latest.map(({x,prev:p})=>[x.building,x.division,x.area,x.overall,grade(x.overall).label,x.type,x.date,p&&typeof p.overall==='number'?r1(x.overall-p.overall):null])}},
-      {id:'movers',label:'Biggest movers · BOQI → EOQI',sheet:'Movers BOQI to EOQI',desc:'Buildings whose score moved most between their beginning-of-quarter and end-of-quarter inspection.',note:'Score out of 100',
-        table:{head:['Building','Division','Area','Quarter','BOQI score','EOQI score','Change (points)'],fmt:['t','t','t','t','n1','n1','d1'],bands:{4:100,5:100},
+      {id:'movers',label:'Biggest movers · BOQ → EOQ',sheet:'Movers BOQ to EOQ',desc:'Buildings whose score moved most between their beginning-of-quarter and end-of-quarter assessment.',note:'Score out of 100',
+        table:{head:['Building','Division','Area','Quarter','BOQ score','EOQ score','Change (points)'],fmt:['t','t','t','t','n1','n1','d1'],bands:{4:100,5:100},
           rows:v.movers.map(m=>[m.x.building,m.x.division,m.x.area,m.x.quarter,m.from,m.to,m.d])}},
     ]};
 }
@@ -5133,34 +5143,34 @@ function exModelBuilder(){
   const v=rpView;
   if(!v) return null;
   const cfg=RP_GROUPS[rpGroup], st=v.st, titles=SECTIONS.map(s=>s.title), sorted=rpSorted(v.list);
-  const names={'rp-year':'Year','rp-month':'Month','rp-quarter':'Quarter','rp-type':'Type','rp-division':'Division','rp-area':'Area','rp-building':'Building','rp-inspector':'Auditor','rp-rating':'Rating','rp-from':'From','rp-to':'To','rp-search':'Search'};
+  const names={'rp-year':'Year','rp-month':'Month','rp-quarter':'Quarter','rp-type':'Type','rp-division':'Division','rp-area':'Area','rp-building':'Building','rp-inspector':'Assessor','rp-rating':'Rating','rp-from':'From','rp-to':'To','rp-search':'Search'};
   const context=RP_FILTER_IDS.map(id=>[names[id],exSel(id)]).filter(([,t])=>t);
-  if(!context.length) context.push(['Filters','All inspections']);
+  if(!context.length) context.push(['Filters','All assessments']);
   if(rpVal('rp-saved')) context.unshift(['Saved report',exSel('rp-saved')]);
   context.push(['Grouped by',cfg.label]);
   const bands=RP_BANDS.map(b=>[b,v.list.filter(x=>rpBandOf(x)===b).length]), scored=bands.reduce((n,[,c])=>n+c,0);
   const subHead=cfg.sub?(rpGroup==='area'?'Division':'Division · Area'):null, sc=subHead?1:0;   // the extra column shifts the rest by one
-  const groupHead=[cfg.label,...(subHead?[subHead]:[]),'Inspections','Scored inspections','Average score',...RP_BANDS,'BOQI average','EOQI average','EOQI − BOQI (points)'];
+  const groupHead=[cfg.label,...(subHead?[subHead]:[]),'Assessments','Scored assessments','Average score',...RP_BANDS,'BOQ average','EOQ average','EOQ − BOQ (points)'];
   const iAvg=2+sc+1, iBoqi=3+sc+RP_BANDS.length+1;
   return {title:'Report Builder',file:`report-builder-by-${rpGroup}`,context,
-    blurb:`The inspections that match the filters, grouped by ${cfg.label.toLowerCase()}.`,
-    glossary:[['Buildings inspected','Buildings in the filtered scope that have at least one inspection, out of all buildings in that scope.'],
-      ['Scored inspections','Inspections that have an overall score (imported scores count; empty ones do not).'],
-      ['Rating columns','The number of inspections that fall in each rating band.'],
-      ['EOQI − BOQI','End-of-quarter average minus beginning-of-quarter average, for buildings where both exist.']],
+    blurb:`The assessments that match the filters, grouped by ${cfg.label.toLowerCase()}.`,
+    glossary:[['Buildings assessed','Buildings in the filtered scope that have at least one assessment, out of all buildings in that scope.'],
+      ['Scored assessments','Assessments that have an overall score (imported scores count; empty ones do not).'],
+      ['Rating columns','The number of assessments that fall in each rating band.'],
+      ['EOQ − BOQ','End-of-quarter average minus beginning-of-quarter average, for buildings where both exist.']],
     blocks:[
-    {id:'kpis',label:'Key numbers',sheet:'Key numbers',desc:'The headline numbers for the filtered inspections.',
-      kpis:[{label:'Inspections',value:v.list.length,sub:`${st.n} scored`},{label:'Average score',value:st.avg??'–',sub:st.avg!=null?grade(st.avg).label:''},
+    {id:'kpis',label:'Key numbers',sheet:'Key numbers',desc:'The headline numbers for the filtered assessments.',
+      kpis:[{label:'Assessments',value:v.list.length,sub:`${st.n} scored`},{label:'Average score',value:st.avg??'–',sub:st.avg!=null?grade(st.avg).label:''},
         {label:'Highest',value:st.max??'–',sub:v.best?.building||''},{label:'Lowest',value:st.min??'–',sub:v.worst?.building||''},
-        {label:'Buildings inspected',value:`${v.covered}/${v.inScope.length}`,sub:v.inScope.length?`${Math.round(v.covered/v.inScope.length*100)}%`:''}],
+        {label:'Buildings assessed',value:`${v.covered}/${v.inScope.length}`,sub:v.inScope.length?`${Math.round(v.covered/v.inScope.length*100)}%`:''}],
       table:{head:['Measure','Value','Note'],rows:[
-        ['Inspections',{v:v.list.length,f:'int'},`${st.n} scored`],
+        ['Assessments',{v:v.list.length,f:'int'},`${st.n} scored`],
         ['Average score',{v:st.avg,f:'n1',band:100},st.avg!=null?grade(st.avg).label:null],
         ['Highest score',{v:st.max,f:'n1',band:100},v.best?.building],['Lowest score',{v:st.min,f:'n1',band:100},v.worst?.building],
-        ['Buildings inspected',{v:v.covered,f:'int'},`of ${v.inScope.length} buildings`]]}},
-    {id:'bands',label:'Rating mix',desc:'How many inspections fall in each rating band.',
-      table:{head:['Rating','Inspections','Share of scored inspections (%)'],fmt:['t','int','pct'],rows:bands.map(([b,c])=>[b,c,scored?Math.round(c/scored*100):null])}},
-    {id:'summary',label:`By ${cfg.label.toLowerCase()}`,sheet:`By ${cfg.label.toLowerCase()}`,desc:`One row per ${cfg.label.toLowerCase()}: how many inspections, the average score and the rating mix.`,note:'Score out of 100 · the rating columns count inspections',chart:'group',
+        ['Buildings assessed',{v:v.covered,f:'int'},`of ${v.inScope.length} buildings`]]}},
+    {id:'bands',label:'Rating mix',desc:'How many assessments fall in each rating band.',
+      table:{head:['Rating','Assessments','Share of scored assessments (%)'],fmt:['t','int','pct'],rows:bands.map(([b,c])=>[b,c,scored?Math.round(c/scored*100):null])}},
+    {id:'summary',label:`By ${cfg.label.toLowerCase()}`,sheet:`By ${cfg.label.toLowerCase()}`,desc:`One row per ${cfg.label.toLowerCase()}: how many assessments, the average score and the rating mix.`,note:'Score out of 100 · the rating columns count assessments',chart:'group',
       table:{head:groupHead,
         fmt:['t',...(subHead?['t']:[]),'int','int','n1',...RP_BANDS.map(()=>'int'),'n1','n1','d1'],bands:{[iAvg]:100,[iBoqi]:100,[iBoqi+1]:100},
         pdfCols:[0,1+sc,3+sc,iBoqi,iBoqi+1,iBoqi+2],
@@ -5168,13 +5178,13 @@ function exModelBuilder(){
     {id:'stats',label:'Score spread',sheet:'Statistics',desc:'The lowest score, highest score and spread (standard deviation) for each group.',defaults:{pdf:false,xlsx:false},
       table:{head:[cfg.label,'Lowest score','Highest score','Score spread (standard deviation)'],fmt:['t','n1','n1','n1'],bands:{1:100,2:100},
         rows:v.groups.map(g=>[g.key,g.min,g.max,g.n>1?g.sd:null])}},
-    {id:'trend',label:rpTrend==='each'?'Every scored inspection over time':`Average score by ${rpTrend}`,sheet:'Over time',desc:'How the score moves over time.',chart:'trend',
-      table:{head:rpTrend==='each'?['Date','Building','Score']:[rpTrend==='month'?'Month':'Quarter','Inspections','Average score'],
+    {id:'trend',label:rpTrend==='each'?'Every scored assessment over time':`Average score by ${rpTrend}`,sheet:'Over time',desc:'How the score moves over time.',chart:'trend',
+      table:{head:rpTrend==='each'?['Date','Building','Score']:[rpTrend==='month'?'Month':'Quarter','Assessments','Average score'],
         fmt:rpTrend==='each'?['date','t','n1']:['t','int','n1'],bands:{2:100},rows:v.trendRows}},
     {id:'sections',label:'Average by section (out of 10)',sheet:'By section',desc:'The average score of each of the ten sections.',chart:'section',
-      table:{head:['Section','Average score (out of 10)','Inspections scored'],fmt:['t','n1','int'],bands:{1:10},rows:v.secs}},
-    {id:'detail',label:'Matching inspections',sheet:'Inspections',desc:'Every inspection that matches the filters, with its section scores.',note:'Scores out of 100 · section scores out of 10',defaults:{pdf:sorted.length<=150},
-      table:{head:['Report no.','Date','Quarter','Type','Building','Location','Division','Area','Auditor','Score','Rating',...titles.map(t=>`${t} (out of 10)`)],
+      table:{head:['Section','Average score (out of 10)','Assessments scored'],fmt:['t','n1','int'],bands:{1:10},rows:v.secs}},
+    {id:'detail',label:'Matching assessments',sheet:'Assessments',desc:'Every assessment that matches the filters, with its section scores.',note:'Scores out of 100 · section scores out of 10',defaults:{pdf:sorted.length<=150},
+      table:{head:['Report no.','Date','Quarter','Type','Building','Location','Division','Area','Assessor','Score','Rating',...titles.map(t=>`${t} (out of 10)`)],
         fmt:['t','date','t','t','t','t','t','t','t','int','t',...titles.map(()=>'n1')],bands:{9:100,...Object.fromEntries(titles.map((_,i)=>[11+i,10]))},pdfCols:[1,4,6,3,8,9,10],
         rows:sorted.map(x=>{ const sec=new Map(x.sections.map(s=>[s.title,s.score==null?null:rpRound(s.score/s.max*10)]));
           return [x.id,x.date,x.quarter,x.type,x.building,x.location,x.division,x.area,x.inspector,x.overall,rpBandOf(x),...titles.map(t=>sec.get(t)??null)]; })}},
@@ -5186,11 +5196,11 @@ function exModelCompare(){
   if(v.A===v.B) throw new Error('Period A and period B are the same, so nothing can change between them. Choose two different periods to compare.');
   const A=v.A, B=v.B, d=(a,b)=>a!=null&&b!=null?r1(b-a):null;
   const kpi=[
-    ['Inspections','reports saved',v.sa.n,v.sb.n,v.sb.n-v.sa.n,'int','din'],
+    ['Assessments','reports saved',v.sa.n,v.sb.n,v.sb.n-v.sa.n,'int','din'],
     ['Average score','points out of 100',v.sa.avg,v.sb.avg,d(v.sa.avg,v.sb.avg),'n1','d1',100],
-    ['Buildings inspected',`% of the ${v.nb} buildings in scope`,v.sa.cov,v.sb.cov,d(v.sa.cov,v.sb.cov),'pct','d1'],
-    ['Good or Excellent','% of scored inspections (81–100)',v.sa.good,v.sb.good,d(v.sa.good,v.sb.good),'pct','d1'],
-    ['Poor or Critical','inspections scoring below 71',v.sa.low,v.sb.low,v.LA.length||v.LB.length?v.sb.low-v.sa.low:null,'int','dir'],
+    ['Buildings assessed',`% of the ${v.nb} buildings in scope`,v.sa.cov,v.sb.cov,d(v.sa.cov,v.sb.cov),'pct','d1'],
+    ['Good or Excellent','% of scored assessments (81–100)',v.sa.good,v.sb.good,d(v.sa.good,v.sb.good),'pct','d1'],
+    ['Poor or Critical','assessments scoring below 71',v.sa.low,v.sb.low,v.LA.length||v.LB.length?v.sb.low-v.sa.low:null,'int','dir'],
   ];
   const units=['','',' pts',' pts',''], digits=[0,1,0,0,0];
   const cards=kpi.map((r,i)=>{ const u=i===2||i===3?'%':''; return {label:r[0],value:`${r[2]??'–'}${r[2]!=null?u:''} → ${r[3]??'–'}${r[3]!=null?u:''}`,sub:exDelta(r[4],v.vs,units[i],digits[i])}; });
@@ -5200,16 +5210,16 @@ function exModelCompare(){
     blurb:'How each group scored in period A compared with period B. Change = B minus A.',
     context:[['Period A',A],['Period B',B],['Division',v.div||'All divisions'],['Sorted by',sortBy]].filter(([,x])=>x!==''),
     glossary:[['Period A / B','A is the starting point and B is the period being compared with it.'],
-      ['Buildings inspected','Buildings in scope that have at least one inspection in the period, as a share of all of them.'],
-      ['Good or Excellent','Inspections scoring 81 or more, as a share of the inspections that were scored.'],
-      ['Poor or Critical','Inspections scoring below 71: rated Poor (51–70) or Critical (0–50).'],
-      ['Small sample','Fewer than 3 inspections in one of the periods — the average can move a lot on one report.']],
+      ['Buildings assessed','Buildings in scope that have at least one assessment in the period, as a share of all of them.'],
+      ['Good or Excellent','Assessments scoring 81 or more, as a share of the assessments that were scored.'],
+      ['Poor or Critical','Assessments scoring below 71: rated Poor (51–70) or Critical (0–50).'],
+      ['Small sample','Fewer than 3 assessments in one of the periods — the average can move a lot on one report.']],
     blocks:[
       {id:'kpis',label:'Key numbers',sheet:'Key numbers',desc:'The five headline numbers, period A next to period B.',note:`Change = ${B} minus ${A} · ▲ up ▼ down`,
         kpis:cards,
         table:{head:['Measure','What it counts',A,B,'Change'],rows:kpi.map(r=>[r[0],r[1],{v:r[2],f:r[5],band:r[7]},{v:r[3],f:r[5],band:r[7]},{v:r[4],f:r[6]}])}},
       ...dims.map(dim=>{
-        const rows=cmpSortRows(cmpGroupRows(dim,v.LA,v.LB),dim), sect=dim==='section', n=sect?'Inspections scored':'Inspections', scale=sect?10:100;
+        const rows=cmpSortRows(cmpGroupRows(dim,v.LA,v.LB),dim), sect=dim==='section', n=sect?'Assessments scored':'Assessments', scale=sect?10:100;
         const avg=sect?'Average (out of 10)':'Average score';
         // when every row is a small sample, saying so on each one tells nobody anything
         const allSmall=rows.length>0&&rows.every(r=>r.nA&&r.nB&&Math.min(r.nA,r.nB)<3);
@@ -5229,19 +5239,19 @@ function exModelQuality(){
   if(!v||!dqIssues) return null;
   const c=v.counts, q=v.latestQ||'the latest quarter';
   const of=kind=>dqIssues.filter(i=>i.issue===kind).map(i=>[i.x?.date,i.x?.quarter,i.x?.type,i.x?.building,i.x?.division,i.x?.inspector,i.detail]);
-  const head=['Date','Quarter','Type','Building name as entered','Division','Auditor','Detail'];
+  const head=['Date','Quarter','Type','Building name as entered','Division','Assessor','Detail'];
   return {title:'Data Quality',file:'data-quality',context:[['Latest quarter with data',v.latestQ||'—']],blocks:[
     {id:'kpis',label:'Checks',sheet:'Checks',
       kpis:[{label:'Not linked to a building',value:c.unlinked},{label:'Possible duplicates',value:c.dups},{label:'Incomplete scoring',value:c.incomplete},
-        {label:'Missing details',value:c.missing},{label:`Not inspected in ${q}`,value:c.notInspected,sub:`${v.total-c.notInspected} of ${v.total} buildings covered`}],
-      table:{head:['Check','Count'],rows:[['Not linked to a building',c.unlinked],['Possible duplicates (groups)',c.dups],['Incomplete scoring',c.incomplete],['Missing details',c.missing],[`Buildings not inspected in ${q}`,c.notInspected]]}},
+        {label:'Missing details',value:c.missing},{label:`Not assessed in ${q}`,value:c.notInspected,sub:`${v.total-c.notInspected} of ${v.total} buildings covered`}],
+      table:{head:['Check','Count'],rows:[['Not linked to a building',c.unlinked],['Possible duplicates (groups)',c.dups],['Incomplete scoring',c.incomplete],['Missing details',c.missing],[`Buildings not assessed in ${q}`,c.notInspected]]}},
     {id:'unlinked',label:'Not linked to a building',sheet:'Not linked',table:{head,rows:of('Not linked to a building')}},
     {id:'dups',label:'Possible duplicates',sheet:'Duplicates',table:{head,rows:of('Possible duplicate')}},
     {id:'incomplete',label:'Incomplete scoring',sheet:'Incomplete',table:{head,rows:of('Incomplete scoring')}},
     {id:'missing',label:'Missing details',sheet:'Missing details',table:{head,rows:of('Missing details')}},
-    {id:'coverage',label:`Coverage by division · ${q}`,sheet:'Coverage',table:{head:['Division','Buildings','Inspected','Not inspected','Coverage (%)'],
+    {id:'coverage',label:`Coverage by division · ${q}`,sheet:'Coverage',table:{head:['Division','Buildings','Assessed','Not assessed','Coverage (%)'],
       rows:v.coverage.map(r=>[r.division,r.total,r.total-r.missing.length,r.missing.length,r.total?Math.round((r.total-r.missing.length)/r.total*100):null])}},
-    {id:'not-inspected',label:`Buildings not inspected · ${q}`,sheet:'Not inspected',defaults:{pdf:false},table:{head:['Division','Area','Building'],
+    {id:'not-inspected',label:`Buildings not assessed · ${q}`,sheet:'Not assessed',defaults:{pdf:false},table:{head:['Division','Area','Building'],
       rows:v.coverage.flatMap(r=>r.missing.map(b=>[r.division,b.area,b.name]))}},
   ]};
 }
@@ -5258,23 +5268,23 @@ function exModelOverview(){
       {id:'kpis',label:'Key numbers',sheet:'Key numbers',
         kpis:[{label:'Assignments completed',value:`${s.completed}/${s.assignments}`,sub:`${s.completionPct}%`},
           {label:'Buildings assigned',value:`${s.buildingsCovered}/${s.buildings}`},{label:'Average score',value:s.avgScore??'–'},
-          {label:'Inspections',value:s.inspections},{label:'Active auditors',value:s.activeAuditors}],
+          {label:'Assessments',value:s.inspections},{label:'Active assessors',value:s.activeAuditors}],
         table:{head:['Measure','Value'],rows:[['Assignments',s.assignments],['Completed',s.completed],['Completion (%)',s.completionPct],
-          ['Buildings assigned',s.buildingsCovered],['Buildings in list',s.buildings],['Average score',s.avgScore],['Inspections',s.inspections],['Active auditors',s.activeAuditors]]}},
+          ['Buildings assigned',s.buildingsCovered],['Buildings in list',s.buildings],['Average score',s.avgScore],['Assessments',s.inspections],['Active assessors',s.activeAuditors]]}},
       {id:'division',label:'By division',sheet:'By division',chart:()=>ovChart,
-        table:{head:['Division','Buildings','Assignments','Completed','Completion (%)','Inspections','Average'],
+        table:{head:['Division','Buildings','Assignments','Completed','Completion (%)','Assessments','Average'],
           rows:d.byDivision.map(x=>[x.division,x.buildings,x.assignments,x.completed,pct(x.completed,x.assignments),x.inspections,x.avgScore])}},
-      {id:'auditors',label:'Auditors',sheet:'Auditors',
-        table:{head:['Auditor','Role','Status','Assigned','Completed','Pending','Completion (%)','Average'],
-          rows:d.auditors.map(x=>[x.name,roleShort(x.role)||'Auditor',exCap(x.status),x.assigned,x.completed,x.assigned-x.completed,pct(x.completed,x.assigned),x.avgScore])}},
+      {id:'auditors',label:'Assessors',sheet:'Assessors',
+        table:{head:['Assessor','Role','Status','Assigned','Completed','Pending','Completion (%)','Average'],
+          rows:d.auditors.map(x=>[x.name,roleShort(x.role)||'Assessor',exCap(x.status),x.assigned,x.completed,x.assigned-x.completed,pct(x.completed,x.assigned),x.avgScore])}},
       {id:'officers',label:'Officers',sheet:'Officers',
         table:{head:['Officer','Role','Assignments made','Completed','Completion (%)'],
           rows:d.officers.map(x=>[x.name,roleShort(x.role)||'Officer',x.assignmentsMade,x.completed,pct(x.completed,x.assignmentsMade)])}},
       {id:'areas',label:'By area',sheet:'By area',
-        table:{head:['Area','Division','Buildings','Assignments','Completed','Completion (%)','Inspections','Average'],
+        table:{head:['Area','Division','Buildings','Assignments','Completed','Completion (%)','Assessments','Average'],
           rows:d.byArea.map(x=>[x.area,x.division,x.buildings,x.assignments,x.completed,pct(x.completed,x.assignments),x.inspections,x.avgScore])}},
       {id:'buildings',label:'Buildings',sheet:'Buildings',
-        table:{head:['Building','Location','Division','Area','Auditor','Status','Inspections','Latest score','Latest date'],
+        table:{head:['Building','Location','Division','Area','Assessor','Status','Assessments','Latest score','Latest date'],
           bands:{7:100},rows:ovFilteredBuildings().map(x=>[x.name,x.location,x.division,x.area,x.auditorName,exCap(x.status),x.inspections,x.lastScore,x.lastDate])}},
       {id:'activity',label:'Recent activity',sheet:'Activity',defaults:{pdf:false},
         table:{head:['When','Who','Action','Building','Target','Quarter','Type','Score'],
@@ -5294,18 +5304,18 @@ function exModelOfficer(){
       table:{head:['Measure','Value'],rows:[['Buildings',v.kpis.total],['Assigned',v.kpis.assigned],['Completed',v.kpis.completed],
         ['Pending',v.kpis.pending],['Unassigned',v.kpis.total-v.kpis.assigned],['Average score',v.kpis.avg]]}},
     {id:'team',label:'Team progress',sheet:'Team progress',
-      table:{head:['Auditor','Role','Status','Assigned','Completed','Pending','Completion (%)','Average','Last submitted'],
-        rows:v.team.map(a=>[a.name,roleShort(a.role)||'Auditor',exCap(a.status),a.assigned,a.completed,a.assigned-a.completed,pct(a.completed,a.assigned),
+      table:{head:['Assessor','Role','Status','Assigned','Completed','Pending','Completion (%)','Average','Last submitted'],
+        rows:v.team.map(a=>[a.name,roleShort(a.role)||'Assessor',exCap(a.status),a.assigned,a.completed,a.assigned-a.completed,pct(a.completed,a.assigned),
           a.scores.length?Math.round(a.scores.reduce((t,n)=>t+n,0)/a.scores.length):null,a.last])}},
     {id:'areas',label:'Progress by area',sheet:'By area',
       table:{head:['Area','Division','Buildings','Assigned','Completed','Completion (%)'],
         rows:v.areas.map(g=>[g.area,g.division,g.buildings,g.assigned,g.completed,pct(g.completed,g.assigned)])}},
     {id:'buildings',label:'Buildings',sheet:'Buildings',
-      table:{head:['Building','Location','Division','Area','Status','Auditor','Deadline','Score','Completed'],
+      table:{head:['Building','Location','Division','Area','Status','Assessor','Deadline','Score','Completed'],
         bands:{7:100},rows:ofFilteredRows().map(b=>[b.name,b.location,b.division,b.area,exCap(b.status),b.auditorName,b.dueDate||null,b.score??null,b.completedAt||null]),
         resultCols:[7,8]}},
     {id:'activity',label:'Recent activity',sheet:'Activity',defaults:{pdf:false},
-      table:{head:['When','Who','Action','Building','Auditor','Score'],
+      table:{head:['When','Who','Action','Building','Assessor','Score'],
         rows:v.activity.map(e=>[e.at,e.actor||'',e.kind==='completed'?'Submitted':'Assigned',e.building||'',e.auditor||e.auditorName||'',e.score??null])}},
   ]};
 }
@@ -5316,8 +5326,8 @@ function exModelAuditor(){
   const done=d.assignments.filter(x=>x.status==='completed');
   const row=x=>[x.buildingName,x.division,x.area,x.type,exCap(x.status),x.score??null,x.completedAt?exLocalDay(x.completedAt):(x.inspectionDate||null),x.quarter];
   const head=['Building','Division','Area','Type','Status','Score','Completed on','Quarter'];
-  return {title:`Auditor · ${d.auditor.name}`,file:`auditor-${exSlug(d.auditor.name)}-${d.quarter}`,
-    context:[['Auditor',d.auditor.name],['Quarter',d.quarter]],
+  return {title:`Assessor · ${d.auditor.name}`,file:`auditor-${exSlug(d.auditor.name)}-${d.quarter}`,
+    context:[['Assessor',d.auditor.name],['Quarter',d.quarter]],
     blocks:[
       {id:'kpis',label:'Key numbers',sheet:'Key numbers',
         kpis:[{label:'Assigned',value:d.assignments.length},{label:'Completed',value:done.length,sub:`${pct(done.length,d.assignments.length)??0}%`},
@@ -5346,18 +5356,18 @@ async function exModelLibrary(){
   if(q) context.push(['Search',q+(document.getElementById('lib-comments').checked?' (including comments)':'')]);
   const chip=document.querySelector('#lib-status .rp-chip.active');
   if(chip) context.push(['Status',chip.childNodes[0].textContent.trim()]);
-  const names={'lib-quarter':'Quarter','lib-type':'Type','lib-division':'Division','lib-area':'Area','lib-auditor':'Auditor','lib-rating':'Rating','lib-from':'From','lib-to':'To'};
+  const names={'lib-quarter':'Quarter','lib-type':'Type','lib-division':'Division','lib-area':'Area','lib-auditor':'Assessor','lib-rating':'Rating','lib-from':'From','lib-to':'To'};
   Object.entries(names).forEach(([id,l])=>{ const t=exSel(id); if(t) context.push([l,t]); });
   context.push(['Sorted by',exSel('lib-sort')]);
   const scored=rows.map(r=>r.overall).filter(x=>typeof x==='number'), count=s=>rows.filter(r=>s.includes(r.status)).length;
   const ids=rows.map(r=>r.id), byId=new Map(rows.map(r=>[r.id,r])), order=new Map(ids.map((id,i)=>[id,i]));
-  return {title:'Inspection Reports',file:'inspection-reports',context,blocks:[
+  return {title:'Assessment Reports',file:'inspection-reports',context,blocks:[
     {id:'kpis',label:'Summary',
       kpis:[{label:'Reports',value:rows.length,sub:total>rows.length?`First ${rows.length} of ${total}`:''},{label:'Average score',value:scored.length?r1(rpMean(scored)):'–'},
         {label:'Needs review',value:count(['pending','resubmitted'])},{label:'Changes requested',value:count(['changes'])},{label:'Approved',value:count(['approved'])}],
       table:{head:['Measure','Value'],rows:[['Reports',rows.length],['Average score',scored.length?r1(rpMean(scored)):null],['Needs review',count(['pending','resubmitted'])],['Changes requested',count(['changes'])],['Approved',count(['approved'])]]}},
     {id:'list',label:'Reports',
-      table:{head:['Report no.','Date','Quarter','Type','Building','Division','Area','Location','Auditor','Score','Rating','Review status','Last decision by','Last decision at','Last comment'],bands:{9:100},pdfCols:[1,4,5,3,8,9,10,11],
+      table:{head:['Report no.','Date','Quarter','Type','Building','Division','Area','Location','Assessor','Score','Rating','Review status','Last decision by','Last decision at','Last comment'],bands:{9:100},pdfCols:[1,4,5,3,8,9,10,11],
         rows:rows.map(r=>[r.id,r.date,r.quarter,r.type,r.building,r.division,r.area,r.location,r.auditor,r.overall,r.overall!=null?grade(r.overall).label:null,(LIB_STATUS[r.status]||[])[0],r.lastDecision?.by,r.lastDecision?.at,r.lastDecision?.comment])}},
     {id:'items',label:'Every checklist item of these reports',sheet:'Checklist items',formats:['xlsx'],defaults:{xlsx:false},hint:'one row per item',
       load:async()=>{
@@ -5365,7 +5375,7 @@ async function exModelLibrary(){
         const d=await res.json().catch(()=>({}));
         if(!res.ok) throw new Error(d.error||'Could not load the checklist items.');
         const items=(d.items||[]).sort((a,b)=>order.get(a.id)-order.get(b.id)||a.si-b.si||a.ii-b.ii);
-        return {head:['Report no.','Date','Building','Division','Type','Auditor','Report score','Section','Item no.','Checklist item','Item score','Comment','Photos'],bands:{6:100},
+        return {head:['Report no.','Date','Building','Division','Type','Assessor','Report score','Section','Item no.','Checklist item','Item score','Comment','Photos'],bands:{6:100},
           rows:items.map(i=>{ const r=byId.get(i.id)||{}, label=i.item||SECTIONS.find(x=>x.title===i.section)?.items[i.ii]||null; // older reports may not store the item text
             return [i.id,r.date,r.building,r.division,r.type,r.auditor,r.overall,i.section,i.ii+1,label,i.score,i.comment,i.photos||null]; })};
       }},
@@ -5601,7 +5611,23 @@ function exHeatCanvas(h,scale=2){
   });
   return cv;
 }
+/** Exports show BOQ / EOQ: every value that is exactly a stored type code, and the code inside file names and notes. */
+function exShowTypes(m,blocks){
+  const cell=v=>typeof v==='string'&&TYPE_SHOWN[v]?TYPE_SHOWN[v]:v;
+  const text=v=>typeof v==='string'?v.replace(/\b(BOQI|EOQI)\b/g,c=>TYPE_SHOWN[c]):v;
+  for(const k of ['file','title','note','blurb']) if(m[k]) m[k]=text(m[k]);
+  if(Array.isArray(m.context)) m.context=m.context.map(([k,v])=>[k,text(cell(v))]);
+  if(Array.isArray(m.kpis)) m.kpis.forEach(k=>{ k.value=text(k.value); });
+  for(const b of blocks||[]){
+    for(const k of ['docTitle','docNote','note','contextLine','file']) if(b[k]) b[k]=text(b[k]);
+    if(Array.isArray(b.docContext)) b.docContext=b.docContext.map(([k,v])=>[k,text(cell(v))]);
+    const t=b.table; if(!t||!Array.isArray(t.rows)) continue;
+    t.rows=t.rows.map(r=>r.map(v=>v&&typeof v==='object'&&!Array.isArray(v)&&'v' in v?{...v,v:cell(v.v)}:cell(v)));
+  }
+  return [m,blocks];
+}
 async function exPng(m,blocks){
+  [m,blocks]=exShowTypes(m,blocks);
   const S=2, W=1100*S, pad=36*S, headH=112*S, titleH=40*S, gap=24*S, footH=44*S;
   const parts=blocks.map(b=>{ const cv=b.image?b.image():exChartCanvas(exChart(b)); const w=Math.min(W-2*pad,cv.width); return {b,cv,w,h:Math.round(cv.height*w/cv.width)}; });
   const H=headH+parts.reduce((n,p)=>n+titleH+p.h+gap,0)+footH;
@@ -5699,7 +5725,7 @@ function exDocHtml(m,blocks,{sameTab=false}={}){
   return `<!DOCTYPE html><html lang="en" dir="ltr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${ovEsc(fileName.replace(/\.pdf$/,''))}</title>
 <link rel="icon" type="image/svg+xml" href="/osqa-icon.svg">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="/vendor/fonts/cairo.css" rel="stylesheet">
 <style>
 :root{--ink:#002070;--deep:#102040;--royal:#0033A0;--teal:#26A8AB;--paper:#F4F7FA;--line:#D9DEE3;--muted:#5F6369;
   --pad-x:12mm;--pad-t:11mm;--pad-b:9mm}
@@ -5781,6 +5807,7 @@ td.up{color:#007A38;font-weight:800}td.down{color:#CB3010;font-weight:800}
 
 /** The PDF opens as its own page — the only way iPhone and iPad can print or save it. */
 function exPdf(m,blocks){
+  [m,blocks]=exShowTypes(m,blocks);
   openDocPage(()=>Promise.resolve(exDocHtml(m,blocks)),
     {sameTab:()=>Promise.resolve(exDocHtml(m,blocks,{sameTab:true})),what:'export'});
   return true;
@@ -5842,6 +5869,7 @@ function exKind(t,ci){
   return 't';
 }
 async function exXlsx(m,blocks){
+  [m,blocks]=exShowTypes(m,blocks);
   const NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main', REL='http://schemas.openxmlformats.org/officeDocument/2006/relationships', XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
   const NAVY='172C67', INK='002070', ROYAL='0033A0', MUTED='5F6369', LINE='E3E6E9', WHITE='FFFFFF';
   const enc=new TextEncoder();
@@ -5953,7 +5981,7 @@ async function exXlsx(m,blocks){
     const words=[...(m.glossary||[]),
       ['Score','Each report scores out of 100: its ten section scores (each out of 10) added together.'],
       ['Change','Later period minus earlier period. ▲ is up, ▼ is down, a dash means no change; green is better and red is worse where that is clear.'],
-      ['BOQI / EOQI','Beginning of Quarter Inspection / End of Quarter Inspection.'],
+      ['BOQ / EOQ','Beginning of Quarter Assessment / End of Quarter Assessment.'],
       ['Empty cell','There is no data for it. It is not zero.']];
     words.forEach(([k,d])=>P([[k,look({b:true,color:INK,v:'top'})],[d,V]]));
     P([]);
@@ -6020,10 +6048,10 @@ function renderTeamTabs(pages){
 function renderHomeActions(user,teamPages){
   const actions=[];
   if(ASSIGNEE_ROLES.includes(user.role)&&hasPerm('inspect')) actions.push(['pg-auditor','calendar-check','My Assignments','Your buildings, schedule and results']);
-  if(hasPerm('inspect')) actions.push(['pg-new','clipboard-check','Start an Inspection','Details → sections → score card']);
+  if(hasPerm('inspect')) actions.push(['pg-new','clipboard-check','Start an Assessment','Details → sections → score card']);
   if(teamPages.length) actions.push([teamPages[0],'users','Team',
-    teamPages.length>1?'Team overview and building assignments':teamPages[0]==='pg-officer'?'Assign buildings and track auditors live':'Progress of officers and auditors']);
-  actions.push(['pg-library','file-search',hasPerm('review')?'Review Reports':'Inspection Reports',hasPerm('review')?'Search reports and approve or return them':'Search and open any saved report']);
+    teamPages.length>1?'Team overview and building assignments':teamPages[0]==='pg-officer'?'Assign buildings and track assessors live':'Progress of officers and assessors']);
+  actions.push(['pg-library','file-search',hasPerm('review')?'Review Reports':'Assessment Reports',hasPerm('review')?'Search reports and approve or return them':'Search and open any saved report']);
   if(hasPerm('reports')) actions.push(['pg-reports','bar-chart-3','Analytics','Insights, report builder, comparisons and data quality']);
   if(user.role==='quality_admin') actions.push(['pg-admin','shield-check','Admin Control','Accounts, permissions, buildings and audit log']);
   const box=document.getElementById('home-actions');
@@ -6040,23 +6068,23 @@ function renderHomeActions(user,teamPages){
 // ═══════════════════════════════════════════════════════════
 function hasPerm(key){ return !!currentUser&&(currentUser.permissions||[]).includes(key); }
 function adRoleLabels(){
-  return {quality_auditor:'Quality Auditor',quality_officer:'Quality Officer',quality_leader:'Quality Leader',data_analyst:'Data Analyst',quality_admin:'Quality Admin'};
+  return {quality_auditor:'Quality Assessor',quality_officer:'Quality Officer',quality_leader:'Quality Leader',data_analyst:'Data Analyst',quality_admin:'Quality Admin'};
 }
 function adPermCatalog(){
   return [
-    ['Inspections',[
-      ['inspect','Create & edit inspections','Start inspections, score sections and save reports'],
-      ['delete','Delete inspections','Remove saved reports from the history'],
+    ['Assessments',[
+      ['inspect','Create & edit assessments','Start assessments, score sections and save reports'],
+      ['delete','Delete assessments','Remove saved reports from the history'],
       ['export','Export data','Download PDF, Excel and image exports'],
-      ['review','Review reports','Approve reports or send them back to the auditor with comments'],
+      ['review','Review reports','Approve reports or send them back to the assessor with comments'],
     ]],
     ['Team',[
-      ['assign','Assign buildings','Use Assign & Track to assign and move buildings between auditors'],
-      ['team','View team overview','Progress across officers, auditors, divisions and buildings'],
-      ['profiles','View auditor profiles','Any auditor’s assignments, schedule and quality of work'],
+      ['assign','Assign buildings','Use Assign & Track to assign and move buildings between assessors'],
+      ['team','View team overview','Progress across officers, assessors, divisions and buildings'],
+      ['profiles','View assessor profiles','Any assessor’s assignments, schedule and quality of work'],
     ]],
     ['Insights',[
-      ['reports','Reports & Analytics','Filter every inspection, charts and statistics'],
+      ['reports','Reports & Analytics','Filter every assessment, charts and statistics'],
     ]],
   ];
 }
@@ -6177,7 +6205,7 @@ async function adLoadBackup(){
     document.getElementById('ad-arch-note').textContent=`${rows.length} report${rows.length===1?'':'s'}`;
     document.getElementById('ad-arch-rows').innerHTML=rows.length?rows.map(x=>`<tr>
       <td><b>${ovEsc(x.building)}</b><small>${ovEsc(x.division||'')}</small></td>
-      <td>${ovEsc(x.type||'—')}<small>${ovEsc(x.date||'')}</small></td>
+      <td>${ovEsc(showType(x.type)||'—')}<small>${ovEsc(x.date||'')}</small></td>
       <td>${ovEsc(x.auditor||'—')}</td><td>${ovScore(x.overall)}</td>
       <td>${ovEsc(x.deletedBy||'—')}<small>${x.deletedAt?new Date(x.deletedAt.replace(' ','T')+'Z').toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}</small></td>
       <td><button class="ad-btn" data-restore="${x.id}"><svg data-lucide="rotate-ccw" width="13" height="13" style="vertical-align:-2px"></svg> Restore</button></td></tr>`).join('')
@@ -6370,7 +6398,7 @@ async function adRenderDrawer(){
     <section><h4>Account</h4>
       ${row('Role',self?`<b>${labels[u.role]}</b>`:`<select class="ad-role" id="ad-d-role">${Object.entries(labels).map(([v,l])=>`<option value="${v}"${v===u.role?' selected':''}>${l}</option>`).join('')}</select>`)}
       ${row('Status',`<span class="ov-pill ${cls}">${label}</span>`,self?'':btn('status',u.status==='active'?'Suspend':'Reactivate',u.status==='active'))}
-      ${u.role==='quality_auditor'?row('Work','Assignments, schedule and quality of work',btn('profile','Open auditor profile')):''}
+      ${u.role==='quality_auditor'?row('Work','Assignments, schedule and quality of work',btn('profile','Open assessor profile')):''}
     </section>
     <section><h4>Permissions ${u.customPermissions?'<span class="ad-custom">Custom</span>':''}</h4>
       ${isAdmin?'<p class="ad-note">Quality Admins always have every permission.</p>':self?'<p class="ad-note">You cannot change your own permissions.</p>':
@@ -6473,7 +6501,7 @@ function adOpenBuilding(b){
   }
   document.getElementById('mb-title').textContent=b?'Edit building':'Add building';
   document.getElementById('mb-sub').textContent=b
-    ?'Renaming a building also changes how older, unassigned inspections are matched to it in Reports.'
+    ?'Renaming a building also changes how older, unassigned assessments are matched to it in Reports.'
     :'New buildings can be assigned right away in Assign & Track.';
   ['name','division','area','location'].forEach(k=>{ document.getElementById('mb-'+k).value=b?b[k]:''; });
   document.getElementById('mb-msg').style.display='none';
@@ -6527,11 +6555,11 @@ function adActionMeta(action){
     'building.create':['building-2','added building','buildings'],
     'building.update':['building-2','edited building','buildings'],
     'building.delete':['trash-2','deleted building','buildings'],
-    'inspection.create':['file-plus','submitted inspection','inspections'],
-    'inspection.update':['file-pen','edited inspection','inspections'],
-    'inspection.review':['file-check','reviewed inspection','inspections'],
-    'inspection.delete':['file-x','deleted inspection','inspections'],
-    'inspection.restore':['archive-restore','restored inspection','inspections'],
+    'inspection.create':['file-plus','submitted assessment','inspections'],
+    'inspection.update':['file-pen','edited assessment','inspections'],
+    'inspection.review':['file-check','reviewed assessment','inspections'],
+    'inspection.delete':['file-x','deleted assessment','inspections'],
+    'inspection.restore':['archive-restore','restored assessment','inspections'],
     'assignment.repeat':['repeat','repeated assignments for','inspections'],
     'assignment.due':['calendar-clock','changed the deadline for','inspections'],
     'backup.run':['database-backup','ran a backup:','security'],
@@ -6558,7 +6586,7 @@ async function adLoadAudit({more=false}={}){
   }
 }
 function adRenderAudit(){
-  const cats={all:'All',signins:'Sign-ins',accounts:'Accounts',permissions:'Permissions',security:'Security',buildings:'Buildings',inspections:'Inspections'};
+  const cats={all:'All',signins:'Sign-ins',accounts:'Accounts',permissions:'Permissions',security:'Security',buildings:'Buildings',inspections:'Assessments'};
   const catOf=e=>adActionMeta(e.action)[2];
   document.getElementById('ad-a-filter').innerHTML=Object.entries(cats).map(([k,l])=>{
     const n=k==='all'?adAudit.length:adAudit.filter(e=>catOf(e)===k).length;
@@ -6585,7 +6613,7 @@ function adRenderAudit(){
     document.getElementById('acct-avatar').textContent=displayName.split(/\s+/).filter(Boolean).map(p=>p[0]).slice(0,2).join('').toUpperCase();
     document.getElementById('acct-role').textContent=({
       quality_admin:'Quality Admin',quality_leader:'Quality Leader',quality_officer:'Quality Officer',
-      quality_auditor:'Quality Auditor',data_analyst:'Data Analyst',
+      quality_auditor:'Quality Assessor',data_analyst:'Data Analyst',
     })[user.role]||user.role;
     const isAdmin=user.role==='quality_admin';
     const isOfficer=user.role==='quality_officer';

@@ -21,7 +21,7 @@
     if(!done){
       document.querySelector('.dot').style.display='none';
       msg.textContent=host()?'The document did not arrive. Close this tab and try again.'
-        :'Open this page from the app — a report from Inspection Reports, or Export on any page.';
+        :'Open this page from the app — a report from Assessment Reports, or Export on any page.';
     }
   },30000);
 })();

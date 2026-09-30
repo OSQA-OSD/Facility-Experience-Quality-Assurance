@@ -2,7 +2,7 @@
    PDF. The app writes the document into /report and passes its settings in #doc-config. */
 var DOC=JSON.parse(document.getElementById('doc-config').textContent);
 var FIRST_HEAD=DOC.firstHead, DOC_NAME=DOC.docName, LEGEND=DOC.legend;
-const SRI={'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js':'sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H','https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js':'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk'};
+const SRI={'/vendor/html2canvas.min.js':'sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H','/vendor/jspdf.umd.min.js':'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk'};
 function loadOnce(src){
   return new Promise(function(res,rej){
     var s=document.createElement('script');
@@ -45,8 +45,8 @@ async function savePdf(){
   var doc=document.getElementById('doc'), wrap=document.getElementById('docwrap');
   var tf=doc.style.transform, ml=doc.style.marginLeft, wh=wrap.style.height, restoreLogo=null;
   try{
-    if(!window.html2canvas) await loadOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-    if(!window.jspdf) await loadOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    if(!window.html2canvas) await loadOnce('/vendor/html2canvas.min.js');
+    if(!window.jspdf) await loadOnce('/vendor/jspdf.umd.min.js');
     doc.style.transform=''; doc.style.marginLeft=''; wrap.style.height='';     // capture the paper at full size
     restoreLogo=await flattenLogo();
     var sheets=[].slice.call(document.querySelectorAll('.sheet'));

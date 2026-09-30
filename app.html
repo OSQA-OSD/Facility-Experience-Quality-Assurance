@@ -14,11 +14,11 @@
 <script src="/js/theme.js"></script>
 <link rel="icon" type="image/svg+xml" href="/osqa-icon.svg">
 <title>Facility Experience QA Check List</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="/vendor/fonts/cairo.css" rel="stylesheet">
 <!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
+<script src="/vendor/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
 <!-- Lucide icons via CDN -->
-<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js" integrity="sha384-wHFvAtjmgnkA2PJcMsDaCgdipf7X7YV44X/igbLHpvGiq6T5/PvFKl93grpvtbQT" crossorigin="anonymous"></script>
+<script src="/vendor/lucide.min.js" integrity="sha384-wHFvAtjmgnkA2PJcMsDaCgdipf7X7YV44X/igbLHpvGiq6T5/PvFKl93grpvtbQT" crossorigin="anonymous"></script>
 <style>
 :root{
   /* Brand: dark blue #0033A0 and teal #26A8AB, blended in --brand; green marks good results */
@@ -1491,9 +1491,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <span class="nav-label">Workspace</span>
       <div class="ni active" data-page="pg-home"><svg data-lucide="layout-dashboard" width="18" height="18"></svg><span class="ni-txt">Home</span></div>
       <div class="ni" id="my-assignments-link" data-page="pg-auditor" hidden><svg data-lucide="calendar-check" width="18" height="18"></svg><span class="ni-txt">My Assignments</span><span class="ns" id="ns-assign">–</span></div>
-      <div class="ni" id="inspection-link" data-page="pg-new" hidden><svg data-lucide="clipboard-check" width="18" height="18"></svg><span class="ni-txt">Inspection</span><span class="ns" id="ns-progress">0%</span></div>
+      <div class="ni" id="inspection-link" data-page="pg-new" hidden><svg data-lucide="clipboard-check" width="18" height="18"></svg><span class="ni-txt">Assessment</span><span class="ns" id="ns-progress">0%</span></div>
       <div class="ni" id="schedule-link" data-page="pg-schedule"><svg data-lucide="calendar-range" width="18" height="18"></svg><span class="ni-txt">Quarter Schedule</span></div>
-      <div class="ni" id="library-link" data-page="pg-library"><svg data-lucide="file-search" width="18" height="18"></svg><span class="ni-txt">Inspection Reports</span><span class="ns ns-alert" id="ns-review"></span></div>
+      <div class="ni" id="library-link" data-page="pg-library"><svg data-lucide="file-search" width="18" height="18"></svg><span class="ni-txt">Assessment Reports</span><span class="ns ns-alert" id="ns-review"></span></div>
     </div>
     <div class="nav-group">
       <span class="nav-label">Team &amp; Insights</span>
@@ -1570,7 +1570,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
   <!-- Edit mode banner -->
   <div id="edit-banner">
     <svg data-lucide="pencil" width="16" height="16" style="color:#B26A00;flex-shrink:0"></svg>
-    <div class="eb-text">Editing a saved inspection — make your changes, then save them from the Score Card.</div>
+    <div class="eb-text">Editing a saved assessment — make your changes, then save them from the Score Card.</div>
     <button class="btn bo" style="padding:6px 14px;font-size:.78rem;flex-shrink:0" data-click="cancelEdit">Cancel Edit</button>
   </div>
   <!-- HOME -->
@@ -1625,15 +1625,15 @@ html[data-pointer=mouse] .ph-cam{display:none}
   <div class="page" id="pg-new">
     <div class="home-hero">
       <div class="ey">Step 1 of 3</div>
-      <h2>Inspection <span>Details</span></h2>
-      <p class="sub">Choose the building and inspection type, then score the ten sections and review the score card.</p>
+      <h2>Assessment <span>Details</span></h2>
+      <p class="sub">Choose the building and assessment type, then score the ten sections and review the score card.</p>
     </div>
     <div class="ov-section in-wrap">
       <div class="sc-callout info" id="in-resume" hidden></div>
       <div class="ov-panel">
-        <div class="ov-panel-hd">Details <small id="in-mode">New inspection</small></div>
+        <div class="ov-panel-hd">Details <small id="in-mode">New assessment</small></div>
         <div class="in-grid">
-          <label>Auditor<div class="in-static" id="in-inspector">–</div></label>
+          <label>Assessor<div class="in-static" id="in-inspector">–</div></label>
           <label>Date<input type="date" lang="en-GB" id="meta-date"></label>
           <label class="in-wide">Building
             <input id="meta-facility" placeholder="Tap to choose, or type to search…" autocomplete="off" autocapitalize="characters" spellcheck="false">
@@ -1647,17 +1647,17 @@ html[data-pointer=mouse] .ph-cam{display:none}
             </select>
           </label>
           <label>Area &amp; location<div class="in-static" id="in-area">–</div></label>
-          <div class="in-wide in-lbl">Inspection type
+          <div class="in-wide in-lbl">Assessment type
             <div class="in-types" id="in-types">
-              <button type="button" class="in-type" data-type="BOQI"><b>BOQI</b><small>Beginning of quarter</small></button>
-              <button type="button" class="in-type" data-type="EOQI"><b>EOQI</b><small>End of quarter</small></button>
+              <button type="button" class="in-type" data-type="BOQI"><b>BOQ</b><small>Beginning of quarter</small></button>
+              <button type="button" class="in-type" data-type="EOQI"><b>EOQ</b><small>End of quarter</small></button>
               <button type="button" class="in-type" data-type="Follow-up"><b>Follow-up</b><small>Re-check after corrections</small></button>
             </div>
             <select id="meta-type" hidden>
               <option value=""></option>
-              <option value="BOQI">Beginning of Quarter Inspection (BOQI)</option>
+              <option value="BOQI">Beginning of Quarter Assessment (BOQ)</option>
               <option value="Follow-up">Follow-up and Edit</option>
-              <option value="EOQI">End of Quarter Inspection (EOQI)</option>
+              <option value="EOQI">End of Quarter Assessment (EOQ)</option>
             </select>
           </div>
         </div>
@@ -1705,14 +1705,14 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <div>
           <div class="ey" id="au-eyebrow">My assignments</div>
           <h2 id="au-title">My <span>Assignments</span></h2>
-          <p class="sub" id="au-sub">Your buildings for the quarter, the inspection schedule and your results.</p>
+          <p class="sub" id="au-sub">Your buildings for the quarter, the assessment schedule and your results.</p>
           <button class="page-export rp-export" type="button" data-ex-ctx="auditor" title="Download this profile as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
         </div>
       </div>
     </div>
 
     <div class="hist-filters ov-filters">
-      <select id="au-switch" hidden aria-label="Auditor"></select>
+      <select id="au-switch" hidden aria-label="Assessor"></select>
       <select id="assign-quarter" aria-label="Quarter"></select>
       <span class="ov-updated" id="au-updated"></span>
       <button class="rp-link" id="au-reports" hidden><svg data-lucide="bar-chart-3" width="13" height="13" style="vertical-align:-2px"></svg> Analytics</button>
@@ -1767,11 +1767,11 @@ html[data-pointer=mouse] .ph-cam{display:none}
         </div>
         <div class="ov-panel">
           <div class="ov-panel-hd">Average by section <small>out of 10 · strongest first</small></div>
-          <div class="ov-chart" style="height:280px"><canvas id="au-sec-chart"></canvas><div class="ov-empty" id="au-sec-empty" hidden>No completed inspections yet.</div></div>
+          <div class="ov-chart" style="height:280px"><canvas id="au-sec-chart"></canvas><div class="ov-empty" id="au-sec-empty" hidden>No completed assessments yet.</div></div>
         </div>
       </div>
       <div class="ov-panel">
-        <div class="ov-panel-hd">Most frequent findings <small>Checklist items marked non-compliant in this auditor's latest submissions</small></div>
+        <div class="ov-panel-hd">Most frequent findings <small>Checklist items marked non-compliant in this assessor's latest submissions</small></div>
         <div class="ov-scroll"><table class="ov-table">
           <thead><tr><th>Item</th><th>Section</th><th>Times</th></tr></thead>
           <tbody id="au-findings"></tbody>
@@ -1784,7 +1784,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
   <div class="page" id="pg-overview">
     <div class="home-hero">
       <h2>Team <span>Overview</span></h2>
-      <p class="sub">Everything your officers and auditors are working on — assignments, results and progress by division, area and building.</p>
+      <p class="sub">Everything your officers and assessors are working on — assignments, results and progress by division, area and building.</p>
       <div class="hero-actions">
         <div class="page-tabs team-tabs" hidden></div>
         <button class="page-export rp-export" type="button" data-ex-ctx="overview" title="Download this page as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
@@ -1793,10 +1793,10 @@ html[data-pointer=mouse] .ph-cam{display:none}
 
     <div class="hist-filters ov-filters">
       <select id="ov-quarter" aria-label="Quarter"><option value="all">All quarters</option></select>
-      <select id="ov-type" aria-label="Inspection type">
+      <select id="ov-type" aria-label="Assessment type">
         <option value="all">All types</option>
-        <option value="BOQI">BOQI — Beginning of Quarter</option>
-        <option value="EOQI">EOQI — End of Quarter</option>
+        <option value="BOQI">BOQ — Beginning of Quarter</option>
+        <option value="EOQI">EOQ — End of Quarter</option>
       </select>
       <select id="ov-division" aria-label="Division"><option value="all">All divisions</option></select>
       <span class="ov-updated" id="ov-updated"></span><button type="button" class="info-tip" data-tip="ov-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
@@ -1819,12 +1819,12 @@ html[data-pointer=mouse] .ph-cam{display:none}
     </div>
 
     <div class="ov-section">
-      <div class="hist-hdr"><div><span class="sec-eyebrow">Team</span><h3><svg data-lucide="users" width="18" height="18"></svg> Officers &amp; Auditors <button type="button" class="info-tip" data-tip="ov-team" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Team</span><h3><svg data-lucide="users" width="18" height="18"></svg> Officers &amp; Assessors <button type="button" class="info-tip" data-tip="ov-team" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
       <div class="ov-grid2">
         <div>
           <div class="ov-panel">
-            <div class="ov-panel-hd">Auditors</div>
-            <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Auditor</th><th>Assigned</th><th>Progress</th><th>Avg</th></tr></thead><tbody id="ov-aud-rows"></tbody></table></div>
+            <div class="ov-panel-hd">Assessors</div>
+            <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Assessor</th><th>Assigned</th><th>Progress</th><th>Avg</th></tr></thead><tbody id="ov-aud-rows"></tbody></table></div>
           </div>
           <div class="ov-panel">
             <div class="ov-panel-hd">Quality Officers</div>
@@ -1841,7 +1841,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="ov-section">
       <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3><svg data-lucide="map-pin" width="18" height="18"></svg> By Area <button type="button" class="info-tip" data-tip="ov-area" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
       <div class="ov-panel">
-        <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Area</th><th>Buildings</th><th>Assignments</th><th>Completion</th><th>Inspections</th><th>Avg</th></tr></thead><tbody id="ov-area-rows"></tbody></table></div>
+        <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Area</th><th>Buildings</th><th>Assignments</th><th>Completion</th><th>Assessments</th><th>Avg</th></tr></thead><tbody id="ov-area-rows"></tbody></table></div>
       </div>
     </div>
 
@@ -1851,7 +1851,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <div class="ov-panel-hd">
           <span id="ov-b-count">Buildings</span>
           <div class="ov-tools">
-            <input type="text" id="ov-b-search" placeholder="Search building or auditor…">
+            <input type="text" id="ov-b-search" placeholder="Search building or assessor…">
             <select id="ov-b-status" aria-label="Building status">
               <option value="all">All statuses</option>
               <option value="completed">Completed</option>
@@ -1860,7 +1860,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
             </select>
           </div>
         </div>
-        <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Building</th><th>Division / Area</th><th>Auditor</th><th>Status</th><th>Inspections</th><th>Last score</th></tr></thead><tbody id="ov-b-rows"></tbody></table></div>
+        <div class="ov-scroll"><table class="ov-table"><thead><tr><th>Building</th><th>Division / Area</th><th>Assessor</th><th>Status</th><th>Assessments</th><th>Last score</th></tr></thead><tbody id="ov-b-rows"></tbody></table></div>
       </div>
     </div>
   </div>
@@ -1869,7 +1869,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
   <div class="page" id="pg-officer">
     <div class="home-hero">
       <h2>Assign &amp; <span>Track</span></h2>
-      <p class="sub">Assign buildings to your auditors for the quarter and follow their progress live.</p>
+      <p class="sub">Assign buildings to your assessors for the quarter and follow their progress live.</p>
       <div class="hero-actions">
         <div class="page-tabs team-tabs" hidden></div>
         <button class="page-export rp-export" type="button" data-ex-ctx="officer" title="Download this page as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
@@ -1878,9 +1878,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
 
     <div class="hist-filters ov-filters">
       <select id="of-quarter" aria-label="Quarter"></select>
-      <select id="of-type" aria-label="Inspection type">
-        <option value="BOQI">BOQI — Beginning of Quarter</option>
-        <option value="EOQI">EOQI — End of Quarter</option>
+      <select id="of-type" aria-label="Assessment type">
+        <option value="BOQI">BOQ — Beginning of Quarter</option>
+        <option value="EOQI">EOQ — End of Quarter</option>
       </select>
       <select id="of-division" aria-label="Division"><option value="">All divisions</option></select>
       <span class="of-live" id="of-live"><i></i><span id="of-updated">Connecting…</span></span><button type="button" class="info-tip" data-tip="of-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
@@ -1917,10 +1917,10 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <div><span class="sec-eyebrow">Buildings</span><h3><svg data-lucide="building-2" width="18" height="18"></svg> Assign Buildings <button type="button" class="info-tip" data-tip="of-buildings" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         <div class="ov-tools">
           <select id="of-quick" class="of-quick" aria-label="Quick assign to"><option value="">Quick assign: off</option></select>
-          <button class="rp-link" id="of-copy-last" title="Give the same auditors the buildings they had last quarter"><svg data-lucide="copy" width="13" height="13" style="vertical-align:-2px"></svg> Copy last quarter</button>
-          <button class="rp-link" id="of-repeat" title="Give each auditor the same buildings for the end-of-quarter inspection"><svg data-lucide="repeat" width="13" height="13" style="vertical-align:-2px"></svg> <span id="of-repeat-label">Repeat for End of Quarter</span></button>
-          <label class="of-mirror" id="of-mirror-wrap" title="Whatever you assign here is given to the same auditor for the end-of-quarter inspection too. Unassigning here does not touch the end of the quarter."><input type="checkbox" id="of-mirror"> Same auditor for End of Quarter</label>
-          <input type="text" id="of-search" placeholder="Search building or auditor…">
+          <button class="rp-link" id="of-copy-last" title="Give the same assessors the buildings they had last quarter"><svg data-lucide="copy" width="13" height="13" style="vertical-align:-2px"></svg> Copy last quarter</button>
+          <button class="rp-link" id="of-repeat" title="Give each assessor the same buildings for the end-of-quarter assessment"><svg data-lucide="repeat" width="13" height="13" style="vertical-align:-2px"></svg> <span id="of-repeat-label">Repeat for End of Quarter</span></button>
+          <label class="of-mirror" id="of-mirror-wrap" title="Whatever you assign here is given to the same assessor for the end-of-quarter assessment too. Unassigning here does not touch the end of the quarter."><input type="checkbox" id="of-mirror"> Same assessor for End of Quarter</label>
+          <input type="text" id="of-search" placeholder="Search building or assessor…">
           <select id="of-area" aria-label="Area"><option value="">All areas</option></select>
           <select id="of-status" aria-label="Status">
             <option value="">All statuses</option>
@@ -1929,7 +1929,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
             <option value="pending">Pending</option>
             <option value="completed">Completed</option>
           </select>
-          <select id="of-auditor-filter" aria-label="Auditor"><option value="">All auditors</option></select>
+          <select id="of-auditor-filter" aria-label="Assessor"><option value="">All assessors</option></select>
         </div>
       </div>
       <div class="ov-panel" style="margin-bottom:0">
@@ -1937,7 +1937,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <div class="ov-scroll"><table class="ov-table of-table">
           <thead><tr>
             <th class="of-chk"><input type="checkbox" id="of-check-all" title="Select every building shown that can still change"></th>
-            <th>Building</th><th class="col-div">Division / Area</th><th>Auditor</th><th>Deadline</th><th>Status</th><th>Result</th>
+            <th>Building</th><th class="col-div">Division / Area</th><th>Assessor</th><th>Deadline</th><th>Status</th><th>Result</th>
           </tr></thead>
           <tbody id="of-rows"></tbody>
         </table></div>
@@ -1945,12 +1945,12 @@ html[data-pointer=mouse] .ph-cam{display:none}
       </div>
       <div class="of-bulk" id="of-bulk" hidden>
         <b id="of-sel-count">0 selected</b>
-        <select id="of-bulk-auditor" aria-label="Auditor for selected buildings"></select>
+        <select id="of-bulk-auditor" aria-label="Assessor for selected buildings"></select>
         <label class="ofb-due"><span>Deadline</span><input type="date" lang="en-GB" id="of-bulk-due" aria-label="Deadline for the selected buildings" title="Deadline for the selected buildings"></label>
         <button class="btn bt" id="of-bulk-assign">Assign</button>
         <button class="btn bo" style="background:var(--surface)" id="of-bulk-due-set" title="Give the selected buildings this deadline — leave the date empty to remove it">
           <svg data-lucide="calendar-clock" width="13" height="13"></svg> Set deadline</button>
-        <button class="btn bo" style="background:var(--surface)" id="of-bulk-distribute" title="Split the selection across active auditors, lightest workload first, keeping each area together">
+        <button class="btn bo" style="background:var(--surface)" id="of-bulk-distribute" title="Split the selection across active assessors, lightest workload first, keeping each area together">
           <svg data-lucide="shuffle" width="13" height="13"></svg> Distribute evenly</button>
         <button class="btn bo" style="background:var(--surface)" id="of-bulk-unassign">Unassign</button>
         <button class="rp-link" id="of-bulk-clear">Clear</button>
@@ -1962,7 +1962,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
   <div class="page" id="pg-schedule">
     <div class="home-hero">
       <h2>Quarter <span>Schedule</span></h2>
-      <p class="sub">Who is inspecting which building this quarter — a table for each auditor, and the full list in one place.</p>
+      <p class="sub">Who is assessing which building this quarter — a table for each assessor, and the full list in one place.</p>
       <div class="hero-actions">
         <button class="page-export rp-export" type="button" data-ex-ctx="schedule" title="Download this schedule as PDF, Excel or an image"><svg data-lucide="download" width="15" height="15"></svg> Export</button>
       </div>
@@ -1970,11 +1970,11 @@ html[data-pointer=mouse] .ph-cam{display:none}
 
     <div class="hist-filters ov-filters">
       <select id="sch-quarter" aria-label="Quarter"></select>
-      <select id="sch-type" aria-label="Inspection type">
-        <option value="BOQI">BOQI — Beginning of Quarter</option>
-        <option value="EOQI">EOQI — End of Quarter</option>
+      <select id="sch-type" aria-label="Assessment type">
+        <option value="BOQI">BOQ — Beginning of Quarter</option>
+        <option value="EOQI">EOQ — End of Quarter</option>
       </select>
-      <select id="sch-auditor" aria-label="Auditor"><option value="">All auditors</option></select>
+      <select id="sch-auditor" aria-label="Assessor"><option value="">All assessors</option></select>
       <span class="ov-updated" id="sch-note"></span>
       <button type="button" class="info-tip" data-tip="sch-tables" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
     </div>
@@ -1982,7 +1982,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="ov-stats" id="sch-stats"></div>
 
     <div class="ov-section">
-      <div class="hist-hdr"><div><span class="sec-eyebrow">By auditor</span><h3><svg data-lucide="user-check" width="18" height="18"></svg> Each auditor's buildings</h3></div></div>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">By assessor</span><h3><svg data-lucide="user-check" width="18" height="18"></svg> Each assessor's buildings</h3></div></div>
       <div id="sch-by-auditor"></div>
     </div>
 
@@ -1990,7 +1990,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="hist-hdr"><div><span class="sec-eyebrow">Full list</span><h3><svg data-lucide="list" width="18" height="18"></svg> All assigned buildings</h3></div>
         <span class="ov-updated" id="sch-all-note"></span></div>
       <div class="ov-panel"><div class="ov-scroll"><table class="ov-table sch-t" id="sch-all-table">
-        <thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Auditor</th><th>Deadline</th><th>Status</th><th>Result</th></tr></thead>
+        <thead><tr><th>#</th><th>Building</th><th>Division / Area</th><th>Assessor</th><th>Deadline</th><th>Status</th><th>Result</th></tr></thead>
         <tbody id="sch-all-rows"></tbody></table></div></div>
     </div>
   </div>
@@ -2103,7 +2103,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <span class="ov-updated" id="ad-arch-note"></span>
         </div>
         <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
-          <thead><tr><th>Building</th><th>Type · date</th><th>Auditor</th><th>Score</th><th>Deleted</th><th></th></tr></thead>
+          <thead><tr><th>Building</th><th>Type · date</th><th>Assessor</th><th>Score</th><th>Deleted</th><th></th></tr></thead>
           <tbody id="ad-arch-rows"></tbody>
         </table></div></div>
       </div>
@@ -2129,13 +2129,13 @@ html[data-pointer=mouse] .ph-cam{display:none}
   <!-- INSPECTION REPORTS (search · open · review) -->
   <div class="page" id="pg-library">
     <div class="home-hero">
-      <h2>Inspection <span>Reports</span></h2>
-      <p class="sub">Find any saved report — by building, auditor, division, area or even words in a comment — then open it to review or download.</p>
+      <h2>Assessment <span>Reports</span></h2>
+      <p class="sub">Find any saved report — by building, assessor, division, area or even words in a comment — then open it to review or download.</p>
     </div>
     <div class="ov-section">
       <div class="lib-search">
         <svg data-lucide="search" width="20" height="20"></svg>
-        <input type="search" id="lib-q" placeholder="Search building, auditor, area, report #…" autocomplete="off" aria-label="Search reports">
+        <input type="search" id="lib-q" placeholder="Search building, assessor, area, report #…" autocomplete="off" aria-label="Search reports">
         <label class="lib-check"><input type="checkbox" id="lib-comments"> Also search comments &amp; notes</label>
       </div>
       <div class="lib-bar">
@@ -2147,10 +2147,10 @@ html[data-pointer=mouse] .ph-cam{display:none}
       </div>
       <div class="lib-filters" id="lib-filters">
         <label>Quarter<select id="lib-quarter"><option value="">All quarters</option></select></label>
-        <label>Type<select id="lib-type"><option value="">All types</option><option value="BOQI">BOQI</option><option value="EOQI">EOQI</option><option value="Follow-up">Follow-up</option></select></label>
+        <label>Type<select id="lib-type"><option value="">All types</option><option value="BOQI">BOQ</option><option value="EOQI">EOQ</option><option value="Follow-up">Follow-up</option></select></label>
         <label>Division<select id="lib-division"><option value="">All divisions</option></select></label>
         <label>Area<select id="lib-area"><option value="">All areas</option></select></label>
-        <label>Auditor<select id="lib-auditor"><option value="">All auditors</option></select></label>
+        <label>Assessor<select id="lib-auditor"><option value="">All assessors</option></select></label>
         <label>Rating<select id="lib-rating"><option value="">All ratings</option><option>Excellent</option><option>Good</option><option>Acceptable</option><option>Poor</option><option>Critical</option></select></label>
         <label>From<input type="date" lang="en-GB" id="lib-from"></label>
         <label>To<input type="date" lang="en-GB" id="lib-to"></label>
@@ -2158,7 +2158,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       </div>
       <div class="ov-panel" id="lib-panel">
         <div class="ov-scroll"><table class="ov-table lib-table">
-          <thead><tr><th>Date</th><th>Building</th><th>Type</th><th>Auditor</th><th>Score</th><th>Review</th><th></th></tr></thead>
+          <thead><tr><th>Date</th><th>Building</th><th>Type</th><th>Assessor</th><th>Score</th><th>Review</th><th></th></tr></thead>
           <tbody id="lib-rows"><tr><td colspan="7" class="ov-empty">Loading…</td></tr></tbody>
         </table></div>
         <div class="of-foot" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -2187,7 +2187,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div id="rp-insights">
       <div class="hist-filters rp-ins-filters">
         <label>Period<select id="ins-quarter"></select></label>
-        <select id="ins-type" aria-label="Inspection type"><option value="">All types</option><option value="BOQI">BOQI</option><option value="EOQI">EOQI</option><option value="Follow-up">Follow-up</option></select>
+        <select id="ins-type" aria-label="Assessment type"><option value="">All types</option><option value="BOQI">BOQ</option><option value="EOQI">EOQ</option><option value="Follow-up">Follow-up</option></select>
         <select id="ins-division" aria-label="Division"><option value="">All divisions</option></select>
         <span class="ov-updated" id="ins-compare-note"></span><button type="button" class="info-tip" data-tip="ins-kpis" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button>
       </div>
@@ -2210,7 +2210,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <div class="ov-tools"><div class="ins-legend" id="ins-heat-legend"></div></div>
         </div>
         <div class="ov-panel"><div class="ov-scroll"><table class="ins-heat" id="ins-heat"></table></div>
-          <div class="of-foot">Average out of 10 · click a cell to open those inspections in Report Builder</div></div>
+          <div class="of-foot">Average out of 10 · click a cell to open those assessments in Report Builder</div></div>
       </div>
 
       <div class="ov-section">
@@ -2239,9 +2239,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
             </table></div></div>
           </div>
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Within the quarter</span><h3><svg data-lucide="arrow-up-down" width="18" height="18"></svg> Biggest Movers · BOQI → EOQI <button type="button" class="info-tip" data-tip="ins-movers" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Within the quarter</span><h3><svg data-lucide="arrow-up-down" width="18" height="18"></svg> Biggest Movers · BOQ → EOQ <button type="button" class="info-tip" data-tip="ins-movers" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
-              <thead><tr><th>Building</th><th>BOQI → EOQI</th><th>Change</th></tr></thead>
+              <thead><tr><th>Building</th><th>BOQ → EOQ</th><th>Change</th></tr></thead>
               <tbody id="ins-movers"></tbody>
             </table></div></div>
           </div>
@@ -2267,15 +2267,15 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <label>Year<select id="rp-year"><option value="">All years</option></select></label>
           <label>Month<select id="rp-month"><option value="">All months</option></select></label>
           <label>Quarter<select id="rp-quarter"><option value="">All quarters</option><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option></select></label>
-          <label>Inspection type<select id="rp-type"><option value="">All types</option><option value="BOQI">BOQI</option><option value="EOQI">EOQI</option><option value="Follow-up">Follow-up</option></select></label>
+          <label>Assessment type<select id="rp-type"><option value="">All types</option><option value="BOQI">BOQ</option><option value="EOQI">EOQ</option><option value="Follow-up">Follow-up</option></select></label>
           <label>Division<select id="rp-division"><option value="">All divisions</option></select></label>
           <label>Area<select id="rp-area"><option value="">All areas</option></select></label>
           <label>Building<select id="rp-building"><option value="">All buildings</option></select></label>
-          <label>Auditor<select id="rp-inspector"><option value="">All auditors</option></select></label>
+          <label>Assessor<select id="rp-inspector"><option value="">All assessors</option></select></label>
           <label>Rating<select id="rp-rating"><option value="">All ratings</option><option>Excellent</option><option>Good</option><option>Acceptable</option><option>Poor</option><option>Critical</option></select></label>
           <label>From<input type="date" lang="en-GB" id="rp-from"></label>
           <label>To<input type="date" lang="en-GB" id="rp-to"></label>
-          <label>Search<input type="text" id="rp-search" placeholder="Building or auditor…"></label>
+          <label>Search<input type="text" id="rp-search" placeholder="Building or assessor…"></label>
         </div>
         <div class="rp-bar">
           <span class="rp-lbl">Group by</span>
@@ -2285,7 +2285,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
             <button class="rp-chip" data-group="building">Building</button>
             <button class="rp-chip" data-group="quarter">Quarter</button>
             <button class="rp-chip" data-group="month">Month</button>
-            <button class="rp-chip" data-group="inspector">Auditor</button>
+            <button class="rp-chip" data-group="inspector">Assessor</button>
             <button class="rp-chip" data-group="type">Type</button>
           </div>
           <span class="rp-count" id="rp-count"></span>
@@ -2314,7 +2314,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       </div>
       <div class="ov-panel">
         <div class="ov-scroll"><table class="ov-table">
-          <thead><tr><th id="rp-group-col">Division</th><th>Inspections</th><th>Average</th><th>Min</th><th>Max</th><th>Std dev</th><th>Rating mix</th><th>BOQI → EOQI</th></tr></thead>
+          <thead><tr><th id="rp-group-col">Division</th><th>Assessments</th><th>Average</th><th>Min</th><th>Max</th><th>Std dev</th><th>Rating mix</th><th>BOQ → EOQ</th></tr></thead>
           <tbody id="rp-group-rows"></tbody>
         </table></div>
       </div>
@@ -2325,12 +2325,12 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <div class="ov-grid2">
         <div class="ov-panel">
           <div class="ov-panel-hd">
-            <span>Scores over time <small id="rp-trend-note">Bars show number of inspections</small></span>
+            <span>Scores over time <small id="rp-trend-note">Bars show number of assessments</small></span>
             <div class="ov-tools">
               <div class="rp-chips" id="rp-trend">
                 <button class="rp-chip active" data-trend="quarter">Quarter</button>
                 <button class="rp-chip" data-trend="month">Month</button>
-                <button class="rp-chip" data-trend="each">Each inspection</button>
+                <button class="rp-chip" data-trend="each">Each assessment</button>
               </div>
               <button type="button" class="tool-x rp-export" data-ex-ctx="builder" data-ex-block="trend" title="Export this — PDF, Excel or image" aria-label="Export this"><svg data-lucide="download" width="14" height="14"></svg></button>
             </div>
@@ -2349,7 +2349,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
 
     <div class="ov-section">
       <div class="hist-hdr">
-        <div><span class="sec-eyebrow">Detail</span><h3><svg data-lucide="list" width="18" height="18"></svg> Matching Inspections <button type="button" class="info-tip" data-tip="rp-detail" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
+        <div><span class="sec-eyebrow">Detail</span><h3><svg data-lucide="list" width="18" height="18"></svg> Matching Assessments <button type="button" class="info-tip" data-tip="rp-detail" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         <div class="ov-tools">
           <select id="rp-sort" aria-label="Sort reports">
             <option value="newest">Newest first</option>
@@ -2361,7 +2361,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       </div>
       <div class="ov-panel">
         <div class="ov-scroll"><table class="ov-table">
-          <thead><tr><th>Date</th><th>Building</th><th>Division / Area</th><th>Type</th><th>Auditor</th><th>Score</th><th>Rating</th></tr></thead>
+          <thead><tr><th>Date</th><th>Building</th><th>Division / Area</th><th>Type</th><th>Assessor</th><th>Score</th><th>Rating</th></tr></thead>
           <tbody id="rp-detail-rows"></tbody>
         </table></div>
         <button class="btn bo rp-more" id="rp-more" hidden>Show more</button>
@@ -2391,14 +2391,14 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <label class="cmp-pick">Period A<select id="cmp-a"></select></label>
           <label class="cmp-date">From<input type="date" lang="en-GB" id="cmp-a-from"></label>
           <label class="cmp-date">To<input type="date" lang="en-GB" id="cmp-a-to"></label>
-          <label>Type<select id="cmp-a-type"><option value="">All types</option><option value="BOQI">BOQI</option><option value="EOQI">EOQI</option><option value="Follow-up">Follow-up</option></select></label>
+          <label>Type<select id="cmp-a-type"><option value="">All types</option><option value="BOQI">BOQ</option><option value="EOQI">EOQ</option><option value="Follow-up">Follow-up</option></select></label>
         </div>
         <button class="rp-link" id="cmp-swap" title="Swap A and B" aria-label="Swap periods"><svg data-lucide="arrow-left-right" width="16" height="16"></svg></button>
         <div class="cmp-side" style="--c:#eb6834">
           <label class="cmp-pick">Period B<select id="cmp-b"></select></label>
           <label class="cmp-date">From<input type="date" lang="en-GB" id="cmp-b-from"></label>
           <label class="cmp-date">To<input type="date" lang="en-GB" id="cmp-b-to"></label>
-          <label>Type<select id="cmp-b-type"><option value="">All types</option><option value="BOQI">BOQI</option><option value="EOQI">EOQI</option><option value="Follow-up">Follow-up</option></select></label>
+          <label>Type<select id="cmp-b-type"><option value="">All types</option><option value="BOQI">BOQ</option><option value="EOQI">EOQ</option><option value="Follow-up">Follow-up</option></select></label>
         </div>
         <label>Division<select id="cmp-division"><option value="">All divisions</option></select></label>
       </div>
@@ -2416,7 +2416,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
               <button class="rp-chip" data-dim="area">Area</button>
               <button class="rp-chip" data-dim="building">Building</button>
               <button class="rp-chip" data-dim="section">Section</button>
-              <button class="rp-chip" data-dim="inspector">Auditor</button>
+              <button class="rp-chip" data-dim="inspector">Assessor</button>
               <button class="rp-chip" data-dim="quarter" hidden>Quarter</button>
             </div>
           </div>
@@ -2443,12 +2443,12 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div id="rp-quality" hidden>
       <div class="ov-stats" id="dq-stats"></div>
       <div class="ov-section">
-        <div class="sc-callout info" id="dq-ok" hidden><svg data-lucide="circle-check" width="17" height="17"></svg><div><strong>No data problems found</strong>Every inspection is linked, complete and unique.</div></div>
+        <div class="sc-callout info" id="dq-ok" hidden><svg data-lucide="circle-check" width="17" height="17"></svg><div><strong>No data problems found</strong>Every assessment is linked, complete and unique.</div></div>
         <div class="hist-hdr">
           <div><span class="sec-eyebrow">Linking</span><h3 id="dq-unlinked"><svg data-lucide="unlink" width="18" height="18"></svg> Not Linked to a Building <button type="button" class="info-tip" data-tip="dq-unlinked" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div>
         </div>
         <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
-          <thead><tr><th>Date</th><th>Building as recorded</th><th>Auditor</th><th>Suggested building</th></tr></thead>
+          <thead><tr><th>Date</th><th>Building as recorded</th><th>Assessor</th><th>Suggested building</th></tr></thead>
           <tbody id="dq-unlinked-rows"></tbody></table></div>
           <div class="of-foot">An admin can add the building in Admin Control → Buildings, or the report can be edited to use the listed name.</div></div>
       </div>
@@ -2457,13 +2457,13 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <div>
             <div class="hist-hdr"><div><span class="sec-eyebrow">Duplicates</span><h3 id="dq-dups"><svg data-lucide="copy" width="18" height="18"></svg> Possible Duplicates <button type="button" class="info-tip" data-tip="dq-dups" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
-              <thead><tr><th>Building</th><th>Period</th><th>Count</th><th>Inspections</th></tr></thead>
+              <thead><tr><th>Building</th><th>Period</th><th>Count</th><th>Assessments</th></tr></thead>
               <tbody id="dq-dups-rows"></tbody></table></div></div>
           </div>
           <div>
             <div class="hist-hdr"><div><span class="sec-eyebrow">Completeness</span><h3 id="dq-incomplete"><svg data-lucide="list-checks" width="18" height="18"></svg> Incomplete Scoring <button type="button" class="info-tip" data-tip="dq-incomplete" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
-              <thead><tr><th>Date</th><th>Building</th><th>Auditor</th><th>Answered</th></tr></thead>
+              <thead><tr><th>Date</th><th>Building</th><th>Assessor</th><th>Answered</th></tr></thead>
               <tbody id="dq-incomplete-rows"></tbody></table></div></div>
           </div>
         </div>
@@ -2473,13 +2473,13 @@ html[data-pointer=mouse] .ph-cam{display:none}
           <div>
             <div class="hist-hdr"><div><span class="sec-eyebrow">Details</span><h3 id="dq-missing"><svg data-lucide="file-question" width="18" height="18"></svg> Missing Details <button type="button" class="info-tip" data-tip="dq-missing" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
-              <thead><tr><th>Date</th><th>Building</th><th>Auditor</th><th>Missing</th></tr></thead>
+              <thead><tr><th>Date</th><th>Building</th><th>Assessor</th><th>Missing</th></tr></thead>
               <tbody id="dq-missing-rows"></tbody></table></div></div>
           </div>
           <div>
-            <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3 id="dq-coverage"><svg data-lucide="building-2" width="18" height="18"></svg> <span id="dq-coverage-title">Buildings without an inspection</span> <button type="button" class="info-tip" data-tip="dq-coverage" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
+            <div class="hist-hdr"><div><span class="sec-eyebrow">Coverage</span><h3 id="dq-coverage"><svg data-lucide="building-2" width="18" height="18"></svg> <span id="dq-coverage-title">Buildings without an assessment</span> <button type="button" class="info-tip" data-tip="dq-coverage" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
             <div class="ov-panel"><div class="ov-scroll"><table class="ov-table">
-              <thead><tr><th>Division</th><th>Inspected</th><th>Not inspected</th></tr></thead>
+              <thead><tr><th>Division</th><th>Assessed</th><th>Not assessed</th></tr></thead>
               <tbody id="dq-coverage-rows"></tbody></table></div></div>
           </div>
         </div>
@@ -2498,12 +2498,12 @@ html[data-pointer=mouse] .ph-cam{display:none}
                 <option value="both">Beginning and end of quarter</option>
                 <option value="BOQI">Beginning of quarter only</option>
                 <option value="EOQI">End of quarter only</option>
-                <option value="all">Every inspection</option>
+                <option value="all">Every assessment</option>
               </select></label>
               <label>Division<select id="cx-division"><option value="">All divisions</option></select></label>
               <label>Area<select id="cx-area"><option value="">All areas</option></select></label>
               <label>Building<select id="cx-building"><option value="">All buildings</option></select></label>
-              <label>Auditor<select id="cx-auditor"><option value="">All auditors</option></select></label>
+              <label>Assessor<select id="cx-auditor"><option value="">All assessors</option></select></label>
             </div>
           </div>
           <div class="cx-block">
@@ -2556,7 +2556,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="ov-stats" id="sc-stats"></div>
 
     <div class="ov-section">
-      <div class="hist-hdr"><div><span class="sec-eyebrow">Rating scale</span><h3><svg data-lucide="gauge" width="18" height="18"></svg> Where This Inspection Lands <button type="button" class="info-tip" data-tip="sc-scale" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
+      <div class="hist-hdr"><div><span class="sec-eyebrow">Rating scale</span><h3><svg data-lucide="gauge" width="18" height="18"></svg> Where This Assessment Lands <button type="button" class="info-tip" data-tip="sc-scale" aria-expanded="false" aria-label="What does this show?" title="What does this show?">i</button></h3></div></div>
       <div class="sc-scale" id="sc-scale"></div>
       <p class="sc-scale-note" id="sc-scale-note"></p>
     </div>
@@ -2577,7 +2577,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     <div class="ov-section">
     <div class="sc-callout warn">
       <svg data-lucide="triangle-alert" width="17" height="17"></svg>
-      <div>Areas requiring attention and improvement must be rectified and documented before the next inspection.</div>
+      <div>Areas requiring attention and improvement must be rectified and documented before the next assessment.</div>
     </div>
     <div class="sc-callout info" id="save-notice">
       <svg data-lucide="info" width="17" height="17"></svg>
@@ -2595,7 +2595,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
       <button class="btn bt" data-click="submitReport" id="btn-save">Submit report</button>
       <button class="btn br" data-click="exportPDF" id="btn-pdf" disabled title="Submit first">Export PDF</button>
       <button class="btn bo" data-click="printPDF" id="btn-print" disabled title="Submit first"><svg data-lucide="printer" width="15" height="15"></svg> Print report</button>
-      <button class="btn bo" data-click="resetForm">New Inspection</button>
+      <button class="btn bo" data-click="resetForm">New Assessment</button>
     </div>
     <!-- Edit mode actions — shown instead when editing a saved record -->
     <div class="abar" id="abar-edit" style="display:none;flex-direction:column;gap:10px">
@@ -2619,7 +2619,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
 <div class="ad-drawer-bg" id="rv-drawer" hidden>
   <aside class="ad-drawer rv-drawer" role="dialog" aria-modal="true" aria-labelledby="rv-title">
     <div class="ad-d-head">
-      <div style="min-width:0"><b id="rv-title">Inspection report</b><small id="rv-meta"></small></div>
+      <div style="min-width:0"><b id="rv-title">Assessment report</b><small id="rv-meta"></small></div>
       <div class="rv-head-ring" id="rv-ring"><div><b id="rv-score">–</b><small id="rv-grade">—</small></div></div>
       <button id="rv-close" class="rv-head-close" title="Close" aria-label="Close"><svg data-lucide="x" width="16" height="16"></svg></button>
     </div>
@@ -2691,7 +2691,7 @@ html[data-pointer=mouse] .ph-cam{display:none}
     </div>
     <label class="ex-opt" id="ex-results-row" hidden>
       <input type="checkbox" id="ex-results" checked>
-      <span><b>Scores and inspection dates</b><small>Off gives the plan only: buildings, who inspects them, the deadline and whether they are done.</small></span>
+      <span><b>Scores and assessment dates</b><small>Off gives the plan only: buildings, who assesses them, the deadline and whether they are done.</small></span>
     </label>
     <p class="msub" id="ex-msg" hidden style="color:var(--danger);margin:10px 0 0"></p>
     <div class="mbtns" style="margin-top:16px">
@@ -2788,9 +2788,9 @@ html[data-pointer=mouse] .ph-cam{display:none}
         <p>Overwrite the original saved record with your changes. The report name and date stay the same.</p>
       </div>
       <div class="choice-card" id="choice-eoqi" data-click="selectSaveChoice" data-choice="eoqi">
-        <span class="choice-tag tag-eoqi">New — EOQI</span>
-        <h4>Save as New Report (EOQI)</h4>
-        <p>Save a brand new End of Quarter Inspection (EOQI) record. Today's date is applied and a new report name is generated. The original record is kept unchanged.</p>
+        <span class="choice-tag tag-eoqi">New — EOQ</span>
+        <h4>Save as New Report (EOQ)</h4>
+        <p>Save a brand new End of Quarter Assessment (EOQ) record. Today's date is applied and a new report name is generated. The original record is kept unchanged.</p>
       </div>
     </div>
     <div class="mbtns">

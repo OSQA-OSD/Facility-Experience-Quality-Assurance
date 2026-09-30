@@ -26,13 +26,13 @@ for (const [path, who] of [['/login', null], ['/', null], ['/app', 'adm'], ['/re
   const r = await call(who, 'GET', path);
   const csp = r.h.get('content-security-policy') || '', ss = scriptSrc(csp);
   ok(r.s === 200 && ss && !/unsafe-inline|unsafe-eval/.test(ss), `${path}: no inline script and no eval allowed`, ss.slice(0, 80));
-  ok(!/https:\/\/(cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com)(\s|;|$)/.test(ss) && !/heic2any/.test(ss), `${path}: CDNs allowed file by file, never whole hosts`);
+  ok(!/https?:/.test(csp.match(/(script|style|font)-src[^;]*/g).join(' ')) && !/heic2any/.test(ss), `${path}: scripts, styles and fonts only from this site (nothing from the internet)`);
   ok(!/<script>|\son[a-z]+="/.test(r.text), `${path}: no inline script or inline handler in the markup`);
 }
 {
   const r = await call(null, 'GET', '/heic');
   const csp = r.h.get('content-security-policy') || '';
-  ok(r.s === 200 && /default-src 'none'/.test(csp) && /'unsafe-eval'/.test(csp) && /heic2any@0\.0\.4/.test(csp) && !/connect-src[^;]*'self'/.test(csp),
+  ok(r.s === 200 && /default-src 'none'/.test(csp) && /'unsafe-eval'/.test(csp) && /\/vendor\/heic2any\.min\.js/.test(csp) && !/connect-src[^;]*'self'/.test(csp),
     'converter page: eval allowed there only, and it can fetch nothing', csp.slice(0, 90));
   ok(!/<script>/.test(r.text), 'converter page has no inline script either');
 }
