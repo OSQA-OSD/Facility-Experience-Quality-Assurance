@@ -13,12 +13,18 @@ import { sendPush, pushEndpointAllowed } from './push.js';
 
 // API answers describe live data, so no browser may keep a copy — Safari in particular will
 // otherwise hand back an old list for the same URL.
-const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
+const JSON_HEADERS = {
+  'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+  'Cross-Origin-Resource-Policy': 'same-origin',                   // API answers are for this site's own pages only
+};
 
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...extraHeaders } });
 
 const fail = (message, status = 500) => json({ error: message }, status);
+
+/* Assessment types are stored as BOQI / EOQI; messages people read say BOQ / EOQ. */
+const shownType = (t) => ({ BOQI: 'BOQ', EOQI: 'EOQ' })[t] || t;
 
 /** DB row -> shape the front-end expects */
 function rowToRecord(row) {
@@ -68,9 +74,9 @@ function scoreReport(body) {
 const INSPECTION_TYPES = new Set(['BOQI', 'EOQI', 'Follow-up']);
 function reportProblem(f, body) {
   const text = (v, max) => v == null || (typeof v === 'string' && v.length <= max);
-  if (!INSPECTION_TYPES.has(f.type)) return 'choose the inspection type: BOQI, EOQI or Follow-up';
+  if (!INSPECTION_TYPES.has(f.type)) return 'choose the assessment type: BOQ, EOQ or Follow-up';
   const d = dueDateOf(f.date);
-  if (!f.date || !d.ok || f.date < '2000-01-01' || f.date > '2100-12-31') return 'the inspection date must be a real date like 2026-09-30';
+  if (!f.date || !d.ok || f.date < '2000-01-01' || f.date > '2100-12-31') return 'the assessment date must be a real date like 2026-09-30';
   if (typeof f.facility !== 'string' || !f.facility.trim() || f.facility.length > 200) return 'the building name is missing or too long (200 characters at most)';
   if (!text(f.division, 60) || !text(f.typeLabel, 100) || !text(f.filename, 200) || !text(f.inspector, 120)) return 'one of the report details is too long';
   const sections = body.sections;
@@ -129,7 +135,7 @@ async function insertInspection(env, user, rec) {
   const same = await env.DB.prepare('SELECT id FROM inspections WHERE id = ?1').bind(r.id).first();
   if (same) return json({ ok: true, id: r.id, alreadySaved: true });
   const archived = await env.DB.prepare('SELECT id FROM inspection_archive WHERE id = ?1').bind(r.id).first();
-  if (archived) return fail('this report number belongs to an archived report — start a new inspection', 409);
+  if (archived) return fail('this report number belongs to an archived report — start a new assessment', 409);
 
   // Who the report belongs to comes from the session, never from the form: an auditor always
   // files under their own account. Only an administrator may record it for someone else.
@@ -163,7 +169,7 @@ async function insertInspection(env, user, rec) {
   }
 
   await saveVersion(env, Number(r.id), 'submitted', user, { ...r, inspector_id: who.id });
-  await audit(env, user, 'inspection.create', String(r.id), `${r.facility} · ${r.date}${r.type ? ' ' + r.type : ''}`,
+  await audit(env, user, 'inspection.create', String(r.id), `${r.facility} · ${r.date}${r.type ? ' ' + shownType(r.type) : ''}`,
     `Submitted${who.id !== user.id ? ` for ${who.name}` : ''} · score ${r.overall ?? '–'}`);
   await notifySubmission(env, user, r, assignmentId);
   return json({ ok: true, id: r.id }, 201);
@@ -280,6 +286,7 @@ async function servePhoto(env, sha) {
     'Cache-Control': 'private, max-age=31536000, immutable',
     'X-Content-Type-Options': 'nosniff',
     'Content-Security-Policy': "default-src 'none'; sandbox",
+    'Cross-Origin-Resource-Policy': 'same-origin',                 // no other site can embed a photo
   } });
 }
 
@@ -361,8 +368,8 @@ async function findExistingSubmission(env, r, assignmentId, excludeId) {
   return null;
 }
 const duplicateMessage = (x) => (x.sameAssignment
-  ? `This assignment was already submitted by ${x.auditor || 'an auditor'} on ${x.date}. Open that report to make changes.`
-  : `${x.building} already has a ${x.type} report for ${x.quarter}, submitted by ${x.auditor || 'an auditor'} on ${x.date}. Open that report to make changes.`);
+  ? `This assignment was already submitted by ${x.auditor || 'an assessor'} on ${x.date}. Open that report to make changes.`
+  : `${x.building} already has a ${shownType(x.type)} report for ${x.quarter}, submitted by ${x.auditor || 'an assessor'} on ${x.date}. Open that report to make changes.`);
 
 /** Active accounts, with what is needed to work out their permissions. */
 async function activeAccounts(env) {
@@ -436,14 +443,14 @@ async function updateInspection(env, user, id, rec) {
 
   const version = await saveVersion(env, id, 'edited', user, { ...r, inspector_id: ownerId });
   const moved = typeof row.overall === 'number' && typeof r.overall === 'number' && row.overall !== r.overall ? ` · score ${row.overall} → ${r.overall}` : '';
-  await audit(env, user, 'inspection.update', String(id), `${r.facility} · ${r.date}${r.type ? ' ' + r.type : ''}`, `Saved as version ${version}${moved}`);
+  await audit(env, user, 'inspection.update', String(id), `${r.facility} · ${r.date}${r.type ? ' ' + shownType(r.type) : ''}`, `Saved as version ${version}${moved}`);
 
   // The first save after "changes requested" tells that reviewer the report is ready again.
   const decision = ctx.decision.get(id);
   if (before.status === 'changes' && decision?.reviewer_id && decision.reviewer_id !== user.id
       && ctx.users.some((u) => u.id === decision.reviewer_id)) {
     await notify(env, decision.reviewer_id, 'resubmission', `Updated for review: ${before.building}`,
-      `${user.name} made the requested changes${before.type ? ` to the ${before.type}` : ''}. Ready to review again.`, `#pg-library/${id}`);
+      `${user.name} made the requested changes${before.type ? ` to the ${shownType(before.type)}` : ''}. Ready to review again.`, `#pg-library/${id}`);
   }
   return json({ ok: true, id, version });
 }
@@ -473,7 +480,7 @@ async function deleteInspection(env, user, id) {
   ]);
   await saveVersion(env, id, 'deleted', user, row);
   await audit(env, user, 'inspection.delete', String(id), `${row.facility} · ${row.date}`,
-    `Moved to the archive · inspection by ${row.inspector}`);
+    `Moved to the archive · assessment by ${row.inspector}`);
   return json({ ok: true, id, archived: true });
 }
 
@@ -672,7 +679,7 @@ async function runBackup(env, trigger, { full = true } = {}) {
       await kv.put(`daily/${day}.json.gz`, await gzipText(JSON.stringify(snapshot)));
       writes += 1;
 
-      await env.DB.prepare('DELETE FROM auth_throttle WHERE window < ?1').bind(Math.floor(Date.now() / 60000 / 5) - 12).run().catch(() => {});
+      await clearOldThrottles(env);
 
       // 7. Nightly copies: the last 30 days, and the first of every month for good.
       const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -958,7 +965,7 @@ async function upsertAssignment(env, officer, body) {
     'SELECT id, auditor_id FROM assignments WHERE building_id = ?1 AND quarter = ?2 AND type = ?3',
   ).bind(buildingId, quarter, type).first();
   if (existing && existing.auditor_id !== auditorId && await isAssignmentCompleted(env, existing.id)) {
-    return fail('this building was already inspected for that quarter, so its auditor cannot change', 409);
+    return fail('this building was already assessed for that quarter, so its assessor cannot change', 409);
   }
 
   await env.DB.prepare(
@@ -972,7 +979,7 @@ async function upsertAssignment(env, officer, body) {
     await notify(
       env, auditorId, 'assignment',
       `New assignment: ${building.name}`,
-      `${officer.name} assigned you ${building.name} for ${quarter} ${type}.`,
+      `${officer.name} assigned you ${building.name} for ${quarter} ${shownType(type)}.`,
       '#pg-auditor',
     );
   }
@@ -1074,11 +1081,11 @@ async function officerBoard(env, viewer, url) {
   const events = [
     ...inPeriod.map((x) => ({
       kind: 'assigned', at: x.updated_at, buildingId: x.building_id,
-      actor: users.get(x.assigned_by)?.name || 'Someone', auditor: users.get(x.auditor_id)?.name || 'an auditor',
+      actor: users.get(x.assigned_by)?.name || 'Someone', auditor: users.get(x.auditor_id)?.name || 'an assessor',
     })),
     ...inPeriod.filter((x) => results.has(x.id)).map((x) => ({
       kind: 'completed', at: results.get(x.id).completedAt, buildingId: x.building_id,
-      auditor: users.get(x.auditor_id)?.name || 'an auditor', score: results.get(x.id).score,
+      auditor: users.get(x.auditor_id)?.name || 'an assessor', score: results.get(x.id).score,
     })),
   ].filter((x) => x.at).sort((x, y) => (y.at > x.at ? 1 : y.at < x.at ? -1 : 0)).slice(0, 25);
 
@@ -1141,9 +1148,10 @@ async function setAssignmentDue(env, officer, body) {
   await Promise.all([...byAuditor.entries()].filter(([id]) => id !== officer.id).map(([id, n]) => notify(
     env, id, 'assignment',
     due.value ? `Deadline ${due.value} for ${n} building${n === 1 ? '' : 's'}` : `Deadline removed for ${n} building${n === 1 ? '' : 's'}`,
-    `${quarter} · ${type} · set by ${officer.name}`, '#pg-auditor',
+    `${quarter} · ${shownType(type)} · set by ${officer.name}`, '#pg-auditor',
   )));
-  await audit(env, officer, 'assignment.due', `${quarter}|${type}`, `${rows.length} buildings`, { dueDate: due.value });
+  await audit(env, officer, 'assignment.due', `${quarter}|${type}`, `${rows.length} building${rows.length === 1 ? '' : 's'} · ${quarter} ${shownType(type)}`,
+    due.value ? `Deadline set to ${due.value}` : 'Deadline removed');
   return json({ updated: rows.length, skipped: ids.length - rows.length, dueDate: due.value });
 }
 
@@ -1201,7 +1209,7 @@ async function bulkAssign(env, officer, body) {
     if (auditor.id !== officer.id) await notify(
       env, auditor.id, 'assignment',
       change.length === 1 ? `New assignment: ${names[0]}` : `${change.length} new assignments`,
-      `${officer.name} assigned you ${list} for ${quarter} ${type}.${due && due.value ? ` Due ${due.value}.` : ''}`,
+      `${officer.name} assigned you ${list} for ${quarter} ${shownType(type)}.${due && due.value ? ` Due ${due.value}.` : ''}`,
       '#pg-auditor',
     );
   } else if (change.length) {
@@ -1276,13 +1284,13 @@ async function repeatForEndOfQuarter(env, officer, body) {
     const list = fresh.slice(0, 3).map((id) => buildingName.get(id)).join(', ') + (fresh.length > 3 ? ` and ${fresh.length - 3} more` : '');
     told.push(notify(env, auditorId, 'assignment',
       fresh.length === 1 ? `End of quarter: ${buildingName.get(fresh[0])}` : `${fresh.length} buildings for the end of the quarter`,
-      `${officer.name} gave you ${list} for ${quarter} EOQI — the same buildings as your BOQI.${due && due.value ? ` Due ${due.value}.` : ''}`,
+      `${officer.name} gave you ${list} for ${quarter} EOQ — the same buildings as your BOQ.${due && due.value ? ` Due ${due.value}.` : ''}`,
       '#pg-auditor'));
   }
   await Promise.all(told);
   if (tally.assigned || (due && plan.size)) {
-    await audit(env, officer, 'assignment.repeat', quarter, `${quarter} BOQI → EOQI`,
-      `${tally.assigned} buildings given to the same auditors for the EOQI${due && due.value ? ` · due ${due.value}` : ''}`);
+    await audit(env, officer, 'assignment.repeat', quarter, `${quarter} BOQ → EOQ`,
+      `${tally.assigned} buildings given to the same assessors for the EOQ${due && due.value ? ` · due ${due.value}` : ''}`);
   }
   return json({ ok: true, ...tally, unavailableAuditors: [...unavailable.values()] });
 }
@@ -1559,7 +1567,7 @@ async function leaderOverview(env, url) {
     ...scopedAssignments.map((x) => ({
       kind: 'assignment', at: x.updated_at || x.created_at,
       actor: userById.get(x.assigned_by)?.name || 'Someone',
-      target: userById.get(x.auditor_id)?.name || 'an auditor',
+      target: userById.get(x.auditor_id)?.name || 'an assessor',
       building: buildingById.get(x.building_id)?.name || '', quarter: x.quarter, type: x.type,
     })),
     ...inspections.map((x) => ({
@@ -1849,9 +1857,19 @@ async function reviewInspection(env, user, id, body) {
   const summary = libraryRow({ ...row, aid }, ctx);
   if (isOwnReport(user, summary)) return fail('you cannot review your own report', 403);
 
+  // The same decision sent twice (a double tap, a replayed request) is recorded once and tells the
+  // auditor once.
+  const last = await env.DB.prepare(
+    `SELECT decision, comment FROM inspection_reviews WHERE inspection_id = ?1 AND reviewer_id = ?2
+       AND created_at > datetime('now', '-10 minutes') ORDER BY id DESC LIMIT 1`,
+  ).bind(id, user.id).first();
+  if (last && last.decision === decision && (last.comment || '') === comment) {
+    return json({ ok: true, duplicate: true, status: reviewStatus(row.updated_at, ctx.decision.get(id) || null) });
+  }
+
   await env.DB.prepare('INSERT INTO inspection_reviews (inspection_id, reviewer_id, reviewer_name, decision, comment) VALUES (?1, ?2, ?3, ?4, ?5)')
     .bind(id, user.id, user.name, decision, comment || null).run();
-  const label = `${summary.building} · ${summary.date}${summary.type ? ' ' + summary.type : ''}`;
+  const label = `${summary.building} · ${summary.date}${summary.type ? ' ' + shownType(summary.type) : ''}`;
   await audit(env, user, 'inspection.review', String(id), label,
     `${decision === 'approved' ? 'Approved' : decision === 'changes_requested' ? 'Changes requested' : 'Comment'}${comment ? ': ' + comment.slice(0, 200) : ''}`);
 
@@ -2044,6 +2062,7 @@ async function pushToUsers(env, userIds, message, { onlySession = null } = {}) {
   return { sent: sent.length, devices: subs.length };
 }
 
+const PUSH_MAX_DEVICES = 10;
 async function handlePush(request, env, path, method, user) {
   if (!path.startsWith('push/')) return null;
   if (path === 'push/key' && method === 'GET') {
@@ -2069,6 +2088,12 @@ async function handlePush(request, env, path, method, user) {
        ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, session_hash = excluded.session_hash,
          p256dh = excluded.p256dh, auth = excluded.auth, device = excluded.device, created_at = datetime('now')`,
     ).bind(user.id, user.sessionHash, endpoint, p256dh, auth, deviceLabel(request)).run();
+    // A person has a handful of devices: only the ten newest addresses are kept, so no account can
+    // make each of its notifications fan out to hundreds of addresses.
+    await env.DB.prepare(
+      `DELETE FROM push_subscriptions WHERE user_id = ?1 AND id NOT IN
+         (SELECT id FROM push_subscriptions WHERE user_id = ?1 ORDER BY created_at DESC, id DESC LIMIT ${PUSH_MAX_DEVICES})`,
+    ).bind(user.id).run();
     if (body?.quiet === true) return json({ ok: true, sent: 0 });   // the same device, signed in again
     await audit(env, user, 'push.on', user.id, user.name, `Notifications turned on · ${deviceLabel(request)}`);
     const r = await pushToUsers(env, [user.id], { title: 'Notifications are on', body: 'New assignments, reviews and reports will show here, even when OSQA is closed.', link: '#pg-home', tag: 'welcome' }, { onlySession: user.sessionHash });
@@ -2232,7 +2257,7 @@ const can = (user, key) => effectivePermissions(user).includes(key);
 const ASSIGNEE_ROLES = new Set(['quality_auditor', 'quality_officer', 'quality_admin']);
 const ROLE_NAMES = {
   quality_admin: 'Quality Admin', quality_leader: 'Quality Leader', quality_officer: 'Quality Officer',
-  quality_auditor: 'Quality Auditor', data_analyst: 'Data Analyst',
+  quality_auditor: 'Quality Assessor', data_analyst: 'Data Analyst',
 };
 function canAssignTo(actor, target) {
   if (!target || !ASSIGNEE_ROLES.has(target.role)) return false;
@@ -2244,7 +2269,7 @@ function assigneeProblem(actor, target) {
   if (!target) return [404, 'that person was not found'];
   if (!canAssignTo(actor, target)) return [403, `you cannot assign buildings to a ${ROLE_NAMES[target.role] || target.role}`];
   if (target.status !== 'active') return [400, `${target.name}'s account is suspended`];
-  if (!can(target, 'inspect')) return [400, `${target.name} does not have permission to create inspections — an admin can grant it in Admin Control`];
+  if (!can(target, 'inspect')) return [400, `${target.name} does not have permission to create assessments — an admin can grant it in Admin Control`];
   return null;
 }
 const sameSet = (a, b) => a.length === b.length && a.every((k) => b.includes(k));
@@ -2300,19 +2325,63 @@ async function authBootstrap(env, body, request) {
 const AUTH_LIMITS = {
   'auth/login': [60, 5], 'auth/complete-setup': [30, 5], 'auth/bootstrap': [10, 5], 'auth/change-password': [20, 5],
 };
-async function authThrottled(env, request, path) {
-  const [limit, minutes] = AUTH_LIMITS[path];
-  const ip = request.headers.get('CF-Connecting-IP') || 'local';
-  const windowNo = Math.floor(Date.now() / 60000 / minutes);
+/* Limits per signed-in person, on top of every permission check: far above a busy real day, far
+ * below what it takes to flood colleagues with notifications or fill the database.
+ *  - notify: changes that tell someone else (reviews, submissions, assignments)
+ *  - push:   turning phone notifications on, or sending a test
+ *  - write:  any other change */
+const USER_LIMITS = { notify: [60, 10], push: [10, 10], write: [300, 5] };
+function userLimitClass(path, method) {
+  if (path === 'push/test' || (path === 'push/subscribe' && method === 'POST')) return 'push';
+  if (/^inspections(\/\d+\/reviews)?$/.test(path) && method === 'POST') return 'notify';
+  if (/^assignments(\/(bulk|repeat|due))?$/.test(path) && method === 'POST') return 'notify';
+  return 'write';
+}
+const clientIp = (request) => request.headers.get('CF-Connecting-IP') || 'local';
+/** Where a sign-in came from, for the audit log: the kind of device and the network address.
+ *  (Never what was typed — a password entered in the username box must not end up in a log.) */
+const signInPlace = (request) => `${deviceLabel(request) || 'Unknown device'} · network ${clientIp(request)}`;
+
+/** Counts one hit against `key` in a fixed window of `minutes` and returns the hits so far.
+ *  The window is stored as the minute it started, so old counters can be cleared in one sweep. */
+async function countHit(env, key, minutes) {
+  const minute = Math.floor(Date.now() / 60000);
+  const windowStart = minute - (minute % minutes);
   try {
     const row = await env.DB.prepare(
       `INSERT INTO auth_throttle (key, window, hits) VALUES (?1, ?2, 1)
        ON CONFLICT(key) DO UPDATE SET hits = CASE WHEN window = ?2 THEN hits + 1 ELSE 1 END, window = ?2
        RETURNING hits`,
-    ).bind(`${path}:${ip}`, windowNo).first();
-    return (row?.hits || 0) > limit;
-  } catch { return false; }                                     // never lock everyone out over a counter
+    ).bind(key, windowStart).first();
+    return row?.hits || 0;
+  } catch { return 0; }                                         // never lock everyone out over a counter
 }
+async function authThrottled(env, request, path) {
+  const [limit, minutes] = AUTH_LIMITS[path];
+  const ip = clientIp(request);
+  const hits = await countHit(env, `${path}:${ip}`, minutes);
+  // One line in the audit log when a network first goes over the limit (not one per attempt).
+  if (hits === limit + 1) {
+    await audit(env, null, 'security.throttle', null, `Network ${ip}`,
+      `More than ${limit} ${path.replace('auth/', '').replace('-', ' ')} attempts in ${minutes} minutes — further attempts refused until the window ends`);
+  }
+  return hits > limit;
+}
+/** A signed-in person over their limit for this kind of change: the refusal, else null. */
+async function userThrottled(env, user, path, method) {
+  const cls = userLimitClass(path, method);
+  const [limit, minutes] = USER_LIMITS[cls];
+  const hits = await countHit(env, `user:${user.id}:${cls}`, minutes);
+  if (hits === limit + 1) {
+    await audit(env, user, 'security.throttle', user.id, `${user.name} (@${user.username})`,
+      `More than ${limit} ${cls === 'notify' ? 'submissions, reviews or assignments' : cls === 'push' ? 'notification requests' : 'changes'} in ${minutes} minutes — further requests refused until the window ends`);
+  }
+  if (hits <= limit) return null;
+  return json({ error: 'too many requests — wait a few minutes and try again' }, 429, { 'Retry-After': String(minutes * 60) });
+}
+/** Counters older than a day are finished with. */
+const clearOldThrottles = (env) => env.DB.prepare('DELETE FROM auth_throttle WHERE window < ?1')
+  .bind(Math.floor(Date.now() / 60000) - 24 * 60).run().catch(() => {});
 
 /** A stand-in account for names that do not exist, so a wrong username takes as long to refuse as
  *  a wrong password (the time taken must not reveal which usernames are real). */
@@ -2344,10 +2413,13 @@ async function authLogin(env, body, request) {
   if (isLocked(user)) return fail('account locked — try again in 15 minutes', 423);
 
   const valid = await verifyPassword(password, user);
+  const label = `${user.name} (@${user.username})`, where = signInPlace(request);
   if (!valid) {
     await registerFailedAttempt(env, user);
-    if ((user.failed_attempts || 0) + 1 === MAX_FAILED_ATTEMPTS) {
-      await audit(env, null, 'security.lockout', user.id, `${user.name} (@${user.username})`,
+    const tries = (user.failed_attempts || 0) + 1;
+    await audit(env, null, 'auth.failed', user.id, label, `Wrong password (${tries} of ${MAX_FAILED_ATTEMPTS}) · ${where}`);
+    if (tries === MAX_FAILED_ATTEMPTS) {
+      await audit(env, null, 'security.lockout', user.id, label,
         `Locked for 15 minutes after ${MAX_FAILED_ATTEMPTS} failed sign-in attempts`);
       await notify(env, user.id, 'security', 'Your account was locked for 15 minutes',
         `${MAX_FAILED_ATTEMPTS} wrong passwords were entered for your account. If this was not you, tell an administrator.`, null);
@@ -2356,7 +2428,10 @@ async function authLogin(env, body, request) {
   }
 
   await clearFailedAttempts(env, user.id);
-  if (user.status !== 'active') return fail('this account has been suspended', 403);
+  if (user.status !== 'active') {
+    await audit(env, null, 'auth.blocked', user.id, label, `Correct password, but the account is suspended · ${where}`);
+    return fail('this account has been suspended', 403);
+  }
 
   if (user.must_change_password) {
     return json({ ok: true, mustChangePassword: true, username: user.username });
@@ -2364,6 +2439,7 @@ async function authLogin(env, body, request) {
 
   const { token, expiresAt } = await createSession(env, user.id, deviceLabel(request));
   await touchLogin(env, user.id);
+  await audit(env, user, 'auth.login', user.id, label, where);
   return json(
     { ok: true, user: publicUser(user) },
     200,
@@ -2387,6 +2463,8 @@ async function authCompleteSetup(env, body, request) {
   if (isLocked(user)) return fail('account locked — try again in 15 minutes', 423);
   if (!(await verifyPassword(currentPassword, user))) {
     await registerFailedAttempt(env, user);
+    await audit(env, null, 'auth.failed', user.id, `${user.name} (@${user.username})`,
+      `Wrong temporary password (${(user.failed_attempts || 0) + 1} of ${MAX_FAILED_ATTEMPTS}) · ${signInPlace(request)}`);
     if ((user.failed_attempts || 0) + 1 === MAX_FAILED_ATTEMPTS) {
       await audit(env, null, 'security.lockout', user.id, `${user.name} (@${user.username})`,
         `Locked for 15 minutes after ${MAX_FAILED_ATTEMPTS} wrong temporary passwords`);
@@ -2697,7 +2775,7 @@ async function handleAdmin(request, env, path, user) {
 async function handleAuth(request, env, path) {
   const method = request.method.toUpperCase();
   // Password guessing from one network is slowed down before any account is even looked at.
-  if (method === 'POST' && AUTH_LIMITS[path] && await authThrottled(env, request, path)) {
+  if (method === 'POST' && Object.hasOwn(AUTH_LIMITS, path) && await authThrottled(env, request, path)) {
     return fail('too many sign-in attempts from this network — wait a few minutes and try again', 429);
   }
   if (path === 'auth/status' && method === 'GET') return authStatus(env);
@@ -2735,6 +2813,10 @@ async function handleApi(request, env, url) {
   const user = await getUserFromRequest(request, env);
   if (!user) return fail('authentication required', 401);
   if (method === 'GET') env.ctx?.waitUntil(backupSoon(env).catch((err) => console.error('backup', err)));
+  else if (!['HEAD', 'OPTIONS'].includes(method)) {
+    const refused = await userThrottled(env, user, path, method);
+    if (refused) return refused;
+  }
   const res = await handleApiAuthed(request, env, url, path, method, user);
   if (!user.renewCookie || res.headers.has('Set-Cookie')) return res;
   const headers = new Headers(res.headers);
@@ -2828,7 +2910,7 @@ async function handleApiAuthed(request, env, url, path, method, user) {
 
   if (path === 'inspections') {
     if (method === 'POST') {
-      if (!can(user, 'inspect')) return fail('you do not have permission to create inspections', 403);
+      if (!can(user, 'inspect')) return fail('you do not have permission to create assessments', 403);
       return insertInspection(env, user, await request.json());
     }
     return fail('method not allowed', 405);
@@ -2842,11 +2924,11 @@ async function handleApiAuthed(request, env, url, path, method, user) {
     const id = Number(match[1]);
     if (method === 'GET') return getInspectionForReview(env, user, id);
     if (method === 'PATCH' || method === 'PUT') {
-      if (!can(user, 'inspect')) return fail('you do not have permission to edit inspections', 403);
+      if (!can(user, 'inspect')) return fail('you do not have permission to edit assessments', 403);
       return updateInspection(env, user, id, await request.json());
     }
     if (method === 'DELETE') {
-      if (!can(user, 'delete')) return fail('you do not have permission to delete inspections', 403);
+      if (!can(user, 'delete')) return fail('you do not have permission to delete assessments', 403);
       return deleteInspection(env, user, id);
     }
     return fail('method not allowed', 405);
@@ -2860,6 +2942,17 @@ async function handleAssets(request, env, url) {
   const isAdminShell = url.pathname === '/admin.html' || url.pathname === '/admin';
   const isAssignShell = url.pathname === '/assign.html' || url.pathname === '/assign';
   const isReportShell = url.pathname === '/report.html' || url.pathname === '/report';
+  // The app's own code is for signed-in people only, as it was when it lived inside app.html.
+  if (url.pathname === '/js/app.js') {
+    const user = await getUserFromRequest(request, env);
+    if (!user) return new Response('Sign in first.', { status: 401, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
+    return withHeaders(await env.ASSETS.fetch(request), { 'Cache-Control': 'private, no-cache' });
+  }
+  // The photo converter's page (see heic.html): the only page where eval is allowed, and the only
+  // script it may run besides its own is the converter itself. It can fetch nothing.
+  if (url.pathname === '/heic' || url.pathname === '/heic.html') {
+    return withHeaders(await env.ASSETS.fetch(request), { 'Content-Security-Policy': heicCsp(url.origin) });
+  }
   if (isAppShell || isAdminShell || isAssignShell || isReportShell) {
     const user = await getUserFromRequest(request, env);
     if (!user) return Response.redirect(new URL('/login.html', url).toString(), 302);
@@ -2868,8 +2961,20 @@ async function handleAssets(request, env, url) {
       return Response.redirect(new URL(user.role === ADMIN_ROLE ? '/app#pg-admin' : '/app', url).toString(), 302);
     }
     if (isAssignShell) return Response.redirect(new URL('/app#pg-officer', url).toString(), 302);
+    // Signed-in pages are never kept by a browser or proxy: after signing out, Back cannot bring
+    // one (and whatever it was showing) back from the cache.
+    return withHeaders(await env.ASSETS.fetch(request), { 'Cache-Control': 'no-store' });
   }
   return env.ASSETS.fetch(request);
+}
+/* Scripts are named by full address: inside the sandbox the page has no origin of its own, so
+ * 'self' would match nothing. */
+const heicCsp = (origin) => `default-src 'none'; script-src ${origin}/js/heic-frame.js ${origin}/vendor/heic2any.min.js 'unsafe-eval'; `
+  + "worker-src blob:; connect-src blob: data:; img-src blob: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
+function withHeaders(res, set) {
+  const headers = new Headers(res.headers);
+  for (const [k, v] of Object.entries(set)) headers.set(k, v);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 
 export default {

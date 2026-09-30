@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Photo converter</title>
+</head>
+<body>
+<!--
+  The iPhone-photo (HEIC) converter runs here and nowhere else. It needs the browser's eval, which
+  the app's own pages do not allow. The app loads this page in a sandboxed frame with an origin of
+  its own, so the converter cannot reach the app, its session or the API: it gets a photo's bytes
+  and hands back a JPEG. The worker gives this page its own, narrower security policy.
+-->
+<script src="/js/heic-frame.js"></script>
+</body>
+</html>
