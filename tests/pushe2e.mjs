@@ -2,11 +2,9 @@
 // VAPID signature and decrypts each message with the "phone's" private key.
 import http from 'node:http';
 import nodeCrypto from 'node:crypto';
-import { readFileSync, existsSync } from 'node:fs';
 const B = 'http://localhost:8787';
-// the public key the local server signs with: .dev.vars (tests/dev-keys.mjs) wins over wrangler.jsonc
-const devVars = existsSync(new URL('../.dev.vars', import.meta.url)) ? readFileSync(new URL('../.dev.vars', import.meta.url), 'utf8') : '';
-const PUB = (devVars.match(/^VAPID_PUBLIC_KEY=(\S+)/m) || readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8').match(/"VAPID_PUBLIC_KEY"\s*:\s*"([^"]+)"/))[1];
+// the public key the server under test signs with, as it tells the app
+const PUB = (await (await fetch(B + '/api/push/key', { headers: { Cookie: 'qa_session=tst-au1-2026' } })).json()).publicKey;
 const S = { adm: 'tst-adm-2026', au1: 'tst-au1-2026', ldr: 'tst-ldr-2026' };
 const AU1 = 'a1fd8b2b-b220-45f5-b2ba-623700ae9e0b';
 let pass = 0, bad = 0;

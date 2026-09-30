@@ -59,5 +59,5 @@ const au = await call('adm', 'GET', '/api/admin/audit?limit=20');
 ok((au.j?.entries || au.j?.rows || []).some((e) => e.action === 'assignment.repeat'), 'the audit log records it');
 
 console.log('Cleanup of the test quarter');
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "DELETE FROM assignments WHERE quarter='${Q}'"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "DELETE FROM assignments WHERE quarter='${Q}'"`, { stdio: 'ignore' });
 console.log(`\n${pass} passed, ${bad} failed`);

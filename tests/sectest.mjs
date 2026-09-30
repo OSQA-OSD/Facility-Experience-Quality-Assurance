@@ -98,6 +98,9 @@ r = await call('adm', 'PATCH', '/api/inspections/' + ID, rec({ overall: 80, insp
 ok(r.s === 200 && r.j?.version === 3, 'admin can still correct it → version 3');
 
 console.log('Delete → archive → restore');
+// its review status before it is deleted (approved, or "resubmitted" if the admin's correction
+// landed in a later second than the approval) must be exactly what comes back
+const statusBefore = (await call('au1', 'GET', '/api/inspections/' + ID)).j?.summary?.status;
 r = await call('adm', 'DELETE', '/api/inspections/' + ID);
 ok(r.s === 200 && r.j?.archived, 'admin delete moves it to the archive');
 ok((await call('au1', 'GET', '/api/inspections/' + ID)).s === 404, 'no longer live');
@@ -111,7 +114,7 @@ ok(r.s === 403, 'only an admin can restore');
 r = await call('adm', 'POST', `/api/admin/archive/${ID}/restore`);
 ok(r.s === 200, 'admin restores');
 g = await call('au1', 'GET', '/api/inspections/' + ID);
-ok(g.s === 200 && g.j?.record?.overall === 10 && g.j.summary.status === 'approved', 'back with its score and approval', `${g.j?.record?.overall} ${g.j?.summary?.status}`);
+ok(g.s === 200 && g.j?.record?.overall === 10 && g.j.summary.status === statusBefore && g.j.summary.lastDecision?.decision === 'approved', 'back with its score, its approval and the same status as before', `${g.j?.record?.overall} ${g.j?.summary?.status} (before: ${statusBefore})`);
 v = await call('adm', 'GET', `/api/inspections/${ID}/versions`);
 ok(v.j?.versions?.map((x) => x.reason).join(',') === 'restored,deleted,edited,edited,submitted', 'full history kept', v.j?.versions?.map((x) => x.reason).join(','));
 

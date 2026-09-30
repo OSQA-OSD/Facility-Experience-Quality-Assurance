@@ -1,8 +1,14 @@
 # Facility Experience Quality Assurance (OSQA)
 
-Facility inspections for OSD: auditors score buildings on a phone or tablet, officers assign and
-review, leaders and analysts read the results. One Cloudflare Worker serves the pages and the API;
-the data lives in Cloudflare D1.
+Facility assessments for OSD: assessors score buildings on a phone or tablet at the beginning (BOQ) and
+end (EOQ) of each quarter, officers assign and review, leaders and analysts read the results.
+
+One Worker (`worker.js`) serves the pages and the API. It runs on Cloudflare (Workers + D1) during the
+pilot, and unchanged on a company server with Node.js and SQLite — see
+[`docs/INSTALL-SERVER.md`](docs/INSTALL-SERVER.md).
+
+In the database and the API the assessment types keep their original codes, `BOQI` and `EOQI` (and the
+role `quality_auditor`); screens, documents and messages show BOQ, EOQ and Assessor.
 
 ## What is where
 
@@ -16,10 +22,14 @@ the data lives in Cloudflare D1.
 | `report.html` | The page printable documents (reports, exports) are written into |
 | `heic.html` | The sealed iPhone-photo (HEIC) converter, loaded in a sandboxed frame |
 | `js/` | All browser code — no page carries script of its own. `js/app.js` is served to signed-in people only |
+| `vendor/` | Chart.js, Lucide, html2canvas, jsPDF, heic2any and the Cairo font, served from this site (licences inside) |
 | `sw.js` | Service worker for notifications (no caching) |
 | `migrations/` | The D1 schema, applied in order |
 | `_headers` | Security headers for every page |
 | `tests/` | End-to-end security and regression tests (see `tests/README.md`) |
+| `server/` | Running on a company server: Node.js host for `worker.js`, database, backups, import / export |
+| `scripts/build.mjs` | Builds `dist/` (Windows, Linux, macOS) |
+| `docs/INSTALL-SERVER.md` | Installing OSQA on a company server |
 
 ## Run it locally
 
@@ -31,7 +41,7 @@ npm run dev                                              # http://localhost:8787
 npm test                                                 # in a second terminal
 ```
 
-## Deploy
+## Deploy (Cloudflare pilot)
 
 - Merging to `main` deploys automatically (Cloudflare Workers Builds). Branches get preview builds,
   which use the **live** database — treat a preview as production.
@@ -52,12 +62,13 @@ npm test                                                 # in a second terminal
   the browser's view of permissions only hides buttons.
 - **Forged requests:** every change must come from this site (Origin / Sec-Fetch-Site), on top of SameSite cookies.
 - **Rate limits:** sign-in per network; per person for changes, submissions, reviews and notifications.
-- **Page policy (CSP):** no inline script and no `eval` on any page; CDN files are allowed file by file
-  and carry integrity hashes. The HEIC converter, which needs `eval`, runs in a sandboxed frame with an
+- **Page policy (CSP):** no inline script and no `eval` on any page; scripts, styles and fonts come only
+  from this site (the third-party files in `vendor/` carry integrity hashes); nothing is loaded from the internet. The HEIC converter, which needs `eval`, runs in a sandboxed frame with an
   origin and policy of its own. Also HSTS, `nosniff`, framing limited to this site, `Referrer-Policy`,
   `Permissions-Policy`, `Cross-Origin-Opener-Policy`; API answers are `no-store` and `Cross-Origin-Resource-Policy`.
 - **Uploads:** photos only — JPEG, PNG, WebP or HEIC, checked by their bytes, size-limited, and served back
   with a sandboxing policy.
 - **Audit log:** sign-ins and failed sign-ins, lockouts, throttling, account and permission changes,
   report submissions, edits, reviews, deletions and restores, backups and downloads.
-- **Backups:** to KV every 10 minutes and nightly, plus D1 Time Travel (30 days).
+- **Backups:** every 10 minutes and nightly — to KV on Cloudflare (plus D1 Time Travel), to `data/backups/`
+  on a company server (plus the server's own backups).

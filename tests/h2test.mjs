@@ -16,7 +16,7 @@ async function call(who, method, path, body, headers = {}) {
   const text = await r.text(); let j = null; try { j = JSON.parse(text); } catch {}
   return { s: r.status, j, text, h: r.headers, cookie: (r.headers.get('set-cookie') || '').match(/qa_session=([^;]+)/)?.[1] };
 }
-const sql = (q) => JSON.parse(execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --json --command "${q}"`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString())[0].results;
+const sql = (q) => JSON.parse(execSync(`cd "${REPO}" && node tests/sql.mjs --json --command "${q}"`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString())[0].results;
 const auditSince = (id) => sql(`SELECT action, actor_name, target, details FROM audit_log WHERE id > ${id} ORDER BY id`);
 const lastAudit = () => sql('SELECT MAX(id) AS m FROM audit_log')[0].m || 0;
 const scriptSrc = (csp) => (csp.match(/script-src ([^;]+)/) || [])[1] || '';

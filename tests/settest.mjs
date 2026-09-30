@@ -15,7 +15,7 @@ const call = async (who, method, path, body) => {
   const r = await fetch(B + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined });
   const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch {} return { s: r.status, j };
 };
-const sql = (q) => JSON.parse(execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --json --command "${q}"`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString())[0].results;
+const sql = (q) => JSON.parse(execSync(`cd "${REPO}" && node tests/sql.mjs --json --command "${q}"`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString())[0].results;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const count = (who, extra = '') => sql(`SELECT COUNT(*) n FROM notifications WHERE user_id='${ID[who]}' ${extra}`)[0].n;
 
@@ -66,7 +66,7 @@ await wait(700);
 ok(r.s === 200 && count('au1', "AND type='security'") >= 1 && count('au1') === before + 1, 'a security alert (password reset) is still written while off');
 ok(got.au1.length === pushesAtStart, 'the reset signed them out, so no push goes to their phone (only while signed in)');
 // sign Auditor One back in (a fresh test session) for the rest
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "UPDATE qa_users SET must_change_password=0 WHERE id='${ID.au1}'; INSERT INTO qa_sessions (token_hash,user_id,expires_at,device,last_seen_at) VALUES ('${nodeCrypto.createHash('sha256').update(S.au1).digest('hex')}','${ID.au1}',${Date.now() + 8 * 3600e3},'local test',${Date.now()})"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "UPDATE qa_users SET must_change_password=0 WHERE id='${ID.au1}'; INSERT INTO qa_sessions (token_hash,user_id,expires_at,device,last_seen_at) VALUES ('${nodeCrypto.createHash('sha256').update(S.au1).digest('hex')}','${ID.au1}',${Date.now() + 8 * 3600e3},'local test',${Date.now()})"`, { stdio: 'ignore' });
 await call('au1', 'POST', '/api/push/subscribe', { subscription: { endpoint: 'http://localhost:9912/au1', keys: { p256dh: ecdh.getPublicKey().toString('base64url'), auth: auth.toString('base64url') } } });
 await wait(400);
 ok((await call('au1', 'GET', '/api/account/settings')).j.notifications === false, 'the choice survives signing out and in again');
@@ -97,6 +97,6 @@ ok(r.j?.changed === false, 'someone else cannot mark it (their request changes n
 
 console.log('Cleanup');
 await call('ldr', 'PATCH', '/api/account/settings', { notifications: true });
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "DELETE FROM assignments WHERE quarter='2032-Q1'; DELETE FROM push_subscriptions"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "DELETE FROM assignments WHERE quarter='2032-Q1'; DELETE FROM push_subscriptions"`, { stdio: 'ignore' });
 server.close();
 console.log(`\n${pass} passed, ${bad} failed`);

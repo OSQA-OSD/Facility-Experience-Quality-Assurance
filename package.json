@@ -3,16 +3,24 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build": "mkdir -p dist && mkdir -p dist/js && cp js/*.js dist/js/ && rm -rf dist/vendor && cp -R vendor dist/vendor && cp index.html app.html login.html report.html heic.html journey-map-QA-2026-Q3-EOQ-009.svg osqa-logo.svg osqa-logo-white.svg osqa-icon.svg osqa-icon-180.png osqa-icon-512.png manifest.webmanifest sw.js _headers dist/",
+    "build": "node scripts/build.mjs",
     "migrate": "wrangler d1 migrations apply facility-qa --remote",
     "deploy": "npm run build && npm run migrate && wrangler deploy",
     "dev": "npm run build && wrangler dev",
-    "test": "bash tests/run.sh"
+    "test": "bash tests/run.sh",
+    "server": "node server/node.mjs",
+    "server:setup": "node server/setup.mjs",
+    "server:import": "node server/import.mjs",
+    "server:export": "node server/export.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.141.0"
   },
   "overrides": {
     "undici": "^7.29.1"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
   }
 }

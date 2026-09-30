@@ -8,9 +8,9 @@ const REPO = process.env.REPO || fileURLToPath(new URL('..', import.meta.url));
 const U = { admin: '8c2e36fd-608d-47ac-ae2a-c9f5ec5151ab', officer: '3aacf4c0-8b9a-4c44-8c87-54fde5e063b3', auditor: '6a45c7e7-5e68-46aa-93aa-726d4312d59a', analyst: 'bd3b6842-5e03-44cc-a9c7-9cd8679bc1cb', leader: 'df67488c-ff4b-40d9-95d8-5a8b32847a64' };
 const tok = (r) => `tst-role-${r}-2026`;
 const now = Date.now();
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "${Object.entries(U).map(([r, id]) => `INSERT OR REPLACE INTO qa_sessions (token_hash,user_id,expires_at,device,last_seen_at) VALUES ('${nodeCrypto.createHash('sha256').update(tok(r)).digest('hex')}','${id}',${now + 8 * 3600e3},'local test',${now})`).join('; ')}"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "${Object.entries(U).map(([r, id]) => `INSERT OR REPLACE INTO qa_sessions (token_hash,user_id,expires_at,device,last_seen_at) VALUES ('${nodeCrypto.createHash('sha256').update(tok(r)).digest('hex')}','${id}',${now + 8 * 3600e3},'local test',${now})`).join('; ')}"`, { stdio: 'ignore' });
 // the test auditor gets plain auditor rights (no old-style delete/export switches)
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "UPDATE qa_users SET role='quality_auditor', permissions=NULL, can_edit=1, can_delete=0, can_export=0 WHERE id='${U.auditor}'"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "UPDATE qa_users SET role='quality_auditor', permissions=NULL, can_edit=1, can_delete=0, can_export=0 WHERE id='${U.auditor}'"`, { stdio: 'ignore' });
 let pass = 0, bad = 0;
 const ok = (c, l, x = '') => { c ? pass++ : bad++; if (!c) console.log('  ✗ ' + l + (x ? '  ' + x : '')); };
 const call = async (role, method, path, body) => {
@@ -61,18 +61,18 @@ const esc = [];
 const st = (await fetch(B + '/api/buildings?usage=1', { headers: { Cookie: 'qa_session=' + tok('auditor') } }).then((r) => r.json())).buildings[0];
 ok(!('assignments' in st), 'non-admin asking for usage=1 gets the plain list');
 ok((await call('auditor', 'PATCH', '/api/account/settings', { notifications: true, role: 'quality_admin' })) === 200 &&
-  JSON.parse(execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --json --command "SELECT role FROM qa_users WHERE id='${U.auditor}'"`, { stdio: ['ignore', 'pipe', 'ignore'] }))[0].results[0].role === 'quality_auditor', 'a role sent with your own settings is ignored');
+  JSON.parse(execSync(`cd "${REPO}" && node tests/sql.mjs --json --command "SELECT role FROM qa_users WHERE id='${U.auditor}'"`, { stdio: ['ignore', 'pipe', 'ignore'] }))[0].results[0].role === 'quality_auditor', 'a role sent with your own settings is ignored');
 ok((await call('officer', 'PATCH', `/api/admin/users/${U.officer}`, { role: 'quality_admin' })) === 403, 'an officer cannot promote themselves');
 ok((await call('admin', 'PATCH', `/api/admin/users/${U.admin}`, { role: 'quality_auditor' })) === 400, 'an admin cannot demote themselves by accident');
 ok((await call('auditor', 'GET', `/api/auditor/profile?quarter=${Q}&auditorId=${U.officer}`)) === 403, 'an auditor cannot open someone else’s profile by changing the id');
 const fakeCookie = await fetch(B + '/api/auth/me', { headers: { Cookie: 'qa_session=' + 'forged-' + Date.now() } });
 ok(fakeCookie.status === 401, 'a made-up session cookie is refused');
 const expired = nodeCrypto.createHash('sha256').update('tst-expired').digest('hex');
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "INSERT OR REPLACE INTO qa_sessions (token_hash,user_id,expires_at,device,last_seen_at) VALUES ('${expired}','${U.admin}',${now - 1000},'local test',${now - 9 * 3600e3})"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "INSERT OR REPLACE INTO qa_sessions (token_hash,user_id,expires_at,device,last_seen_at) VALUES ('${expired}','${U.admin}',${now - 1000},'local test',${now - 9 * 3600e3})"`, { stdio: 'ignore' });
 ok((await fetch(B + '/api/auth/me', { headers: { Cookie: 'qa_session=tst-expired' } })).status === 401, 'an expired session is refused');
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "UPDATE qa_users SET status='suspended' WHERE id='${U.analyst}'"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "UPDATE qa_users SET status='suspended' WHERE id='${U.analyst}'"`, { stdio: 'ignore' });
 ok((await call('analyst', 'GET', '/api/auth/me')) === 401, 'a suspended account’s open session stops working at once');
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "UPDATE qa_users SET status='active' WHERE id='${U.analyst}'"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "UPDATE qa_users SET status='active' WHERE id='${U.analyst}'"`, { stdio: 'ignore' });
 ok((await call('auditor', 'GET', '/api/admin/users/../users')) !== 200, 'path tricks do not reach admin routes');
 { const t = await (await fetch(B + '/api/photos/../../worker.js', { headers: { Cookie: 'qa_session=' + tok('auditor') } })).text(); ok(!/export default|env\.DB/.test(t), 'no path traversal through photos (only the public page comes back)'); }
 const wj = await fetch(B + '/worker.js'); const wt = await wj.text();

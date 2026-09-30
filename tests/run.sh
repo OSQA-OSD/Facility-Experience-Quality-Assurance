@@ -9,8 +9,8 @@ export REPO
 cd "$REPO" || exit 1
 curl -sf http://localhost:8787/api/health >/dev/null || { echo "The local server is not running on :8787 — start it with: npm run dev"; exit 1; }
 
-d1() { npx wrangler d1 execute facility-qa --local --command "$1" >/dev/null 2>&1; }
-npx wrangler d1 execute facility-qa --local --file tests/seed-local.sql >/dev/null 2>&1 \
+d1() { node tests/sql.mjs --command "$1" >/dev/null 2>&1; }
+node tests/sql.mjs --file tests/seed-local.sql >/dev/null 2>&1 \
   || { echo "Could not load tests/seed-local.sql into the local database — run: npx wrangler d1 migrations apply facility-qa --local"; exit 1; }
 
 # Sessions for the four accounts most suites use (the role suite makes its own).

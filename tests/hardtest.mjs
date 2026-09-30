@@ -45,16 +45,16 @@ ok(r.s === 201, 'a real PNG is accepted');
 
 console.log('Wrong usernames take as long as wrong passwords');
 const time = async (u) => { const t = []; for (let i = 0; i < 3; i++) { const t0 = performance.now(); await call(null, 'POST', '/api/auth/login', { username: u, password: 'Wrong!pass1' }); t.push(performance.now() - t0); } return t.sort((a, b) => a - b)[1]; };
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "DELETE FROM auth_throttle; UPDATE qa_users SET failed_attempts=0, locked_until=NULL"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "DELETE FROM auth_throttle; UPDATE qa_users SET failed_attempts=0, locked_until=NULL"`, { stdio: 'ignore' });
 const ghost = await time('nobody-' + Date.now()), real = await time('auditor2');
 ok(ghost > real * 0.5 && ghost < real * 2, `similar time (unknown ${ghost.toFixed(0)} ms vs real ${real.toFixed(0)} ms)`);
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "UPDATE qa_users SET failed_attempts=0, locked_until=NULL"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "UPDATE qa_users SET failed_attempts=0, locked_until=NULL"`, { stdio: 'ignore' });
 
 console.log('Sign-in attempts per network');
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "DELETE FROM auth_throttle"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "DELETE FROM auth_throttle"`, { stdio: 'ignore' });
 let last = 0, first429 = null;
 for (let i = 1; i <= 62; i++) { const x = await call(null, 'POST', '/api/auth/login', { username: 'nobody', password: 'x' }); last = x.s; if (x.s === 429 && !first429) first429 = i; }
 ok(first429 === 61 && last === 429, 'the 61st attempt in 5 minutes from one network is refused (429)', `first 429 at #${first429}`);
 ok((await call('au1', 'GET', '/api/auth/me')).s === 200, 'people already signed in are not affected');
-execSync(`cd "${REPO}" && npx wrangler d1 execute facility-qa --local --command "DELETE FROM auth_throttle"`, { stdio: 'ignore' });
+execSync(`cd "${REPO}" && node tests/sql.mjs --command "DELETE FROM auth_throttle"`, { stdio: 'ignore' });
 console.log(`\n${pass} passed, ${bad} failed`);
